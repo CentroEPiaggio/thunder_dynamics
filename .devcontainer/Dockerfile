@@ -26,4 +26,30 @@ RUN	apt-get update && export DEBIAN_FRONTEND=noninteractive \
 	&& apt-get install -y git \
 	wget \
 	cmake \
+	cmake-curses-gui \
 	&& rm -rf /var/lib/apt/lists/*
+
+ENV HOME /home
+WORKDIR ${HOME}
+
+RUN git clone https://github.com/jbeder/yaml-cpp.git yaml_cpp
+WORKDIR ${HOME}/yaml_cpp
+RUN mkdir build \
+	&& cd build \
+	&& cmake .. \
+	&& cmake --build . \
+	&& make \
+	&& make install
+
+WORKDIR ${HOME}
+RUN git clone https://github.com/casadi/casadi.git casadi
+WORKDIR ${HOME}/casadi
+RUN mkdir build \
+	&& cd build \
+	&& cmake .. \
+	&& make \
+	&& make install
+
+# decidere se compilare alla compilazione del container o no, nel caso va montata la cartella thunder_dynamics
+
+
