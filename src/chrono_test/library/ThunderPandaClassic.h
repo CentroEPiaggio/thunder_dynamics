@@ -6,7 +6,7 @@
 #include <cmath>
 #include <eigen3/Eigen/Dense>
 
-namespace regrob{
+namespace thunder_ns{
 
     /* Class thunderPandaClassic 
     Useful functions for adaptive control with Slotine-Li regressor

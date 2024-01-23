@@ -17,7 +17,7 @@
 #define SELECT 1
 #define NJ 3
 
-using namespace regrob;
+using namespace thunder_ns;
 using std::cout;
 using std::endl;
 

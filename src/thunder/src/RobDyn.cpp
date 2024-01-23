@@ -11,7 +11,7 @@
 /* Define number of function generable */
 #define NUMBER_FUNCTIONS 5
 
-namespace regrob{
+namespace thunder_ns{
     
     RobDyn::RobDyn(){};
 

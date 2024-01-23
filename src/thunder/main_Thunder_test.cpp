@@ -17,7 +17,7 @@
 #define NJ 2
 #define PARAM 10
 
-using namespace regrob;
+using namespace thunder_ns;
 using std::cout;
 using std::endl;
 

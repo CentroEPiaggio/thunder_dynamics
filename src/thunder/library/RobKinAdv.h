@@ -10,7 +10,7 @@
 
 #define MU 0.02
 
-namespace regrob{
+namespace thunder_ns{
     
     /* Class Forward Kinmeatic */    
     class RobKinAdv : public RobKinBasic{

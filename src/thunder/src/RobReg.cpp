@@ -9,7 +9,7 @@
 /* Define number of function generable */
 #define NUMBER_FUNCTIONS 3
 
-namespace regrob{
+namespace thunder_ns{
     
     RobReg::RobReg(){};
 

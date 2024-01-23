@@ -9,7 +9,7 @@
 
 /* FrameOffset CLASS */
 
-namespace regrob{
+namespace thunder_ns{
 
     /* Homogenous transformation of offset frame */
     class FrameOffset {

@@ -6,7 +6,7 @@
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
 
-namespace regrob{
+namespace thunder_ns{
     
     /* Class CasadiObj */
     class CasadiObj {

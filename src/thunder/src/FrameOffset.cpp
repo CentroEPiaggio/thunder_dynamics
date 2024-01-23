@@ -1,6 +1,6 @@
 #include "../library/FrameOffset.h"
 
-namespace regrob{
+namespace thunder_ns{
     
     FrameOffset::FrameOffset(){
         

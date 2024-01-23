@@ -1,6 +1,6 @@
 #include "../library/urdf2dh_inertial.h"
 
-namespace regrob{
+namespace thunder_ns{
     
     void trasformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
 

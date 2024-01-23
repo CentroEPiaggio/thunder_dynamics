@@ -1,13 +1,31 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/cpp
 {
-	"name": "C++",
+	// thunder_dev era pydev
+	"name": "thunder-C++",
 	"build": {
-		"dockerfile": "Dockerfile"
+		"context": "..",
+		"dockerfile": "Dockerfile",
+		"args": { "USERNAME": "thunder_dev", "UBUNTUVERSION": "22.04" }
 	},
-	// "features": {
-	// 	"ghcr.io/jungaretti/features/make:1": {}
-	// },
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/${localWorkspaceFolderBasename},type=bind,consistency=cached", 
+	"workspaceFolder": "/home/thunder_dev/${localWorkspaceFolderBasename}",
+
+	"mounts": [
+		{"source":"${localWorkspaceFolder}/.devcontainer","target":"/commandhistory","type":"bind"}
+	],
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "gcc -v",
+
+	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -17,20 +35,11 @@
 				"vscode-icons-team.vscode-icons"
 			]
 		}
-	}
+	},
 
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"remoteUser": "thunder_dev",
+	"containerUser": "thunder_dev",
+	"updateRemoteUserUID": true,
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
+	"runArgs": ["--name","thunder_ws", "--user=thunder_dev", "--network=host"]
 }

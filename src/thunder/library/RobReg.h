@@ -8,7 +8,7 @@
 #include "RobKinBasic.h"
 #include "FrameOffset.h"
 
-namespace regrob{
+namespace thunder_ns{
     
     /* Class Forward Kinmeatic */    
     class RobReg : public RobKinBasic{

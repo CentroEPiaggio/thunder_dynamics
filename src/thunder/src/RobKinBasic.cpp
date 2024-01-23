@@ -10,7 +10,7 @@
 /* Define number of function generable */
 #define NUMBER_FUNCTIONS 2
 
-namespace regrob{
+namespace thunder_ns{
         
     RobKinBasic::RobKinBasic(){};
 

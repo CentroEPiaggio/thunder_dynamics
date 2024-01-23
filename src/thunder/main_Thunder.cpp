@@ -9,6 +9,10 @@ In particular generate code to compute for franka emika panda robot:
     - matrix mass
     - matrix coriolis
     - matrix gravity
+to do:
+	- dynamic matrix derivatives
+	- linearized system
+	- 
 */
 
 #include <iostream>
@@ -24,7 +28,7 @@ In particular generate code to compute for franka emika panda robot:
 #include "library/RobReg.h"
 #include "library/RobDyn.h"
 
-using namespace regrob;
+using namespace thunder_ns;
 
 using std::cout;
 using std::endl;
@@ -34,9 +38,9 @@ bool copy_flag = true;
 #define MU_JACOB 0.0
 
 std::string name_files = "gen_regr_fun";
-std::string path_reg = "../generatedFiles/";
-std::string path_copy_H = "../../include/utils/gen_regr_fun.h";
-std::string path_copy_CPP = "../../src/gen_regr_fun.cpp";
+std::string path_gen = "../generatedFiles/";
+// std::string path_copy_H = "../../include/utils/gen_regr_fun.h";
+// std::string path_copy_CPP = "../../src/gen_regr_fun.cpp";
 
 int main(){
 
@@ -102,7 +106,7 @@ int main(){
     if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
 
     /* Generate merge code */
-    std::string relativePath = path_reg;
+    std::string relativePath = path_gen;
 
     std::filesystem::path currentPath = std::filesystem::current_path();
     std::string absolutePath = currentPath / relativePath;
@@ -110,20 +114,19 @@ int main(){
 
     regrobot.generate_mergeCode(all_vec, absolutePath, name_files);
 
-    if(copy_flag){
-        /* Copy files in particular path */
-        std::filesystem::path sourcePath;
-        std::filesystem::path sourceDestPath;
+    // if(copy_flag){
+    //     /* Copy files in particular path */
+    //     std::filesystem::path sourcePath;
+    //     std::filesystem::path sourceDestPath;
     
-        sourcePath = absolutePath + name_files + ".h";
-        sourceDestPath = path_copy_H;
-        std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+    //     sourcePath = absolutePath + name_files + ".h";
+    //     sourceDestPath = path_copy_H;
+    //     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-        sourcePath = absolutePath + name_files + ".cpp";
-        sourceDestPath = path_copy_CPP;
-        std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-    }
+    //     sourcePath = absolutePath + name_files + ".cpp";
+    //     sourceDestPath = path_copy_CPP;
+    //     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+    // }
     
     return 0;
 }

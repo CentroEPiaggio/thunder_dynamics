@@ -13,7 +13,7 @@
 /* Define number of function generable */
 #define NUMBER_FUNCTIONS 7
 
-namespace regrob{
+namespace thunder_ns{
     
     RobKinAdv::RobKinAdv(){};
 

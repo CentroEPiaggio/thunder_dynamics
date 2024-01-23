@@ -31,7 +31,7 @@ Generate two yaml files of inertial parameters (only for arm + hand) to use stan
 
 #define NUMLINKS 7 // 7 links + hand
 
-using namespace regrob;
+using namespace thunder_ns;
 
 using std::cout;
 using std::endl;

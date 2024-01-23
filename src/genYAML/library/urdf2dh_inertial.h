@@ -6,7 +6,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace regrob{
+namespace thunder_ns{
 
     struct LinkProp {
 

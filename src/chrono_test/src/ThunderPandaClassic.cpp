@@ -2,7 +2,7 @@
 //#include "../library/gen_regr_fun.h"
 #include "../library/regr_fun_3R_classic.h"
 
-namespace regrob{
+namespace thunder_ns{
     
     thunderPandaClassic::thunderPandaClassic(){};
 
