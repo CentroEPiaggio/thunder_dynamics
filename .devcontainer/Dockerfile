@@ -9,6 +9,7 @@ RUN	apt-get update && apt-get install -y \
 	build-essential \
 	cmake \
 	cmake-curses-gui \
+	libeigen3-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Create a new user
@@ -34,28 +35,43 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 # Install casadi and yaml-cpp
 WORKDIR ${HOME}
 
+# yaml-cpp installation
 RUN git clone https://github.com/jbeder/yaml-cpp.git yaml_cpp
 WORKDIR ${HOME}/yaml_cpp
-RUN mkdir build && \
+RUN mkdir -p build && \
 	cd build && \
 	cmake .. && \
 	cmake --build . && \
 	make && \
 	make install
 
+# CasADi installation
 WORKDIR ${HOME}
 RUN git clone https://github.com/casadi/casadi.git casadi
 WORKDIR ${HOME}/casadi
-RUN mkdir build && \
+RUN mkdir -p build && \
 	cd build && \
 	cmake .. && \
 	make && \
 	make install
 
+# Thunder built from sources
+WORKDIR ${HOME}/..
+RUN mkdir thunder_dynamics_tmp
+COPY ../. ${HOME}/../thunder_dynamics_tmp
+WORKDIR ${HOME}/../thunder_dynamics_tmp/src/thunder
+RUN mkdir -p build && \
+	cd build && \
+	cmake .. && \
+	make 
+
+# copy thunder binary on the root folder (made in devcontainer.json)
+# WORKDIR ${HOME}/thunder_dynamics
+# RUN mkdir -p bin && \
+# 	cp ${HOME}/thunder_dynamics/src/thunder/build/thunder ${HOME}/thunder_dynamics/bin/thunder
+
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER ${USERNAME}
 WORKDIR ${HOME}
-
-# decidere se compilare alla compilazione del container o no, nel caso va montata la cartella thunder_dynamics
 
 

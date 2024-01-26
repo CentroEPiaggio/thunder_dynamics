@@ -1,1 +1,4 @@
+.devcontainer/.bash_history
 src/generatedFiles/
+src/thunder/build/
+bin/

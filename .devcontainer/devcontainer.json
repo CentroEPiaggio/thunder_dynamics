@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "gcc -v",
+	"postCreateCommand": "mkdir -p bin && cp /home/thunder_dynamics_tmp/src/thunder/build/thunder bin/thunder",
 
 	// Configure tool-specific properties.
 	"customizations": {

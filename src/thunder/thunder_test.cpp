@@ -33,8 +33,7 @@ int main(){
     //-------------------------------Extract Variables-----------------------------------//
     
     try {
-
-        YAML::Node config = YAML::LoadFile("../generatedFiles/inertial_DH.yaml");
+        YAML::Node config = YAML::LoadFile("../../generatedFiles/inertial_DH.yaml");
         int i = 0;
         for (const auto& node : config) {
             
@@ -54,12 +53,11 @@ int main(){
             param_DYN[10*i+9] = node.second["Izz"].as<double>();
             i++;
         }
-        
+        std::cout<<"YAML_DH letto"<<std::endl;
+    	std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
     } catch (const YAML::Exception& e) {
         std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
     }
-    std::cout<<"YAML_DH letto"<<std::endl;
-    std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
 
     //-------------------Obtain param for regressor (no via YAML)------------------------//
     
