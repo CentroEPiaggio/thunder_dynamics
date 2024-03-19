@@ -25,6 +25,7 @@ namespace thunder_ns{
 
         reg_gen.resize(num_joints,10*num_joints);
         jac_gen.resize(6,num_joints);
+		dotJac_gen.resize(6,num_joints);
         pinvJac_gen.resize(num_joints,6);
         pinvJacPos_gen.resize(num_joints,3);
         dotPinvJac_gen.resize(num_joints,6);

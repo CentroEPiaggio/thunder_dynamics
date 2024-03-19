@@ -2,3 +2,4 @@
 src/generatedFiles/
 src/thunder/build/
 bin/
+**/generatedFiles/

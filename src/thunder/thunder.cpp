@@ -1,18 +1,26 @@
 /* Generate C++ code from classes that use casadi library.
 In particular generate code to compute for franka emika panda robot:
-    - regressor
-    - jacobian
-    - dot jacobian
-    - pseudo-inverse jacobian
-    - dot pseudo-inverse jacobian
-    - forward kinematic
-    - matrix mass
-    - matrix coriolis
-    - matrix gravity
+	- regressor
+	- jacobian
+	- dot jacobian
+	- pseudo-inverse jacobian
+	- dot pseudo-inverse jacobian
+	- forward kinematic
+	- matrix mass
+	- matrix coriolis
+	- matrix gravity
 to do:
+	- generate everything with one execution
+		ok - generate library
+		- generate initial parameters
+		- generate thunder_robot
+		- other useful files
+	- genYAML integrated into thunder
 	- dynamic matrix derivatives
 	- linearized system
-	- 
+	- friction
+	- filtered regressor
+	- command line for create_robot
 */
 
 #include <iostream>
@@ -28,6 +36,9 @@ to do:
 #include "library/RobReg.h"
 #include "library/RobDyn.h"
 
+#include <yaml-cpp/yaml.h>
+#include "library/urdf2dh_inertial.h"
+
 using namespace thunder_ns;
 
 using std::cout;
@@ -37,96 +48,129 @@ bool use_gripper = false;
 bool copy_flag = true;
 #define MU_JACOB 0.0
 
-std::string name_files = "gen_regr_fun";
-std::string path_gen = "../generatedFiles/";
+// std::string gen_files = "gen_regr_fun";
+std::string gen_files = "franka_gen";
+std::string path_gen = "../robots/franka/generatedFiles/";
+std::string config_file = "../robots/franka/franka.yaml";
 // std::string path_copy_H = "../../include/utils/gen_regr_fun.h";
 // std::string path_copy_CPP = "../../src/gen_regr_fun.cpp";
 
 int main(){
+	// --- Variables --- //
+	int nj;
+	std::string jType;
+	Eigen::MatrixXd DH_table;
+	FrameOffset Base_to_L0;
+	FrameOffset Ln_to_EE;
 
-    /* Number of joints*/
-    const int nj = 7;
+	// ----------------------------- //
+	// ---------- CONSOLE ---------- //
+	// ----------------------------- //
+	// ----- todo!!!
 
-    /* Denavit-Hartenberg Table for Franka Emika Panda. Obtained from URDF file in $(find franka_gazebo)/test/launch/panda-gazebo.urdf */
-    Eigen::Matrix<double,nj,4> DH_table;
-    DH_table << 0,		-M_PI_2,	0.3330, 0,
-                0,      M_PI_2,  	0,      0,
-                0.0825, M_PI_2,  	0.3160, 0,
-               -0.0825, -M_PI_2,	0,      0,
-                0,      M_PI_2,  	0.384,  0,
-                0.088,  M_PI_2,  	0,      0,
-                0,      0,         	0.107,  0; 
+	// ---------------------------------- //
+	// ---------- YAML PARSING ---------- //
+	// ---------------------------------- //
+	try {
+		// --- load yaml --- //
+		YAML::Node config = YAML::LoadFile(config_file);
 
-    /* String of joints' type of robot, R for revolute and P for prismatic */
-    std::string jType = "RRRRRRR"; 
+		// Number of joints
+		YAML::Node num_joints = config["num_joints"];
+		nj = num_joints.as<double>();
 
-    /* Define frame World to link 0 */
-    FrameOffset base_to_L0({0,0,0},{0,0,0},{0,0,-9.81});
-    FrameOffset Ln_to_EE;
+		// joints_type
+		YAML::Node type_joints = config["type_joints"];
+		jType = type_joints.as<std::string>();
 
-    /* Define frame end-effctor respect last joint. Obtained in $(find franka_description)/robots/common/franka_hand.xacro */
-    if(use_gripper){
-        Ln_to_EE.set_translation({0.0,0.0,0.1034});
-        Ln_to_EE.set_ypr({-M_PI_4,0.0,0.0});
-    } else {
-        Ln_to_EE.set_translation({0.0,0.0,0.0});
-        Ln_to_EE.set_ypr({0.0,0.0,0.0});
-    }
+		// Denavit-Hartenberg
+		std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
+		DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
 
-    /* RobKinAdv and RobReg object */;
-    RobKinAdv kinrobot;
-    RobReg regrobot;
-    RobDyn dynrobot;
-    
-    kinrobot.init(nj,jType,DH_table,base_to_L0,Ln_to_EE, MU_JACOB);
-    regrobot.init(nj,jType,DH_table,base_to_L0,Ln_to_EE);
-    dynrobot.init(nj,jType,DH_table,base_to_L0,Ln_to_EE);
+		// gravity
+		std::vector<double> gravity = config["gravity"].as<std::vector<double>>();
 
-    /* Get Casadi Functions */
-    std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-    kin_vec = kinrobot.getCasadiFunctions();
-    reg_vec = regrobot.getCasadiFunctions();
-    dyn_vec = dynrobot.getCasadiFunctions();
+		// frames offsets
+		YAML::Node frame_base = config["Base_to_L0"];
+		YAML::Node frame_ee = config["Ln_to_EE"];
 
-    /* Merge casadi function */
-    int dim1, dim2,dim3;
-    dim1 = kin_vec.size();
-    dim2 = reg_vec.size();
-    dim3 = dyn_vec.size();
+		std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
+		std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
+		Base_to_L0.set_translation(tr);
+		Base_to_L0.set_ypr(ypr);
+		Base_to_L0.set_gravity(gravity);
 
-    for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-        all_vec.push_back(kin_vec[i]);
-    }
-    for (int i=0; i<dim2; i++){
-        all_vec.push_back(reg_vec[i]);
-    }
-    for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-        all_vec.push_back(dyn_vec[i]);
-    }
-    if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
+		tr = frame_ee["tr"].as<std::vector<double>>();
+		ypr = frame_ee["ypr"].as<std::vector<double>>();
+		Ln_to_EE.set_translation(tr);
+		Ln_to_EE.set_ypr(ypr);
 
-    /* Generate merge code */
-    std::string relativePath = path_gen;
+	} catch (const YAML::Exception& e) {
+		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+	}
+	// ---------- end parsing ---------- //
 
-    std::filesystem::path currentPath = std::filesystem::current_path();
-    std::string absolutePath = currentPath / relativePath;
-    std::cout << "Absolute path: " << absolutePath << std::endl;
+	/* RobKinAdv and RobReg object */;
+	RobKinAdv kinrobot;
+	RobReg regrobot;
+	RobDyn dynrobot;
 
-    regrobot.generate_mergeCode(all_vec, absolutePath, name_files);
+	kinrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE, MU_JACOB);
+	regrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
+	dynrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
 
-    // if(copy_flag){
-    //     /* Copy files in particular path */
-    //     std::filesystem::path sourcePath;
-    //     std::filesystem::path sourceDestPath;
-    
-    //     sourcePath = absolutePath + name_files + ".h";
-    //     sourceDestPath = path_copy_H;
-    //     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	/* Get Casadi Functions */
+	std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
+	kin_vec = kinrobot.getCasadiFunctions();
+	reg_vec = regrobot.getCasadiFunctions();
+	dyn_vec = dynrobot.getCasadiFunctions();
 
-    //     sourcePath = absolutePath + name_files + ".cpp";
-    //     sourceDestPath = path_copy_CPP;
-    //     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-    // }
-    
-    return 0;
+	/* Merge casadi function */
+	int dim1, dim2,dim3;
+	dim1 = kin_vec.size();
+	dim2 = reg_vec.size();
+	dim3 = dyn_vec.size();
+
+	for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
+		all_vec.push_back(kin_vec[i]);
+	}
+	for (int i=0; i<dim2; i++){
+		all_vec.push_back(reg_vec[i]);
+	}
+	for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
+		all_vec.push_back(dyn_vec[i]);
+	}
+	if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
+
+	// --- Generate merge code --- //
+	std::string relativePath = path_gen;
+
+	std::filesystem::path currentPath = std::filesystem::current_path();
+	std::string absolutePath = currentPath / relativePath;
+
+	// Create directory
+	try {
+		std::filesystem::create_directory(absolutePath);
+	} catch(std::exception & e){
+		// creation failed
+	}
+
+	// Generate library
+	regrobot.generate_mergeCode(all_vec, absolutePath, gen_files);
+
+	// if(copy_flag){
+	//     /* Copy files in particular path */
+	//     std::filesystem::path sourcePath;
+	//     std::filesystem::path sourceDestPath;
+
+	//     sourcePath = absolutePath + gen_files + ".h";
+	//     sourceDestPath = path_copy_H;
+	//     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+	//     sourcePath = absolutePath + gen_files + ".cpp";
+	//     sourceDestPath = path_copy_CPP;
+	//     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	// }
+
+	return 0;
 }
