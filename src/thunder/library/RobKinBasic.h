@@ -14,7 +14,6 @@ namespace thunder_ns{
     class RobKinBasic : public CasadiObj{
         
         private:
-            
             /* Override virtual function */
             virtual void init() override{};
             /* Initialize and resize atrributes of class (variables and function) */
@@ -30,7 +29,6 @@ namespace thunder_ns{
             Eigen::VectorXd q;
 
         protected:
-
             /* Variable for joints angle */
             casadi::SX _q_;
 
@@ -72,7 +70,6 @@ namespace thunder_ns{
 
             
         public:
-
             /* Empty costructor */
             RobKinBasic();
             /* Init variables

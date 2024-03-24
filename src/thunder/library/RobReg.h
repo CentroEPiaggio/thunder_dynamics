@@ -14,7 +14,6 @@ namespace thunder_ns{
     class RobReg : public RobKinBasic{
         
         private:
-
             /* Override virtual function */
             virtual void init() override{};
             /* Override virtual function */
@@ -35,7 +34,6 @@ namespace thunder_ns{
             Eigen::VectorXd q, dq, dqr, ddqr;
 
         protected:
-
             /* Variable for joints */
             casadi::SX _dq_, _dqr_, _ddqr_;
 
@@ -62,7 +60,6 @@ namespace thunder_ns{
             void Regressor();
 
         public:
-
             /* Empty costructor */
             RobReg();
             /* Init variables

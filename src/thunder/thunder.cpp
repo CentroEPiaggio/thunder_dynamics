@@ -9,18 +9,6 @@ In particular generate code to compute for franka emika panda robot:
 	- matrix mass
 	- matrix coriolis
 	- matrix gravity
-to do:
-	- generate everything with one execution
-		ok - generate library
-		- generate initial parameters
-		- generate thunder_robot
-		- other useful files
-	- genYAML integrated into thunder
-	- dynamic matrix derivatives
-	- linearized system
-	- friction
-	- filtered regressor
-	- command line for create_robot
 */
 
 #include <iostream>
@@ -45,15 +33,15 @@ using std::cout;
 using std::endl;
 
 bool use_gripper = false;
-bool copy_flag = true;
+bool COPY_FLAG = true;
 #define MU_JACOB 0.0
 
 // std::string gen_files = "gen_regr_fun";
-std::string gen_files = "franka_gen";
-std::string path_gen = "../robots/franka/generatedFiles/";
-std::string config_file = "../robots/franka/franka.yaml";
-// std::string path_copy_H = "../../include/utils/gen_regr_fun.h";
-// std::string path_copy_CPP = "../../src/gen_regr_fun.cpp";
+std::string gen_files = "robot_gen";
+std::string path_gen = "../robots/robot/generatedFiles/";
+std::string config_file = "../robots/robot/robot.yaml";
+std::string path_copy_H = "../../thunder_robot/library/robot_gen.h";
+std::string path_copy_CPP = "../../thunder_robot/src/robot_gen.cpp";
 
 int main(){
 	// --- Variables --- //
@@ -158,19 +146,19 @@ int main(){
 	// Generate library
 	regrobot.generate_mergeCode(all_vec, absolutePath, gen_files);
 
-	// if(copy_flag){
-	//     /* Copy files in particular path */
-	//     std::filesystem::path sourcePath;
-	//     std::filesystem::path sourceDestPath;
+	if(COPY_FLAG){
+	    /* Copy files in particular path */
+	    std::filesystem::path sourcePath;
+	    std::filesystem::path sourceDestPath;
 
-	//     sourcePath = absolutePath + gen_files + ".h";
-	//     sourceDestPath = path_copy_H;
-	//     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	    sourcePath = absolutePath + gen_files + ".h";
+	    sourceDestPath = path_copy_H;
+	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	//     sourcePath = absolutePath + gen_files + ".cpp";
-	//     sourceDestPath = path_copy_CPP;
-	//     std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-	// }
+	    sourcePath = absolutePath + gen_files + ".cpp";
+	    sourceDestPath = path_copy_CPP;
+	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	}
 
 	return 0;
 }

@@ -12,7 +12,6 @@ namespace thunder_ns{
     class CasadiObj {
             
         protected:
-
             /* Initialize variables */
             virtual void init() = 0;
             /* Initialize and resize variables and function (in particular attributes of class)*/
@@ -39,7 +38,6 @@ namespace thunder_ns{
             static double mapFunction(const casadi::SXElem& elem) {return static_cast<double>(casadi::SXElem(elem));};
 
         public:
-
             /* Generate code with merged casadi functions */
             void generate_mergeCode(std::vector<casadi::Function>& functions, const std::string& savePath, const std::string& name_file){
                 
