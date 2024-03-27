@@ -1,12 +1,20 @@
+INFO:
+	- thunder take the file <robot>.yaml that contains the configuration of the robot
+	- thunder create <robot>_gen.h, <robot>_gen.cpp
+	- thunder take thunder_robot and rename it to thunder_<robot>, changing inside the necessary. Then copy it to generatedFiles
+	- thunder generates the <robot>_inertial_REG.yaml from the config file 
+
 General:
 	✔ make thunder_robot @done (3/26/2024, 4:37:58 PM)
-	☐ let thunder copy robot_gen into thunder_robot folders for tests
-	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder and change 'robot' with the name of robot
+	✔ let thunder copy robot_gen into thunder_robot folders for tests @done (3/27/2024, 4:24:18 PM)
+	☐ cout steps
+	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder
+	☐ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot>
 	☐ let thunder generate robot_inertial_REG and put it into folder generatedFiles
 
 
 Program:
-	☐ 'thunder gen robot.yaml' generates a filder 'generatedFiles' and put inside
+	☐ 'thunder gen robot.yaml' generates a folder 'generatedFiles' and put inside
 		✔ 'robot_gen.h', 'robot_gen.cpp' that are the generated library from casadi @done (3/24/2024, 9:57:11 AM)
 		☐ cout the things made
 		☐ 'thunder_robot..h', 'thunder_robot.cpp', that is the wrapper class for the casadi generated generatedFiles
@@ -14,8 +22,9 @@ Program:
 	☐ program should use the yaml file to generate everything, options can be added like 'name'...
 
 library:
-	☐ create custor class thunder_robot for specified robot, e.g., thunder_panda (needed for more than one robot for the class name)
-	☐ once creation of library, copy thunder_robot and substitute 'robot' with the robot_name
+	☐ create custom class thunder_robot for specified robot, e.g., thunder_panda (needed for more than one robot for the class name)
+	✔ once creation of library, copy thunder_robot @done (3/27/2024, 5:26:15 PM)
+	☐ substitute 'robot' with the robot_name
 
 generate everything with one execution:
 	✔ generate library @done (3/23/2024, 6:09:08 PM)
@@ -39,4 +48,4 @@ thunder_robot:
 
 to write in thunder_robot:
 	☐ change 'robot' to 'name_robot' in the #include and class_name
-	☐ add 'constexpt int N_JOINTS = nj;' where nj is taked from thunder
+	☐ add 'const int N_JOINTS = nj;' where nj is taked from thunder

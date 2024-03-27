@@ -4,7 +4,7 @@
 // constexpr std::string path_yaml_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored";
 // constexpr std::string path_copy_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored_copy";
 
-const int N_PAR = 10;
+const int N_PAR_LINK = 10;
 const int N_JOINTS = 7;
 
 using namespace thunder_ns;
@@ -31,9 +31,9 @@ namespace thunder_ns{
 		dq = Eigen::VectorXd::Zero(num_joints);
 		dqr = Eigen::VectorXd::Zero(num_joints);
 		ddqr = Eigen::VectorXd::Zero(num_joints);
-		param = Eigen::VectorXd::Zero(N_PAR*num_joints);
+		param = Eigen::VectorXd::Zero(N_PAR_LINK*num_joints);
 
-		reg_gen.resize(num_joints,N_PAR*num_joints);
+		reg_gen.resize(num_joints,N_PAR_LINK*num_joints);
 		jac_gen.resize(6,num_joints);
 		dotJac_gen.resize(6,num_joints);
 		pinvJac_gen.resize(num_joints,6);
@@ -67,7 +67,7 @@ namespace thunder_ns{
 	}
 
 	void thunder_robot::setInertialParam(const Eigen::VectorXd& param_){
-		if(param_.size() == N_PAR*num_joints){
+		if(param_.size() == N_PAR_LINK*num_joints){
 			param = param_;
 		} else{
 			std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -82,7 +82,7 @@ namespace thunder_ns{
 	}
 	
 	// void thunder_robot::setArguments(const Eigen::VectorXd& q_,const Eigen::VectorXd& dq_,const Eigen::VectorXd& param_){
-	// 	if(q_.size() == num_joints && dq_.size()== num_joints && param_.size()== N_PAR*num_joints){
+	// 	if(q_.size() == num_joints && dq_.size()== num_joints && param_.size()== N_PAR_LINK*num_joints){
 	// 		q = q_;
 	// 		dq = dq_;
 	// 		param = param_;
@@ -243,6 +243,7 @@ namespace thunder_ns{
 			int i = 0;
 			for (const auto& node : config) {
 				std::string linkName = node.first.as<std::string>();
+				std::cout<<"link_nake:"<<linkName<<std::endl;
 				mass = node.second["mass"].as<double>();
 				m_cmx = node.second["m_CoM_x"].as<double>();
 				m_cmy = node.second["m_CoM_y"].as<double>();
@@ -254,7 +255,8 @@ namespace thunder_ns{
 				yz = node.second["Iyz"].as<double>();
 				zz = node.second["Izz"].as<double>();
 
-				param.segment(N_PAR*i, N_PAR) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+				param.segment(N_PAR_LINK*i, N_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+				i++;
 			}
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -296,14 +298,14 @@ namespace thunder_ns{
 			// links_prop_DH2REG[i].parI[4] = I0(1,2);
 			// links_prop_DH2REG[i].parI[5] = I0(2,2);
 			links_prop_DH2REG[i].name = "link" + std::to_string(i);
-			links_prop_DH2REG[i].mass = param[N_PAR*i + 0];
-			links_prop_DH2REG[i].xyz = {param[N_PAR*i + 1], param[N_PAR*i + 2], param[N_PAR*i + 3]};
-			links_prop_DH2REG[i].parI[0] = param[N_PAR*i + 4];
-			links_prop_DH2REG[i].parI[1] = param[N_PAR*i + 5];
-			links_prop_DH2REG[i].parI[2] = param[N_PAR*i + 6];
-			links_prop_DH2REG[i].parI[3] = param[N_PAR*i + 7];
-			links_prop_DH2REG[i].parI[4] = param[N_PAR*i + 8];
-			links_prop_DH2REG[i].parI[5] = param[N_PAR*i + 9];
+			links_prop_DH2REG[i].mass = param[N_PAR_LINK*i + 0];
+			links_prop_DH2REG[i].xyz = {param[N_PAR_LINK*i + 1], param[N_PAR_LINK*i + 2], param[N_PAR_LINK*i + 3]};
+			links_prop_DH2REG[i].parI[0] = param[N_PAR_LINK*i + 4];
+			links_prop_DH2REG[i].parI[1] = param[N_PAR_LINK*i + 5];
+			links_prop_DH2REG[i].parI[2] = param[N_PAR_LINK*i + 6];
+			links_prop_DH2REG[i].parI[3] = param[N_PAR_LINK*i + 7];
+			links_prop_DH2REG[i].parI[4] = param[N_PAR_LINK*i + 8];
+			links_prop_DH2REG[i].parI[5] = param[N_PAR_LINK*i + 9];
 		}
 
 		try {

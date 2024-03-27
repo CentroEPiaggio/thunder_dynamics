@@ -33,15 +33,18 @@ using std::cout;
 using std::endl;
 
 bool use_gripper = false;
-bool COPY_FLAG = true;
+bool COPY_GEN_FLAG = true;
 #define MU_JACOB 0.0
 
 // std::string gen_files = "gen_regr_fun";
-std::string gen_files = "robot_gen";
-std::string path_gen = "../robots/robot/generatedFiles/";
-std::string config_file = "../robots/robot/robot.yaml";
-std::string path_copy_H = "../../thunder_robot/library/robot_gen.h";
-std::string path_copy_CPP = "../../thunder_robot/src/robot_gen.cpp";
+std::string ROBOT_NAME = "robot";
+std::string ROBOT_NAME_GEN = ROBOT_NAME + "_gen";
+std::string path_gen = "../robots/" + ROBOT_NAME + "/generatedFiles/";
+std::string config_file = "../robots/" + ROBOT_NAME + "/robot.yaml";
+std::string path_thunder_robot = "../../thunder_robot/";
+std::string PATH_COPY_H = path_thunder_robot + "library/robot_gen.h";
+std::string PATH_COPY_CPP = path_thunder_robot + "src/robot_gen.cpp";
+
 
 int main(){
 	// --- Variables --- //
@@ -144,21 +147,51 @@ int main(){
 	}
 
 	// Generate library
-	regrobot.generate_mergeCode(all_vec, absolutePath, gen_files);
+	regrobot.generate_mergeCode(all_vec, absolutePath, ROBOT_NAME_GEN);
 
-	if(COPY_FLAG){
+	if(COPY_GEN_FLAG){
 	    /* Copy files in particular path */
 	    std::filesystem::path sourcePath;
 	    std::filesystem::path sourceDestPath;
 
-	    sourcePath = absolutePath + gen_files + ".h";
-	    sourceDestPath = path_copy_H;
+	    sourcePath = absolutePath + ROBOT_NAME_GEN + ".h";
+	    sourceDestPath = PATH_COPY_H;
 	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	    sourcePath = absolutePath + gen_files + ".cpp";
-	    sourceDestPath = path_copy_CPP;
+	    sourcePath = absolutePath + ROBOT_NAME_GEN + ".cpp";
+	    sourceDestPath = PATH_COPY_CPP;
 	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 	}
+
+	// --- Write thunder_robot into generatedFiles --- //
+	std::filesystem::path sourcePath;
+	std::filesystem::path sourceDestPath;
+	std::string thunder_robot_cpp_path = path_thunder_robot + "src/thunder_robot.cpp";
+	std::string thunder_robot_h_path = path_thunder_robot + "library/thunder_robot.h";
+
+	sourceDestPath = absolutePath + "thunder_" + ROBOT_NAME + ".h";
+	sourcePath = thunder_robot_h_path;
+	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+	sourceDestPath = absolutePath + "thunder_" + ROBOT_NAME + ".h";
+	sourcePath = thunder_robot_cpp_path;
+	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+	// --- todo! --- change the necessary into thunder_robot --- //
+	// std::ifstream file("input.txt"); // Apriamo il file in modalità lettura
+
+	// if (!file.is_open()) {
+	// 	std::cerr << "Errore nell'apertura del file." << std::endl;
+	// 	return 1;
+	// }
+
+	// std::stringstream buffer;
+	// buffer << file.rdbuf(); // Leggiamo il contenuto del file nel buffer stringstream
+	// std::string file_content = buffer.str(); // Otteniamo il contenuto del file come stringa
+
+	// std::cout << "Contenuto del file:\n" << file_content << std::endl;
+
+	// file.close(); // Chiudiamo il file
 
 	return 0;
 }
