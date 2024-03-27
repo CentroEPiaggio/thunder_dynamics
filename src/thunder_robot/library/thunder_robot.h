@@ -1,5 +1,5 @@
-#ifndef THUNDERPANDA_H
-#define THUNDERPANDA_H
+#ifndef THUNDERROBOT_H
+#define THUNDERROBOT_H
 
 #include <iostream>
 #include <string>
@@ -33,7 +33,7 @@ namespace thunder_ns{
 			/* Constructor to init variables*/
 			// thunder_robot(const int);
 			/* Destructor*/
-			~thunder_robot();
+			~thunder_robot() = default;
 			
 			/* Resize variables */
 			void resizeVariables();
@@ -42,6 +42,7 @@ namespace thunder_ns{
 			/* Set q, dq, dqr, ddqr, to compute Regressor and update state*/
 			void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
 			void setInertialParam(const Eigen::VectorXd& param_);
+			Eigen::VectorXd getInertialParams();
 
 			void loadInertialParam(std::string);
 			void saveInertialParam(std::string);

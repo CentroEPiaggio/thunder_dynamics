@@ -1,5 +1,5 @@
 General:
-	☐ make thunder_robot
+	✔ make thunder_robot @done (3/26/2024, 4:37:58 PM)
 	☐ let thunder copy robot_gen into thunder_robot folders for tests
 	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder and change 'robot' with the name of robot
 	☐ let thunder generate robot_inertial_REG and put it into folder generatedFiles

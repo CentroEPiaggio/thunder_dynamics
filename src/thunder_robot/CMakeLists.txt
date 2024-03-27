@@ -21,16 +21,16 @@ include_directories(${CMAKE_SOURCE_DIR}/library)
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 # Definisci la tua libreria
-add_library(library ${SOURCES})
+add_library(thunder_robot ${SOURCES})
 
 # Specifica il nome dell'output della libreria
-set_target_properties(library PROPERTIES OUTPUT_NAME "library")
+set_target_properties(thunder_robot PROPERTIES OUTPUT_NAME "thunder_robot")
 
 # Indica che altri progetti possono trovare questa libreria
-target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
+target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/library)
 
 find_package(yaml-cpp REQUIRED)
-target_link_libraries(library yaml-cpp::yaml-cpp)
+target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
 
 # Puoi aggiungere altre impostazioni di compilazione qui, se necessario
 
@@ -50,4 +50,4 @@ target_link_libraries(library yaml-cpp::yaml-cpp)
 
 # Esempio di creazione di un eseguibile che utilizza la tua libreria
 add_executable(thunder_robot_test ${CMAKE_SOURCE_DIR}/thunder_robot_test.cpp)
-target_link_libraries(thunder_robot_test library)
+target_link_libraries(thunder_robot_test thunder_robot)

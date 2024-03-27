@@ -12,9 +12,9 @@
 
 #include "thunder_robot.h"
 
-// #define NJ 2
-// #define N_PAR 10
-constexpr std::string inertial_file = "../robots/robot/inertial_REG.yaml";
+#define NJ 7
+#define N_PAR 70
+const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
 
 using namespace thunder_ns;
 using std::cout;
@@ -30,8 +30,8 @@ int main(){
 	// robot.init(7);
 
 	robot.loadInertialParam(inertial_file);
-	int NJ = robot.get_numJoints();
-	int N_PAR = robot.get_numParams();
+	// const int NJ = robot.get_numJoints();
+	// const int N_PAR = robot.get_numParams();
 
 	// Eigen::VectorXd param_REG(N_PAR*NJ);
 	// Eigen::VectorXd param_DYN(N_PAR*NJ);
@@ -44,9 +44,10 @@ int main(){
 	Eigen::Matrix<double, NJ, 1> myG;
 	Eigen::Matrix<double, 6, NJ> myJac;
 	Eigen::Matrix<double, 6, NJ> myJacCM;
-
 	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
 	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
+
+	Eigen::Matrix<double, N_PAR, 1> param_REG;
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
@@ -62,18 +63,22 @@ int main(){
 
 	robot.setArguments(q, dq, dqr, ddqr);
 
-	Yr = regrobot.getRegressor();
+	param_REG = robot.getInertialParams();
+	cout<<"\nPar_REG\n"<<param_REG;
+
+	Yr = robot.getReg_gen();
 	cout<<"\nYr\n"<<Yr;
-	myM = dynrobot.getMass();
+	myM = robot.getMass_gen();
 	cout<<"\nM\n"<<myM;
-	myC = dynrobot.getCoriolis();
+	myC = robot.getCoriolis_gen();
 	cout<<"\nC\n"<<myC;
-	myG = dynrobot.getGravity();
+	myG = robot.getGravity_gen();
 	cout<<"\nG\n"<<myG;
-	myJac = dynrobot.getJacobian();
+	myJac = robot.getJac_gen();
 	cout<<"\nJac\n"<<myJac;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
+	
 	tau_cmd_reg = Yr*param_REG;
 
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;

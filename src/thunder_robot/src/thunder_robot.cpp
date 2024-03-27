@@ -4,8 +4,10 @@
 // constexpr std::string path_yaml_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored";
 // constexpr std::string path_copy_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored_copy";
 
-constexpr int N_PAR = 10;
-constexpr int N_JOINTS = 7;
+const int N_PAR = 10;
+const int N_JOINTS = 7;
+
+using namespace thunder_ns;
 
 namespace thunder_ns{
 	// thunder_robot::thunder_robot(){};
@@ -73,6 +75,10 @@ namespace thunder_ns{
 		// computeMass_gen();
 		// computeCoriolis_gen();
 		// computeGravity_gen();
+	}
+
+	Eigen::VectorXd thunder_robot::getInertialParams(){
+		return param;
 	}
 	
 	// void thunder_robot::setArguments(const Eigen::VectorXd& q_,const Eigen::VectorXd& dq_,const Eigen::VectorXd& param_){
@@ -269,67 +275,64 @@ namespace thunder_ns{
 		// Eigen::VectorXd coeff_p(5);
 		// coeff_p << 0, 2, 5, 10, 20;
 
-		// for (int w=0;w<5;w++){
+		for(int i=0; i<num_joints; i++){
 
-			for(int i=0; i<num_joints; i++){
+			// tmp_link = links_prop_DH[i];
+			// perturbateLinkProp(tmp_link,tmp_DH_gauss,coeff_p[w]);
 
-				// tmp_link = links_prop_DH[i];
-				// perturbateLinkProp(tmp_link,tmp_DH_gauss,coeff_p[w]);
+			// m = tmp_DH_gauss.mass;
+			// dOG << tmp_DH_gauss.xyz[0], tmp_DH_gauss.xyz[1], tmp_DH_gauss.xyz[2];
+			// IG = createI(tmp_DH_gauss.parI);
+			// I0 = IG + m * hat(dOG) * hat(dOG).transpose();
+			// dOG = m*dOG;
 
-				// m = tmp_DH_gauss.mass;
-				// dOG << tmp_DH_gauss.xyz[0], tmp_DH_gauss.xyz[1], tmp_DH_gauss.xyz[2];
-				// IG = createI(tmp_DH_gauss.parI);
-				// I0 = IG + m * hat(dOG) * hat(dOG).transpose();
-				// dOG = m*dOG;
-
-				// links_prop_DH2REG[i].name = tmp_DH_gauss.name;
-				// links_prop_DH2REG[i].mass = tmp_DH_gauss.mass;
-				// links_prop_DH2REG[i].xyz = {dOG[0],dOG[1],dOG[2]};
-				// links_prop_DH2REG[i].parI[0] = I0(0,0);
-				// links_prop_DH2REG[i].parI[1] = I0(0,1);
-				// links_prop_DH2REG[i].parI[2] = I0(0,2);
-				// links_prop_DH2REG[i].parI[3] = I0(1,1);
-				// links_prop_DH2REG[i].parI[4] = I0(1,2);
-				// links_prop_DH2REG[i].parI[5] = I0(2,2);
-				links_prop_DH2REG[i].name = "link" + std::to_string(i);
-				links_prop_DH2REG[i].mass = param[N_PAR*i + 0];
-				links_prop_DH2REG[i].xyz = {param[N_PAR*i + 1], param[N_PAR*i + 2], param[N_PAR*i + 3]};
-				links_prop_DH2REG[i].parI[0] = param[N_PAR*i + 4];
-				links_prop_DH2REG[i].parI[1] = param[N_PAR*i + 5];
-				links_prop_DH2REG[i].parI[2] = param[N_PAR*i + 6];
-				links_prop_DH2REG[i].parI[3] = param[N_PAR*i + 7];
-				links_prop_DH2REG[i].parI[4] = param[N_PAR*i + 8];
-				links_prop_DH2REG[i].parI[5] = param[N_PAR*i + 9];
-			}
-
-			try {
-				YAML::Emitter emitter;
-				fillInertialYaml(emitter, links_prop_DH2REG, keys_reg);
-				// std::string pp = "";
-				// if((int)coeff_p[w]==0) pp="";
-				// else pp = "_p" + std::to_string((int)coeff_p[w]);
-				// std::ofstream fout(path_yaml_DH_REG + ".yaml");
-				std::ofstream fout(path_yaml_DH_REG);
-				fout << emitter.c_str();
-				fout.close();
-
-				std::cout << "Successfully generated YAML file of inertial parameters for regressor"<<std::endl;
-				std::cout<< " path: " << path_yaml_DH_REG<< std::endl;
-
-			} catch (const YAML::Exception& e) {
-				std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-			}
-			// if (copy_flag){
-			// 	std::string absolutePath;
-			// 	std::filesystem::path sourcePath;
-			// 	std::filesystem::path sourceDestPath;
-			// 	absolutePath = std::filesystem::current_path();
-			// 	sourcePath = absolutePath + "/" + path_yaml_DH_REG + ".yaml";
-			// 	sourceDestPath = path_copy_DH_REG;
-			// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::update_existing);
-			// 	std::cout<<"Files yaml copied"<<std::endl;
-			// }
+			// links_prop_DH2REG[i].name = tmp_DH_gauss.name;
+			// links_prop_DH2REG[i].mass = tmp_DH_gauss.mass;
+			// links_prop_DH2REG[i].xyz = {dOG[0],dOG[1],dOG[2]};
+			// links_prop_DH2REG[i].parI[0] = I0(0,0);
+			// links_prop_DH2REG[i].parI[1] = I0(0,1);
+			// links_prop_DH2REG[i].parI[2] = I0(0,2);
+			// links_prop_DH2REG[i].parI[3] = I0(1,1);
+			// links_prop_DH2REG[i].parI[4] = I0(1,2);
+			// links_prop_DH2REG[i].parI[5] = I0(2,2);
+			links_prop_DH2REG[i].name = "link" + std::to_string(i);
+			links_prop_DH2REG[i].mass = param[N_PAR*i + 0];
+			links_prop_DH2REG[i].xyz = {param[N_PAR*i + 1], param[N_PAR*i + 2], param[N_PAR*i + 3]};
+			links_prop_DH2REG[i].parI[0] = param[N_PAR*i + 4];
+			links_prop_DH2REG[i].parI[1] = param[N_PAR*i + 5];
+			links_prop_DH2REG[i].parI[2] = param[N_PAR*i + 6];
+			links_prop_DH2REG[i].parI[3] = param[N_PAR*i + 7];
+			links_prop_DH2REG[i].parI[4] = param[N_PAR*i + 8];
+			links_prop_DH2REG[i].parI[5] = param[N_PAR*i + 9];
 		}
+
+		try {
+			YAML::Emitter emitter;
+			fillInertialYaml(emitter, links_prop_DH2REG, keys_reg);
+			// std::string pp = "";
+			// if((int)coeff_p[w]==0) pp="";
+			// else pp = "_p" + std::to_string((int)coeff_p[w]);
+			// std::ofstream fout(path_yaml_DH_REG + ".yaml");
+			std::ofstream fout(path_yaml_DH_REG);
+			fout << emitter.c_str();
+			fout.close();
+
+			std::cout << "Successfully generated YAML file of inertial parameters for regressor"<<std::endl;
+			std::cout<< " path: " << path_yaml_DH_REG<< std::endl;
+
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+		}
+		// if (copy_flag){
+		// 	std::string absolutePath;
+		// 	std::filesystem::path sourcePath;
+		// 	std::filesystem::path sourceDestPath;
+		// 	absolutePath = std::filesystem::current_path();
+		// 	sourcePath = absolutePath + "/" + path_yaml_DH_REG + ".yaml";
+		// 	sourceDestPath = path_copy_DH_REG;
+		// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::update_existing);
+		// 	std::cout<<"Files yaml copied"<<std::endl;
+		// }
 	}
 
 	/* Get regressor matrix */
@@ -362,7 +365,7 @@ namespace thunder_ns{
 		emitter_.SetIndent(2);
 		emitter_.SetSeqFormat(YAML::Flow);
 		emitter_ << YAML::Comment(
-			"Inertial parameters referred to Denavit-Hartenberg parametrization to use " + keys_[4] + "\n" + common_comment);
+			"Inertial parameters referred to Denavit-Hartenberg parametrization to use " + keys_[4] + "\n");
 		emitter_ << YAML::Newline;
 
 		for (int i=0;  i<num_joints;  i++) {
