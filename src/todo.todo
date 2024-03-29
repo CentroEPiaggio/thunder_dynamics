@@ -7,8 +7,9 @@ INFO:
 General:
 	✔ make thunder_robot @done (3/26/2024, 4:37:58 PM)
 	✔ let thunder copy robot_gen into thunder_robot folders for tests @done (3/27/2024, 4:24:18 PM)
+	thunder working on console
 	☐ cout steps
-	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder
+	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils
 	☐ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot>
 	☐ let thunder generate robot_inertial_REG and put it into folder generatedFiles
 

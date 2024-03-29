@@ -33,20 +33,21 @@ using std::cout;
 using std::endl;
 
 bool use_gripper = false;
-bool COPY_GEN_FLAG = true;
+bool COPY_GEN_FLAG = false;
 #define MU_JACOB 0.0
 
-// std::string gen_files = "gen_regr_fun";
-std::string ROBOT_NAME = "robot";
-std::string ROBOT_NAME_GEN = ROBOT_NAME + "_gen";
-std::string path_gen = "../robots/" + ROBOT_NAME + "/generatedFiles/";
-std::string config_file = "../robots/" + ROBOT_NAME + "/robot.yaml";
-std::string path_thunder_robot = "../../thunder_robot/";
-std::string PATH_COPY_H = path_thunder_robot + "library/robot_gen.h";
-std::string PATH_COPY_CPP = path_thunder_robot + "src/robot_gen.cpp";
+// --- paths and files --- //
+std::string robot_name = "robot";
+std::string path_robot = "../robots/";
+std::string config_file = path_robot + robot_name + "/robot.yaml";
+std::string robot_name_gen = robot_name + "_gen";
+std::string path_gen = path_robot + robot_name + "/generatedFiles/";
+const std::string PATH_THUNDER_ROBOT = "../../thunder_robot/";
+const std::string PATH_COPY_H = PATH_THUNDER_ROBOT + "library/robot_gen.h";
+const std::string PATH_COPY_CPP = PATH_THUNDER_ROBOT + "src/robot_gen.cpp";
 
 
-int main(){
+int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
 	std::string jType;
@@ -57,7 +58,39 @@ int main(){
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
 	// ----------------------------- //
-	// ----- todo!!!
+	// Arguments
+	if (argc > 1) {
+		// The first argument (argv[0]) is the program name (thunder)
+		std::string arg1 = argv[1];
+		if (arg1 == "gen"){
+			if (argc > 2){ // take argument robot.yaml
+				config_file = argv[2];
+				int index_yaml = config_file.find_last_of(".yaml");
+				if (index_yaml > 0){
+					int index_path = config_file.find_last_of("/");
+					if (index_path == -1){
+						path_robot = "./";
+						robot_name = config_file.substr(0, index_yaml);
+					}else{
+						path_robot = config_file.substr(0, index_path+1);
+						robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 are for ".yaml"
+					}
+				}else{
+					std::cout << "Invalid config file." << std::endl;
+					return 0;
+				}
+				if (argc > 3){ // take the robot name
+					robot_name = argv[3];
+				}
+			}
+		}
+	} else {
+		std::cout << "Nessun argomento passato oltre al nome del programma." << std::endl;
+	}
+	// Set names
+	cout<<"Robot name: "<<robot_name<<endl;
+	robot_name_gen = robot_name + "_gen";
+	path_gen = path_robot + "/generatedFiles/";
 
 	// ---------------------------------- //
 	// ---------- YAML PARSING ---------- //
@@ -147,33 +180,33 @@ int main(){
 	}
 
 	// Generate library
-	regrobot.generate_mergeCode(all_vec, absolutePath, ROBOT_NAME_GEN);
+	regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
 
 	if(COPY_GEN_FLAG){
-	    /* Copy files in particular path */
-	    std::filesystem::path sourcePath;
-	    std::filesystem::path sourceDestPath;
+		/* Copy files in particular path */
+		std::filesystem::path sourcePath;
+		std::filesystem::path sourceDestPath;
 
-	    sourcePath = absolutePath + ROBOT_NAME_GEN + ".h";
-	    sourceDestPath = PATH_COPY_H;
-	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = absolutePath + robot_name_gen + ".h";
+		sourceDestPath = PATH_COPY_H;
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	    sourcePath = absolutePath + ROBOT_NAME_GEN + ".cpp";
-	    sourceDestPath = PATH_COPY_CPP;
-	    std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = absolutePath + robot_name_gen + ".cpp";
+		sourceDestPath = PATH_COPY_CPP;
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 	}
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
 	std::filesystem::path sourceDestPath;
-	std::string thunder_robot_cpp_path = path_thunder_robot + "src/thunder_robot.cpp";
-	std::string thunder_robot_h_path = path_thunder_robot + "library/thunder_robot.h";
+	std::string thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
+	std::string thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
 
-	sourceDestPath = absolutePath + "thunder_" + ROBOT_NAME + ".h";
+	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
 	sourcePath = thunder_robot_h_path;
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	sourceDestPath = absolutePath + "thunder_" + ROBOT_NAME + ".h";
+	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
 	sourcePath = thunder_robot_cpp_path;
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
