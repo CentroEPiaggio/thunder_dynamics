@@ -9,7 +9,6 @@
 namespace thunder_ns{
 
     struct LinkProp {
-
         double mass;
         std::vector<double> parI = std::vector<double>(6); // Inertia in the order xx, xy, xz, yy, yz, zz
         std::vector<double> xyz = std::vector<double>(3); // Origin xyz as std::vector
@@ -21,7 +20,6 @@ namespace thunder_ns{
     struct urdf2dh_T{
         std::vector<double> xyz;
         std::vector<double> rpy;
-
     };
 
     void trasformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body);

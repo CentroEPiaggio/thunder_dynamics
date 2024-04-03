@@ -114,7 +114,6 @@ int main(){
     //------------------------------------Extract Variables-----------------------------------------//
 
     try {
-
         YAML::Node config = YAML::LoadFile("yaml/inertial.yaml");
         
         for (const auto& node : config) {
@@ -182,7 +181,6 @@ int main(){
     //----------------!!! Generate DH inertial parameters YAML only for TEST !!!-----------------------//
     
     try {
-
         YAML::Emitter emitter;
         fillInertialYaml(emitter, links_prop_DH, keys_dyn);
         std::ofstream fout(path_yaml_DH);
@@ -199,7 +197,6 @@ int main(){
     //------------------Generate YAML of inertial parameters for standard dynamic---------------------//
 
     try {
-
         YAML::Emitter emitter;
         fillInertialYaml(emitter, links_prop_DH, keys_dyn);
         std::ofstream fout(path_yaml_DH_DYN + ".yaml");
@@ -250,7 +247,6 @@ int main(){
         }
 
         try {
-
             YAML::Emitter emitter;
             fillInertialYaml(emitter, links_prop_DH2REG, keys_reg);
             std::string pp;

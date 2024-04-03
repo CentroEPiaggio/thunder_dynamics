@@ -16,7 +16,6 @@ namespace thunder_ns{
     class RobKinAdv : public RobKinBasic{
         
         private:
-            
             /* Override pure virtual function */
             virtual void init() override{};
             /* Initialize and resize variables and function */
@@ -33,7 +32,6 @@ namespace thunder_ns{
             Eigen::VectorXd q, dq;
 
         protected:
-
             /* Variable for joints velocity */
             casadi::SX _dq_;
 
@@ -57,7 +55,6 @@ namespace thunder_ns{
             double _mu_;
             
         public:
-
             /* Empty costructor */
             RobKinAdv();
             /* Init variables

@@ -14,7 +14,6 @@ namespace thunder_ns{
     class RobReg_Classic : public RobKinBasic{
         
         private:
-
             /* Override virtual function */
             virtual void init() override{};
             /* Override virtual function */

@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_dynamics VERSION 0.2)
+project(thunder_robot VERSION 0.2)
 # project(library)
 
 # Specifica la cartella di output per i file compilati
@@ -21,17 +21,16 @@ include_directories(${CMAKE_SOURCE_DIR}/library)
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 # Definisci la tua libreria
-add_library(library ${SOURCES})
+add_library(thunder_robot ${SOURCES})
 
 # Specifica il nome dell'output della libreria
-set_target_properties(library PROPERTIES OUTPUT_NAME "library")
+set_target_properties(thunder_robot PROPERTIES OUTPUT_NAME "thunder_robot")
 
 # Indica che altri progetti possono trovare questa libreria
-target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
+target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/library)
 
-find_package(casadi REQUIRED)
 find_package(yaml-cpp REQUIRED)
-target_link_libraries(library casadi yaml-cpp::yaml-cpp)
+target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
 
 # Puoi aggiungere altre impostazioni di compilazione qui, se necessario
 
@@ -50,8 +49,5 @@ target_link_libraries(library casadi yaml-cpp::yaml-cpp)
 # target_compile_definitions(library PRIVATE -DSOME_DEFINE)
 
 # Esempio di creazione di un eseguibile che utilizza la tua libreria
-add_executable(thunder_test ${CMAKE_SOURCE_DIR}/thunder_test.cpp)
-target_link_libraries(thunder_test library)
-
-add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder.cpp)
-target_link_libraries(thunder library)
+add_executable(thunder_robot_test ${CMAKE_SOURCE_DIR}/thunder_robot_test.cpp)
+target_link_libraries(thunder_robot_test thunder_robot)

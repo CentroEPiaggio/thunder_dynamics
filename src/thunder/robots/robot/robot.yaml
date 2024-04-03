@@ -35,12 +35,17 @@ Ln_to_EE:
   ypr: [*PI_4_neg, 0, 0]
 
 
-## --- Initial Parameters --- ##
-init_par:
+
+# -------------------------------- #
+## ----- Initial Parameters ----- ##
+# -------------------------------- #
+# The initial values are from the identification results published in: Identification of the Franka Emika PandaRobot With Retrieval of Feasible Parameters Using Penalty-Based Optimization by: Claudio Gaz, Marco Cognetti, Alexander Oliva, Paolo Robuffo Giordano, Alessandro de Luca
+
+inertial:
   link0:
     origin:
-      xyz: -0.041018 -0.00014 0.049974
-      rpy: 0 0 0
+      xyz: [-0.041018, -0.00014, 0.049974]
+      rpy: [0, 0, 0]
     mass: 0.629769
     inertia:
       xx: 0.00315
@@ -55,8 +60,8 @@ init_par:
 
   link1:
     origin:
-      xyz: 0.003875 0.002081 -0.04762
-      rpy: 0 0 0
+      xyz: [0.003875, 0.002081, -0.04762]
+      rpy: [0, 0, 0]
     mass: 4.970684
     inertia:
       xx: 0.70337
@@ -71,8 +76,8 @@ init_par:
 
   link2:
     origin:
-      xyz:  -0.003141 -0.02872  0.003495
-      rpy: 0 0 0
+      xyz: [-0.003141, -0.02872, 0.003495]
+      rpy: [0, 0, 0]
     mass: 0.646926
     inertia:
       xx: 0.0079620
@@ -87,8 +92,8 @@ init_par:
 
   link3:
     origin:
-      xyz: 2.7518e-02 3.9252e-02 -6.6502e-02
-      rpy: 0 0 0
+      xyz: [2.7518e-02, 3.9252e-02, -6.6502e-02]
+      rpy: [0, 0, 0]
     mass: 3.228604
     inertia:
       xx: 3.7242e-02
@@ -103,8 +108,8 @@ init_par:
 
   link4:
     origin:
-      xyz: -5.317e-02 1.04419e-01 2.7454e-02
-      rpy: 0 0 0
+      xyz: [-5.317e-02, 1.04419e-01, 2.7454e-02]
+      rpy: [0, 0, 0]
     mass: 3.587895
     inertia:
       xx: 2.5853e-02
@@ -119,8 +124,8 @@ init_par:
 
   link5:
     origin:
-      xyz: -1.1953e-02 4.1065e-02 -3.8437e-02
-      rpy: 0 0 0
+      xyz: [-1.1953e-02, 4.1065e-02, -3.8437e-02]
+      rpy: [0, 0, 0]
     mass: 1.225946
     inertia:
       xx: 3.5549e-02
@@ -135,8 +140,8 @@ init_par:
 
   link6:
     origin:
-      xyz: 6.0149e-02 -1.4117e-02 -1.0517e-02
-      rpy: 0 0 0
+      xyz: [6.0149e-02, -1.4117e-02, -1.0517e-02]
+      rpy: [0, 0, 0]
     mass: 1.666555
     inertia:
       xx: 1.9640e-03
@@ -151,8 +156,8 @@ init_par:
 
   link7:
     origin:
-      xyz: 1.0517e-02 -4.252e-03 6.1597e-02
-      rpy: 0 0 0
+      xyz: [1.0517e-02, -4.252e-03, 6.1597e-02]
+      rpy: [0, 0, 0]
     mass: 7.35522e-01
     inertia:
       xx: 1.2516e-02
@@ -165,31 +170,16 @@ init_par:
       d1: 0.1
       d2: 0.01
 
-  hand:
+  end_effector:
+    use_EE: 0
     origin:
-      xyz: -0.01 0 0.03
-      rpy: 0 0 0
-    mass: 0.76
-    #mass: 0.73
+      xyz: [0, 0, 0]
+      rpy: [0, 0, 0]
+    mass: 0
     inertia:
-      xx: 0.001
-      yy: 0.0025
-      zz: 0.0017
+      xx: 0
+      yy: 0
+      zz: 0
       xy: 0
       xz: 0
       yz: 0
-
-  leftfinger: &finger
-    origin:
-      xyz: 0 0 0
-      rpy: 0 0 0
-    mass: 0.015
-    inertia:
-      xx: 2.3749999999999997e-06
-      yy: 2.3749999999999997e-06
-      zz: 7.5e-07
-      xy: 0
-      xz: 0
-      yz: 0
-    
-  rightfinger: *finger

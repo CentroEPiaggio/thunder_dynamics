@@ -51,7 +51,6 @@ namespace thunder_ns{
     }
 
     void RobDyn::initVarsFuns(){
-        
         _q_ = casadi::SX::sym("_q_", _numJoints_,1);
         _dq_ = casadi::SX::sym("_dq_", _numJoints_,1);
         _param_ = casadi::SX::sym("_param_", 10*_numJoints_,1);
@@ -86,7 +85,6 @@ namespace thunder_ns{
     }
 
     void RobDyn::setInertialParameters(){
-        
         casadi::SX tempI(3,3);
 
         for(int i=0; i<_numJoints_; i++){
@@ -111,7 +109,6 @@ namespace thunder_ns{
     }
 
     std::tuple<casadi::SXVector,casadi::SXVector> RobDyn::DHJacCM(const casadi::SXVector& T0i_vec) {
-
         casadi::SX Jci_pos(3, _numJoints_); // matrix of velocity jacobian
         casadi::SX Ji_or(3, _numJoints_);   // matrix of omega jacobian
         casadi::SXVector Ji_v(_numJoints_); // vector of matrix Ji_v
@@ -121,7 +118,6 @@ namespace thunder_ns{
         casadi::Slice allRows;              // Select all rows
 
         for (int i = 0; i < _numJoints_; i++) {
-
             casadi::SX k0(3,1);             // versor of joint i
             casadi::SX O_0i(3,1);           // distance of joint i from joint 0
             casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
@@ -179,7 +175,6 @@ namespace thunder_ns{
     }
     
     casadi::SX RobDyn::dq_select(const casadi::SX& dq_) {
-        
         int n = dq_.size1();
         
         casadi::Slice allRows;
@@ -193,7 +188,6 @@ namespace thunder_ns{
     }
     
     casadi::SX RobDyn::stdCmatrix(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
-        
         int n = q_.size1();
 
         casadi::SX jac_B = jacobian(B,q_);
@@ -204,7 +198,6 @@ namespace thunder_ns{
 
         casadi::SX C(n,n);
         C = (C123 + C132 - C231)/2;
-
 
 /*         casadi::SX C1(n, n);
         casadi::SX C2(n, n);
@@ -263,7 +256,6 @@ namespace thunder_ns{
         Jwi = std::get<1>(J_tuple);
         
         for (int i=0; i<nj; i++) {
-            
             casadi::SX R0i = T0i[i](selR,selR);
 
             mi = _mass_vec_[i];
@@ -287,7 +279,6 @@ namespace thunder_ns{
     }
 
     void RobDyn::mass_coriolis_gravity(){
-        
         casadi::SXVector result;
         
         result = Dynamic(_q_, _dq_, _jointsType_, _DHtable_, _lab2L0_);
@@ -299,7 +290,6 @@ namespace thunder_ns{
         mass_fun = casadi::Function(MASS_STRING, {_q_, _param_}, {densify(SX_mass)});
         coriolis_fun = casadi::Function(CORIOLIS_STRING, {_q_, _dq_, _param_}, {densify(SX_coriolis)});
         gravity_fun = casadi::Function(GRAVITY_STRING, {_q_, _param_}, {densify(SX_gravity)});
-        
     }
     
     void RobDyn::setArguments(const Eigen::VectorXd& q_){
@@ -333,7 +323,6 @@ namespace thunder_ns{
     }
 
     void RobDyn::compute(){
-
         for(int i=0;i<_numJoints_;i++){
             args[0](i,0) = q(i);
             args[1](i,0) = dq(i);
@@ -351,7 +340,6 @@ namespace thunder_ns{
     }
  
     Eigen::MatrixXd RobDyn::getMass(){
-        
         Eigen::MatrixXd Mfull(_numJoints_,_numJoints_);
         std::vector<casadi::SXElem> m_elements = mass_res[0].get_elements();
         std::transform(m_elements.begin(), m_elements.end(), Mfull.data(), mapFunction);
@@ -360,7 +348,6 @@ namespace thunder_ns{
     }
 
     Eigen::MatrixXd RobDyn::getCoriolis(){
-        
         Eigen::MatrixXd Cfull(_numJoints_,_numJoints_);
         std::vector<casadi::SXElem> c_elements = coriolis_res[0].get_elements();
         std::transform(c_elements.begin(), c_elements.end(), Cfull.data(), mapFunction);
@@ -369,7 +356,6 @@ namespace thunder_ns{
     }
 
     Eigen::MatrixXd RobDyn::getGravity(){
-        
         Eigen::MatrixXd Gfull(_numJoints_,1);
         std::vector<casadi::SXElem> g_elements = gravity_res[0].get_elements();
         std::transform(g_elements.begin(), g_elements.end(), Gfull.data(), mapFunction);
@@ -378,7 +364,6 @@ namespace thunder_ns{
     }
 
     void RobDyn::generate_code(std::string& savePath){
-        
         // Options for c-code auto generation
         casadi::Dict opts = casadi::Dict();
         opts["cpp"] = true;
@@ -395,7 +380,6 @@ namespace thunder_ns{
     }
 
     std::vector<std::string> RobDyn::getFunctionsName() {
-
         std::vector<std::string> orig_name_funs;
         std::vector<std::string> all_name_funs;
         int dim_orig_funs;

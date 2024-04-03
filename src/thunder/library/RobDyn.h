@@ -14,7 +14,6 @@ namespace thunder_ns{
     class RobDyn : public RobKinBasic{
         
         private:
-
             /* Override pure virtual function */
             virtual void init() override{};
             /* Initialize and resize variables and function */
@@ -39,7 +38,6 @@ namespace thunder_ns{
             casadi::SXVector _J_3x3_;
 
         protected:
-
             /* Variable for joints */
             casadi::SX _dq_, _param_;
 
@@ -62,7 +60,6 @@ namespace thunder_ns{
                 const casadi::SX& q_, const casadi::SX& dq_, const std::string jointsType_, const Eigen::MatrixXd& DHtable_, FrameOffset& base_frame);
             
         public:
-
             /* Empty costructor */
             RobDyn();
             /* Init variables
