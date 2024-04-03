@@ -9,6 +9,7 @@ RUN	apt-get update && apt-get install -y \
 	build-essential \
 	cmake \
 	cmake-curses-gui \
+	gdb \
 	libeigen3-dev \
 	&& rm -rf /var/lib/apt/lists/*
 

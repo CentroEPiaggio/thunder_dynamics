@@ -1,52 +1,34 @@
 INFO:
 	- thunder take the file <robot>.yaml that contains the configuration of the robot
-	- thunder create <robot>_gen.h, <robot>_gen.cpp
+	- thunder creates <robot>_gen.h, <robot>_gen.cpp
 	- thunder take thunder_robot and rename it to thunder_<robot>, changing inside the necessary. Then copy it to generatedFiles
 	- thunder generates the <robot>_inertial_REG.yaml from the config file 
 
 General:
 	✔ make thunder_robot @done (3/26/2024, 4:37:58 PM)
 	✔ let thunder copy robot_gen into thunder_robot folders for tests @done (3/27/2024, 4:24:18 PM)
-	thunder working on console
+	✔ thunder working on console @done (3/29/2024, 11:32:08 AM)
 	☐ cout steps
-	☐ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils
-	☐ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot>
+	✔ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils @done (3/29/2024, 11:32:20 AM)
+	✔ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot> @done (4/3/2024, 7:55:54 AM)
 	☐ let thunder generate robot_inertial_REG and put it into folder generatedFiles
-
+	☐ generalize path with absolute_path
 
 Program:
 	☐ 'thunder gen robot.yaml' generates a folder 'generatedFiles' and put inside
 		✔ 'robot_gen.h', 'robot_gen.cpp' that are the generated library from casadi @done (3/24/2024, 9:57:11 AM)
-		☐ cout the things made
-		☐ 'thunder_robot..h', 'thunder_robot.cpp', that is the wrapper class for the casadi generated generatedFiles
+		✔ 'thunder_robot..h', 'thunder_robot.cpp', that is the wrapper class for the casadi generated generatedFiles @done (4/3/2024, 7:56:35 AM)
 		☐ 'robot_inertial_REG.yaml' that contains parameters in which the dynamics is linear
-	☐ program should use the yaml file to generate everything, options can be added like 'name'...
-
-library:
-	☐ create custom class thunder_robot for specified robot, e.g., thunder_panda (needed for more than one robot for the class name)
-	✔ once creation of library, copy thunder_robot @done (3/27/2024, 5:26:15 PM)
-	☐ substitute 'robot' with the robot_name
-
-generate everything with one execution:
-	✔ generate library @done (3/23/2024, 6:09:08 PM)
-	☐ inertial parameters that are linear
-	☐ generate thunder_robot (like thunder-panda)
-	☐ other?
+	✔ program should use the yaml file to generate everything, options can be added like 'name'... @done (4/3/2024, 7:56:50 AM)
 
 thunder:
 	☐ integrate genYAML into thunder (generate inertial_REG from thunder)
+	☐ dynamic matrix derivatives
+	☐ linearized system
+	☐ friction
+	☐ filtered regressor
+	☐ command line for create_robot
 
 thunder_robot:
-	☐ load and save inertial parameters
+	✔ load and save inertial parameters @done (4/3/2024, 7:57:43 AM)
 	☐ test
-
-☐ thunder_robot as thunder_panda (need if you use more than one robot, class should be different)
-☐ dynamic matrix derivatives
-☐ linearized system
-☐ friction
-☐ filtered regressor
-☐ command line for create_robot
-
-to write in thunder_robot:
-	☐ change 'robot' to 'name_robot' in the #include and class_name
-	☐ add 'const int N_JOINTS = nj;' where nj is taked from thunder

@@ -26,6 +26,7 @@ In particular generate code to compute for franka emika panda robot:
 
 #include <yaml-cpp/yaml.h>
 #include "library/urdf2dh_inertial.h"
+#include "utils.h"
 
 using namespace thunder_ns;
 
@@ -68,12 +69,12 @@ int main(int argc, char* argv[]){
 				int index_yaml = config_file.find_last_of(".yaml");
 				if (index_yaml > 0){
 					int index_path = config_file.find_last_of("/");
-					if (index_path == -1){
+					if (index_path == std::string::npos){ // no occurrence
 						path_robot = "./";
 						robot_name = config_file.substr(0, index_yaml);
 					}else{
 						path_robot = config_file.substr(0, index_path+1);
-						robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 are for ".yaml"
+						robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
 					}
 				}else{
 					std::cout << "Invalid config file." << std::endl;
@@ -85,12 +86,12 @@ int main(int argc, char* argv[]){
 			}
 		}
 	} else {
-		std::cout << "Nessun argomento passato oltre al nome del programma." << std::endl;
+		std::cout << "No arguments to process." << std::endl;
 	}
 	// Set names
 	cout<<"Robot name: "<<robot_name<<endl;
 	robot_name_gen = robot_name + "_gen";
-	path_gen = path_robot + "/generatedFiles/";
+	path_gen = path_robot + "generatedFiles/";
 
 	// ---------------------------------- //
 	// ---------- YAML PARSING ---------- //
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]){
 	}
 	// ---------- end parsing ---------- //
 
-	/* RobKinAdv and RobReg object */;
+	/* RobKinAdv and RobReg object */
 	RobKinAdv kinrobot;
 	RobReg regrobot;
 	RobDyn dynrobot;
@@ -206,25 +207,13 @@ int main(int argc, char* argv[]){
 	sourcePath = thunder_robot_h_path;
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
+	sourceDestPath = absolutePath + "thunder_" + robot_name + ".cpp";
 	sourcePath = thunder_robot_cpp_path;
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
-	// --- todo! --- change the necessary into thunder_robot --- //
-	// std::ifstream file("input.txt"); // Apriamo il file in modalità lettura
-
-	// if (!file.is_open()) {
-	// 	std::cerr << "Errore nell'apertura del file." << std::endl;
-	// 	return 1;
-	// }
-
-	// std::stringstream buffer;
-	// buffer << file.rdbuf(); // Leggiamo il contenuto del file nel buffer stringstream
-	// std::string file_content = buffer.str(); // Otteniamo il contenuto del file come stringa
-
-	// std::cout << "Contenuto del file:\n" << file_content << std::endl;
-
-	// file.close(); // Chiudiamo il file
+	// --- change the necessary into thunder_robot --- //
+	int changed = change_to_robot("robot", robot_name, nj, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
+	if (changed) std::cout<<"done!"<<endl; else cout<<"problem on changing robot name:"<<endl;
 
 	return 0;
 }

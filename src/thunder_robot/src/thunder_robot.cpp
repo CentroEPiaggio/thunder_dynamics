@@ -4,8 +4,8 @@
 // constexpr std::string path_yaml_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored";
 // constexpr std::string path_copy_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored_copy";
 
-const int N_PAR_LINK = 10;
 const int N_JOINTS = 7;
+const int N_PAR_LINK = 10;
 
 using namespace thunder_ns;
 
