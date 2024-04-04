@@ -1,0 +1,7 @@
+# copy compiled files to bin
+
+mkdir -p /home/thunder_dev/thunder_dynamics/bin && cd /home/thunder_dev/thunder_dynamics/bin && \
+	cp -f /home/thunder_dev/thunder_dynamics/src/thunder/build/thunder ./thunder && \
+	mkdir -p neededFiles && cd neededFiles && \
+	cp -f /home/thunder_dev/thunder_dynamics/src/thunder_robot/library/thunder_robot.h ./thunder_robot.h && \
+	cp -f /home/thunder_dev/thunder_dynamics/src/thunder_robot/src/thunder_robot.cpp ./thunder_robot.cpp
