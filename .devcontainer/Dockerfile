@@ -58,10 +58,11 @@ RUN mkdir -p build && \
 
 # Thunder built from sources
 WORKDIR ${HOME}/..
-RUN mkdir thunder_dynamics_tmp
+RUN mkdir -p thunder_dynamics_tmp
 COPY ../. ${HOME}/../thunder_dynamics_tmp
 WORKDIR ${HOME}/../thunder_dynamics_tmp/src/thunder
-RUN mkdir -p build && \
+RUN rm -r -f build && \
+	mkdir -p build && \
 	cd build && \
 	cmake .. && \
 	make 
