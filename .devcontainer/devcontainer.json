@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "mkdir -p bin && cp /home/thunder_dynamics_tmp/src/thunder/build/thunder bin/thunder",
+	"postCreateCommand": "chmod +x ./.devcontainer/setup_init.sh && ./.devcontainer/setup_init.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
@@ -32,7 +32,8 @@
 				"ms-vscode.cpptools",
 				"ms-vscode.cpptools-extension-pack",
 				"eamodio.gitlens",
-				"vscode-icons-team.vscode-icons"
+				"vscode-icons-team.vscode-icons",
+				"sandy081.todotasks"
 			]
 		}
 	},

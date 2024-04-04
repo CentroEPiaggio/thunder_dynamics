@@ -58,18 +58,22 @@ RUN mkdir -p build && \
 
 # Thunder built from sources
 WORKDIR ${HOME}/..
-RUN mkdir thunder_dynamics_tmp
+RUN mkdir -p thunder_dynamics_tmp
 COPY ../. ${HOME}/../thunder_dynamics_tmp
 WORKDIR ${HOME}/../thunder_dynamics_tmp/src/thunder
-RUN mkdir -p build && \
+RUN rm -r -f build && \
+	mkdir -p build && \
 	cd build && \
 	cmake .. && \
 	make 
 
-# copy thunder binary on the root folder (made in devcontainer.json)
-# WORKDIR ${HOME}/thunder_dynamics
+# # copy thunder binary and auxiliary files on the root folder, not possible here, made by postCreateCommand in devcontainer.json
+# WORKDIR ${HOME}/thunder_dev/thunder_dynamics
 # RUN mkdir -p bin && \
-# 	cp ${HOME}/thunder_dynamics/src/thunder/build/thunder ${HOME}/thunder_dynamics/bin/thunder
+# 	mkdir -p bin/neededFiles && \
+# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder/build/thunder bin/thunder && \
+# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/library/thunder_robot.h bin/neededFiles/thunder_robot.h && \
+# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/src/thunder_robot.cpp bin/neededFiles/thunder_robot.cpp
 
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER ${USERNAME}

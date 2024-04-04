@@ -11,7 +11,7 @@ Here you can find different classes implemented with casadi library to generaliz
 
 ## Requirements
 * If you want to use and/or modify implemented classes you have to install [casadi](https://github.com/casadi/casadi.git) (see [installation](#casadi---from-source)).
-* If you want generate yaml file you have to install [yaml-cpp](https://github.com/jbeder/yaml-cpp.git) (see [installation](#yaml-cpp---from-zip)).
+* In order to generate and manage yaml files you have to install [yaml-cpp](https://github.com/jbeder/yaml-cpp.git) (see [installation](#yaml-cpp---from-zip)).
 
 ## Generation of code with casadi
 The aim of `thunder` folder is to generate code useful for robot's control.
@@ -50,21 +50,28 @@ open the folder with vscode and build docker image with devcontainer extension.
 After building the software can be used with:
 
 	cd bin
-	./thunder gen path/robot.yaml
+	./thunder gen <path>/<robot>.yaml <robot_name>
 
-The framework will create 3 files: `robot_lib.h`, `robot_lib.cpp`, `thunder_robot.h`.
-`robot_lib.h` is the C-generated library from CasADi associated with the source file `robot_lib.cpp`.
-`thunder_robot.h` is the wrapper class for the generated files.
+where `<path>` is the relative path from the `thunder` binary and the folder containing the .yaml configuration file, `<robot>` is the default robot name and `<robot_name>` is the optional name of the robot. The name will be used to create library files.
+
+The framework will create a `generatedFiles/` directory containing some files:
+- `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
+- `thunder_<robot>.h`, `thunder_<robot>.cpp` is the wrapper class for the generated files.
+- `<robot>_inertial_REG` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
+
+
 In order to use the framework you can write on your main C++ program:
 
 ```C++
-#include "thunder_robot.h"
+#include "thunder_<robot>.h"
 
 int main(){
-	thunder_robot robot;
-	robot.setArguments(q, dq, dq_r, ddq_r);
-	robot.setParams(params);
-	eigen3::MatrixXd Y = robot.get_regressor();
+	thunder_<robot> my_robot;
+	my_robot.setArguments(q, dq, dq_r, ddq_r);
+	my_robot.setParams(params);
+	eigen3::MatrixXd Y = my_robot.get_regressor();
+	...
+}
 ```
 
 If you need to modify something in the library, you can compile it from source following the lasts instructions.
@@ -90,7 +97,7 @@ That are following:
 
 1. Make install
 	```
-	cd casadi; mkdir build; cd build
+	cd casadi && mkdir -p build && cd build
 	cmake ..
 	ccmake ..
 	make
@@ -101,12 +108,12 @@ That are following:
 
 Before continue follow installation instruction from repostery https://github.com/jbeder/yaml-cpp.
 
-That are following:
+That are the following:
 
 1. Download local clone .zip from https://github.com/jbeder/yaml-cpp and extract.
 1. Navigate into the source directory and run:
 	```
-	mkdir build; cd build
+	mkdir -p build && cd build
 	cmake ..
 	cmake --build .
 	make
@@ -116,10 +123,10 @@ That are following:
 ### Thunder - from source
 
 In the thunder folder exec:
-	```
-	mkdir build; cd build
-	cmake ..
-	make
-	```
+```
+mkdir -p build && cd build
+cmake ..
+make
+```
 
-then you can substitute the binary file or use it where you want.
+then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`.

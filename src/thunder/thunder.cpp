@@ -37,7 +37,7 @@ bool use_gripper = false;
 bool COPY_GEN_FLAG = false;
 #define MU_JACOB 0.0
 
-// --- paths and files --- //
+// --- paths and files (default) --- //
 std::string robot_name = "robot";
 std::string path_robot = "../robots/";
 std::string config_file = path_robot + robot_name + "/robot.yaml";
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]){
 	} else {
 		std::cout << "No arguments to process." << std::endl;
 	}
-	// Set names
+	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
 	robot_name_gen = robot_name + "_gen";
 	path_gen = path_robot + "generatedFiles/";
@@ -200,8 +200,15 @@ int main(int argc, char* argv[]){
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
 	std::filesystem::path sourceDestPath;
-	std::string thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
-	std::string thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
+	std::string thunder_robot_cpp_path;
+	std::string thunder_robot_h_path;
+	if (std::filesystem::is_directory(currentPath/"neededFiles")){
+		thunder_robot_cpp_path = "neededFiles/thunder_robot.cpp";
+		thunder_robot_h_path = "neededFiles/thunder_robot.h";
+	}else{
+		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
+		thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
+	}
 
 	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
 	sourcePath = thunder_robot_h_path;
