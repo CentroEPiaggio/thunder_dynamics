@@ -59,7 +59,7 @@ std::string common_comment =
 
 void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent);
 
-void fillInertialYaml(YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
+void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
 
 int main(){
 
@@ -162,7 +162,7 @@ int main(){
     //-----------------------Convert inertial parameters from URDF to DH----------------------------//
 
     for (int i = 1; i<=numTransform; i++){
-        trasformBodyInertial(transform[i-1].xyz,transform[i-1].rpy,links_prop[i],links_prop_DH[i-1]);
+        transformBodyInertial(transform[i-1].xyz,transform[i-1].rpy,links_prop[i],links_prop_DH[i-1]);
     }
 
     /* Merge link 7 parameters and hand parameters */
@@ -182,7 +182,7 @@ int main(){
     
     try {
         YAML::Emitter emitter;
-        fillInertialYaml(emitter, links_prop_DH, keys_dyn);
+        fillInertialYaml(NUMLINKS, emitter, links_prop_DH, keys_dyn);
         std::ofstream fout(path_yaml_DH);
         fout << emitter.c_str();
         fout.close();
@@ -198,7 +198,7 @@ int main(){
 
     try {
         YAML::Emitter emitter;
-        fillInertialYaml(emitter, links_prop_DH, keys_dyn);
+        fillInertialYaml(NUMLINKS, emitter, links_prop_DH, keys_dyn);
         std::ofstream fout(path_yaml_DH_DYN + ".yaml");
         fout << emitter.c_str();
         fout.close();
@@ -248,7 +248,7 @@ int main(){
 
         try {
             YAML::Emitter emitter;
-            fillInertialYaml(emitter, links_prop_DH2REG, keys_reg);
+            fillInertialYaml(NUMLINKS, emitter, links_prop_DH2REG, keys_reg);
             std::string pp;
             if((int)coeff_p[w]==0) pp="";
             else pp = "_p" + std::to_string((int)coeff_p[w]);
@@ -297,7 +297,7 @@ void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent)
     perturbate.parI[5] = original.parI[5]*(1+dist(gen));
 }
 
-void fillInertialYaml(YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
+void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
 
     YAML::Node control;
 
