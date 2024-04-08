@@ -310,7 +310,7 @@ namespace thunder_ns{
 
 		try {
 			YAML::Emitter emitter;
-			fillInertialYaml(emitter, links_prop_DH2REG, keys_reg);
+			fillInertialYaml(num_joints, emitter, links_prop_DH2REG, keys_reg);
 			// std::string pp = "";
 			// if((int)coeff_p[w]==0) pp="";
 			// else pp = "_p" + std::to_string((int)coeff_p[w]);
@@ -361,7 +361,7 @@ namespace thunder_ns{
 	Eigen::MatrixXd thunder_robot::getKin_gen(){computeKin_gen(); return kin_gen;};
 
 	// Other functions
-	void thunder_robot::fillInertialYaml(YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
+	void thunder_robot::fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
 		YAML::Node control;
 
 		emitter_.SetIndent(2);
@@ -395,7 +395,7 @@ namespace thunder_ns{
 		}
 	}
 
-	void thunder_robot::trasformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
+	void thunder_robot::transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
         Eigen::Vector3d OuGi; 
         Eigen::Vector3d OiGi;
         Eigen::Vector3d dist_i;

@@ -25,8 +25,9 @@ In particular generate code to compute for franka emika panda robot:
 #include "library/RobDyn.h"
 
 #include <yaml-cpp/yaml.h>
-#include "library/urdf2dh_inertial.h"
+#include "urdf2dh_inertial.h"
 #include "utils.h"
+#include "genYaml.h"
 
 using namespace thunder_ns;
 
@@ -46,6 +47,7 @@ std::string path_gen = path_robot + robot_name + "/generatedFiles/";
 const std::string PATH_THUNDER_ROBOT = "../../thunder_robot/";
 const std::string PATH_COPY_H = PATH_THUNDER_ROBOT + "library/robot_gen.h";
 const std::string PATH_COPY_CPP = PATH_THUNDER_ROBOT + "src/robot_gen.cpp";
+const std::string PATH_COPY_YAML = PATH_THUNDER_ROBOT + "robots/robot/robot_inertial_REG.yaml";
 
 
 int main(int argc, char* argv[]){
@@ -64,7 +66,7 @@ int main(int argc, char* argv[]){
 		// The first argument (argv[0]) is the program name (thunder)
 		std::string arg1 = argv[1];
 		if (arg1 == "gen"){
-			if (argc > 2){ // take argument robot.yaml
+			if (argc > 2){ // take argument <robot>.yaml
 				config_file = argv[2];
 				int index_yaml = config_file.find_last_of(".yaml");
 				if (index_yaml > 0){
@@ -82,11 +84,16 @@ int main(int argc, char* argv[]){
 				}
 				if (argc > 3){ // take the robot name
 					robot_name = argv[3];
+					// robot_name is a valid name?
 				}
 			}
+		} else {
+			std::cout << arg1 << "not recognised as command." << std::endl;
+			return 0;
 		}
 	} else {
 		std::cout << "No arguments to process." << std::endl;
+		return 0;
 	}
 	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
@@ -132,6 +139,7 @@ int main(int argc, char* argv[]){
 
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		return 0;
 	}
 	// ---------- end parsing ---------- //
 
@@ -172,30 +180,18 @@ int main(int argc, char* argv[]){
 
 	std::filesystem::path currentPath = std::filesystem::current_path();
 	std::string absolutePath = currentPath / relativePath;
+	// std::string absolutePath = path_gen; // not absolute but relative to thunder
 
 	// Create directory
 	try {
 		std::filesystem::create_directory(absolutePath);
 	} catch(std::exception & e){
-		// creation failed
+		std::cout<<"Problem creating directory generatedFiles/"<<std::endl;
+		return 0;
 	}
 
 	// Generate library
 	regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
-
-	if(COPY_GEN_FLAG){
-		/* Copy files in particular path */
-		std::filesystem::path sourcePath;
-		std::filesystem::path sourceDestPath;
-
-		sourcePath = absolutePath + robot_name_gen + ".h";
-		sourceDestPath = PATH_COPY_H;
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-		sourcePath = absolutePath + robot_name_gen + ".cpp";
-		sourceDestPath = PATH_COPY_CPP;
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-	}
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
@@ -203,8 +199,8 @@ int main(int argc, char* argv[]){
 	std::string thunder_robot_cpp_path;
 	std::string thunder_robot_h_path;
 	if (std::filesystem::is_directory(currentPath/"neededFiles")){
-		thunder_robot_cpp_path = "neededFiles/thunder_robot.cpp";
-		thunder_robot_h_path = "neededFiles/thunder_robot.h";
+		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
+		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
 	}else{
 		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
 		thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
@@ -220,7 +216,36 @@ int main(int argc, char* argv[]){
 
 	// --- change the necessary into thunder_robot --- //
 	int changed = change_to_robot("robot", robot_name, nj, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
-	if (changed) std::cout<<"done!"<<endl; else cout<<"problem on changing robot name:"<<endl;
+	if (!changed) {
+		cout<<"problem on changing robot name:"<<endl;
+		return 0;
+	}
 
-	return 0;
+	// --- generate inertial_REG --- //
+	std::string inertial_REG_file = path_gen + robot_name + "_inertial_REG.yaml";
+	if (!genInertial_REG(robot_name, nj, config_file, inertial_REG_file)){
+		return 0;
+	}
+
+	// // --- copy generated files in thunder_robot project --- //
+	// if(COPY_GEN_FLAG){
+	// 	// Problem here, on inertial_reg for sure!
+	// 	std::filesystem::path sourcePath;
+	// 	std::filesystem::path sourceDestPath;
+
+	// 	sourcePath = absolutePath + robot_name_gen + ".h";
+	// 	sourceDestPath = PATH_COPY_H;
+	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+	// 	sourcePath = absolutePath + robot_name_gen + ".cpp";
+	// 	sourceDestPath = PATH_COPY_CPP;
+	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		
+	// 	sourcePath = absolutePath + robot_name + "_inertial_REG.yaml";
+	// 	sourceDestPath = PATH_COPY_YAML;
+	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	// }
+
+	std::cout<<"done!"<<endl; 
+	return 1;
 }

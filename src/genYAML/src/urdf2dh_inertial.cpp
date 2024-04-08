@@ -2,7 +2,7 @@
 
 namespace thunder_ns{
     
-    void trasformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
+    void transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
 
         Eigen::Vector3d OuGi; 
         Eigen::Vector3d OiGi;
