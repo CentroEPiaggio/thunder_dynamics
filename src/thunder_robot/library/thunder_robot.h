@@ -41,11 +41,11 @@ namespace thunder_ns{
 			// void init(const int);
 			/* Set q, dq, dqr, ddqr, to compute Regressor and update state*/
 			void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
-			void setInertialParam(const Eigen::VectorXd& param_);
+			void setInertialParams(const Eigen::VectorXd& param_);
 			Eigen::VectorXd getInertialParams();
 
-			void loadInertialParam(std::string);
-			void saveInertialParam(std::string);
+			void loadInertialParams(std::string);
+			void saveInertialParams(std::string);
 
 			int get_numJoints();
 			int get_numParams();

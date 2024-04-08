@@ -66,7 +66,7 @@ namespace thunder_ns{
 		// computeGravity_gen();
 	}
 
-	void thunder_robot::setInertialParam(const Eigen::VectorXd& param_){
+	void thunder_robot::setInertialParams(const Eigen::VectorXd& param_){
 		if(param_.size() == N_PAR_LINK*num_joints){
 			param = param_;
 		} else{
@@ -235,7 +235,7 @@ namespace thunder_ns{
 		int check = kin_fun(input_, output_, p3, p4, 0);
 	}
 
-	void thunder_robot::loadInertialParam(std::string file_path){
+	void thunder_robot::loadInertialParams(std::string file_path){
 		try {
 			YAML::Node config = YAML::LoadFile(file_path);
 			
@@ -247,7 +247,7 @@ namespace thunder_ns{
 				mass = node.second["mass"].as<double>();
 				m_cmx = node.second["m_CoM_x"].as<double>();
 				m_cmy = node.second["m_CoM_y"].as<double>();
-				m_cmy = node.second["m_CoM_y"].as<double>();
+				m_cmz = node.second["m_CoM_y"].as<double>();
 				xx = node.second["Ixx"].as<double>();
 				xy = node.second["Ixy"].as<double>();
 				xz = node.second["Ixz"].as<double>();
@@ -263,11 +263,12 @@ namespace thunder_ns{
 		}
 	}
 
-	void thunder_robot::saveInertialParam(std::string path_yaml_DH_REG){
+	void thunder_robot::saveInertialParams(std::string path_yaml_DH_REG){
 		std::vector<std::string> keys_reg;
 		keys_reg.resize(5);
 		keys_reg[0] = "mass"; keys_reg[1] = "m_CoM_"; keys_reg[2] = "I"; keys_reg[3] = "REG"; keys_reg[4] = "regressor";
-		std::vector<LinkProp> links_prop_DH2REG;
+		std::vector<LinkProp> links_prop_REG;
+		links_prop_REG.resize(num_joints);
 		// LinkProp tmp_link;
 		// LinkProp tmp_DH_gauss;
 		// Eigen::Matrix3d I0,IG;
@@ -278,8 +279,6 @@ namespace thunder_ns{
 		// coeff_p << 0, 2, 5, 10, 20;
 
 		for(int i=0; i<num_joints; i++){
-
-			// tmp_link = links_prop_DH[i];
 			// perturbateLinkProp(tmp_link,tmp_DH_gauss,coeff_p[w]);
 
 			// m = tmp_DH_gauss.mass;
@@ -288,29 +287,29 @@ namespace thunder_ns{
 			// I0 = IG + m * hat(dOG) * hat(dOG).transpose();
 			// dOG = m*dOG;
 
-			// links_prop_DH2REG[i].name = tmp_DH_gauss.name;
-			// links_prop_DH2REG[i].mass = tmp_DH_gauss.mass;
-			// links_prop_DH2REG[i].xyz = {dOG[0],dOG[1],dOG[2]};
-			// links_prop_DH2REG[i].parI[0] = I0(0,0);
-			// links_prop_DH2REG[i].parI[1] = I0(0,1);
-			// links_prop_DH2REG[i].parI[2] = I0(0,2);
-			// links_prop_DH2REG[i].parI[3] = I0(1,1);
-			// links_prop_DH2REG[i].parI[4] = I0(1,2);
-			// links_prop_DH2REG[i].parI[5] = I0(2,2);
-			links_prop_DH2REG[i].name = "link" + std::to_string(i);
-			links_prop_DH2REG[i].mass = param[N_PAR_LINK*i + 0];
-			links_prop_DH2REG[i].xyz = {param[N_PAR_LINK*i + 1], param[N_PAR_LINK*i + 2], param[N_PAR_LINK*i + 3]};
-			links_prop_DH2REG[i].parI[0] = param[N_PAR_LINK*i + 4];
-			links_prop_DH2REG[i].parI[1] = param[N_PAR_LINK*i + 5];
-			links_prop_DH2REG[i].parI[2] = param[N_PAR_LINK*i + 6];
-			links_prop_DH2REG[i].parI[3] = param[N_PAR_LINK*i + 7];
-			links_prop_DH2REG[i].parI[4] = param[N_PAR_LINK*i + 8];
-			links_prop_DH2REG[i].parI[5] = param[N_PAR_LINK*i + 9];
+			// links_prop_REG[i].name = tmp_DH_gauss.name;
+			// links_prop_REG[i].mass = tmp_DH_gauss.mass;
+			// links_prop_REG[i].xyz = {dOG[0],dOG[1],dOG[2]};
+			// links_prop_REG[i].parI[0] = I0(0,0);
+			// links_prop_REG[i].parI[1] = I0(0,1);
+			// links_prop_REG[i].parI[2] = I0(0,2);
+			// links_prop_REG[i].parI[3] = I0(1,1);
+			// links_prop_REG[i].parI[4] = I0(1,2);
+			// links_prop_REG[i].parI[5] = I0(2,2);
+			links_prop_REG[i].name = "link" + std::to_string(i+1);
+			links_prop_REG[i].mass = param[N_PAR_LINK*i + 0];
+			links_prop_REG[i].xyz = {param[N_PAR_LINK*i + 1], param[N_PAR_LINK*i + 2], param[N_PAR_LINK*i + 3]};
+			links_prop_REG[i].parI[0] = param[N_PAR_LINK*i + 4];
+			links_prop_REG[i].parI[1] = param[N_PAR_LINK*i + 5];
+			links_prop_REG[i].parI[2] = param[N_PAR_LINK*i + 6];
+			links_prop_REG[i].parI[3] = param[N_PAR_LINK*i + 7];
+			links_prop_REG[i].parI[4] = param[N_PAR_LINK*i + 8];
+			links_prop_REG[i].parI[5] = param[N_PAR_LINK*i + 9];
 		}
-
+		// create file
 		try {
 			YAML::Emitter emitter;
-			fillInertialYaml(num_joints, emitter, links_prop_DH2REG, keys_reg);
+			fillInertialYaml(num_joints, emitter, links_prop_REG, keys_reg);
 			// std::string pp = "";
 			// if((int)coeff_p[w]==0) pp="";
 			// else pp = "_p" + std::to_string((int)coeff_p[w]);
