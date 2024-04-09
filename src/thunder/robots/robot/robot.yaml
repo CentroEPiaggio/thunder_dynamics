@@ -11,8 +11,10 @@ PI_4_neg: &PI_4_neg  -0.7853981633974483
 # --- Hyperparameters --- #
 num_joints: 7
 
+# joint types: 'R' or 'P'
 type_joints: 'RRRRRRR'
 
+# DH convention: a -> alpha -> d -> theta
 DH: [0,       *PI_2_neg, 0.3330, 0,
      0,       *PI_2,     0,      0,
      0.0825,  *PI_2,     0.3160, 0,
@@ -21,6 +23,7 @@ DH: [0,       *PI_2_neg, 0.3330, 0,
      0.088,   *PI_2,     0,      0,
      0,       0,         0.107,  0]
 
+# gravity vector
 gravity: [0, 0, 9.81]
 
 # world to link_0
@@ -38,6 +41,7 @@ Ln_to_EE:
 ## ----- Initial Parameters ----- ##
 # -------------------------------- #
 
+# inertial parameters expressed w.r.t. DH frames
 inertial:
   link1:
     mass: 4.9706840000000003

@@ -15,6 +15,7 @@
 #define NJ 7
 #define N_PAR 70
 const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
+const std::string saved_inertial_file = "../robots/robot/saved_inertial_REG.yaml";
 
 using namespace thunder_ns;
 using std::cout;
@@ -29,7 +30,7 @@ int main(){
 	thunder_robot robot;
 	// robot.init(7);
 
-	robot.loadInertialParam(inertial_file);
+	robot.loadInertialParams(inertial_file);
 	// const int NJ = robot.get_numJoints();
 	// const int N_PAR = robot.get_numParams();
 
@@ -84,6 +85,8 @@ int main(){
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<"\nfunziona diff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
+
+	robot.saveInertialParams(saved_inertial_file);
 
 	return 0;
 }

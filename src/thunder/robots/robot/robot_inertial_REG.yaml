@@ -1,18 +1,4 @@
-# Inertial parameters referred to Denavit-Hartenberg parametrization to use regressor
-# Obtained with transformation of URDF files from:
-#    - $(find franka_gazebo)/test/launch/panda-gazebo.urdf
-#    - $(find franka_description)/robots/common/franka_robot.xacro
-#    - $(find franka_description)/robots/common/inertial.yaml 
-# Considering Denavit-Hartenberg parametrization of table:
-# DH_table << 0,      -M_PI_2,  0.3330, 0,
-#             0,      M_PI_2,   0,      0,
-#             0.0825, M_PI_2,   0.3160, 0,
-#             -0.0825,-M_PI_2,  0,      0,
-#             0,      M_PI_2,   0.384,  0,
-#             0.088,  M_PI_2,   0,      0,
-#             0,      0,        0.107,  0;
-# d1, d2 stands for friction parametrization
-
+# inertial parameters expressed w.r.t. DH frames
 link1:
   mass: 4.9706840000000003
   m_CoM_x: 0.019261400500000001
