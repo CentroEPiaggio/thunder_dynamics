@@ -3,7 +3,7 @@
 #    - $(find franka_gazebo)/test/launch/panda-gazebo.urdf
 #    - $(find franka_description)/robots/common/franka_robot.xacro
 #    - $(find franka_description)/robots/common/inertial.yaml 
-# Considering Denavit-Hartenberg parametrization of table:
+# Considering Denavit-Hartenberg parametrization(a,alpha,d,theta) of table:
 # DH_table << 0,      -M_PI_2,  0.3330, 0,
 #             0,      M_PI_2,   0,      0,
 #             0.0825, M_PI_2,   0.3160, 0,

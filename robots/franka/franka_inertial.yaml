@@ -1,6 +1,7 @@
 # -------------------------------- #
 ## ----- Initial Parameters ----- ##
 # -------------------------------- #
+# The initial values are from the identification results published in: Identification of the Franka Emika PandaRobot With Retrieval of Feasible Parameters Using Penalty-Based Optimization by: Claudio Gaz, Marco Cognetti, Alexander Oliva, Paolo Robuffo Giordano, Alessandro de Luca
 
 link0:
   origin:

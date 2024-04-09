@@ -31,7 +31,11 @@ After building the software can be used with:
 
 where `<path>` is the relative path from the `thunder` binary and the folder containing the .yaml configuration file, `<robot>` is the default robot name and `<robot_name>` is the optional name of the robot. The name will be used to create library files.
 
-The file `<robot>.yaml` is a configuration file that contain all the information about the robot. An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda.
+The file `<robot>.yaml` is a configuration file that contain all the information about the robot.
+The DH table takes the trasformation in the order a, alpha, d, theta.
+The inertial parameters are expressed in the DH frames with the same convention.
+An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda.
+
 
 The framework will create a `generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.

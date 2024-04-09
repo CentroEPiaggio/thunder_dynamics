@@ -1,7 +1,3 @@
-# Inertial parameters referred to Denavit-Hartenberg parametrization to use regressor
-# Obtained with transformation of URDF files considering Denavit-Hartenberg parametrization
-# 
-
 link1:
   mass: 4.9706840000000003
   m_CoM_x: 0.019261400500000001
