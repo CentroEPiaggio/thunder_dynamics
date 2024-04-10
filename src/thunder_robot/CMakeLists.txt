@@ -12,7 +12,8 @@ project(thunder_robot VERSION 0.2)
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-set (CMAKE_CXX_FLAGS "-lstdc++fs -std=c++17")
+set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
+# set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
 # Aggiungi la cartella "library" per cercare gli header
 include_directories(${CMAKE_SOURCE_DIR}/library)

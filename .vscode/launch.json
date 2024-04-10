@@ -1,0 +1,63 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	// It is possible to replace main with ${fileBasenameNoExtension} to refers to the active file
+	// 
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "thunder",
+			"type": "cppdbg", 
+			"request": "launch",
+			"program": "/home/thunder_dev/thunder_dynamics/src/thunder/build/thunder",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "/home/thunder_dev/thunder_dynamics/src/thunder/build",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"miDebuggerPath": "/usr/bin/gdb",
+			"preLaunchTask": "makeThunder",		//compila prima di eseguire
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb and add better child debugging",
+					// detach-on-fork dovrebbe migliorare il debug per i figli
+					"text": "-enable-pretty-printing -gdb-set detach-on-fork off",
+					"ignoreFailures": true
+				}
+			],
+			"logging": 
+				{ 
+					"trace": true, 
+					"traceResponse": true 
+				}
+		},
+		{
+			"name": "thunder_robot",
+			"type": "cppdbg", 
+			"request": "launch",
+			"program": "/home/thunder_dev/thunder_dynamics/src/thunder_robot/build/thunder_robot_test",
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "/home/thunder_dev/thunder_dynamics/src/thunder_robot/build",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"miDebuggerPath": "/usr/bin/gdb",
+			"preLaunchTask": "makeThunderRobot",		//compila prima di eseguire
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb and add better child debugging",
+					// detach-on-fork dovrebbe migliorare il debug per i figli
+					"text": "-enable-pretty-printing -gdb-set detach-on-fork off",
+					"ignoreFailures": true
+				}
+			],
+			"logging": 
+				{ 
+					"trace": true, 
+					"traceResponse": true 
+				}
+		}
+	]
+}
