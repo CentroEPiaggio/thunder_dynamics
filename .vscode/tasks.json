@@ -1,0 +1,58 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	// make -d print debugging information
+	// compila il main secondo il makefile
+	// per 
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "makeThunder",
+			"type": "shell",
+			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder/ && mkdir -p build && cd build && cmake .. && make -d",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": {
+				"owner": "cpp",
+				"fileLocation": [
+					"relative",
+					"/home/thunder_dev/thunder_dynamics/src/thunder/build"
+				],
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				}
+			}
+		},
+		{
+			"label": "makeThunderRobot",
+			"type": "shell",
+			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder_robot/ && mkdir -p build && cd build && cmake .. && make -d",
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"problemMatcher": {
+				"owner": "cpp",
+				"fileLocation": [
+					"relative",
+					"/home/thunder_dev/thunder_dynamics/src/thunder_robot/build"
+				],
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				}
+			}
+		},
+	]
+}
