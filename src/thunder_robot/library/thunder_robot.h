@@ -58,27 +58,27 @@ namespace thunder_ns{
 			// void setArguments(const Eigen::VectorXd&);
 
 			/* Get regressor matrix */
-			Eigen::MatrixXd getReg_gen();
+			Eigen::MatrixXd getReg();
 			/* Get regressor matrix */
-			Eigen::MatrixXd getMass_gen();
+			Eigen::MatrixXd getMass();
 			/* Get regressor matrix */
-			Eigen::MatrixXd getCoriolis_gen();
+			Eigen::MatrixXd getCoriolis();
 			/* Get regressor matrix */
-			Eigen::MatrixXd getGravity_gen();
+			Eigen::MatrixXd getGravity();
 			/* Get jacobian matrix */
-			Eigen::MatrixXd getJac_gen();
+			Eigen::MatrixXd getJac();
 			/* Get derivative of jacobian matrix */
-			Eigen::MatrixXd getDotJac_gen();
+			Eigen::MatrixXd getDotJac();
 			/* Get pseudo-inverse jacobian matrix */
-			Eigen::MatrixXd getPinvJac_gen();
+			Eigen::MatrixXd getPinvJac();
 			/* Get derivative of pseudo-inverse jacobian matrix only position */
-			Eigen::MatrixXd getPinvJacPos_gen();
+			Eigen::MatrixXd getPinvJacPos();
 			/* Get derivative of pseudo-inverse jacobian matrix */
-			Eigen::MatrixXd getDotPinvJac_gen();
+			Eigen::MatrixXd getDotPinvJac();
 			/* Get derivative of pseudo-inverse jacobian matrix only position */
-			Eigen::MatrixXd getDotPinvJacPos_gen();
+			Eigen::MatrixXd getDotPinvJacPos();
 			/* Get regressor matrix */
-			Eigen::MatrixXd getKin_gen();
+			Eigen::MatrixXd getKin();
 
 			// Other functions
 		private:
