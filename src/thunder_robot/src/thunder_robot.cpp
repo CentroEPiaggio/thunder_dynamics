@@ -337,27 +337,27 @@ namespace thunder_ns{
 	}
 
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getReg_gen(){computeReg_gen(); return reg_gen;};
+	Eigen::MatrixXd thunder_robot::getReg(){computeReg_gen(); return reg_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getMass_gen(){computeMass_gen(); return mass_gen;};
+	Eigen::MatrixXd thunder_robot::getMass(){computeMass_gen(); return mass_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getCoriolis_gen(){computeCoriolis_gen(); return coriolis_gen;};
+	Eigen::MatrixXd thunder_robot::getCoriolis(){computeCoriolis_gen(); return coriolis_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getGravity_gen(){computeGravity_gen(); return gravity_gen;};
+	Eigen::MatrixXd thunder_robot::getGravity(){computeGravity_gen(); return gravity_gen;};
 	/* Get jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getJac_gen(){computeJac_gen(); return jac_gen;};
+	Eigen::MatrixXd thunder_robot::getJac(){computeJac_gen(); return jac_gen;};
 	/* Get derivative of jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getDotJac_gen(){computeDotJac_gen(); return dotJac_gen;};
+	Eigen::MatrixXd thunder_robot::getDotJac(){computeDotJac_gen(); return dotJac_gen;};
 	/* Get pseudo-inverse jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getPinvJac_gen(){computePinvJac_gen(); return pinvJac_gen;};
+	Eigen::MatrixXd thunder_robot::getPinvJac(){computePinvJac_gen(); return pinvJac_gen;};
 	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getPinvJacPos_gen(){computePinvJacPos_gen(); return pinvJacPos_gen;};
+	Eigen::MatrixXd thunder_robot::getPinvJacPos(){computePinvJacPos_gen(); return pinvJacPos_gen;};
 	/* Get derivative of pseudo-inverse jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getDotPinvJac_gen(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
+	Eigen::MatrixXd thunder_robot::getDotPinvJac(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
 	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getDotPinvJacPos_gen(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
+	Eigen::MatrixXd thunder_robot::getDotPinvJacPos(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getKin_gen(){computeKin_gen(); return kin_gen;};
+	Eigen::MatrixXd thunder_robot::getKin(){computeKin_gen(); return kin_gen;};
 
 	// Other functions
 	void thunder_robot::fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){

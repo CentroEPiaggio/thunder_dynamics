@@ -67,15 +67,15 @@ int main(){
 	param_REG = robot.getInertialParams();
 	cout<<"\nPar_REG\n"<<param_REG;
 
-	Yr = robot.getReg_gen();
+	Yr = robot.getReg();
 	cout<<"\nYr\n"<<Yr;
-	myM = robot.getMass_gen();
+	myM = robot.getMass();
 	cout<<"\nM\n"<<myM;
-	myC = robot.getCoriolis_gen();
+	myC = robot.getCoriolis();
 	cout<<"\nC\n"<<myC;
-	myG = robot.getGravity_gen();
+	myG = robot.getGravity();
 	cout<<"\nG\n"<<myG;
-	myJac = robot.getJac_gen();
+	myJac = robot.getJac();
 	cout<<"\nJac\n"<<myJac;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
