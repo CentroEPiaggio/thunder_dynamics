@@ -99,12 +99,14 @@ namespace thunder_ns{
             virtual void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_);
             /* Set arguments to update the result of casadi functions */
             virtual void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& param_);
-            /* Get regressor matrix */
+            /* Get Mass matrix */
             Eigen::MatrixXd getMass();
-            /* Get regressor matrix */
+            /* Get Coriolis matrix */
             Eigen::MatrixXd getCoriolis();
-            /* Get regressor matrix */
+            /* Get Gravity */
             Eigen::MatrixXd getGravity();
+			/* Get regressor from Dynamics Jacobian*/
+			// Eigen::MatrixXd getDynReg(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const Eigen::VectorXd& dqr, const Eigen::VectorXd& ddqr);
             /* Generate code for regressor */
             virtual void generate_code(std::string&);
             /* Get function name used to generate code in RobDyn */

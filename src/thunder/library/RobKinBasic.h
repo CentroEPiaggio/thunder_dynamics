@@ -62,13 +62,13 @@ namespace thunder_ns{
             std::vector<casadi::SX> kinematic_res, jacobian_res;
             /* Casadi function */
             casadi::Function kinematic_fun, jacobian_fun;
-
+            /* Other Casadi function */
+            // casadi::Function T_fun;
             /* Create kinematic casadi function */
             void DHKin();
             /* Create jacobian casadi function */
             void DHJac();
 
-            
         public:
             /* Empty costructor */
             RobKinBasic();
@@ -111,6 +111,7 @@ namespace thunder_ns{
 
             /* Get forward kinematic matrix */
             Eigen::Matrix4d getKinematic();
+            // Eigen::Matrix4d getT0i(int i);
             /* Get jacobian matrix */
             Eigen::MatrixXd getJacobian();
 

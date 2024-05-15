@@ -12,10 +12,10 @@
 
 #include "thunder_robot.h"
 
-#define NJ 7
-#define N_PAR 70
-const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
-const std::string saved_inertial_file = "../robots/robot/saved_inertial_REG.yaml";
+// #define NJ 3
+// #define N_PAR 30
+const std::string inertial_file = "../robots/RRR/RRR_inertial_REG.yaml";
+const std::string saved_inertial_file = "../robots/RRR/saved_RRR_inertial_REG.yaml";
 
 using namespace thunder_ns;
 using std::cout;
@@ -31,24 +31,33 @@ int main(){
 	// robot.init(7);
 
 	robot.loadInertialParams(inertial_file);
-	// const int NJ = robot.get_numJoints();
-	// const int N_PAR = robot.get_numParams();
+	const int NJ = robot.get_numJoints();
+	const int N_PAR = robot.get_numParams();
 
 	// Eigen::VectorXd param_REG(N_PAR*NJ);
 	// Eigen::VectorXd param_DYN(N_PAR*NJ);
 
 	/* Matrix */
 	
-	Eigen::Matrix<double, NJ, N_PAR> Yr;
-	Eigen::Matrix<double, NJ, NJ> myM;
-	Eigen::Matrix<double, NJ, NJ> myC;
-	Eigen::Matrix<double, NJ, 1> myG;
-	Eigen::Matrix<double, 6, NJ> myJac;
-	Eigen::Matrix<double, 6, NJ> myJacCM;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
+	// Eigen::MatrixXd<double, NJ, N_PAR> Yr;
+	// Eigen::MatrixXd<double, NJ, NJ> myM;
+	// Eigen::MatrixXd<double, NJ, NJ> myC;
+	// Eigen::MatrixXd<double, NJ, 1> myG;
+	// Eigen::MatrixXd<double, 6, NJ> myJac;
+	// Eigen::MatrixXd<double, 6, NJ> myJacCM;
+	// Eigen::MatrixXd<double, NJ, 1> tau_cmd_dyn;
+	// Eigen::MatrixXd<double, NJ, 1> tau_cmd_reg;
 
-	Eigen::Matrix<double, N_PAR, 1> param_REG;
+	Eigen::MatrixXd Yr(NJ, N_PAR);
+	Eigen::MatrixXd myM(NJ, NJ);
+	Eigen::MatrixXd myC(NJ, NJ);
+	Eigen::VectorXd myG(NJ);
+	Eigen::MatrixXd myJac(6,NJ);
+	Eigen::MatrixXd myJacCM(6,NJ);
+	Eigen::VectorXd tau_cmd_dyn(NJ);
+	Eigen::VectorXd tau_cmd_reg(NJ);
+
+	Eigen::VectorXd param_REG(N_PAR);
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
@@ -84,7 +93,7 @@ int main(){
 
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<"\nfunziona diff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
+	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
 	robot.saveInertialParams(saved_inertial_file);
 

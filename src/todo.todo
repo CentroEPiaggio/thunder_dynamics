@@ -35,3 +35,8 @@ thunder:
 thunder_robot:
 	✔ load and save inertial parameters @done (4/3/2024, 7:57:43 AM)
 	☐ test
+
+issues:
+	☐ ypr in Ln_to_EE transform is misleading, expected x->y->z, right?
+	☐ simplify some casadi expression?
+	☐ test base_to_L0
