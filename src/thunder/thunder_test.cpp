@@ -12,9 +12,10 @@
 
 #include "library/RobKinAdv.h"
 #include "library/RobReg.h"
+#include "library/RobReg_Classic.h"
 #include "library/RobDyn.h"
 
-#define NJ 2
+#define NJ 3
 #define PARAM 10
 
 using namespace thunder_ns;
@@ -29,13 +30,51 @@ int main(){
 
 	Eigen::VectorXd param_REG(PARAM*NJ);
 	Eigen::VectorXd param_DYN(PARAM*NJ);
+	int nj;
+	std::string jType;
+	Eigen::MatrixXd DH_table;
+	FrameOffset Base_to_L0;
+	FrameOffset Ln_to_EE;
+	std::string config_file = "../robots/RRR/RRR.yaml";
 
-	//-------------------------------Extract Variables-----------------------------------//
-	
+	//-------------------------------Parsing yaml-----------------------------------//
 	try {
-		YAML::Node config = YAML::LoadFile("../../generatedFiles/inertial_DH.yaml");
+		// --- load yaml --- //
+		YAML::Node config = YAML::LoadFile(config_file);
+
+		// Number of joints
+		YAML::Node num_joints = config["num_joints"];
+		nj = num_joints.as<double>();
+
+		// joints_type
+		YAML::Node type_joints = config["type_joints"];
+		jType = type_joints.as<std::string>();
+
+		// Denavit-Hartenberg
+		std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
+		DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+
+		// gravity
+		std::vector<double> gravity = config["gravity"].as<std::vector<double>>();
+
+		// frames offsets
+		YAML::Node frame_base = config["Base_to_L0"];
+		YAML::Node frame_ee = config["Ln_to_EE"];
+
+		std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
+		std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
+		Base_to_L0.set_translation(tr);
+		Base_to_L0.set_ypr(ypr);
+		Base_to_L0.set_gravity(gravity);
+
+		tr = frame_ee["tr"].as<std::vector<double>>();
+		ypr = frame_ee["ypr"].as<std::vector<double>>();
+		Ln_to_EE.set_translation(tr);
+		Ln_to_EE.set_ypr(ypr);
+
+		YAML::Node inertial = config["inertial"];
 		int i = 0;
-		for (const auto& node : config) {
+		for (const auto& node : inertial) {
 			
 			if (i==NJ) break;
 
@@ -55,8 +94,10 @@ int main(){
 		}
 		std::cout<<"YAML_DH letto"<<std::endl;
 		std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		return 0;
 	}
 
 	//-------------------Obtain param for regressor (no via YAML)------------------------//
@@ -67,31 +108,31 @@ int main(){
 	
 	for(int i=0;i<NJ;i++){
 
-		m = param_DYN[i*10];
-		dOG << param_DYN[i*10+1], param_DYN[i*10+2],param_DYN[i*10+3];
+		m = param_DYN[i*PARAM];
+		dOG << param_DYN[i*PARAM+1], param_DYN[i*PARAM+2],param_DYN[i*PARAM+3];
 		
-		IG(0, 0) = param_DYN[i*10+4];
-		IG(0, 1) = param_DYN[i*10+5];
-		IG(0, 2) = param_DYN[i*10+6];
+		IG(0, 0) = param_DYN[i*PARAM+4];
+		IG(0, 1) = param_DYN[i*PARAM+5];
+		IG(0, 2) = param_DYN[i*PARAM+6];
 		IG(1, 0) = IG(0, 1);
-		IG(1, 1) = param_DYN[i*10+7];
-		IG(1, 2) = param_DYN[i*10+8];
+		IG(1, 1) = param_DYN[i*PARAM+7];
+		IG(1, 2) = param_DYN[i*PARAM+8];
 		IG(2, 0) = IG(0, 2);
 		IG(2, 1) = IG(1, 2);
-		IG(2, 2) = param_DYN[i*10+9];
+		IG(2, 2) = param_DYN[i*PARAM+9];
 
 		I0 = IG + m * hat(dOG).transpose() * hat(dOG);
 
-		param_REG[i*10] = m;
-		param_REG[i*10+1] = m*dOG[0];
-		param_REG[i*10+2] = m*dOG[1];
-		param_REG[i*10+3] = m*dOG[2];
-		param_REG[i*10+4] = I0(0,0);
-		param_REG[i*10+5] = I0(0,1);
-		param_REG[i*10+6] = I0(0,2);
-		param_REG[i*10+7] = I0(1,1);
-		param_REG[i*10+8] = I0(1,2);
-		param_REG[i*10+9] = I0(2,2);
+		param_REG[i*PARAM] = m;
+		param_REG[i*PARAM+1] = m*dOG[0];
+		param_REG[i*PARAM+2] = m*dOG[1];
+		param_REG[i*PARAM+3] = m*dOG[2];
+		param_REG[i*PARAM+4] = I0(0,0);
+		param_REG[i*PARAM+5] = I0(0,1);
+		param_REG[i*PARAM+6] = I0(0,2);
+		param_REG[i*PARAM+7] = I0(1,1);
+		param_REG[i*PARAM+8] = I0(1,2);
+		param_REG[i*PARAM+9] = I0(2,2);
 	}
 	std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
 
@@ -100,121 +141,156 @@ int main(){
 	// ------------------------------TEST CLASSES---------------------------------------//
 	// ---------------------------------------------------------------------------------//
 
-	Eigen::Matrix<double,NJ,4> DH_table;
-	Eigen::Matrix<double,7,4> DH_table_FULL;
+	// Denavit-Hartenberg
+	// Eigen::Matrix<double,NJ,4> DH_table;
+	// Eigen::Matrix<double,7,4> DH_table_FULL;
+	// std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
+	// DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
 
-	DH_table_FULL << 0,		-M_PI_2,	0.3330, 0,
-				0,      M_PI_2,  	0,      0,
-				0.0825, M_PI_2,  	0.3160, 0,
-			   -0.0825, -M_PI_2,	0,      0,
-				0,      M_PI_2,  	0.384,  0,
-				0.088,  M_PI_2,  	0,      0,
-				0,      0,         	0.107,  0;
+	// DH_table_FULL << 0,		-M_PI_2,	0.3330, 0,
+	// 			0,      M_PI_2,  	0,      0,
+	// 			0.0825, M_PI_2,  	0.3160, 0,
+	// 		   -0.0825, -M_PI_2,	0,      0,
+	// 			0,      M_PI_2,  	0.384,  0,
+	// 			0.088,  M_PI_2,  	0,      0,
+	// 			0,      0,         	0.107,  0;
+	// DH_table_FULL << 	0,	0, 		0, 	0,
+	// 					0,	M_PI_2, 0,	0,
+	// 					1, 	0,  	0, 	0;
 	
-	DH_table = DH_table_FULL.block(0,0,NJ,4);
-	//std::cout<<DH_table<<std::endl;
+	// DH_table = DH_table_FULL.block(0,0,NJ,4);
+	// std::cout<<DH_table<<std::endl;
 
 	/* String of joints' type of robot, R for revolute and P for prismatic */
-	std::string jType_FULL = "RRRRRRR"; 
-	std::string jType = jType_FULL.substr(0,NJ); 
+	// std::string jType_FULL = "RRR"; 
+	// std::string jType = jType_FULL.substr(0,NJ); 
 	//std::cout<<jType<<std::endl;
 	
 	/* Define frame World to link 0 and offset to link EE (no inertia) */
-	FrameOffset base_to_L0({0,0,0},{0,0,0},{0,0,-9.80});
-	FrameOffset Ln_to_EE;
+	// FrameOffset Base_to_L0({0,0,1},{0,0,0},{0,0,-9.81});
+	// FrameOffset Ln_to_EE;
 
 	/* Define frame end-effctor respect last joint. Obtained in $(find franka_description)/robots/common/franka_hand.xacro */
-	if(use_gripper){
-		Ln_to_EE.set_translation({0.0,0.0,0.1034});
-		Ln_to_EE.set_ypr({-M_PI_4,0.0,0.0});
-	} else {
-		Ln_to_EE.set_translation({0.0,0.0,0.0});
-		Ln_to_EE.set_ypr({0.0,0.0,0.0});
-	}
+	// Ln_to_EE.set_translation({1.0, 0.0, 0.0});
+	// Ln_to_EE.set_ypr({-M_PI_2, 0.0, 0.0});
 
-	/* RobKinAdv, RobReg, RobDyn object */;
+	/* RobKinAdv, RobReg, RobDyn object */
 
 	RobKinAdv kinrobot;
 	RobReg regrobot;
+	RobReg_Classic regrobot_classic;
 	RobDyn dynrobot;
 	
-	kinrobot.init(NJ,jType,DH_table,base_to_L0,Ln_to_EE, 0.001);
-	regrobot.init(NJ,jType,DH_table,base_to_L0,Ln_to_EE);
-	dynrobot.init(NJ,jType,DH_table,base_to_L0,Ln_to_EE);
+	kinrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE, 0.001);
+	regrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
+	regrobot_classic.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
+	dynrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 
 	/* Matrix */
 	
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr;
+	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_classic;
+	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_dyn;
 	Eigen::Matrix<double, NJ, NJ> myM;
 	Eigen::Matrix<double, NJ, NJ> myC;
 	Eigen::Matrix<double, NJ, 1> myG;
+	Eigen::Matrix<double, 4, 4> myKin;
 	Eigen::Matrix<double, 6, NJ> myJac;
 	Eigen::Matrix<double, 6, NJ> myJacCM;
 
 	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
 	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
+	Eigen::Matrix<double, NJ, 1> tau_cmd_reg_classic;
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
 	q = q.setOnes()*0.0;
-	dq = dq.setOnes()*0.7;
-	dqr = dqr.setOnes()*0.3;
+	dq = dq.setOnes();
+	dqr = dqr.setOnes()*0.0;
 	ddqr = ddqr.setOnes()*0.0;
 
 	kinrobot.setArguments(q,dq);
 	regrobot.setArguments(q,dq,dqr,ddqr);
+	regrobot_classic.setArguments(q,dq,dqr,ddqr);
 	dynrobot.setArguments(q,dq,param_DYN);
 
-	Yr = regrobot.getRegressor();
-	cout<<"\nYr\n"<<Yr;
+	myKin = kinrobot.getKinematic();
+	cout<<endl<<"Kin_ee\n"<<myKin<<endl;
+	myKin = kinrobot.getT0i(0);
+	cout<<endl<<"Kin0\n"<<myKin<<endl;
+	myKin = kinrobot.getT0i(1);
+	cout<<endl<<"Kin1\n"<<myKin<<endl;
+	myKin = kinrobot.getT0i(2);
+	cout<<endl<<"Kin2\n"<<myKin<<endl;
+	myKin = kinrobot.getT0i(3);
+	cout<<endl<<"Kin3\n"<<myKin<<endl;
+
+	myJac = kinrobot.getJacobian();
+	cout<<endl<<"Jac\n"<<myJac<<endl;
+	myJac = kinrobot.getJi(0);
+	cout<<endl<<"Jac0\n"<<myJac<<endl;
+	myJac = kinrobot.getJi(1);
+	cout<<endl<<"Jac1\n"<<myJac<<endl;
+	myJac = kinrobot.getJi(2);
+	cout<<endl<<"Jac2\n"<<myJac<<endl;
+	myJac = kinrobot.getJi(3);
+	cout<<endl<<"Jac3\n"<<myJac<<endl;
+
 	myM = dynrobot.getMass();
-	cout<<"\nM\n"<<myM;
+	cout<<endl<<"M\n"<<myM<<endl;
 	myC = dynrobot.getCoriolis();
-	cout<<"\nC\n"<<myC;
+	cout<<endl<<"C\n"<<myC<<endl;
 	myG = dynrobot.getGravity();
-	cout<<"\nG\n"<<myG;
-	myJac = dynrobot.getJacobian();
-	cout<<"\nJac\n"<<myJac;
+	cout<<endl<<"G\n"<<myG<<endl;
+	Yr = regrobot.getRegressor();
+	cout<<endl<<"Yr\n"<<Yr<<endl;
+	Yr_classic = regrobot_classic.getRegressor();
+	cout<<endl<<"Yr_classic\n"<<Yr_classic<<endl;
+	// Yr_dyn = dynrobot.getDynReg(q,dq,dqr,ddqr);
+	// cout<<endl<<"Yr_dyn\n"<<Yr_dyn<<endl;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
 	tau_cmd_reg = Yr*param_REG;
+	tau_cmd_reg_classic = Yr_classic*param_REG;
 
-	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<"\nfunziona diff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
+	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
+	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
+	cout<<endl<<"tau_cmd_reg_classic:\n"<<tau_cmd_reg_classic<<endl;
 
-	/* Get Casadi Functions */
-	std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-	kin_vec = kinrobot.getCasadiFunctions();
-	reg_vec = regrobot.getCasadiFunctions();
-	dyn_vec = dynrobot.getCasadiFunctions();
+	// cout << "test: " << Yr_classic(1,20) << endl;s
 
-	/* Merge casadi function */
-	int dim1, dim2,dim3;
-	dim1 = kin_vec.size();
-	dim2 = reg_vec.size();
-	dim3 = dyn_vec.size();
+	// /* Get Casadi Functions */
+	// std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
+	// kin_vec = kinrobot.getCasadiFunctions();
+	// reg_vec = regrobot.getCasadiFunctions();
+	// dyn_vec = dynrobot.getCasadiFunctions();
 
-	for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-	all_vec.push_back(kin_vec[i]);
-	}
-	for (int i=0; i<dim2; i++){
-	all_vec.push_back(reg_vec[i]);
-	}
-	for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-	all_vec.push_back(dyn_vec[i]);
-	}
-	if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
+	// /* Merge casadi function */
+	// int dim1, dim2,dim3;
+	// dim1 = kin_vec.size();
+	// dim2 = reg_vec.size();
+	// dim3 = dyn_vec.size();
 
-	/* Generate merge code */
-	std::string relativePath = "";
+	// for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
+	// all_vec.push_back(kin_vec[i]);
+	// }
+	// for (int i=0; i<dim2; i++){
+	// all_vec.push_back(reg_vec[i]);
+	// }
+	// for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
+	// all_vec.push_back(dyn_vec[i]);
+	// }
+	// if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
 
-	std::filesystem::path currentPath = std::filesystem::current_path();
-	std::string absolutePath = currentPath / relativePath;
-	std::cout << "Absolute path: " << absolutePath << std::endl;
+	// /* Generate merge code */
+	// std::string relativePath = "";
 
-	regrobot.generate_mergeCode(all_vec, absolutePath, "regr_fun_3R_classic");
+	// std::filesystem::path currentPath = std::filesystem::current_path();
+	// std::string absolutePath = currentPath / relativePath;
+	// std::cout << "Absolute path: " << absolutePath << std::endl;
+
+	// regrobot.generate_mergeCode(all_vec, absolutePath, "regr_fun_3R_classic");
 
 
 	return 0;

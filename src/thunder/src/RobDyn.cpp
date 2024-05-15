@@ -149,7 +149,7 @@ namespace thunder_ns{
                 casadi::SX O_j_1Ci(3,1);           // distance of joint i from joint j-1
                 casadi::SX T_0j_1(4,4);           // matrix tranformation of joint i from joint j-1
 
-                T_0j_1 = T0i_vec[j-1];
+                T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1]; 
                 kj_1 = T_0j_1(r_rot_idx, 2);
                 O_j_1Ci = O_Ci - T_0j_1(r_tra_idx, 3);
 
@@ -291,6 +291,47 @@ namespace thunder_ns{
         coriolis_fun = casadi::Function(CORIOLIS_STRING, {_q_, _dq_, _param_}, {densify(SX_coriolis)});
         gravity_fun = casadi::Function(GRAVITY_STRING, {_q_, _param_}, {densify(SX_gravity)});
     }
+
+	// get dynamic regressor using Jacobian, test function
+	// Eigen::MatrixXd RobDyn::getDynReg(const Eigen::VectorXd& q, const Eigen::VectorXd& dq, const Eigen::VectorXd& dqr, const Eigen::VectorXd& ddqr){
+
+	// 	casadi::SXVector result;
+        
+    //     result = Dynamic(_q_, _dq_, _jointsType_, _DHtable_, _lab2L0_);
+        
+    //     SX_mass = result[0];
+    //     SX_coriolis = result[1];
+    //     SX_gravity = result[2];
+
+	// 	casadi::SX _ddqr_ = casadi::SX::sym("_ddqr_", _numJoints_,1);
+	// 	casadi::SX _dqr_ = casadi::SX::sym("_dqr_", _numJoints_,1);
+	// 	casadi::SX f_dyn = SX_mass*_ddqr_ + SX_coriolis*_dqr_ + SX_gravity;
+
+	// 	casadi::SX Y_dyn = simplify(jacobian(f_dyn,_param_)); // need conversion here, not param but param_REG
+
+	// 	// ---
+
+	// 	casadi::Function Y_dyn_fun = casadi::Function("Y_dyn", {_q_, _dq_, _dqr_, _ddqr_}, {densify(Y_dyn)});
+
+	// 	// ---
+		
+	// 	std::vector<casadi::SX> Y_res;
+	// 	for(int i=0;i<_numJoints_;i++){
+	// 		args[0](i,0) = q(i);
+	// 		args[1](i,0) = dq(i);
+	// 		args[2](i,0) = dqr(i);
+	// 		args[3](i,0) = ddqr(i);
+	// 	}
+	// 	Y_dyn_fun.call({args[0], args[1], args[2], args[3]}, Y_res);
+
+	// 	// ---
+
+	// 	Eigen::MatrixXd reg_num;
+	// 	std::vector<casadi::SXElem> Y_elements = Y_res[0].get_elements();
+	// 	std::transform(Y_elements.begin(), Y_elements.end(), reg_num.data(), mapFunction);
+		
+	// 	return reg_num;
+	// }
     
     void RobDyn::setArguments(const Eigen::VectorXd& q_){
         if(q_.size() == _numJoints_){

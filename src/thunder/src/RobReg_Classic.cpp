@@ -201,7 +201,11 @@ namespace thunder_ns{
         for (int i=0; i<nj; i++) {
             
             casadi::SX R0i = T0i[i](selR,selR);
-            if(i==(nj-1)){R0i = mtimes(R0i,ee_frame.get_rotation());} // end-effector
+            // if(i==(nj-1)){	// end-effector
+			// 	R0i = mtimes(R0i,ee_frame.get_rotation());
+			// } else {
+            // 	R0i = casadi::SX::mtimes({base_frame.get_rotation(),R0i,base_frame.get_rotation().T()});
+			// }
             R0i = casadi::SX::mtimes({base_frame.get_rotation(),R0i,base_frame.get_rotation().T()});
 
             // ------------------------- Y0r_i -------------------------- //
@@ -231,7 +235,7 @@ namespace thunder_ns{
                 W1r_i(allRows,l) = -mtimes(C[0]+C[1]-C[2],dqr_)/2;
             }
             casadi::SX Z1r_i= -(jacobian(mtimes(R0i.T(),g),q_)).T();
-            
+
             casadi::SX Y1r_i = dX1r_i - W1r_i + Z1r_i;
 
             // ------------------------- Y2r_i -------------------------- //
@@ -256,6 +260,7 @@ namespace thunder_ns{
             casadi::SX Yr_i = horzcat(Y0r_i,Y1r_i,Y2r_i);
             
             casadi::Slice selCols(i*10,(i+1)*10);          // Select current columns of matrix regressor
+
             Yr(allRows,selCols) = Yr_i;
         }
 

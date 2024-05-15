@@ -190,7 +190,11 @@ namespace thunder_ns{
         for (int i=0; i<nj; i++) {
             
             casadi::SX R0i = T0i[i](selR,selR);
-            if(i==(nj-1)){R0i = mtimes(R0i,ee_frame.get_rotation());} // end-effector
+            // if(i==(nj-1)){	// end-effector
+            // 	R0i = mtimes(R0i,ee_frame.get_rotation());
+            // } else {
+            // 	R0i = casadi::SX::mtimes({base_frame.get_rotation(),R0i,base_frame.get_rotation().T()});
+            // }
             R0i = casadi::SX::mtimes({base_frame.get_rotation(),R0i,base_frame.get_rotation().T()});
 
             // ------------------------- Y0r_i -------------------------- //

@@ -1,6 +1,7 @@
 #include "../library/RobKinAdv.h"
 
 /* Function name used to generate code */
+#define T_STRING "T_fun"
 #define DOT_JAC_STRING "dotJac_fun"
 #define PINV_JAC_STRING "pinvJac_fun"
 #define PINV_JAC_POS_STRING "pinvJacPos_fun"
@@ -191,6 +192,107 @@ namespace thunder_ns{
         dotPinvJacobian_fun.call({args[0],args[1]},dotPinvJacobian_res);
         dotPinvJacobianPos_fun.call({args[0],args[1]},dotPinvJacobianPos_res);       
     }
+	
+	// get transformation from 0 to i
+	Eigen::Matrix4d RobKinAdv::getT0i(int index){
+		const int nj = _numJoints_;
+
+		index = (index==-1)?nj:index; 	// default end-effector
+
+		index = (index>nj)?nj:index;	// out of scope
+
+		casadi::SXVector T0i(nj);
+		std::tuple<casadi::SXVector, casadi::SXVector> T_tuple;
+		casadi::SX T_0_i = casadi::SX::eye(4);
+		
+		T_tuple = DHFwKinJoints();
+		T0i = std::get<0>(T_tuple);
+
+		if (index < nj){ // joint
+			T_0_i = casadi::SX::mtimes({_lab2L0_.get_transform(),T0i[index]});
+		} else { // end-effector
+			T_0_i = casadi::SX::mtimes({_lab2L0_.get_transform(),T0i[nj-1],_Ln2EE_.get_transform()});
+		}
+
+		// ---
+
+		casadi::Function kin_T_fun(T_STRING,{_q_},{densify(T_0_i)});
+
+		// ---
+
+		for(int i=0;i<nj;i++){
+			args[0](i,0) = q(i);
+		}
+		kin_T_fun.call({args[0]},T_res);
+
+		// ---
+
+		Eigen::Matrix4d Kinfull;
+		std::vector<casadi::SXElem> kin_elements = T_res[0].get_elements();
+		std::transform(kin_elements.begin(), kin_elements.end(), Kinfull.data(), mapFunction);
+		
+		return Kinfull;
+	}
+
+	// get Jacobian of i
+	Eigen::MatrixXd RobKinAdv::getJi(int index){
+		const int nj = _numJoints_;
+
+		index = (index==-1)?nj:index; 	// default end-effector
+
+		index = (index>nj)?nj:index;	// out of scope
+
+		casadi::SXVector T0i(nj);
+		casadi::SXVector Jvi(nj+1);		// joints + EE
+		casadi::SXVector Jwi(nj+1);		// joints + EE
+		std::tuple<casadi::SXVector, casadi::SXVector> T_tuple;
+		std::tuple<casadi::SXVector, casadi::SXVector> J_tuple;
+
+		casadi::SX Ji_pos(3,nj);
+		casadi::SX Ji_or(3,nj);
+		casadi::SX J_i(6,nj);
+
+		T_tuple = DHFwKinJoints();
+		T0i = std::get<0>(T_tuple);
+
+		// for (int i=0; i<nj; i++){
+		// 	T0i[i] = casadi::SX::mtimes({_lab2L0_.get_transform(),T0i[i]});
+		// }
+
+		J_tuple = DHJacJoints(T0i);
+		Jvi = std::get<0>(J_tuple);
+		Jwi = std::get<1>(J_tuple);
+
+		// if (index < nj){ // joint
+		// 	T0i = casadi::SX::mtimes({_lab2L0_.get_transform(),T0i[index]});
+		// } else { // end-effector
+		// 	T_0_i = casadi::SX::mtimes({_lab2L0_.get_transform(),T0i[nj-1],_Ln2EE_.get_transform()});
+		// }
+
+		Ji_pos = Jvi[index];
+		Ji_or = Jwi[index];
+
+		J_i = casadi::SX::vertcat({Ji_pos,Ji_or});
+
+		// ---
+
+		casadi::Function Ji_fun(T_STRING,{_q_},{densify(J_i)});
+
+		// ---
+
+		for(int i=0;i<nj;i++){
+			args[0](i,0) = q(i);
+		}
+		Ji_fun.call({args[0]},J_res); 
+
+		// ---
+
+		Eigen::MatrixXd Jacfull(6,_numJoints_);
+		std::vector<casadi::SXElem> jac_elements = J_res[0].get_elements();
+		std::transform(jac_elements.begin(), jac_elements.end(), Jacfull.data(), mapFunction);
+
+		return Jacfull;
+	}
 
     Eigen::MatrixXd RobKinAdv::getDotJacobian(){
         const int nrow = 6;

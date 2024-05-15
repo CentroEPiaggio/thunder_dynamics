@@ -49,7 +49,10 @@ namespace thunder_ns{
             /* Output of casadi function */
             std::vector<casadi::SX> dotJacobian_res, pinvJacobian_res, pinvJacobianPos_res, dotPinvJacobian_res, dotPinvJacobianPos_res;
             /* Casadi function */
-            casadi::Function dotJacobian_fun, pinvJacobian_fun, pinvJacobianPos_fun, dotPinvJacobian_fun, dotPinvJacobianPos_fun; 
+            casadi::Function dotJacobian_fun, pinvJacobian_fun, pinvJacobianPos_fun, dotPinvJacobian_fun, dotPinvJacobianPos_fun;
+			// Other
+			std::vector<casadi::SX> T_res, J_res;
+			// casadi::Function T_fun, J_fun;
 
             /* Damping coefficient for pseudo-inverse */
             double _mu_;
@@ -99,6 +102,10 @@ namespace thunder_ns{
             /* Set arguments to update the result of forward kinematic, jacobian, derivative of jacobian, 
             pseudo-inverse of jacobian, derivative of pseudo-inverse of jacobian */
             virtual void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_);
+
+			/* Get complete kinematics and Jacobians, not in code generation */
+			Eigen::Matrix4d getT0i(int index = -1);
+			Eigen::MatrixXd getJi(int index = -1);
 
             /* Get derivative of jacobian matrix */
             Eigen::MatrixXd getDotJacobian();

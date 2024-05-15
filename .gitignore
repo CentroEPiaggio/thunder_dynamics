@@ -4,5 +4,5 @@ src/thunder/build/
 bin/
 **/generatedFiles/
 src/thunder_robot/build/
-src/thunder_robot/library/robot_gen.h
-src/thunder_robot/src/robot_gen.cpp
+*_gen.h
+*_gen.cpp
