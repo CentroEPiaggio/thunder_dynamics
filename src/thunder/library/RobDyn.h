@@ -32,7 +32,7 @@ namespace thunder_ns{
             /* Matrix SX of regressor */
             casadi::SX SX_mass, SX_coriolis, SX_gravity;
             /* Variable for joints to set arguments*/
-            Eigen::VectorXd q, dq, param;
+            Eigen::VectorXd q, dq, param_DYN;
             casadi::SXVector _mass_vec_;
             casadi::SXVector _distCM_;
             casadi::SXVector _J_3x3_;

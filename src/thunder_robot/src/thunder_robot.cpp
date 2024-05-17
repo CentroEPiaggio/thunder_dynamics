@@ -31,7 +31,8 @@ namespace thunder_ns{
 		dq = Eigen::VectorXd::Zero(num_joints);
 		dqr = Eigen::VectorXd::Zero(num_joints);
 		ddqr = Eigen::VectorXd::Zero(num_joints);
-		param = Eigen::VectorXd::Zero(N_PAR_LINK*num_joints);
+		param_REG = Eigen::VectorXd::Zero(N_PAR_LINK*num_joints);
+		param_DYN = Eigen::VectorXd::Zero(N_PAR_LINK*num_joints);
 
 		reg_gen.resize(num_joints,N_PAR_LINK*num_joints);
 		jac_gen.resize(6,num_joints);
@@ -47,7 +48,7 @@ namespace thunder_ns{
 	}
 
 	int thunder_robot::get_numJoints() {return num_joints;};
-	int thunder_robot::get_numParams() {return param.size();};
+	int thunder_robot::get_numParams() {return param_REG.size();};
 	
 	void thunder_robot::setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_){
 		if(q_.size() == num_joints && dq_.size()== num_joints && dqr_.size()==num_joints && ddqr_.size()==num_joints){
@@ -66,26 +67,49 @@ namespace thunder_ns{
 		// computeGravity_gen();
 	}
 
-	void thunder_robot::setInertialParams(const Eigen::VectorXd& param_){
+	void thunder_robot::update_inertial_DYN(){
+		for (int i=0; i<num_joints; i++){
+			Eigen::VectorXd p_reg = param_REG.segment(N_PAR_LINK*i, N_PAR_LINK);
+			std::cout << "p_reg: " << p_reg << std::endl;
+			double mass = p_reg(0);
+			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
+			std::cout << "CoM: " << CoM << std::endl;
+			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
+			std::cout << "I_tmp: " << I_tmp << std::endl;
+			Eigen::Vector<double, 6> I_tmp_v;
+			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
+			Eigen::Vector<double, 6> I;
+			I << p_reg(4), p_reg(5), p_reg(6), p_reg(7), p_reg(8), p_reg(9);
+			param_DYN.segment(N_PAR_LINK*i, N_PAR_LINK) << mass, CoM, I-I_tmp_v;
+		}
+	}
+
+	void thunder_robot::set_inertial_REG(const Eigen::VectorXd& param_){
 		if(param_.size() == N_PAR_LINK*num_joints){
-			param = param_;
+			param_REG = param_;
 		} else{
 			std::cout<<"in setArguments: invalid dimensions of arguments\n";
 		}
+		// conversion from REG to DYN
+		update_inertial_DYN();
 		// computeMass_gen();
 		// computeCoriolis_gen();
 		// computeGravity_gen();
 	}
 
-	Eigen::VectorXd thunder_robot::getInertialParams(){
-		return param;
+	Eigen::VectorXd thunder_robot::get_inertial_REG(){
+		return param_REG;
+	}
+
+	Eigen::VectorXd thunder_robot::get_inertial_DYN(){
+		return param_DYN;
 	}
 	
 	// void thunder_robot::setArguments(const Eigen::VectorXd& q_,const Eigen::VectorXd& dq_,const Eigen::VectorXd& param_){
 	// 	if(q_.size() == num_joints && dq_.size()== num_joints && param_.size()== N_PAR_LINK*num_joints){
 	// 		q = q_;
 	// 		dq = dq_;
-	// 		param = param_;
+	// 		param_REG = param_;
 	// 	} else{
 	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	// 	}
@@ -140,7 +164,7 @@ namespace thunder_ns{
 		long long p3[mass_fun_SZ_IW];
 		double p4[mass_fun_SZ_W];
 
-		const double* input_[] = {q.data(), param.data()};
+		const double* input_[] = {q.data(), param_DYN.data()};
 		double* output_[] = {mass_gen.data()};
 		
 		int check = mass_fun(input_, output_, p3, p4, 0);
@@ -150,7 +174,7 @@ namespace thunder_ns{
 		long long p3[coriolis_fun_SZ_IW];
 		double p4[coriolis_fun_SZ_W];
 
-		const double* input_[] = {q.data(), dq.data(), param.data()};
+		const double* input_[] = {q.data(), dq.data(), param_DYN.data()};
 		double* output_[] = {coriolis_gen.data()};
 		
 		int check = coriolis_fun(input_, output_, p3, p4, 0);
@@ -160,7 +184,7 @@ namespace thunder_ns{
 		long long p3[gravity_fun_SZ_IW];
 		double p4[gravity_fun_SZ_W];
 
-		const double* input_[] = {q.data(), param.data()};
+		const double* input_[] = {q.data(), param_DYN.data()};
 		double* output_[] = {gravity_gen.data()};
 		int check = gravity_fun(input_, output_, p3, p4, 0);
 	}
@@ -235,7 +259,7 @@ namespace thunder_ns{
 		int check = kin_fun(input_, output_, p3, p4, 0);
 	}
 
-	void thunder_robot::loadInertialParams(std::string file_path){
+	void thunder_robot::load_inertial_REG(std::string file_path){
 		try {
 			YAML::Node config = YAML::LoadFile(file_path);
 			
@@ -255,15 +279,16 @@ namespace thunder_ns{
 				yz = node.second["Iyz"].as<double>();
 				zz = node.second["Izz"].as<double>();
 
-				param.segment(N_PAR_LINK*i, N_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+				param_REG.segment(N_PAR_LINK*i, N_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
 				i++;
 			}
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 		}
+		update_inertial_DYN();
 	}
 
-	void thunder_robot::saveInertialParams(std::string path_yaml_DH_REG){
+	void thunder_robot::save_inertial_REG(std::string path_yaml_DH_REG){
 		std::vector<std::string> keys_reg;
 		keys_reg.resize(5);
 		keys_reg[0] = "mass"; keys_reg[1] = "m_CoM_"; keys_reg[2] = "I"; keys_reg[3] = "REG"; keys_reg[4] = "regressor";
@@ -297,14 +322,14 @@ namespace thunder_ns{
 			// links_prop_REG[i].parI[4] = I0(1,2);
 			// links_prop_REG[i].parI[5] = I0(2,2);
 			links_prop_REG[i].name = "link" + std::to_string(i+1);
-			links_prop_REG[i].mass = param[N_PAR_LINK*i + 0];
-			links_prop_REG[i].xyz = {param[N_PAR_LINK*i + 1], param[N_PAR_LINK*i + 2], param[N_PAR_LINK*i + 3]};
-			links_prop_REG[i].parI[0] = param[N_PAR_LINK*i + 4];
-			links_prop_REG[i].parI[1] = param[N_PAR_LINK*i + 5];
-			links_prop_REG[i].parI[2] = param[N_PAR_LINK*i + 6];
-			links_prop_REG[i].parI[3] = param[N_PAR_LINK*i + 7];
-			links_prop_REG[i].parI[4] = param[N_PAR_LINK*i + 8];
-			links_prop_REG[i].parI[5] = param[N_PAR_LINK*i + 9];
+			links_prop_REG[i].mass = param_REG[N_PAR_LINK*i + 0];
+			links_prop_REG[i].xyz = {param_REG[N_PAR_LINK*i + 1], param_REG[N_PAR_LINK*i + 2], param_REG[N_PAR_LINK*i + 3]};
+			links_prop_REG[i].parI[0] = param_REG[N_PAR_LINK*i + 4];
+			links_prop_REG[i].parI[1] = param_REG[N_PAR_LINK*i + 5];
+			links_prop_REG[i].parI[2] = param_REG[N_PAR_LINK*i + 6];
+			links_prop_REG[i].parI[3] = param_REG[N_PAR_LINK*i + 7];
+			links_prop_REG[i].parI[4] = param_REG[N_PAR_LINK*i + 8];
+			links_prop_REG[i].parI[5] = param_REG[N_PAR_LINK*i + 9];
 		}
 		// create file
 		try {

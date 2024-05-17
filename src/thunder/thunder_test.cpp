@@ -15,7 +15,7 @@
 #include "library/RobReg_Classic.h"
 #include "library/RobDyn.h"
 
-#define NJ 3
+#define NJ 7
 #define PARAM 10
 
 using namespace thunder_ns;
@@ -35,7 +35,7 @@ int main(){
 	Eigen::MatrixXd DH_table;
 	FrameOffset Base_to_L0;
 	FrameOffset Ln_to_EE;
-	std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/robot/robot.yaml";
 
 	//-------------------------------Parsing yaml-----------------------------------//
 	try {
@@ -100,7 +100,7 @@ int main(){
 		return 0;
 	}
 
-	//-------------------Obtain param for regressor (no via YAML)------------------------//
+	//-------------------Obtain param_REG for regressor (no via YAML)------------------------//
 	
 	Eigen::Matrix3d I0,IG;
 	Eigen::Vector3d dOG;
@@ -141,39 +141,6 @@ int main(){
 	// ------------------------------TEST CLASSES---------------------------------------//
 	// ---------------------------------------------------------------------------------//
 
-	// Denavit-Hartenberg
-	// Eigen::Matrix<double,NJ,4> DH_table;
-	// Eigen::Matrix<double,7,4> DH_table_FULL;
-	// std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
-	// DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-
-	// DH_table_FULL << 0,		-M_PI_2,	0.3330, 0,
-	// 			0,      M_PI_2,  	0,      0,
-	// 			0.0825, M_PI_2,  	0.3160, 0,
-	// 		   -0.0825, -M_PI_2,	0,      0,
-	// 			0,      M_PI_2,  	0.384,  0,
-	// 			0.088,  M_PI_2,  	0,      0,
-	// 			0,      0,         	0.107,  0;
-	// DH_table_FULL << 	0,	0, 		0, 	0,
-	// 					0,	M_PI_2, 0,	0,
-	// 					1, 	0,  	0, 	0;
-	
-	// DH_table = DH_table_FULL.block(0,0,NJ,4);
-	// std::cout<<DH_table<<std::endl;
-
-	/* String of joints' type of robot, R for revolute and P for prismatic */
-	// std::string jType_FULL = "RRR"; 
-	// std::string jType = jType_FULL.substr(0,NJ); 
-	//std::cout<<jType<<std::endl;
-	
-	/* Define frame World to link 0 and offset to link EE (no inertia) */
-	// FrameOffset Base_to_L0({0,0,1},{0,0,0},{0,0,-9.81});
-	// FrameOffset Ln_to_EE;
-
-	/* Define frame end-effctor respect last joint. Obtained in $(find franka_description)/robots/common/franka_hand.xacro */
-	// Ln_to_EE.set_translation({1.0, 0.0, 0.0});
-	// Ln_to_EE.set_ypr({-M_PI_2, 0.0, 0.0});
-
 	/* RobKinAdv, RobReg, RobDyn object */
 
 	RobKinAdv kinrobot;
@@ -205,10 +172,10 @@ int main(){
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q = q.setOnes()*0.0;
+	q = q.setOnes();
 	dq = dq.setOnes();
-	dqr = dqr.setOnes()*0.0;
-	ddqr = ddqr.setOnes()*0.0;
+	dqr = dqr.setOnes();
+	ddqr = ddqr.setOnes();
 
 	kinrobot.setArguments(q,dq);
 	regrobot.setArguments(q,dq,dqr,ddqr);

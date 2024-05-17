@@ -19,7 +19,7 @@ namespace thunder_ns{
 			/* Number of joints */
 			int num_joints;
 			/* Joints' variables */
-			Eigen::VectorXd q, dq, dqr, ddqr, param;
+			Eigen::VectorXd q, dq, dqr, ddqr, param_REG, param_DYN;
 			/* Output of generated code */
 			Eigen::MatrixXd kin_gen, jac_gen, dotJac_gen, pinvJac_gen, pinvJacPos_gen, dotPinvJac_gen, dotPinvJacPos_gen,
 				reg_gen, mass_gen, coriolis_gen, gravity_gen;
@@ -27,6 +27,7 @@ namespace thunder_ns{
 			void computeKin_gen(), computeJac_gen(), computeDotJac_gen(), computePinvJac_gen(), computeDotPinvJac_gen(), 
 				computeReg_gen(), computeMass_gen(), computeCoriolis_gen(), computeGravity_gen(), computePinvJacPos_gen(), computeDotPinvJacPos_gen();
 
+			void update_inertial_DYN();
 		public:
 			/* Empty constructor, initialization inside */
 			thunder_robot();
@@ -41,11 +42,12 @@ namespace thunder_ns{
 			// void init(const int);
 			/* Set q, dq, dqr, ddqr, to compute Regressor and update state*/
 			void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
-			void setInertialParams(const Eigen::VectorXd& param_);
-			Eigen::VectorXd getInertialParams();
+			void set_inertial_REG(const Eigen::VectorXd& param_);
+			Eigen::VectorXd get_inertial_REG();
+			Eigen::VectorXd get_inertial_DYN();
 
-			void loadInertialParams(std::string);
-			void saveInertialParams(std::string);
+			void load_inertial_REG(std::string);
+			void save_inertial_REG(std::string);
 
 			int get_numJoints();
 			int get_numParams();

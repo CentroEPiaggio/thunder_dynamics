@@ -57,7 +57,7 @@ namespace thunder_ns{
 
         q = Eigen::VectorXd::Zero(_numJoints_);
         dq = Eigen::VectorXd::Zero(_numJoints_);
-        param = Eigen::VectorXd::Zero(10*_numJoints_);
+        param_DYN = Eigen::VectorXd::Zero(10*_numJoints_);
 
         _mass_vec_.resize(_numJoints_);
         _distCM_.resize(_numJoints_);
@@ -356,7 +356,7 @@ namespace thunder_ns{
         if(q_.size() == _numJoints_ && dq_.size()==_numJoints_ && param_.size() == 10*_numJoints_){
             q = q_;
             dq = dq_;
-            param = param_;
+            param_DYN = param_;
         } else{
             std::cout<<"in setArguments: invalid dimensions of arguments\n";
         }
@@ -370,7 +370,7 @@ namespace thunder_ns{
         }
 
         for(int i=0;i<10*_numJoints_;i++){
-            args[2](i,0) = param(i);
+            args[2](i,0) = param_DYN(i);
         }
 
         kinematic_fun.call({args[0]},kinematic_res);
