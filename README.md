@@ -58,9 +58,9 @@ int main(){
 	// set configuration
 	my_robot.setArguments(q, dq, dq_r, ddq_r);
 	// set inertial param from vector
-	my_robot.setParams(params);
+	my_robot.set_inertial_REG(params);
 	// or load it from file
-	my_robot.loadInertialParams(".../<robot>_inertial_REG.yaml");
+	my_robot.load_inertial_REG(".../<robot>_inertial_REG.yaml");
 	// compute regressor
 	eigen3::MatrixXd Y = my_robot.get_regressor();
 	...
