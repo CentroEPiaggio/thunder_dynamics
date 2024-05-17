@@ -70,12 +70,9 @@ namespace thunder_ns{
 	void thunder_robot::update_inertial_DYN(){
 		for (int i=0; i<num_joints; i++){
 			Eigen::VectorXd p_reg = param_REG.segment(N_PAR_LINK*i, N_PAR_LINK);
-			std::cout << "p_reg: " << p_reg << std::endl;
 			double mass = p_reg(0);
 			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
-			std::cout << "CoM: " << CoM << std::endl;
 			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
-			std::cout << "I_tmp: " << I_tmp << std::endl;
 			Eigen::Vector<double, 6> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 			Eigen::Vector<double, 6> I;
@@ -267,7 +264,6 @@ namespace thunder_ns{
 			int i = 0;
 			for (const auto& node : config) {
 				std::string linkName = node.first.as<std::string>();
-				std::cout<<"link_nake:"<<linkName<<std::endl;
 				mass = node.second["mass"].as<double>();
 				m_cmx = node.second["m_CoM_x"].as<double>();
 				m_cmy = node.second["m_CoM_y"].as<double>();
