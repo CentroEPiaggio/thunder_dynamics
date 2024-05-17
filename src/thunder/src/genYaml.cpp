@@ -1,23 +1,23 @@
 /* 
 Generate two yaml files of inertial parameters (only for arm + hand) to use standard equation of dynamic and regressor.
 
-    The inertial parameters are referred to joints' frame(!) of denavit parametrization.
-    Denavit-Hartenberg parametrization table used is:
-        DH_table << 0,      -M_PI_2,  0.3330, 0,
-                    0,      M_PI_2,   0,      0,
-                    0.0825, M_PI_2,   0.3160, 0,
-                    -0.0825,-M_PI_2,  0,      0,
-                    0,      M_PI_2,   0.384,  0,
-                    0.088,  M_PI_2,   0,      0,
-                    0,      0,        0.107,  0;
+	The inertial parameters are referred to joints' frame(!) of denavit parametrization.
+	Denavit-Hartenberg parametrization table used is:
+		DH_table << 0,      -M_PI_2,  0.3330, 0,
+					0,      M_PI_2,   0,      0,
+					0.0825, M_PI_2,   0.3160, 0,
+					-0.0825,-M_PI_2,  0,      0,
+					0,      M_PI_2,   0.384,  0,
+					0.088,  M_PI_2,   0,      0,
+					0,      0,        0.107,  0;
 
-    For standard equation of dynamic the format of link's parameters are [m, CoM_x, CoMy, CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
-    For regressor the format of link's parameters are [m, m*CoM_x, m*CoMy, m*CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
+	For standard equation of dynamic the format of link's parameters are [m, CoM_x, CoMy, CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
+	For regressor the format of link's parameters are [m, m*CoM_x, m*CoMy, m*CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
 
-    Parameters manipulated are obtained with transformation of URDF file from:"
-        - $(find franka_gazebo)/test/launch/panda-gazebo.urdf"
-        - $(find franka_description)/robots/common/franka_robot.xacro"
-        - $(find franka_description)/robots/common/inertial.yaml"
+	Parameters manipulated are obtained with transformation of URDF file from:"
+		- $(find franka_gazebo)/test/launch/panda-gazebo.urdf"
+		- $(find franka_description)/robots/common/franka_robot.xacro"
+		- $(find franka_description)/robots/common/inertial.yaml"
 */
 
 #include <iostream>
@@ -45,7 +45,7 @@ Generate two yaml files of inertial parameters (only for arm + hand) to use stan
 // std::string path_copy_DH_REG = "../../config/inertial_DH_REG.yaml";
 
 std::string common_comment =             
-        "Obtained with transformation of URDF files considering Denavit-Hartenberg parametrization\n";
+		"Obtained with transformation of URDF files considering Denavit-Hartenberg parametrization\n";
 
 namespace thunder_ns{
 
@@ -71,7 +71,7 @@ namespace thunder_ns{
 		links_prop_REG.resize(num_joints);
 
 		// Eigen::Matrix3d I0,IG;
-    	// Eigen::Vector3d dOG;
+		// Eigen::Vector3d dOG;
 
 		// transform.resize(num_joints);
 		// transform[0].rpy = {+M_PI_2,0,0};   // link transform

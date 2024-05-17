@@ -68,8 +68,8 @@ int main(){
 	ddqr = ddqr.setOnes();
 
 	// kinrobot.setArguments(q,dq);
-    // regrobot.setArguments(q,dq,dqr,ddqr);
-    // dynrobot.setArguments(q,dq,param_DYN);
+	// regrobot.setArguments(q,dq,dqr,ddqr);
+	// dynrobot.setArguments(q,dq,param_DYN);
 
 	robot.setArguments(q, dq, dqr, ddqr);
 
