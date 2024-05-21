@@ -46,6 +46,7 @@ namespace thunder_ns{
 
 			/* Compute C matrix with Christoffel symbols */
 			casadi::SXVector stdCmatrix(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
+			casadi::SXVector stdCmatrix_classic(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
 			/* Compute Regressor of Slotine Li from Denavit-Hartenberg parameterization*/
 			casadi::SX SXregressor(
 				const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dqr_, const casadi::SX& ddqr_, 

@@ -214,8 +214,6 @@ int main(){
 	cout<<endl<<"Yr\n"<<Yr<<endl;
 	Yr_classic = regrobot_classic.getRegressor();
 	cout<<endl<<"Yr_classic\n"<<Yr_classic<<endl;
-	// Yr_dyn = dynrobot.getDynReg(q,dq,dqr,ddqr);
-	// cout<<endl<<"Yr_dyn\n"<<Yr_dyn<<endl;
 
 	tau_cmd_dyn = myM*ddqr + myG;// + myC*dqr + myG;
 	tau_cmd_reg = Yr*param_REG - tau_cmd_dyn;
@@ -224,41 +222,6 @@ int main(){
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<endl<<"tau_cmd_reg_classic:\n"<<tau_cmd_reg_classic<<endl;
-
-	// cout << "test: " << Yr_classic(1,20) << endl;s
-
-	// /* Get Casadi Functions */
-	// std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-	// kin_vec = kinrobot.getCasadiFunctions();
-	// reg_vec = regrobot.getCasadiFunctions();
-	// dyn_vec = dynrobot.getCasadiFunctions();
-
-	// /* Merge casadi function */
-	// int dim1, dim2,dim3;
-	// dim1 = kin_vec.size();
-	// dim2 = reg_vec.size();
-	// dim3 = dyn_vec.size();
-
-	// for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-	// all_vec.push_back(kin_vec[i]);
-	// }
-	// for (int i=0; i<dim2; i++){
-	// all_vec.push_back(reg_vec[i]);
-	// }
-	// for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-	// all_vec.push_back(dyn_vec[i]);
-	// }
-	// if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
-
-	// /* Generate merge code */
-	// std::string relativePath = "";
-
-	// std::filesystem::path currentPath = std::filesystem::current_path();
-	// std::string absolutePath = currentPath / relativePath;
-	// std::cout << "Absolute path: " << absolutePath << std::endl;
-
-	// regrobot.generate_mergeCode(all_vec, absolutePath, "regr_fun_3R_classic");
-
 
 	return 0;
 }

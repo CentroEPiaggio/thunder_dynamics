@@ -151,6 +151,35 @@ namespace thunder_ns{
 
 		return C;
 	}
+
+	casadi::SXVector RobReg::stdCmatrix_classic(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
+		// classic C matrix computation, probably have to be C = C/2
+		int n = q_.size1();
+
+		casadi::SX C123(n, n);
+		casadi::SX C132(n, n);
+		casadi::SX C231(n, n);
+
+		for (int h = 0; h < n; h++) {
+			for (int j = 0; j < n; j++) {
+				for (int k = 0; k < n; k++) {
+					casadi::SX dbhj_dqk = jacobian(B(h, j), q_(k));
+					casadi::SX dbhk_dqj = jacobian(B(h, k), q_(j));
+					//casadi::SX dbjk_dqh = jacobian(B(j, k), q_(h));
+					C123(h, j) = C123(h, j) + 0.5 * (dbhj_dqk) * dq_(k);
+					C132(h, j) = C132(h, j) + 0.5 * (dbhk_dqj) * dq_(k);
+					//C231(h, j) = C231(h, j) + 0.5 * (dbjk_dqh) * dq_(k);
+				}
+			}
+		}
+
+		casadi::SXVector C(3);
+		C[0] = C123;
+		C[1] = C132;
+		C[2] = C132.T();
+
+		return C;
+	}
 	
 	casadi::SX RobReg::SXregressor(
 		
