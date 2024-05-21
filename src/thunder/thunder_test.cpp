@@ -12,7 +12,6 @@
 
 #include "library/RobKinAdv.h"
 #include "library/RobReg.h"
-#include "library/RobReg_Classic.h"
 #include "library/RobDyn.h"
 
 #define NJ 7
@@ -145,18 +144,15 @@ int main(){
 
 	RobKinAdv kinrobot;
 	RobReg regrobot;
-	RobReg_Classic regrobot_classic;
 	RobDyn dynrobot;
 	
 	kinrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE, 0.001);
 	regrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
-	regrobot_classic.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 	dynrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 
 	/* Matrix */
 	
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr;
-	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_classic;
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_dyn;
 	Eigen::Matrix<double, NJ, NJ> myM;
 	Eigen::Matrix<double, NJ, NJ> myC;
@@ -167,19 +163,17 @@ int main(){
 
 	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
 	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_reg_classic;
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q = q.setOnes();
-	dq = dq.setOnes();
-	dqr = dqr.setOnes();
-	ddqr = ddqr.setOnes();
+	q = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dq = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dqr = Eigen::Vector<double,NJ>::Random();//setOnes();
+	ddqr = Eigen::Vector<double,NJ>::Random();//setOnes();
 
 	kinrobot.setArguments(q,dq);
 	regrobot.setArguments(q,dq,dqr,ddqr);
-	regrobot_classic.setArguments(q,dq,dqr,ddqr);
 	dynrobot.setArguments(q,dq,param_DYN);
 
 	myKin = kinrobot.getKinematic();
@@ -212,53 +206,12 @@ int main(){
 	cout<<endl<<"G\n"<<myG<<endl;
 	Yr = regrobot.getRegressor();
 	cout<<endl<<"Yr\n"<<Yr<<endl;
-	Yr_classic = regrobot_classic.getRegressor();
-	cout<<endl<<"Yr_classic\n"<<Yr_classic<<endl;
-	// Yr_dyn = dynrobot.getDynReg(q,dq,dqr,ddqr);
-	// cout<<endl<<"Yr_dyn\n"<<Yr_dyn<<endl;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
 	tau_cmd_reg = Yr*param_REG;
-	tau_cmd_reg_classic = Yr_classic*param_REG;
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_reg_classic:\n"<<tau_cmd_reg_classic<<endl;
-
-	// cout << "test: " << Yr_classic(1,20) << endl;s
-
-	// /* Get Casadi Functions */
-	// std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-	// kin_vec = kinrobot.getCasadiFunctions();
-	// reg_vec = regrobot.getCasadiFunctions();
-	// dyn_vec = dynrobot.getCasadiFunctions();
-
-	// /* Merge casadi function */
-	// int dim1, dim2,dim3;
-	// dim1 = kin_vec.size();
-	// dim2 = reg_vec.size();
-	// dim3 = dyn_vec.size();
-
-	// for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-	// all_vec.push_back(kin_vec[i]);
-	// }
-	// for (int i=0; i<dim2; i++){
-	// all_vec.push_back(reg_vec[i]);
-	// }
-	// for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-	// all_vec.push_back(dyn_vec[i]);
-	// }
-	// if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
-
-	// /* Generate merge code */
-	// std::string relativePath = "";
-
-	// std::filesystem::path currentPath = std::filesystem::current_path();
-	// std::string absolutePath = currentPath / relativePath;
-	// std::cout << "Absolute path: " << absolutePath << std::endl;
-
-	// regrobot.generate_mergeCode(all_vec, absolutePath, "regr_fun_3R_classic");
-
 
 	return 0;
 }

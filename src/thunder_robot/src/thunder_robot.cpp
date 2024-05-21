@@ -70,12 +70,9 @@ namespace thunder_ns{
 	void thunder_robot::update_inertial_DYN(){
 		for (int i=0; i<num_joints; i++){
 			Eigen::VectorXd p_reg = param_REG.segment(N_PAR_LINK*i, N_PAR_LINK);
-			std::cout << "p_reg: " << p_reg << std::endl;
 			double mass = p_reg(0);
 			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
-			std::cout << "CoM: " << CoM << std::endl;
 			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
-			std::cout << "I_tmp: " << I_tmp << std::endl;
 			Eigen::Vector<double, 6> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 			Eigen::Vector<double, 6> I;
@@ -267,11 +264,10 @@ namespace thunder_ns{
 			int i = 0;
 			for (const auto& node : config) {
 				std::string linkName = node.first.as<std::string>();
-				std::cout<<"link_nake:"<<linkName<<std::endl;
 				mass = node.second["mass"].as<double>();
 				m_cmx = node.second["m_CoM_x"].as<double>();
 				m_cmy = node.second["m_CoM_y"].as<double>();
-				m_cmz = node.second["m_CoM_y"].as<double>();
+				m_cmz = node.second["m_CoM_z"].as<double>();
 				xx = node.second["Ixx"].as<double>();
 				xy = node.second["Ixy"].as<double>();
 				xz = node.second["Ixz"].as<double>();
@@ -343,8 +339,7 @@ namespace thunder_ns{
 			fout << emitter.c_str();
 			fout.close();
 
-			std::cout << "Successfully generated YAML file of inertial parameters for regressor"<<std::endl;
-			std::cout<< " path: " << path_yaml_DH_REG<< std::endl;
+			std::cout << "param_REG saved on path: " << path_yaml_DH_REG << std::endl;
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
@@ -419,60 +414,60 @@ namespace thunder_ns{
 		}
 	}
 
-	void thunder_robot::transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
-        Eigen::Vector3d OuGi; 
-        Eigen::Vector3d OiGi;
-        Eigen::Vector3d dist_i;
-        Eigen::Matrix3d Riu = rpyRot(rpy_i);
-        Eigen::Matrix3d Rub = rpyRot(body_urdf.rpy);
-        Eigen::Matrix3d Rib = Riu*Rub;
+	// void thunder_robot::transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body){
+    //     Eigen::Vector3d OuGi; 
+    //     Eigen::Vector3d OiGi;
+    //     Eigen::Vector3d dist_i;
+    //     Eigen::Matrix3d Riu = rpyRot(rpy_i);
+    //     Eigen::Matrix3d Rub = rpyRot(body_urdf.rpy);
+    //     Eigen::Matrix3d Rib = Riu*Rub;
 
-        Eigen::Matrix3d IGi_B = createI(body_urdf.parI);
-        Eigen::Matrix3d IOi_i;
-        Eigen::Matrix3d d_hat;
+    //     Eigen::Matrix3d IGi_B = createI(body_urdf.parI);
+    //     Eigen::Matrix3d IOi_i;
+    //     Eigen::Matrix3d d_hat;
 
-        OuGi << body_urdf.xyz[0], body_urdf.xyz[1],body_urdf.xyz[2]; 
-        dist_i << d_i[0], d_i[1], d_i[2];
-        OiGi = dist_i + Riu*OuGi;
-        d_hat = hat(OiGi);
+    //     OuGi << body_urdf.xyz[0], body_urdf.xyz[1],body_urdf.xyz[2]; 
+    //     dist_i << d_i[0], d_i[1], d_i[2];
+    //     OiGi = dist_i + Riu*OuGi;
+    //     d_hat = hat(OiGi);
 
-        IOi_i = Rib*IGi_B*Rib.transpose();
+    //     IOi_i = Rib*IGi_B*Rib.transpose();
 
-        body.mass = body_urdf.mass;
-        body.xyz = {OiGi(0),OiGi(1),OiGi(2)};
-        body.parI = {IOi_i(0,0),IOi_i(0,1),IOi_i(0,2),IOi_i(1,1),IOi_i(1,2),IOi_i(2,2)};
-        body.name = body_urdf.name;
-    }
+    //     body.mass = body_urdf.mass;
+    //     body.xyz = {OiGi(0),OiGi(1),OiGi(2)};
+    //     body.parI = {IOi_i(0,0),IOi_i(0,1),IOi_i(0,2),IOi_i(1,1),IOi_i(1,2),IOi_i(2,2)};
+    //     body.name = body_urdf.name;
+    // }
 
-    void thunder_robot::mergeBodyInertial(const LinkProp body1, const LinkProp body2, LinkProp &newBody){
-        Eigen::Vector3d G1Gnew;
-        Eigen::Vector3d G2Gnew;
-        Eigen::Vector3d O1G1;
-        Eigen::Vector3d O2G2;
-        Eigen::Vector3d newCoM;        
-        Eigen::Matrix3d d_hat1;
-        Eigen::Matrix3d d_hat2;
-        Eigen::Matrix3d newI;
-        Eigen::Matrix3d IG1 = createI(body1.parI);
-        Eigen::Matrix3d IG2 = createI(body2.parI);
+    // void thunder_robot::mergeBodyInertial(const LinkProp body1, const LinkProp body2, LinkProp &newBody){
+    //     Eigen::Vector3d G1Gnew;
+    //     Eigen::Vector3d G2Gnew;
+    //     Eigen::Vector3d O1G1;
+    //     Eigen::Vector3d O2G2;
+    //     Eigen::Vector3d newCoM;        
+    //     Eigen::Matrix3d d_hat1;
+    //     Eigen::Matrix3d d_hat2;
+    //     Eigen::Matrix3d newI;
+    //     Eigen::Matrix3d IG1 = createI(body1.parI);
+    //     Eigen::Matrix3d IG2 = createI(body2.parI);
         
-        O1G1 << body1.xyz[0], body1.xyz[1], body1.xyz[2]; 
-        O2G2 << body2.xyz[0], body2.xyz[1], body2.xyz[2]; 
+    //     O1G1 << body1.xyz[0], body1.xyz[1], body1.xyz[2]; 
+    //     O2G2 << body2.xyz[0], body2.xyz[1], body2.xyz[2]; 
         
-        newCoM = (body1.mass*O1G1 + body2.mass*O2G2)/(body1.mass + body2.mass);
+    //     newCoM = (body1.mass*O1G1 + body2.mass*O2G2)/(body1.mass + body2.mass);
 
-        G1Gnew = newCoM-O1G1;
-        G2Gnew = newCoM-O2G2;
+    //     G1Gnew = newCoM-O1G1;
+    //     G2Gnew = newCoM-O2G2;
         
-        d_hat1 = hat(G1Gnew);
-        d_hat2 = hat(G2Gnew);
+    //     d_hat1 = hat(G1Gnew);
+    //     d_hat2 = hat(G2Gnew);
 
-        newI = IG1 + body1.mass*d_hat1*d_hat1.transpose() + IG2 + body2.mass*d_hat2*d_hat2.transpose();
+    //     newI = IG1 + body1.mass*d_hat1*d_hat1.transpose() + IG2 + body2.mass*d_hat2*d_hat2.transpose();
 
-        newBody.mass = body1.mass + body2.mass;
-        newBody.xyz = {newCoM(0),newCoM(1),newCoM(2)};
-        newBody.parI = {newI(0,0),newI(0,1),newI(0,2),newI(1,1),newI(1,2),newI(2,2)};
-    }
+    //     newBody.mass = body1.mass + body2.mass;
+    //     newBody.xyz = {newCoM(0),newCoM(1),newCoM(2)};
+    //     newBody.parI = {newI(0,0),newI(0,1),newI(0,2),newI(1,1),newI(1,2),newI(2,2)};
+    // }
 
     Eigen::Matrix3d thunder_robot::hat(const Eigen::Vector3d v){
         Eigen::Matrix3d vhat;
