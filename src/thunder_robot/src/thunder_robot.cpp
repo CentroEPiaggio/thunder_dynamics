@@ -267,7 +267,7 @@ namespace thunder_ns{
 				mass = node.second["mass"].as<double>();
 				m_cmx = node.second["m_CoM_x"].as<double>();
 				m_cmy = node.second["m_CoM_y"].as<double>();
-				m_cmz = node.second["m_CoM_y"].as<double>();
+				m_cmz = node.second["m_CoM_z"].as<double>();
 				xx = node.second["Ixx"].as<double>();
 				xy = node.second["Ixy"].as<double>();
 				xz = node.second["Ixz"].as<double>();
@@ -339,8 +339,7 @@ namespace thunder_ns{
 			fout << emitter.c_str();
 			fout.close();
 
-			std::cout << "Successfully generated YAML file of inertial parameters for regressor"<<std::endl;
-			std::cout<< " path: " << path_yaml_DH_REG<< std::endl;
+			std::cout << "param_REG saved on path: " << path_yaml_DH_REG << std::endl;
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while generating YAML: " << e.what() << std::endl;

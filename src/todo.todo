@@ -35,6 +35,7 @@ thunder:
 thunder_robot:
 	✔ load and save inertial parameters @done (4/3/2024, 7:57:43 AM)
 	☐ manage inertial_DYN
+	☐ C_regr_classic = 0.5*C_regr = 0.5*C_dyn
 
 issues:
 	☐ ypr in Ln_to_EE transform is misleading, expected x->y->z, right?

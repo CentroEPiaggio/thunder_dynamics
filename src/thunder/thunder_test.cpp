@@ -172,10 +172,10 @@ int main(){
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q = q.setOnes();
-	dq = dq.setOnes();
-	dqr = dqr.setOnes();
-	ddqr = ddqr.setOnes();
+	q = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dq = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dqr = Eigen::Vector<double,NJ>::Random();//setOnes();
+	ddqr = Eigen::Vector<double,NJ>::Random();//setOnes();
 
 	kinrobot.setArguments(q,dq);
 	regrobot.setArguments(q,dq,dqr,ddqr);
@@ -217,9 +217,9 @@ int main(){
 	// Yr_dyn = dynrobot.getDynReg(q,dq,dqr,ddqr);
 	// cout<<endl<<"Yr_dyn\n"<<Yr_dyn<<endl;
 
-	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
-	tau_cmd_reg = Yr*param_REG;
-	tau_cmd_reg_classic = Yr_classic*param_REG;
+	tau_cmd_dyn = myM*ddqr + myG;// + myC*dqr + myG;
+	tau_cmd_reg = Yr*param_REG - tau_cmd_dyn;
+	tau_cmd_reg_classic = Yr_classic*param_REG - tau_cmd_dyn - 0.5*tau_cmd_reg;
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
