@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "chmod +x ./.devcontainer/setup_init.sh && ./.devcontainer/setup_init.sh",
+	"postCreateCommand": "cd .devcontainer && sudo chmod +x ./setup_init.sh && chmod +x ./setup_bin.sh && ./setup_init.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
