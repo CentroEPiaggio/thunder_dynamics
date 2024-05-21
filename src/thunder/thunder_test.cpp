@@ -12,7 +12,6 @@
 
 #include "library/RobKinAdv.h"
 #include "library/RobReg.h"
-#include "library/RobReg_Classic.h"
 #include "library/RobDyn.h"
 
 #define NJ 7
@@ -145,18 +144,15 @@ int main(){
 
 	RobKinAdv kinrobot;
 	RobReg regrobot;
-	RobReg_Classic regrobot_classic;
 	RobDyn dynrobot;
 	
 	kinrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE, 0.001);
 	regrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
-	regrobot_classic.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 	dynrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 
 	/* Matrix */
 	
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr;
-	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_classic;
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_dyn;
 	Eigen::Matrix<double, NJ, NJ> myM;
 	Eigen::Matrix<double, NJ, NJ> myC;
@@ -167,7 +163,6 @@ int main(){
 
 	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
 	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_reg_classic;
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
@@ -179,7 +174,6 @@ int main(){
 
 	kinrobot.setArguments(q,dq);
 	regrobot.setArguments(q,dq,dqr,ddqr);
-	regrobot_classic.setArguments(q,dq,dqr,ddqr);
 	dynrobot.setArguments(q,dq,param_DYN);
 
 	myKin = kinrobot.getKinematic();
@@ -212,16 +206,12 @@ int main(){
 	cout<<endl<<"G\n"<<myG<<endl;
 	Yr = regrobot.getRegressor();
 	cout<<endl<<"Yr\n"<<Yr<<endl;
-	Yr_classic = regrobot_classic.getRegressor();
-	cout<<endl<<"Yr_classic\n"<<Yr_classic<<endl;
 
-	tau_cmd_dyn = myM*ddqr + myG;// + myC*dqr + myG;
-	tau_cmd_reg = Yr*param_REG - tau_cmd_dyn;
-	tau_cmd_reg_classic = Yr_classic*param_REG - tau_cmd_dyn - 0.5*tau_cmd_reg;
+	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
+	tau_cmd_reg = Yr*param_REG;
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_reg_classic:\n"<<tau_cmd_reg_classic<<endl;
 
 	return 0;
 }

@@ -98,8 +98,8 @@ namespace thunder_ns{
 			};
 
 			void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
-			void transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body);
-			void mergeBodyInertial(const LinkProp body1, const LinkProp body2, LinkProp &newBody);
+			// void transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body);
+			// void mergeBodyInertial(const LinkProp body1, const LinkProp body2, LinkProp &newBody);
 
 			Eigen::Matrix3d rpyRot(const std::vector<double> rpy);
 			Eigen::Matrix3d createI(const std::vector<double> parI);

@@ -2,22 +2,11 @@
 Generate two yaml files of inertial parameters (only for arm + hand) to use standard equation of dynamic and regressor.
 
 	The inertial parameters are referred to joints' frame(!) of denavit parametrization.
-	Denavit-Hartenberg parametrization table used is:
-		DH_table << 0,      -M_PI_2,  0.3330, 0,
-					0,      M_PI_2,   0,      0,
-					0.0825, M_PI_2,   0.3160, 0,
-					-0.0825,-M_PI_2,  0,      0,
-					0,      M_PI_2,   0.384,  0,
-					0.088,  M_PI_2,   0,      0,
-					0,      0,        0.107,  0;
 
 	For standard equation of dynamic the format of link's parameters are [m, CoM_x, CoMy, CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
 	For regressor the format of link's parameters are [m, m*CoM_x, m*CoMy, m*CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
 
-	Parameters manipulated are obtained with transformation of URDF file from:"
-		- $(find franka_gazebo)/test/launch/panda-gazebo.urdf"
-		- $(find franka_description)/robots/common/franka_robot.xacro"
-		- $(find franka_description)/robots/common/inertial.yaml"
+	Parameters manipulated can be obtained with transformation of URDF file
 */
 
 #include <iostream>
