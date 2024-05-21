@@ -1,8 +1,6 @@
 .devcontainer/.bash_history
-src/generatedFiles/
-src/thunder/build/
 bin/
+**/build/
 **/generatedFiles/
-src/thunder_robot/build/
 *_gen.h
 *_gen.cpp
