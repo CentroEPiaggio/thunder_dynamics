@@ -19,7 +19,7 @@ DH: [0,  0,      1, 0,
      1,  0,      0, 0]
 
 # gravity vector
-gravity: [0, 0, 9.81]
+gravity: [0, 0, -9.81]
 
 # world to link_0
 Base_to_L0:
