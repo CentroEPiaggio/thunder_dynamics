@@ -28,6 +28,8 @@ namespace thunder_ns{
 				computeReg_gen(), computeMass_gen(), computeCoriolis_gen(), computeGravity_gen(), computePinvJacPos_gen(), computeDotPinvJacPos_gen();
 
 			void update_inertial_DYN();
+			void update_inertial_REG();
+			
 		public:
 			/* Empty constructor, initialization inside */
 			thunder_robot();
@@ -43,11 +45,14 @@ namespace thunder_ns{
 			/* Set q, dq, dqr, ddqr, to compute Regressor and update state*/
 			void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
 			void set_inertial_REG(const Eigen::VectorXd& param_);
+			void set_inertial_DYN(const Eigen::VectorXd& param_);
 			Eigen::VectorXd get_inertial_REG();
 			Eigen::VectorXd get_inertial_DYN();
 
 			void load_inertial_REG(std::string);
 			void save_inertial_REG(std::string);
+			void load_inertial_DYN(std::string);
+			void save_inertial_DYN(std::string);
 
 			int get_numJoints();
 			int get_numParams();

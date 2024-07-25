@@ -97,6 +97,15 @@ int main(){
 
 	robot.save_inertial_REG(saved_inertial_file);
 
+	// Eigen::VectorXd param_DYN(N_PAR);
+	// Eigen::VectorXd param_DYN_afterLoad(N_PAR);
+	// param_DYN = robot.get_inertial_DYN();
+	// cout<<"\nparam_DYN:\n"<<param_DYN<<endl;
+	// robot.save_inertial_DYN("file_inertial_dyn");
+	// robot.load_inertial_DYN("file_inertial_dyn");
+	// param_DYN_afterLoad = robot.get_inertial_DYN();
+	// cout<<"\nparam_DYN error:\n"<<param_DYN-param_DYN_afterLoad<<endl;
+
 	return 0;
 }
 

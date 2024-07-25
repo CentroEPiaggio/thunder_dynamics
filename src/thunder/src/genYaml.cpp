@@ -29,12 +29,11 @@ Generate two yaml files of inertial parameters (only for arm + hand) to use stan
 // bool use_gripper = false;
 // bool copy_flag = false;
 // std::string path_yaml_DH = "../generatedFiles/inertial_DH.yaml";
-// std::string out_inertial_file = "../generatedFiles/inertial_DH_REG";
+// std::string out_REG_file = "../generatedFiles/inertial_DH_REG";
 // std::string path_yaml_DH_DYN = "../generatedFiles/inertial_DH_DYN";
 // std::string path_copy_DH_REG = "../../config/inertial_DH_REG.yaml";
 
-std::string common_comment =             
-		"Obtained with transformation of URDF files considering Denavit-Hartenberg parametrization\n";
+std::string common_comment = "";
 
 namespace thunder_ns{
 
@@ -42,13 +41,13 @@ namespace thunder_ns{
 
 	// void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
 
-	int genInertial_REG(const std::string robot_name, const int num_joints, const std::string config_file, const std::string out_inertial_file){
+	int genInertial_files(const std::string robot_name, const int num_joints, const std::string config_file, const std::string out_DYN_file, const std::string out_REG_file){
 
 		std::vector<std::string> keys_dyn;
 		std::vector<std::string> keys_reg;
 		keys_dyn.resize(5);
 		keys_reg.resize(5);
-		keys_dyn[0] = "mass"; keys_dyn[1] = "CoM_"; keys_dyn[2] = "I"; keys_dyn[3] = "DYN", keys_dyn[4] = "standard equation of dynamic";
+		keys_dyn[0] = "mass"; keys_dyn[1] = "CoM_"; keys_dyn[2] = "I"; keys_dyn[3] = "DYN", keys_dyn[4] = "standard equation of dynamics";
 		keys_reg[0] = "mass"; keys_reg[1] = "m_CoM_"; keys_reg[2] = "I"; keys_reg[3] = "REG"; keys_reg[4] = "regressor";
 		
 		// std::vector<LinkProp> links_prop;
@@ -120,7 +119,7 @@ namespace thunder_ns{
 				link_index ++;
 			}
 
-			// --- obtain parametres for regressor --- //
+			// --- obtain parameters for regressor --- //
 			for(int i=0; i<num_joints; i++){
 
 				LinkProp tmp_link = links_prop_DH[i];
@@ -148,7 +147,21 @@ namespace thunder_ns{
 				// std::string pp;
 				// if((int)coeff_p[w]==0) pp="";
 				// else pp = "_p" + std::to_string((int)coeff_p[w]);
-				std::ofstream fout(out_inertial_file);
+				std::ofstream fout(out_REG_file);
+				fout << emitter.c_str();
+				fout.close();
+			} catch (const YAML::Exception& e) {
+				std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+				return 0;
+			}
+			// --- save <robot>_inertial_DYN.yaml --- //
+			try {
+				YAML::Emitter emitter;
+				fillInertialYaml(num_joints, emitter, links_prop_DH, keys_dyn);
+				// std::string pp;
+				// if((int)coeff_p[w]==0) pp="";
+				// else pp = "_p" + std::to_string((int)coeff_p[w]);
+				std::ofstream fout(out_DYN_file);
 				fout << emitter.c_str();
 				fout.close();
 			} catch (const YAML::Exception& e) {

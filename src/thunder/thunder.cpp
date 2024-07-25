@@ -222,8 +222,9 @@ int main(int argc, char* argv[]){
 	}
 
 	// --- generate inertial_REG --- //
+	std::string inertial_DYN_file = path_gen + robot_name + "_inertial_DYN.yaml";
 	std::string inertial_REG_file = path_gen + robot_name + "_inertial_REG.yaml";
-	if (!genInertial_REG(robot_name, nj, config_file, inertial_REG_file)){
+	if (!genInertial_files(robot_name, nj, config_file, inertial_DYN_file, inertial_REG_file)){
 		return 0;
 	}
 

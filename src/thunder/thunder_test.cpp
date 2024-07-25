@@ -34,7 +34,7 @@ int main(){
 	Eigen::MatrixXd DH_table;
 	FrameOffset Base_to_L0;
 	FrameOffset Ln_to_EE;
-	std::string config_file = "../robots/robot/robot.yaml";
+	std::string config_file = "../robots/franka/franka.yaml";
 
 	//-------------------------------Parsing yaml-----------------------------------//
 	try {
