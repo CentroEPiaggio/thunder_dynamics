@@ -10,7 +10,7 @@
 
 namespace thunder_ns{
 	
-	/* Class Forward Kinmeatic */    
+	/* Class Forward Kinematic */    
 	class RobKinBasic : public CasadiObj{
 		
 		private:
