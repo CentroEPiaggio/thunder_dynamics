@@ -22,12 +22,12 @@ namespace thunder_ns{
 	class Robot{
 		private:
 			// int N_functions;
-			std::vector<fun_obj> functions;
+			// std::vector<fun_obj> functions;
 			void initVarsFuns();
 			/* Create and initialize casadi function */
-			void init_casadi_functions();
+			// void init_casadi_functions();
 			/* Update result of casadi functions */
-			void compute();
+			// void compute();
 
 		protected:
 			int _numJoints_;
@@ -40,9 +40,9 @@ namespace thunder_ns{
 			/* Frame offset between end-effector and last link */
 			FrameOffset _Ln2EE_;
 			// Input of casadi function //
-			std::vector<casadi::SX> args;
+			std::map<std::string, casadi::SX> args;
 			std::map<std::string, casadi::Function> casadi_fun;
-			std::map<std::string, std::vector<casadi::SX>> fun_args;
+			std::map<std::string, std::vector<std::string>> fun_args;
 			std::map<std::string, std::string> fun_descr;
 			// Variable for joints angle //
 			casadi::SX _q_, _dq_, _dqr_, _ddqr_;
@@ -87,15 +87,23 @@ namespace thunder_ns{
 			/* Variable for joints in set arguments */
 			int valid;
 			std::map<std::string, casadi::SX> model;
-			std::map<std::string, Eigen::MatrixXd> get;
+			Eigen::MatrixXd get(std::string name);
+			int set_arg(std::string name, Eigen::VectorXd);
+			int set_q(Eigen::VectorXd);
+			int set_dq(Eigen::VectorXd);
+			int set_dqr(Eigen::VectorXd);
+			int set_ddqr(Eigen::VectorXd);
+			int set_par_DYN(Eigen::VectorXd);
+			int set_par_REG(Eigen::VectorXd);
+			// std::map<std::string, Eigen::MatrixXd> get;
 			// std::map<std::string, bool> valid;
-			Eigen::VectorXd q, dq, dqr, ddqr;
-			Eigen::VectorXd param_KIN, par_DYN, par_REG;
-			void update();
+			// Eigen::VectorXd q, dq, dqr, ddqr;
+			// Eigen::VectorXd param_KIN, par_DYN, par_REG;
+			// void update();
 			void generate_code(std::string& savePath);
 			std::vector<std::string> getFunctionNames();
 			std::vector<casadi::Function> getCasadiFunctions();
-			int add_function(std::string name, casadi::SX expr, casadi::SXVector fun_args, std::string descr = "");
+			int add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr = "");
 			// get functions
 			int get_numJoints();
 			std::string get_jointsType();

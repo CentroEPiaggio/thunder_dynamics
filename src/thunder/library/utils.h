@@ -22,6 +22,9 @@ namespace thunder_ns{
 
 	casadi::SX hat(const casadi::SX& v);
 
+	/* Function to transform casadi element to double, defined here*/
+	static double mapFunction(const casadi::SXElem& elem) {return static_cast<double>(casadi::SXElem(elem));};
+
 }
 
 #endif

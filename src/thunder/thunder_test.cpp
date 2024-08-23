@@ -13,8 +13,12 @@
 #include "library/RobKinAdv.h"
 #include "library/RobReg.h"
 #include "library/RobDyn.h"
+#include "library/robot.h"
+#include "library/kinematics.h"
+// #include "library/dynamics.h"
+// #include "library/regressors.h"
 
-#define NJ 7
+#define NJ 3
 #define PARAM 10
 
 using namespace thunder_ns;
@@ -24,6 +28,7 @@ using std::endl;
 bool use_gripper = false;
 
 Eigen::Matrix3d hat(const Eigen::Vector3d v);
+// extern int compute_kinematics(Robot robot);
 
 int main(){
 
@@ -34,7 +39,7 @@ int main(){
 	Eigen::MatrixXd DH_table;
 	FrameOffset Base_to_L0;
 	FrameOffset Ln_to_EE;
-	std::string config_file = "../robots/franka/franka.yaml";
+	std::string config_file = "../robots/RRR/RRR.yaml";
 
 	//-------------------------------Parsing yaml-----------------------------------//
 	try {
@@ -92,7 +97,7 @@ int main(){
 			i++;
 		}
 		std::cout<<"YAML_DH letto"<<std::endl;
-		std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+		// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
 
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -133,7 +138,7 @@ int main(){
 		param_REG[i*PARAM+8] = I0(1,2);
 		param_REG[i*PARAM+9] = I0(2,2);
 	}
-	std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
+	// std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
 
 
 	// ---------------------------------------------------------------------------------//
@@ -142,13 +147,16 @@ int main(){
 
 	/* RobKinAdv, RobReg, RobDyn object */
 
-	RobKinAdv kinrobot;
-	RobReg regrobot;
-	RobDyn dynrobot;
+	// RobKinAdv kinrobot;
+	// RobReg regrobot;
+	// RobDyn dynrobot;
+
+	Robot robot(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
+	cout<<"robot created"<<endl;
 	
-	kinrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE, 0.001);
-	regrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
-	dynrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
+	// kinrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE, 0.001);
+	// regrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
+	// dynrobot.init(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
 
 	/* Matrix */
 	
@@ -172,46 +180,80 @@ int main(){
 	dqr = Eigen::Vector<double,NJ>::Random();//setOnes();
 	ddqr = Eigen::Vector<double,NJ>::Random();//setOnes();
 
-	kinrobot.setArguments(q,dq);
-	regrobot.setArguments(q,dq,dqr,ddqr);
-	dynrobot.setArguments(q,dq,param_DYN);
+	robot.set_q(q);
+	// cout<<"q set"<<endl;
+	robot.set_dq(dq);
+	// cout<<"dq set"<<endl;
+	robot.set_dqr(dqr);
+	// cout<<"dqr set"<<endl;
+	robot.set_ddqr(ddqr);
+	// cout<<"ddqr set"<<endl;
+	robot.set_par_DYN(param_DYN);
+	// cout<<"par_DYN set"<<endl;
 
-	myKin = kinrobot.getKinematic();
+	compute_kinematics(robot);
+	// kinrobot.setArguments(q,dq);
+	// regrobot.setArguments(q,dq,dqr,ddqr);
+	// dynrobot.setArguments(q,dq,param_DYN);
+
+	// myKin = kinrobot.getKinematic();
+	// cout<<endl<<"Kin_ee\n"<<myKin<<endl;
+	// myKin = kinrobot.getT0i(0);
+	// cout<<endl<<"Kin0\n"<<myKin<<endl;
+	// myKin = kinrobot.getT0i(1);
+	// cout<<endl<<"Kin1\n"<<myKin<<endl;
+	// myKin = kinrobot.getT0i(2);
+	// cout<<endl<<"Kin2\n"<<myKin<<endl;
+	// myKin = kinrobot.getT0i(3);
+	// cout<<endl<<"Kin3\n"<<myKin<<endl;
+
+	myKin = robot.get("T_0_ee");
 	cout<<endl<<"Kin_ee\n"<<myKin<<endl;
-	myKin = kinrobot.getT0i(0);
+	myKin = robot.get("T_0_0");
 	cout<<endl<<"Kin0\n"<<myKin<<endl;
-	myKin = kinrobot.getT0i(1);
+	myKin = robot.get("T_0_1");
 	cout<<endl<<"Kin1\n"<<myKin<<endl;
-	myKin = kinrobot.getT0i(2);
+	myKin = robot.get("T_0_2");
 	cout<<endl<<"Kin2\n"<<myKin<<endl;
-	myKin = kinrobot.getT0i(3);
+	myKin = robot.get("T_0_3");
 	cout<<endl<<"Kin3\n"<<myKin<<endl;
 
-	myJac = kinrobot.getJacobian();
+	// myJac = kinrobot.getJacobian();
+	// cout<<endl<<"Jac\n"<<myJac<<endl;
+	// myJac = kinrobot.getJi(0);
+	// cout<<endl<<"Jac0\n"<<myJac<<endl;
+	// myJac = kinrobot.getJi(1);
+	// cout<<endl<<"Jac1\n"<<myJac<<endl;
+	// myJac = kinrobot.getJi(2);
+	// cout<<endl<<"Jac2\n"<<myJac<<endl;
+	// myJac = kinrobot.getJi(3);
+	// cout<<endl<<"Jac3\n"<<myJac<<endl;
+
+	myJac = robot.get("J_ee");
 	cout<<endl<<"Jac\n"<<myJac<<endl;
-	myJac = kinrobot.getJi(0);
+	myJac = robot.get("J_0");
 	cout<<endl<<"Jac0\n"<<myJac<<endl;
-	myJac = kinrobot.getJi(1);
+	myJac = robot.get("J_1");
 	cout<<endl<<"Jac1\n"<<myJac<<endl;
-	myJac = kinrobot.getJi(2);
+	myJac = robot.get("J_2");
 	cout<<endl<<"Jac2\n"<<myJac<<endl;
-	myJac = kinrobot.getJi(3);
+	myJac = robot.get("J_3");
 	cout<<endl<<"Jac3\n"<<myJac<<endl;
 
-	myM = dynrobot.getMass();
-	cout<<endl<<"M\n"<<myM<<endl;
-	myC = dynrobot.getCoriolis();
-	cout<<endl<<"C\n"<<myC<<endl;
-	myG = dynrobot.getGravity();
-	cout<<endl<<"G\n"<<myG<<endl;
-	Yr = regrobot.getRegressor();
-	cout<<endl<<"Yr\n"<<Yr<<endl;
+	// myM = dynrobot.getMass();
+	// cout<<endl<<"M\n"<<myM<<endl;
+	// myC = dynrobot.getCoriolis();
+	// cout<<endl<<"C\n"<<myC<<endl;
+	// myG = dynrobot.getGravity();
+	// cout<<endl<<"G\n"<<myG<<endl;
+	// Yr = regrobot.getRegressor();
+	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
-	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
-	tau_cmd_reg = Yr*param_REG;
+	// tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
+	// tau_cmd_reg = Yr*param_REG;
 
-	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
+	// cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
+	// cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 
 	return 0;
 }

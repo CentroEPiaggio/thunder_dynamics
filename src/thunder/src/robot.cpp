@@ -1,27 +1,17 @@
 #include "../library/robot.h"
 #include "../library/kinematics.h"
-
-/* Function name used to generate code */
-#define KIN_STRING "kin_fun"
-#define JAC_STRING "jac_fun"
-#define T_STRING "T_fun"
-#define DOT_JAC_STRING "dotJac_fun"
-#define PINV_JAC_STRING "pinvJac_fun"
-#define PINV_JAC_POS_STRING "pinvJacPos_fun"
-#define DOT_PINV_JAC_STRING "dotPinvJac_fun"
-#define DOT_PINV_JAC_POS_STRING "dotPinvJacPos_fun"
-#define MASS_STRING "mass_fun"
-#define CORIOLIS_STRING "coriolis_fun"
-#define GRAVITY_STRING "gravity_fun"
+#include "../library/utils.h"
 
 /* File name of generated code */
-#define GENERATED_FILE "kin_basic_fun.cpp"
-#define GENERATED_FILE "kinematics_fun.cpp"
-#define GENERATED_FILE "dynamics_fun.cpp"
+// #define GENERATED_FILE "kin_basic_fun.cpp"
+// #define GENERATED_FILE "kinematics_fun.cpp"
+// #define GENERATED_FILE "dynamics_fun.cpp"
+#define GENERATED_FILE "robot_gen.cpp"
 
 /* Define number of function generable */
 // #define NUMBER_FUNCTIONS 10
 // #define MU 0.02
+using namespace std;
 
 namespace thunder_ns{
 
@@ -39,7 +29,7 @@ namespace thunder_ns{
 		// _mu_ = MU;
 
 		initVarsFuns();
-		compute();
+		// compute();
 	}
 
 	void Robot::initVarsFuns(){
@@ -72,27 +62,27 @@ namespace thunder_ns{
 		// casadi_fun.insert
 
 		// numerical values
-		q = Eigen::VectorXd::Zero(_numJoints_,1);
-		dq = Eigen::VectorXd::Zero(_numJoints_,1);
-		dqr = Eigen::VectorXd::Zero(_numJoints_,1);
-		ddqr = Eigen::VectorXd::Zero(_numJoints_,1);
-		par_DYN = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
-		par_REG = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
-		get.insert({"q", q});
-		get.insert({"dq", dq});
-		get.insert({"dqr", dqr});
-		get.insert({"ddqr", ddqr});
-		// get.insert({"par_KIN", par_KIN});
-		get.insert({"par_DYN", par_DYN});
-		get.insert({"par_REG", par_REG});
+		// q = Eigen::VectorXd::Zero(_numJoints_,1);
+		// dq = Eigen::VectorXd::Zero(_numJoints_,1);
+		// dqr = Eigen::VectorXd::Zero(_numJoints_,1);
+		// ddqr = Eigen::VectorXd::Zero(_numJoints_,1);
+		// par_DYN = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
+		// par_REG = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
+		args.insert({"q", casadi::SX::zeros(_numJoints_,1)});
+		args.insert({"dq", casadi::SX::zeros(_numJoints_,1)});
+		args.insert({"dqr", casadi::SX::zeros(_numJoints_,1)});
+		args.insert({"ddqr", casadi::SX::zeros(_numJoints_,1)});
+		// args.insert({"par_KIN", par_KIN});
+		args.insert({"par_DYN", casadi::SX::zeros(N_PAR_LINK*_numJoints_)});
+		args.insert({"par_REG", casadi::SX::zeros(N_PAR_LINK*_numJoints_)});
 		
 		// make args a map?
 		// 0: q, 1: dq, 2: dqr, 3: ddqr, 4: par_DYN
-		args.resize(5);
-		for(int i=0; i<args.size(); i++){
-			args[i].resize(_numJoints_,1);
-		}
-		args[4].resize(N_PAR_LINK*_numJoints_,1);
+		// args.resize(5);
+		// for(int i=0; i<args.size(); i++){
+		// 	args[i].resize(_numJoints_,1);
+		// }
+		// args[4].resize(N_PAR_LINK*_numJoints_,1);
 	
 		// kinematic_res.resize(1);
 		// jacobian_res.resize(1);
@@ -105,52 +95,180 @@ namespace thunder_ns{
 		// coriolis_res.resize(1);
 		// gravity_res.resize(1);
 
-		init_fun_names();
+		// init_fun_names();
 
-		init_casadi_functions();
+		// init_casadi_functions();
 	}
 
-	void Robot::init_fun_names(){
+	// void Robot::init_fun_names(){
 
-	}
+	// }
 
-	void Robot::init_casadi_functions(){
-		// functions have to be added by various modules
-		DHKin();
-		DHJac();
-		DHDotJac();
-		DHPinvJac();
-		DHPinvJacPos();
-		DHDotPinvJac();
-		DHDotPinvJacPos();
-		DHKin();
-		DHJac();
-		mass_coriolis_gravity();
-	}
+	// void Robot::init_casadi_functions(){
+	// 	// functions have to be added by various modules
+	// 	DHKin();
+	// 	DHJac();
+	// 	DHDotJac();
+	// 	DHPinvJac();
+	// 	DHPinvJacPos();
+	// 	DHDotPinvJac();
+	// 	DHDotPinvJacPos();
+	// 	DHKin();
+	// 	DHJac();
+	// 	mass_coriolis_gravity();
+	// }
 
-	void Robot::compute(){
-
-		for(int i=0; i<_numJoints_; i++){
-			args[0](i,0) = q(i);
-			args[1](i,0) = dq(i);
-			args[2](i,0) = dqr(i);
-			args[3](i,0) = ddqr(i);
+	Eigen::MatrixXd Robot::get(std::string name){
+		std::vector<casadi::SX> result;
+		// Eigen::MatrixXd result_num;
+		if (fun_args.count(name)){
+    		// key exists
+			// cout<<"ok1, name: "<<name<<endl;
+			Eigen::MatrixXd result_num(model[name].rows(), model[name].columns());
+			// cout<<"ok1.5, output_size: "<<result_num.size()<<endl;
+			auto f_args = fun_args[name];
+			int sz = f_args.size();
+			// cout<<"ok2, f_args:"<<f_args<<", size: "<<sz<<endl;
+			casadi::SXVector inputs(sz);
+			int i=0;
+			for (const auto& arg : f_args) {
+				inputs[i] = args[arg];
+				i++;
+			}
+			// cout<<"ok3, args: "<<inputs<<endl;
+			casadi::Function fun = casadi_fun[name];
+			// cout<<"ok3.5, fun: "<<fun<<endl;
+			fun.call(inputs, result);
+			// cout<<"ok4, result: "<<result<<endl;
+			std::vector<casadi::SXElem> res_elements = result[0].get_elements();
+			// cout<<"ok5, elements: "<<res_elements<<endl;
+			std::transform(res_elements.begin(), res_elements.end(), result_num.data(), mapFunction);
+			// cout<<"ok6, result: "<<result_num<<endl;
+			return result_num;
+		} else {
+			cout<<name + " not recognised"<<endl;
+			// result_num.resize(1,1);
+			// result_num << 0;
+			return Eigen::Matrix<double, 1, 1>::Zero();
 		}
-		for(int i=0; i<N_PAR_LINK*_numJoints_; i++){
-			args[4](i,0) = par_DYN(i);
-		}
-
-		kinematic_fun.call({args[0]},kinematic_res);
-		jacobian_fun.call({args[0]},jacobian_res);
-		dotJacobian_fun.call({args[0],args[1]},dotJacobian_res);
-		pinvJacobian_fun.call({args[0]},pinvJacobian_res);
-		pinvJacobianPos_fun.call({args[0]},pinvJacobianPos_res);
-		dotPinvJacobian_fun.call({args[0],args[1]},dotPinvJacobian_res);
-		dotPinvJacobianPos_fun.call({args[0],args[1]},dotPinvJacobianPos_res); 
-		mass_fun.call({args[0],args[4]},mass_res);
-		coriolis_fun.call({args[0],args[1],args[4]},coriolis_res);
-		gravity_fun.call({args[0],args[4]},gravity_res);   
+		
+		// return result_num;
 	}
+
+	int Robot::set_arg(std::string name, Eigen::VectorXd value){
+		int sz = value.size();
+		casadi::SX& arg = args[name];
+		arg = casadi::SX::zeros(sz);
+		for (int i=0; i<sz; i++){
+			arg(i) = value(i);
+		}
+		// if name==par_DYN or par_REG change also the other one!!
+
+		return 1;
+	}
+
+	int Robot::set_q(Eigen::VectorXd value){
+		casadi::SX& q = args["q"];
+		if (value.size() == _numJoints_){
+			for (int i=0; i<_numJoints_; i++){
+				q(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_dq(Eigen::VectorXd value){
+		casadi::SX& dq = args["dq"];
+		if (value.size() == _numJoints_){
+			for (int i=0; i<_numJoints_; i++){
+				dq(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_dqr(Eigen::VectorXd value){
+		casadi::SX& dqr = args["dqr"];
+		if (value.size() == _numJoints_){
+			for (int i=0; i<_numJoints_; i++){
+				dqr(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_ddqr(Eigen::VectorXd value){
+		casadi::SX& ddqr = args["ddqr"];
+		if (value.size() == _numJoints_){
+			for (int i=0; i<_numJoints_; i++){
+				ddqr(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_par_DYN(Eigen::VectorXd value){
+		casadi::SX& par_DYN = args["par_DYN"];
+		if (value.size() == N_PAR_LINK*_numJoints_){
+			for (int i=0; i<N_PAR_LINK*_numJoints_; i++){
+				par_DYN(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+		// change par_REG
+	}
+
+	int Robot::set_par_REG(Eigen::VectorXd value){
+		casadi::SX& par_REG = args["par_REG"];
+		if (value.size() == N_PAR_LINK*_numJoints_){
+			for (int i=0; i<N_PAR_LINK*_numJoints_; i++){
+				par_REG(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+		// change par_DYN
+	}
+
+	// void Robot::compute(){
+	// 	for(int i=0; i<_numJoints_; i++){
+	// 		args[0](i,0) = q(i);
+	// 		args[1](i,0) = dq(i);
+	// 		args[2](i,0) = dqr(i);
+	// 		args[3](i,0) = ddqr(i);
+	// 	}
+	// 	for(int i=0; i<N_PAR_LINK*_numJoints_; i++){
+	// 		args[4](i,0) = par_DYN(i);
+	// 	}
+
+	// 	kinematic_fun.call({args[0]},kinematic_res);
+	// 	jacobian_fun.call({args[0]},jacobian_res);
+	// 	dotJacobian_fun.call({args[0],args[1]},dotJacobian_res);
+	// 	pinvJacobian_fun.call({args[0]},pinvJacobian_res);
+	// 	pinvJacobianPos_fun.call({args[0]},pinvJacobianPos_res);
+	// 	dotPinvJacobian_fun.call({args[0],args[1]},dotPinvJacobian_res);
+	// 	dotPinvJacobianPos_fun.call({args[0],args[1]},dotPinvJacobianPos_res); 
+	// 	mass_fun.call({args[0],args[4]},mass_res);
+	// 	coriolis_fun.call({args[0],args[1],args[4]},coriolis_res);
+	// 	gravity_fun.call({args[0],args[4]},gravity_res);   
+	// }
 
     void Robot::generate_code(std::string& savePath){
 		
@@ -185,8 +303,9 @@ namespace thunder_ns{
 
 	std::vector<std::string> Robot::getFunctionNames() {
 
+
 		std::vector<std::string> name_funs;
-		int sz = functions.size();
+		int sz = casadi_fun.size();
 		name_funs.resize(sz);
 
 		// made with for and list of string for functions
@@ -200,33 +319,35 @@ namespace thunder_ns{
 		// name_funs[7] = MASS_STRING;
 		// name_funs[8] = CORIOLIS_STRING;
 		// name_funs[9] = GRAVITY_STRING;
-		for (int i=0; i<sz; i++){
-			name_funs[0] = functions[i].name;
+		int i=0;
+		for (auto &m : casadi_fun){
+			name_funs[i] = m.first;
+			i++;
 		}
 
 		return name_funs;
 	}
 
-	std::vector<casadi::Function> Robot::getCasadiFunctions() {
+	// std::vector<casadi::Function> Robot::getCasadiFunctions() {
 		
-		std::vector<casadi::Function> casadi_functions;
-		int sz = functions.size();
-		casadi_functions.resize(sz);
+	// 	std::vector<casadi::Function> casadi_functions;
+	// 	int sz = functions.size();
+	// 	casadi_functions.resize(sz);
 
-		// casadi_funs[0] = kinematic_fun;
-		// casadi_funs[1] = jacobian_fun;
-		// casadi_funs[2] = dotJacobian_fun; 
-		// casadi_funs[3] = pinvJacobian_fun;
-		// casadi_funs[4] = pinvJacobianPos_fun;
-		// casadi_funs[5] = dotPinvJacobian_fun;
-		// casadi_funs[6] = dotPinvJacobianPos_fun;
+	// 	// casadi_funs[0] = kinematic_fun;
+	// 	// casadi_funs[1] = jacobian_fun;
+	// 	// casadi_funs[2] = dotJacobian_fun; 
+	// 	// casadi_funs[3] = pinvJacobian_fun;
+	// 	// casadi_funs[4] = pinvJacobianPos_fun;
+	// 	// casadi_funs[5] = dotPinvJacobian_fun;
+	// 	// casadi_funs[6] = dotPinvJacobianPos_fun;
 
-		for (int i=0; i<sz; i++){
-			casadi_functions[i] = functions[i].fun;
-		}
+	// 	for (int i=0; i<sz; i++){
+	// 		casadi_functions[i] = functions[i].fun;
+	// 	}
 
-		return casadi_functions;
-	}
+	// 	return casadi_functions;
+	// }
 
 	int Robot::get_numJoints(){
 		return _numJoints_;
@@ -248,22 +369,35 @@ namespace thunder_ns{
 		return _Ln2EE_;
 	}
 
-	void Robot::update(){
-		// update the map get[] with the casadi functions
-	}
+	// void Robot::update(){
+	// 	// update the map get[] with the casadi functions
+	// }
 
-	int Robot::add_function(std::string name, casadi::SX expr, casadi::SXVector args, std::string descr = ""){
+	int Robot::add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr){
 		// maybe directly model[name] = ...?
 		if (model.count(name)){
-    		// key already exists
+			// key already exists
 			return 0;
 		} else {
 			model[name] = expr;
-			fun_args[name] = args;
+			fun_args[name] = f_args;
 			fun_descr[name] = descr;
-			casadi::Function fun(name, args, {densify(expr)});
+
+			casadi::SXVector inputs(f_args.size());
+			// for (const auto& arg : f_args) {
+			// 	inputs.push_back(model[arg]);
+			// }
+			int i=0;
+			for (const auto& arg : f_args) {
+				inputs[i] = model[arg];
+				i++;
+			}
+
+			casadi::Function fun(name, inputs, {densify(expr)});
 			casadi_fun[name] = fun;
 		}
+
+		return 1;
 	}
 
 }

@@ -147,4 +147,5 @@ namespace thunder_ns{
 		return skew;
 	}
 
+	// static double mapFunction(const casadi::SXElem& elem) {return static_cast<double>(casadi::SXElem(elem));};
 }

@@ -55,4 +55,4 @@ add_executable(thunder_test ${CMAKE_SOURCE_DIR}/thunder_test.cpp)
 target_link_libraries(thunder_test library)
 
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
-target_link_libraries(thunder_main library)
+target_link_libraries(thunder library)
