@@ -274,61 +274,31 @@ namespace thunder_ns{
 	// 	gravity_fun.call({args[0],args[4]},gravity_res);   
 	// }
 
-    void Robot::generate_code(std::string& savePath){
+    // void Robot::generate_code(std::string& savePath){
 		
-		// Options for c-code auto generation
-		casadi::Dict opts = casadi::Dict();
-		opts["cpp"] = true;
-		opts["with_header"] = true;
+	// 	// Options for c-code auto generation
+	// 	casadi::Dict opts = casadi::Dict();
+	// 	opts["cpp"] = true;
+	// 	opts["with_header"] = true;
 		
-		// generate functions in c code
-		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(GENERATED_FILE, opts);
+	// 	// generate functions in c code
+	// 	casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(GENERATED_FILE, opts);
+	// 	for (const auto& f : casadi_fun) {
+	// 		myCodeGen.add(f.second);
+	// 	}
 
-		// myCodeGen.add(kinematic_fun);
-		// myCodeGen.add(jacobian_fun);
-		// myCodeGen.add(dotJacobian_fun);
-		// myCodeGen.add(pinvJacobian_fun);
-		// myCodeGen.add(pinvJacobianPos_fun);
-		// myCodeGen.add(dotPinvJacobian_fun);
-		// myCodeGen.add(dotPinvJacobianPos_fun);
-		// myCodeGen.add(mass_fun);
-		// myCodeGen.add(coriolis_fun);
-		// myCodeGen.add(gravity_fun);
-
-		// for (int i=0; i<NUMBER_FUNCTIONS; i++){
-		// 	myCodeGen.add(casadi_functions[i]);
-		// }
-		for (const auto& f : casadi_fun) {
-			myCodeGen.add(f.second);
-		}
-
-		myCodeGen.generate(savePath);
-	}
+	// 	myCodeGen.generate(savePath);
+	// }
 
 	std::vector<std::string> Robot::getFunctionNames() {
-
-
 		std::vector<std::string> name_funs;
 		int sz = casadi_fun.size();
 		name_funs.resize(sz);
-
-		// made with for and list of string for functions
-		// name_funs[0] = KIN_STRING;
-		// name_funs[1] = JAC_STRING;
-		// name_funs[2] = DOT_JAC_STRING; 
-		// name_funs[3] = PINV_JAC_STRING;
-		// name_funs[4] = PINV_JAC_POS_STRING;
-		// name_funs[5] = DOT_PINV_JAC_STRING;
-		// name_funs[6] = DOT_PINV_JAC_POS_STRING;
-		// name_funs[7] = MASS_STRING;
-		// name_funs[8] = CORIOLIS_STRING;
-		// name_funs[9] = GRAVITY_STRING;
 		int i=0;
 		for (auto &m : casadi_fun){
 			name_funs[i] = m.first;
 			i++;
 		}
-
 		return name_funs;
 	}
 
@@ -401,11 +371,30 @@ namespace thunder_ns{
 				i++;
 			}
 
-			casadi::Function fun(name, inputs, {densify(expr)});
+			casadi::Function fun(name+"_fun", inputs, {densify(expr)});
+			// cout<<"fun: "<<fun<<endl;
 			casadi_fun[name] = fun;
 		}
 
 		return 1;
+	}
+
+	void Robot::generate_library(const std::string& savePath, const std::string& name_file){
+		// Options for c-code auto generation
+		casadi::Dict opts = casadi::Dict();
+		opts["cpp"] = true;
+		opts["with_header"] = true;
+		
+		// generate functions in c code
+		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(name_file, opts);
+		cout<<"casadi_fun: "<<casadi_fun<<endl;
+
+		for (const auto& f : casadi_fun) {
+			myCodeGen.add(f.second);
+			// cout<<"f_name: "<<f.first<<endl;
+			// cout<<"fun: "<<f.second<<endl<<endl;
+		}
+		myCodeGen.generate(savePath);
 	}
 
 }

@@ -4,7 +4,7 @@
 // constexpr std::string path_yaml_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored";
 // constexpr std::string path_copy_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored_copy";
 
-const int N_JOINTS = 7;
+const int N_JOINTS = 3;
 const int N_PAR_LINK = 10;
 
 using namespace thunder_ns;
@@ -38,9 +38,9 @@ namespace thunder_ns{
 		jac_gen.resize(6,num_joints);
 		dotJac_gen.resize(6,num_joints);
 		pinvJac_gen.resize(num_joints,6);
-		pinvJacPos_gen.resize(num_joints,3);
-		dotPinvJac_gen.resize(num_joints,6);
-		dotPinvJacPos_gen.resize(num_joints,3);
+		// pinvJacPos_gen.resize(num_joints,3);
+		// dotPinvJac_gen.resize(num_joints,6);
+		// dotPinvJacPos_gen.resize(num_joints,3);
 		kin_gen.resize(4,4);
 		mass_gen.resize(num_joints,num_joints);
 		coriolis_gen.resize(num_joints,num_joints);
@@ -176,112 +176,112 @@ namespace thunder_ns{
 	// }
 	
 	void thunder_robot::computeReg_gen(){
-		long long p3[regr_fun_SZ_IW];
-		double p4[regr_fun_SZ_W];
+		long long p3[Yr_fun_SZ_IW];
+		double p4[Yr_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data(), dqr.data(), ddqr.data()};
 		double* output_[] = {reg_gen.data()};
 		
-		int check = regr_fun(input_, output_, p3, p4, 0);
+		int check = Yr_fun(input_, output_, p3, p4, 0);
 	}
 	
 	void thunder_robot::computeMass_gen(){
-		long long p3[mass_fun_SZ_IW];
-		double p4[mass_fun_SZ_W];
+		long long p3[M_fun_SZ_IW];
+		double p4[M_fun_SZ_W];
 
 		const double* input_[] = {q.data(), param_DYN.data()};
 		double* output_[] = {mass_gen.data()};
 		
-		int check = mass_fun(input_, output_, p3, p4, 0);
+		int check = M_fun(input_, output_, p3, p4, 0);
 	}
 	
 	void thunder_robot::computeCoriolis_gen(){
-		long long p3[coriolis_fun_SZ_IW];
-		double p4[coriolis_fun_SZ_W];
+		long long p3[C_fun_SZ_IW];
+		double p4[C_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data(), param_DYN.data()};
 		double* output_[] = {coriolis_gen.data()};
 		
-		int check = coriolis_fun(input_, output_, p3, p4, 0);
+		int check = C_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeGravity_gen(){
-		long long p3[gravity_fun_SZ_IW];
-		double p4[gravity_fun_SZ_W];
+		long long p3[G_fun_SZ_IW];
+		double p4[G_fun_SZ_W];
 
 		const double* input_[] = {q.data(), param_DYN.data()};
 		double* output_[] = {gravity_gen.data()};
-		int check = gravity_fun(input_, output_, p3, p4, 0);
+		int check = G_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeJac_gen(){
-		long long p3[jac_fun_SZ_IW];
-		double p4[jac_fun_SZ_W];
+		long long p3[J_ee_fun_SZ_IW];
+		double p4[J_ee_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {jac_gen.data()};
 
-		int check = jac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeDotJac_gen(){
-		long long p3[dotJac_fun_SZ_IW];
-		double p4[dotJac_fun_SZ_W];
+		long long p3[J_ee_dot_fun_SZ_IW];
+		double p4[J_ee_dot_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data()};
 		double* output_[] = {dotJac_gen.data()};
 
-		int check = dotJac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_dot_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computePinvJac_gen(){
-		long long p3[pinvJac_fun_SZ_IW];
-		double p4[pinvJac_fun_SZ_W];
+		long long p3[J_ee_pinv_fun_SZ_IW];
+		double p4[J_ee_pinv_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {pinvJac_gen.data()};
 
-		int check = pinvJac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_pinv_fun(input_, output_, p3, p4, 0);
 	}
 	
-	void thunder_robot::computePinvJacPos_gen(){
-		long long p3[pinvJacPos_fun_SZ_IW];
-		double p4[pinvJacPos_fun_SZ_W];
+	// void thunder_robot::computePinvJacPos_gen(){
+	// 	long long p3[pinvJacPos_fun_SZ_IW];
+	// 	double p4[pinvJacPos_fun_SZ_W];
 
-		const double* input_[] = {q.data()};
-		double* output_[] = {pinvJacPos_gen.data()};
+	// 	const double* input_[] = {q.data()};
+	// 	double* output_[] = {pinvJacPos_gen.data()};
 
-		int check = pinvJacPos_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = pinvJacPos_fun(input_, output_, p3, p4, 0);
+	// }
 
-	void thunder_robot::computeDotPinvJac_gen(){
-		long long p3[dotPinvJac_fun_SZ_IW];
-		double p4[dotPinvJac_fun_SZ_W];
+	// void thunder_robot::computeDotPinvJac_gen(){
+	// 	long long p3[dotPinvJac_fun_SZ_IW];
+	// 	double p4[dotPinvJac_fun_SZ_W];
 
-		const double* input_[] = {q.data(),dq.data()};
-		double* output_[] = {dotPinvJac_gen.data()};
+	// 	const double* input_[] = {q.data(),dq.data()};
+	// 	double* output_[] = {dotPinvJac_gen.data()};
 
-		int check = dotPinvJac_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = dotPinvJac_fun(input_, output_, p3, p4, 0);
+	// }
 
-	void thunder_robot::computeDotPinvJacPos_gen(){
-		long long p3[dotPinvJacPos_fun_SZ_IW];
-		double p4[dotPinvJacPos_fun_SZ_W];
+	// void thunder_robot::computeDotPinvJacPos_gen(){
+	// 	long long p3[dotPinvJacPos_fun_SZ_IW];
+	// 	double p4[dotPinvJacPos_fun_SZ_W];
 
-		const double* input_[] = {q.data(),dq.data()};
-		double* output_[] = {dotPinvJacPos_gen.data()};
+	// 	const double* input_[] = {q.data(),dq.data()};
+	// 	double* output_[] = {dotPinvJacPos_gen.data()};
 
-		int check = dotPinvJacPos_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = dotPinvJacPos_fun(input_, output_, p3, p4, 0);
+	// }
 
 	void thunder_robot::computeKin_gen(){
-		long long p3[kin_fun_SZ_IW];
-		double p4[kin_fun_SZ_W];
+		long long p3[T_0_ee_fun_SZ_IW];
+		double p4[T_0_ee_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {kin_gen.data()};
 
-		int check = kin_fun(input_, output_, p3, p4, 0);
+		int check = T_0_ee_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::load_inertial_REG(std::string file_path){
@@ -459,12 +459,12 @@ namespace thunder_ns{
 	Eigen::MatrixXd thunder_robot::getDotJac(){computeDotJac_gen(); return dotJac_gen;};
 	/* Get pseudo-inverse jacobian matrix */
 	Eigen::MatrixXd thunder_robot::getPinvJac(){computePinvJac_gen(); return pinvJac_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getPinvJacPos(){computePinvJacPos_gen(); return pinvJacPos_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getDotPinvJac(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getDotPinvJacPos(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix only position */
+	// Eigen::MatrixXd thunder_robot::getPinvJacPos(){computePinvJacPos_gen(); return pinvJacPos_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix */
+	// Eigen::MatrixXd thunder_robot::getDotPinvJac(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix only position */
+	// Eigen::MatrixXd thunder_robot::getDotPinvJacPos(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getKin(){computeKin_gen(); return kin_gen;};
 

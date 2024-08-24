@@ -93,6 +93,14 @@ namespace thunder_ns{
 			int valid;
 			std::map<std::string, casadi::SX> model;
 			Eigen::MatrixXd get(std::string name);
+			// get functions
+			int get_numJoints();
+			std::string get_jointsType();
+			Eigen::MatrixXd get_DHTable();
+			FrameOffset get_world2L0();
+			FrameOffset get_Ln2EE();
+			// int get_N_PAR_LINK();
+			// set functions
 			int set_arg(std::string name, Eigen::VectorXd);
 			int set_q(Eigen::VectorXd);
 			int set_dq(Eigen::VectorXd);
@@ -105,17 +113,11 @@ namespace thunder_ns{
 			// Eigen::VectorXd q, dq, dqr, ddqr;
 			// Eigen::VectorXd param_KIN, par_DYN, par_REG;
 			// void update();
-			void generate_code(std::string& savePath);
+			// void generate_code(std::string& savePath);
 			std::vector<std::string> getFunctionNames();
 			std::vector<casadi::Function> getCasadiFunctions();
 			int add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr = "");
-			// get functions
-			int get_numJoints();
-			std::string get_jointsType();
-			Eigen::MatrixXd get_DHTable();
-			FrameOffset get_world2L0();
-			FrameOffset get_Ln2EE();
-			// int get_N_PAR_LINK();
+			void generate_library(const std::string& savePath, const std::string& name_file);
 
 	};
 

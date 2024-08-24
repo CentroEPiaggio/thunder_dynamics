@@ -20,9 +20,13 @@ In particular generate code to compute for franka emika panda robot:
 #include <stdexcept>
 #include <chrono>
 
-#include "library/RobKinAdv.h"
-#include "library/RobReg.h"
-#include "library/RobDyn.h"
+// #include "library/RobKinAdv.h"
+// #include "library/RobReg.h"
+// #include "library/RobDyn.h"
+#include "library/robot.h"
+#include "library/kinematics.h"
+#include "library/dynamics.h"
+#include "library/regressors.h"
 
 #include <yaml-cpp/yaml.h>
 #include "urdf2dh_inertial.h"
@@ -144,36 +148,43 @@ int main(int argc, char* argv[]){
 	// ---------- end parsing ---------- //
 
 	/* RobKinAdv and RobReg object */
-	RobKinAdv kinrobot;
-	RobReg regrobot;
-	RobDyn dynrobot;
+	// RobKinAdv kinrobot;
+	// RobReg regrobot;
+	// RobDyn dynrobot;
+	// kinrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE, MU_JACOB);
+	// regrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
+	// dynrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
 
-	kinrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE, MU_JACOB);
-	regrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
-	dynrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
+	Robot robot(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
+	compute_kinematics(robot);
+	compute_dynamics(robot);
+	compute_regressors(robot);
 
 	/* Get Casadi Functions */
-	std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-	kin_vec = kinrobot.getCasadiFunctions();
-	reg_vec = regrobot.getCasadiFunctions();
-	dyn_vec = dynrobot.getCasadiFunctions();
+	// std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
+	// kin_vec = kinrobot.getCasadiFunctions();
+	// reg_vec = regrobot.getCasadiFunctions();
+	// dyn_vec = dynrobot.getCasadiFunctions();
+	// std::vector<casadi::Function> fun_vec;
+	// fun_vec = robot.getCasadiFunctions();
 
 	/* Merge casadi function */
-	int dim1, dim2,dim3;
-	dim1 = kin_vec.size();
-	dim2 = reg_vec.size();
-	dim3 = dyn_vec.size();
+	// int dim1, dim2,dim3;
+	// dim1 = kin_vec.size();
+	// dim2 = reg_vec.size();
+	// dim3 = dyn_vec.size();
+	// int dim = fun_vec.size();
 
-	for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-		all_vec.push_back(kin_vec[i]);
-	}
-	for (int i=0; i<dim2; i++){
-		all_vec.push_back(reg_vec[i]);
-	}
-	for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-		all_vec.push_back(dyn_vec[i]);
-	}
-	if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
+	// for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
+	// 	all_vec.push_back(kin_vec[i]);
+	// }
+	// for (int i=0; i<dim2; i++){
+	// 	all_vec.push_back(reg_vec[i]);
+	// }
+	// for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
+	// 	all_vec.push_back(dyn_vec[i]);
+	// }
+	// if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
 
 	// --- Generate merge code --- //
 	std::string relativePath = path_gen;
@@ -191,7 +202,8 @@ int main(int argc, char* argv[]){
 	}
 
 	// Generate library
-	regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
+	// regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
+	robot.generate_library(absolutePath, robot_name_gen);
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
