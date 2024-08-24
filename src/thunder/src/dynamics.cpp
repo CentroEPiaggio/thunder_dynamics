@@ -1,5 +1,6 @@
 #include "dynamics.h"
 #include "utils.h"
+#include "robot.h"
 #include "kinematics.h"
 
 /* Function name used to generate code */
@@ -12,6 +13,7 @@ namespace thunder_ns{
 
 	// constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	// constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
+	// extern constexpr int N_PAR_LINK = 10;
 
 	std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, casadi::SX par_DYN){
 		
@@ -29,20 +31,20 @@ namespace thunder_ns{
 
 		for(int i=0; i<nj; i++){
 			
-			_mass_vec_[i] = par_DYN(i*10,0);
+			_mass_vec_[i] = par_DYN(i*N_PAR_LINK,0);
 			for(int j=0; j<3; j++){
-				_distCM_[i](j,0) = par_DYN(i*10+j+1,0);
+				_distCM_[i](j,0) = par_DYN(i*N_PAR_LINK+j+1,0);
 			}
 
-			tempI(0,0) = par_DYN(i*10+4,0);
-			tempI(0,1) = par_DYN(i*10+5,0);
-			tempI(0,2) = par_DYN(i*10+6,0);
+			tempI(0,0) = par_DYN(i*N_PAR_LINK+4,0);
+			tempI(0,1) = par_DYN(i*N_PAR_LINK+5,0);
+			tempI(0,2) = par_DYN(i*N_PAR_LINK+6,0);
 			tempI(1,0) = tempI(0,1);
-			tempI(1,1) = par_DYN(i*10+7,0);
-			tempI(1,2) = par_DYN(i*10+8,0);
+			tempI(1,1) = par_DYN(i*N_PAR_LINK+7,0);
+			tempI(1,2) = par_DYN(i*N_PAR_LINK+8,0);
 			tempI(2,0) = tempI(0,2);
 			tempI(2,1) = tempI(1,2);
-			tempI(2,2) = par_DYN(i*10+9,0);
+			tempI(2,2) = par_DYN(i*N_PAR_LINK+9,0);
 
 			_J_3x3_[i] = tempI;
 		}
@@ -63,34 +65,48 @@ namespace thunder_ns{
 		return mat_dq;
 	}
 
-	casadi::SX stdCmatrix(const casadi::SX& B, const casadi::SX& _q_, const casadi::SX& _dq_, const casadi::SX& dq_sel_) {
+	casadi::SX stdCmatrix(const casadi::SX& M, const casadi::SX& _q_, const casadi::SX& _dq_, const casadi::SX& dq_sel_) {
 		int n = _q_.size1();
 
-		casadi::SX jac_B = jacobian(B,_q_);
+		casadi::SX jac_M = jacobian(M,_q_);
 		
-		casadi::SX C123 = reshape(mtimes(jac_B,_dq_),n,n);
-		casadi::SX C132 = mtimes(dq_sel_,jac_B);
+		casadi::SX C123 = reshape(mtimes(jac_M,_dq_),n,n);
+		casadi::SX C132 = mtimes(dq_sel_,jac_M);
 		casadi::SX C231 = C132.T();
 
 		casadi::SX C(n,n);
 		C = (C123 + C132 - C231)/2;
 
-/*      casadi::SX C1(n, n);
-		casadi::SX C2(n, n);
-		casadi::SX C3(n, n);
+		return C;
+	}
+
+	casadi::SX stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
+		// classic C matrix computation, probably have to be C = C/2
+		int n = q_.size1();
+
+		casadi::SX C123(n, n);
+		casadi::SX C132(n, n);
+		// casadi::SX C231(n, n);
 
 		for (int h = 0; h < n; h++) {
 			for (int j = 0; j < n; j++) {
 				for (int k = 0; k < n; k++) {
-					casadi::SX dbhj_dqk = jacobian(B(h, j), _q_(k));
-					casadi::SX dbhk_dqj = jacobian(B(h, k), _q_(j));
-					casadi::SX dbjk_dqh = jacobian(B(j, k), _q_(h));
-					C1(h, j) = C1(h, j) + 0.5 * (dbhj_dqk) * _dq_(k);
-					C2(h, j) = C2(h, j) + 0.5 * (dbhk_dqj) * _dq_(k);
-					C3(h, j) = C3(h, j) + 0.5 * (- dbjk_dqh) * _dq_(k);
+					casadi::SX dbhj_dqk = jacobian(M(h, j), q_(k));
+					casadi::SX dbhk_dqj = jacobian(M(h, k), q_(j));
+					//casadi::SX dbjk_dqh = jacobian(M(j, k), q_(h));
+					C123(h, j) = C123(h, j) + 0.5 * (dbhj_dqk) * dq_(k);
+					C132(h, j) = C132(h, j) + 0.5 * (dbhk_dqj) * dq_(k);
+					//C231(h, j) = C231(h, j) + 0.5 * (dbjk_dqh) * dq_(k);
 				}
 			}
-		} */
+		}
+
+		// casadi::SXVector C(3);
+		// C[0] = C123;
+		// C[1] = C132;
+		// C[2] = C132.T();
+		casadi::SX C(n,n);
+		C = (C123 + C132 - C132.T())/2;
 
 		return C;
 	}

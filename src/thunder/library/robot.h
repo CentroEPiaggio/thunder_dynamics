@@ -10,13 +10,13 @@
 #include "utils.h"
 // #include "CasadiObj.h"
 
-
 namespace thunder_ns{
 
 	// module class is a template for the components of the robot that compute functions
 	// class Module{
 	// 	std::vector<fun_obj> functions;
 	// };
+	constexpr int N_PAR_LINK = 10;
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
@@ -39,6 +39,7 @@ namespace thunder_ns{
 			FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
 			FrameOffset _Ln2EE_;
+			// int N_PAR_LINK;
 			// casadi::SX gravity;
 			// Input of casadi function //
 			std::map<std::string, casadi::SX> args;
@@ -114,6 +115,7 @@ namespace thunder_ns{
 			Eigen::MatrixXd get_DHTable();
 			FrameOffset get_world2L0();
 			FrameOffset get_Ln2EE();
+			// int get_N_PAR_LINK();
 
 	};
 

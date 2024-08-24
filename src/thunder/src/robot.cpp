@@ -11,12 +11,14 @@
 /* Define number of function generable */
 // #define NUMBER_FUNCTIONS 10
 // #define MU 0.02
+// #define N_PAR_LINK = 10
+
 using namespace std;
 
 namespace thunder_ns{
 
 	// constexpr double MU = 0.02; //pseudo-inverse damping coeff
-	constexpr unsigned int N_PAR_LINK = 10; // number of link+joint parameters
+	// constexpr unsigned int N_PAR_LINK = 10; // number of link+joint parameters
 	// constexpr unsigned int NUMBER_FUNCTIONS = 10; // number of generable functions
 
 	Robot::Robot(const int numJoints, const std::string jointsType, const Eigen::MatrixXd& DHtable, FrameOffset& base_frame, FrameOffset& ee_frame){
@@ -24,6 +26,7 @@ namespace thunder_ns{
 		_jointsType_ = jointsType;
 		_DHtable_ = DHtable;
 		_world2L0_ = base_frame;
+		// N_PAR_LINK = 10;
 		// gravity = base_frame.get_gravity();
 		_Ln2EE_ = ee_frame;
 		valid = 1;
@@ -369,6 +372,10 @@ namespace thunder_ns{
 	FrameOffset Robot::get_Ln2EE(){
 		return _Ln2EE_;
 	}
+
+	// int Robot::get_N_PAR_LINK(){
+	// 	return N_PAR_LINK;
+	// }
 
 	// void Robot::update(){
 	// 	// update the map get[] with the casadi functions
