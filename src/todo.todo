@@ -3,6 +3,7 @@ to Thunder_2:
 	✔ args to fun_args, fun_args is a map<string,vector>? @done (8/22/2024, 1:54:02 PM)
 	✔ modules take Robot as argument and add the functions inside @done (8/22/2024, 1:54:07 PM)
 	✔ maps that update together are: model, fun_args, fun_descr, casadi_fun @done (8/22/2024, 1:54:29 PM)
+	☐ loadYaml as member function of robot, maybe directly a constructor
 	☐ change all parameters (par_DYN, par_REG) when the function set_par.. is used!!
 	☐ gravity not in base frame class
 	☐ dynamics not clean
