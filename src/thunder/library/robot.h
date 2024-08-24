@@ -39,6 +39,7 @@ namespace thunder_ns{
 			FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
 			FrameOffset _Ln2EE_;
+			// casadi::SX gravity;
 			// Input of casadi function //
 			std::map<std::string, casadi::SX> args;
 			std::map<std::string, casadi::Function> casadi_fun;
@@ -47,6 +48,9 @@ namespace thunder_ns{
 			// Variable for joints angle //
 			casadi::SX _q_, _dq_, _dqr_, _ddqr_;
 			casadi::SX _par_KIN_, _par_DYN_, _par_REG_;
+			casadi::SXVector _mass_vec_;
+			casadi::SXVector _distCM_;
+			casadi::SXVector _J_3x3_;
 			/* vector of function objects */
 
 			// std::vector<casadi::Function> casadi_functions;

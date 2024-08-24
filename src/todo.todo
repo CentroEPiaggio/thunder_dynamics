@@ -1,3 +1,13 @@
+to Thunder_2:
+	✔ start from kinematics, it is taken from RobKin, modify it to insert in Robot passed in the arguments the model and so on... use add_function to add to the model and so on @done (8/22/2024, 1:53:59 PM)
+	✔ args to fun_args, fun_args is a map<string,vector>? @done (8/22/2024, 1:54:02 PM)
+	✔ modules take Robot as argument and add the functions inside @done (8/22/2024, 1:54:07 PM)
+	✔ maps that update together are: model, fun_args, fun_descr, casadi_fun @done (8/22/2024, 1:54:29 PM)
+	☐ change all parameters (par_DYN, par_REG) when the function set_par.. is used!!
+	☐ gravity not in base frame class
+	☐ dynamics not clean
+	☐ FrameOffset not so general, use T as internal transformation and provide conversions
+	
 INFO:
 	- thunder take the file <robot>.yaml that contains the configuration of the robot
 	- thunder creates <robot>_gen.h, <robot>_gen.cpp
@@ -5,10 +15,10 @@ INFO:
 	- thunder generates the <robot>_inertial_REG.yaml from the config file 
 
 General:
+	☐ Modules kinematics, dynamics, regressors
 	✔ make thunder_robot @done (3/26/2024, 4:37:58 PM)
 	✔ let thunder copy robot_gen into thunder_robot folders for tests @done (3/27/2024, 4:24:18 PM)
 	✔ thunder working on console @done (3/29/2024, 11:32:08 AM)
-	☐ cout steps
 	✔ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils @done (3/29/2024, 11:32:20 AM)
 	✔ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot> @done (4/3/2024, 7:55:54 AM)
 	✔ let thunder generate robot_inertial_REG and put it into folder generatedFiles @done (4/7/2024, 4:15:21 PM)

@@ -15,7 +15,7 @@
 #include "library/RobDyn.h"
 #include "library/robot.h"
 #include "library/kinematics.h"
-// #include "library/dynamics.h"
+#include "library/dynamics.h"
 // #include "library/regressors.h"
 
 #define NJ 3
@@ -175,10 +175,10 @@ int main(){
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dq = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dqr = Eigen::Vector<double,NJ>::Random();//setOnes();
-	ddqr = Eigen::Vector<double,NJ>::Random();//setOnes();
+	q.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
+	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
+	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
 
 	robot.set_q(q);
 	// cout<<"q set"<<endl;
@@ -192,6 +192,7 @@ int main(){
 	// cout<<"par_DYN set"<<endl;
 
 	compute_kinematics(robot);
+	compute_dynamics(robot);
 	// kinrobot.setArguments(q,dq);
 	// regrobot.setArguments(q,dq,dqr,ddqr);
 	// dynrobot.setArguments(q,dq,param_DYN);
@@ -246,6 +247,14 @@ int main(){
 	// cout<<endl<<"C\n"<<myC<<endl;
 	// myG = dynrobot.getGravity();
 	// cout<<endl<<"G\n"<<myG<<endl;
+
+	myM = robot.get("M");
+	cout<<endl<<"M\n"<<myM<<endl;
+	myC = robot.get("C");
+	cout<<endl<<"C\n"<<myC<<endl;
+	myG = robot.get("G");
+	cout<<endl<<"G\n"<<myG<<endl;
+
 	// Yr = regrobot.getRegressor();
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 

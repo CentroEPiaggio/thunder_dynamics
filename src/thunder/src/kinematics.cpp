@@ -107,7 +107,7 @@ namespace thunder_ns{
 
 		for (int i = 1; i < _numJoints_; i++) {
 			Ti[i] = DHTemplate(_DHtable_.row(i), _q_(i), _jointsType_[i]);
-			T0i[i] = casadi::SX::mtimes({_world2L0_.get_transform(), T0i[i-1], Ti[i]});
+			T0i[i] = casadi::SX::mtimes({T0i[i-1], Ti[i]});
 			
 			if (!robot.add_function("T_"+std::to_string(i), Ti[i], {"q"}, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
 			if (!robot.add_function("T_0_"+std::to_string(i), T0i[i], {"q"}, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;

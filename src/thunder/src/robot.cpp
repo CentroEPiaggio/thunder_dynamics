@@ -24,6 +24,7 @@ namespace thunder_ns{
 		_jointsType_ = jointsType;
 		_DHtable_ = DHtable;
 		_world2L0_ = base_frame;
+		// gravity = base_frame.get_gravity();
 		_Ln2EE_ = ee_frame;
 		valid = 1;
 		// _mu_ = MU;
