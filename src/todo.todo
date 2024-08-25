@@ -10,6 +10,7 @@ to Thunder_2:
 	☐ FrameOffset not so general, use T as internal transformation and provide conversions
 	☐ create thunder_robot from thunder
 	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
+	☐ multithreading
 	
 INFO:
 	- thunder take the file <robot>.yaml that contains the configuration of the robot

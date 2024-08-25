@@ -34,6 +34,7 @@ In particular generate code to compute for franka emika panda robot:
 #include "genYaml.h"
 
 using namespace thunder_ns;
+using namespace std::chrono;
 
 using std::cout;
 using std::endl;
@@ -101,8 +102,9 @@ int main(int argc, char* argv[]){
 	}
 	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
+	auto time_start = high_resolution_clock::now();
 	robot_name_gen = robot_name + "_gen";
-	path_gen = path_robot + "generatedFiles/";
+	path_gen = path_robot + robot_name + "_generatedFiles/";
 
 	// ---------------------------------- //
 	// ---------- YAML PARSING ---------- //
@@ -258,7 +260,8 @@ int main(int argc, char* argv[]){
 	// 	sourceDestPath = PATH_COPY_YAML;
 	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 	// }
-
-	std::cout<<"done!"<<endl; 
+	auto time_stop = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(time_stop - time_start);
+	std::cout<<"done in "<<((double)duration.count())/1000<<" ms!"<<endl; 
 	return 1;
 }

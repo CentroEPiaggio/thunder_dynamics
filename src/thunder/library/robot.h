@@ -100,6 +100,8 @@ namespace thunder_ns{
 			FrameOffset get_world2L0();
 			FrameOffset get_Ln2EE();
 			// int get_N_PAR_LINK();
+			Eigen::VectorXd get_par_DYN();
+			Eigen::VectorXd get_par_REG();
 			// set functions
 			int set_arg(std::string name, Eigen::VectorXd);
 			int set_q(Eigen::VectorXd);

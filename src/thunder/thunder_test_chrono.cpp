@@ -18,10 +18,11 @@
 #include "library/dynamics.h"
 #include "library/regressors.h"
 
-#define NJ 3
-#define PARAM 10
+// #define nj 3
+#define N_PAR_LINK 10
 
 using namespace thunder_ns;
+using namespace std::chrono;
 using std::cout;
 using std::endl;
 
@@ -30,21 +31,18 @@ bool use_gripper = false;
 Eigen::Matrix3d hat(const Eigen::Vector3d v);
 // extern int compute_kinematics(Robot robot);
 
-int main(){
-
-	Eigen::VectorXd param_REG(PARAM*NJ);
-	Eigen::VectorXd param_DYN(PARAM*NJ);
+Robot robot_from_file(std::string file){
 	int nj;
 	std::string jType;
 	Eigen::MatrixXd DH_table;
 	FrameOffset Base_to_L0;
 	FrameOffset Ln_to_EE;
-	std::string config_file = "../robots/RRR/RRR.yaml";
-
-	//-------------------------------Parsing yaml-----------------------------------//
+	Eigen::VectorXd param_REG;
+	Eigen::VectorXd param_DYN;
+	// ----- parsing yaml file ----- //
 	try {
-		// --- load yaml --- //
-		YAML::Node config = YAML::LoadFile(config_file);
+		// load yaml
+		YAML::Node config = YAML::LoadFile(file);
 
 		// Number of joints
 		YAML::Node num_joints = config["num_joints"];
@@ -77,10 +75,12 @@ int main(){
 		Ln_to_EE.set_ypr(ypr);
 
 		YAML::Node inertial = config["inertial"];
+		param_REG.resize(N_PAR_LINK*nj);
+		param_DYN.resize(N_PAR_LINK*nj);
 		int i = 0;
 		for (const auto& node : inertial) {
 			
-			if (i==NJ) break;
+			if (i==nj) break;
 
 			std::string linkName = node.first.as<std::string>();
 			
@@ -96,140 +96,110 @@ int main(){
 			param_DYN[10*i+9] = node.second["Izz"].as<double>();
 			i++;
 		}
-		std::cout<<"YAML_DH letto"<<std::endl;
+		// std::cout<<"YAML_DH letto"<<std::endl;
 		// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
 
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-		return 0;
 	}
 
-	//-------------------Obtain param_REG for regressor------------------------//
-	
-	Eigen::Matrix3d I0,IG;
-	Eigen::Vector3d dOG;
-	double m;
-	
-	for(int i=0;i<NJ;i++){
-
-		m = param_DYN[i*PARAM];
-		dOG << param_DYN[i*PARAM+1], param_DYN[i*PARAM+2],param_DYN[i*PARAM+3];
-		
-		IG(0, 0) = param_DYN[i*PARAM+4];
-		IG(0, 1) = param_DYN[i*PARAM+5];
-		IG(0, 2) = param_DYN[i*PARAM+6];
-		IG(1, 0) = IG(0, 1);
-		IG(1, 1) = param_DYN[i*PARAM+7];
-		IG(1, 2) = param_DYN[i*PARAM+8];
-		IG(2, 0) = IG(0, 2);
-		IG(2, 1) = IG(1, 2);
-		IG(2, 2) = param_DYN[i*PARAM+9];
-
-		I0 = IG + m * hat(dOG).transpose() * hat(dOG);
-
-		param_REG[i*PARAM] = m;
-		param_REG[i*PARAM+1] = m*dOG[0];
-		param_REG[i*PARAM+2] = m*dOG[1];
-		param_REG[i*PARAM+3] = m*dOG[2];
-		param_REG[i*PARAM+4] = I0(0,0);
-		param_REG[i*PARAM+5] = I0(0,1);
-		param_REG[i*PARAM+6] = I0(0,2);
-		param_REG[i*PARAM+7] = I0(1,1);
-		param_REG[i*PARAM+8] = I0(1,2);
-		param_REG[i*PARAM+9] = I0(2,2);
-	}
-	// std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
-
-
-	// ---------------------------------------------------------------------------------//
-	// ------------------------------TEST CLASSES---------------------------------------//
-	// ---------------------------------------------------------------------------------//
-
-	Robot robot(NJ, jType, DH_table, Base_to_L0, Ln_to_EE);
-	cout<<"robot created"<<endl;
-
-	/* Matrices */
-	Eigen::Matrix<double, NJ, NJ*PARAM> Yr;
-	Eigen::Matrix<double, NJ, NJ*PARAM> reg_M;
-	Eigen::Matrix<double, NJ, NJ*PARAM> reg_C;
-	Eigen::Matrix<double, NJ, NJ*PARAM> reg_G;
-	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_dyn;
-	Eigen::Matrix<double, NJ, NJ> myM;
-	Eigen::Matrix<double, NJ, NJ> myC;
-	Eigen::Matrix<double, NJ, 1> myG;
-	Eigen::Matrix<double, 4, 4> myKin;
-	Eigen::Matrix<double, 6, NJ> myJac;
-	Eigen::Matrix<double, 6, NJ> myJacCM;
-
-	Eigen::Matrix<double, NJ, 1> tau_cmd_dyn;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_reg;
-	Eigen::Matrix<double, NJ, 1> tau_cmd_regMat;
-
-	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
-
-	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-
-	robot.set_q(q);
-	// cout<<"q set"<<endl;
-	robot.set_dq(dq);
-	// cout<<"dq set"<<endl;
-	robot.set_dqr(dqr);
-	// cout<<"dqr set"<<endl;
-	robot.set_ddqr(ddqr);
-	// cout<<"ddqr set"<<endl;
-	robot.set_par_DYN(param_DYN);
-	// cout<<"par_DYN set"<<endl;
-
+	auto time_start = high_resolution_clock::now();
+	Robot robot(nj, jType, DH_table, Base_to_L0, Ln_to_EE);
 	compute_kinematics(robot);
 	compute_dynamics(robot);
 	compute_regressors(robot);
+	robot.set_par_DYN(param_DYN);
 
-	myKin = robot.get("T_0_ee");
-	cout<<endl<<"Kin_ee\n"<<myKin<<endl;
-	myKin = robot.get("T_0_0");
-	cout<<endl<<"Kin0\n"<<myKin<<endl;
-	myKin = robot.get("T_0_1");
-	cout<<endl<<"Kin1\n"<<myKin<<endl;
-	myKin = robot.get("T_0_2");
-	cout<<endl<<"Kin2\n"<<myKin<<endl;
-	myKin = robot.get("T_0_3");
-	cout<<endl<<"Kin3\n"<<myKin<<endl;
+	auto time_stop = high_resolution_clock::now();
+	auto duration = duration_cast<microseconds>(time_stop - time_start).count();
+	cout<<"robot created in "<<duration<<" us"<<endl;
+	return robot;
+}
 
-	myJac = robot.get("J_ee");
-	cout<<endl<<"Jac\n"<<myJac<<endl;
-	myJac = robot.get("J_0");
-	cout<<endl<<"Jac0\n"<<myJac<<endl;
-	myJac = robot.get("J_1");
-	cout<<endl<<"Jac1\n"<<myJac<<endl;
-	myJac = robot.get("J_2");
-	cout<<endl<<"Jac2\n"<<myJac<<endl;
-	myJac = robot.get("J_3");
-	cout<<endl<<"Jac3\n"<<myJac<<endl;
+int main(){
+	// std::string jType;
+	// Eigen::MatrixXd DH_table;
+	// FrameOffset Base_to_L0;
+	// FrameOffset Ln_to_EE;
+	std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
 
-	myM = robot.get("M");
-	cout<<endl<<"M\n"<<myM<<endl;
-	myC = robot.get("C");
-	cout<<endl<<"C\n"<<myC<<endl;
-	myG = robot.get("G");
-	cout<<endl<<"G\n"<<myG<<endl;
+	// ----------------------------------------------------------------------------//
+	// ------------------------------ TESTS ---------------------------------------//
+	// ----------------------------------------------------------------------------//
 
-	Yr = robot.get("Yr");
-	reg_M = robot.get("reg_M");
-	reg_C = robot.get("reg_C");
-	reg_G = robot.get("reg_G");
-	// cout<<endl<<"Yr\n"<<Yr<<endl;
+	for (std::string& r : robots){
+		std::cout<<"Robot: "<< r <<std::endl;
+		Robot robot = robot_from_file("../robots/testRobots/" + r + ".yaml");
 
-	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
-	tau_cmd_reg = Yr*param_REG;
-	tau_cmd_regMat = (reg_M + reg_C + reg_G)*param_REG;
+		int nj = robot.get_numJoints();
+		Eigen::VectorXd param_DYN = robot.get_par_DYN();
 
-	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl;
+		int n_rep = 10;
+		auto time_start = high_resolution_clock::now();
+		auto time_stop = high_resolution_clock::now();
+		auto duration = duration_cast<microseconds>(time_stop - time_start).count();
+
+		/* Matrices */
+		Eigen::MatrixXd Yr(nj, nj*N_PAR_LINK);
+		Eigen::MatrixXd myM(nj, nj);
+		Eigen::MatrixXd myC(nj, nj);
+		Eigen::MatrixXd myG(nj, 1);
+		Eigen::MatrixXd myKin(4, 4);
+		Eigen::MatrixXd myJac(6, nj);
+
+		Eigen::VectorXd q(nj), dq(nj), dqr(nj), ddqr(nj);
+
+		/* Test */
+		q.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
+		dq.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
+		dqr.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
+		ddqr.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
+
+		robot.set_q(q);
+		// cout<<"q set"<<endl;
+		robot.set_dq(dq);
+		// cout<<"dq set"<<endl;
+		robot.set_dqr(dqr);
+		// cout<<"dqr set"<<endl;
+		robot.set_ddqr(ddqr);
+		// cout<<"ddqr set"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){myKin = robot.get("T_0_ee");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time kin: "<<duration/n_rep<<" us"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){myJac = robot.get("J_ee");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time jac: "<<duration/n_rep<<" us"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){myM = robot.get("M");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time M: "<<duration/n_rep<<" us"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){myC = robot.get("C");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time C: "<<duration/n_rep<<" us"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){myG = robot.get("G");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time G: "<<duration/n_rep<<" us"<<endl;
+
+		time_start = high_resolution_clock::now();
+		for(int i=0; i<n_rep; i++){Yr = robot.get("Yr");};
+		time_stop = high_resolution_clock::now();
+		duration = duration_cast<microseconds>(time_stop - time_start).count();
+		cout<<"time Yr: "<<duration/n_rep<<" us"<<endl<<endl;
+	}
 
 	return 0;
 }

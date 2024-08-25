@@ -251,6 +251,24 @@ namespace thunder_ns{
 		// change par_DYN
 	}
 
+	Eigen::VectorXd Robot::get_par_DYN(){
+		const casadi::SX& par_DYN_casadi = args["par_DYN"];
+		int sz = N_PAR_LINK*_numJoints_;
+		Eigen::VectorXd par_DYN(sz);
+		std::vector<casadi::SXElem> res_elements = par_DYN_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), par_DYN.data(), mapFunction);
+		return par_DYN;
+	}
+
+	Eigen::VectorXd Robot::get_par_REG(){
+		const casadi::SX& par_REG_casadi = args["par_REG"];
+		int sz = N_PAR_LINK*_numJoints_;
+		Eigen::VectorXd par_REG(sz);
+		std::vector<casadi::SXElem> res_elements = par_REG_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), par_REG.data(), mapFunction);
+		return par_REG;
+	}
+
 	// void Robot::compute(){
 	// 	for(int i=0; i<_numJoints_; i++){
 	// 		args[0](i,0) = q(i);
@@ -387,7 +405,7 @@ namespace thunder_ns{
 		
 		// generate functions in c code
 		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(name_file, opts);
-		cout<<"casadi_fun: "<<casadi_fun<<endl;
+		// cout<<"casadi_fun: "<<casadi_fun<<endl;
 
 		for (const auto& f : casadi_fun) {
 			myCodeGen.add(f.second);
