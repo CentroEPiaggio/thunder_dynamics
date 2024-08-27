@@ -236,6 +236,7 @@ namespace thunder_ns{
 
 		casadi::SX M(nj,nj);
 		casadi::SX C(nj,nj);
+		casadi::SX C_std(nj,nj);
 		casadi::SX G(nj,1);
 		
 		casadi::SX Mi(nj,nj);
@@ -272,9 +273,11 @@ namespace thunder_ns{
 		}
 		
 		C = stdCmatrix(M,_q_,_dq_,dq_sel_);
+		C_std = stdCmatrix_classic(M,_q_,_dq_,dq_sel_);
 
 		robot.add_function("M", M, {"q","par_DYN"}, "Manipulator mass matrix");
 		robot.add_function("C", C, {"q","dq","par_DYN"}, "Manipulator Coriolis matrix");
+		robot.add_function("C_std", C_std, {"q","dq","par_DYN"}, "Classic formulation of the manipulator Coriolis matrix");
 		robot.add_function("G", G, {"q","par_DYN"}, "Manipulator gravity terms");
 
 		return {M,C,G};

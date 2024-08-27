@@ -33,7 +33,8 @@
 				"ms-vscode.cpptools-extension-pack",
 				"eamodio.gitlens",
 				"vscode-icons-team.vscode-icons",
-				"sandy081.todotasks"
+				"sandy081.todotasks",
+				"twxs.cmake"
 			]
 		}
 	},

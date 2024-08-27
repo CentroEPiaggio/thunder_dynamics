@@ -10,10 +10,10 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-#include "library/RobKinAdv.h"
+// #include "library/RobKinAdv.h"
 // #include "library/RobReg.h"
 // #include "library/RobDyn.h"
-// #include "library/robot.h"
+#include "library/robot.h"
 #include "library/kinematics.h"
 #include "library/dynamics.h"
 #include "library/regressors.h"

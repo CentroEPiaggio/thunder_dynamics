@@ -3,12 +3,17 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include "robot.h"
 
 using namespace std;
 
 namespace thunder_ns{
 
-	int change_to_robot(const string from_robot, const string to_robot, int n_joints, const string file_path_h, const string file_path_cpp){
+	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp){
+		
+		// - get parameters from robot - //
+		int n_joints = robot.get_numJoints();
+		std::vector<fun_obj> functions = robot.get_functions();
 
 		// --- file .h --- //
 		ifstream file_h(file_path_h); // open in reading mode
@@ -31,6 +36,14 @@ namespace thunder_ns{
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_h, from_robot, to_robot);
+
+			// - insert functions - //
+			string functions_string = "";
+			for (int i=0; i<functions.size(); i++){
+				functions_string.append("\t\t\t// - " + functions[i].description + " - //\n");
+				functions_string.append("\t\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
+			}
+			replace_all(file_content_h, "//#-FUNCTIONS_H-#//", functions_string);
 
 			// - overwrite file_h - //
 			ofstream out_h(file_path_h);
@@ -57,6 +70,32 @@ namespace thunder_ns{
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_cpp, from_robot, to_robot);
+
+			// - insert functions - //
+			string functions_string = "";
+			for (int i=0; i<functions.size(); i++){
+				std::string fun_name = functions[i].name;
+				std::vector<std::string> fun_args = functions[i].args;
+				std::vector<int> out_size = functions[i].out_size;
+				functions_string.append("\t// - " + functions[i].description + " - //\n");
+				functions_string.append("\tEigen::MatrixXd thunder_" + to_robot + "::get_" + fun_name + "(){\n");
+				functions_string.append("\t\tEigen::MatrixXd out;\n");
+				functions_string.append("\t\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
+				functions_string.append("\t\tlong long p3[" + fun_name + "_fun_SZ_IW];\n");
+				functions_string.append("\t\tdouble p4[" + fun_name + "_fun_SZ_W];\n");
+				// inputs
+				functions_string.append("\t\tconst double* input_[] = {" + fun_args[0]+".data()");
+				for (int j=1; j<fun_args.size(); j++){
+					functions_string.append(", " + fun_args[j]+".data()");
+				}
+				functions_string.append("};\n");
+				// output
+				functions_string.append("\t\tdouble* output_[] = {out.data()};\n");
+				functions_string.append("\t\tint check = " + fun_name + "_fun(input_, output_, p3, p4, 0);\n");
+				functions_string.append("\t\treturn out;\n");
+				functions_string.append("\t}\n\n");
+			}
+			replace_all(file_content_cpp, "//#-FUNCTIONS_CPP-#//", functions_string);
 
 			// - overwrite file_cpp - //
 			ofstream out_cpp(file_path_cpp);

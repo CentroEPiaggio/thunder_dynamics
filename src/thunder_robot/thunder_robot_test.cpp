@@ -10,14 +10,16 @@
 #include <chrono>
 // #include <yaml-cpp/yaml.h>
 
-#include "thunder_robot.h"
+// #include "thunder_robot.h"
+#include "thunder_RRR.h"
 
 // #define NJ 3
 // #define N_PAR 30
-const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
-const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_REG.yaml";
+const std::string inertial_file = "../robots/RRR_inertial_REG.yaml";
+// const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_REG.yaml";
 
 using namespace thunder_ns;
+using namespace std::chrono;
 using std::cout;
 using std::endl;
 
@@ -27,8 +29,12 @@ using std::endl;
 
 int main(){
 
-	thunder_robot robot;
-	// robot.init(7);
+	int n_rep = 10;
+	auto time_start = high_resolution_clock::now();
+	auto time_stop = high_resolution_clock::now();
+	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+
+	thunder_RRR robot;
 
 	robot.load_inertial_REG(inertial_file);
 	const int NJ = robot.get_numJoints();
@@ -52,6 +58,7 @@ int main(){
 	Eigen::MatrixXd myM(NJ, NJ);
 	Eigen::MatrixXd myC(NJ, NJ);
 	Eigen::VectorXd myG(NJ);
+	Eigen::MatrixXd myKin(4,4);
 	Eigen::MatrixXd myJac(6,NJ);
 	Eigen::MatrixXd myJacCM(6,NJ);
 	Eigen::VectorXd tau_cmd_dyn(NJ);
@@ -76,16 +83,18 @@ int main(){
 	param_REG = robot.get_inertial_REG();
 	cout<<"\nPar_REG\n"<<param_REG;
 
-	Yr = robot.getReg();
-	cout<<"\nYr\n"<<Yr;
-	myM = robot.getMass();
-	cout<<"\nM\n"<<myM;
-	myC = robot.getCoriolis();
-	cout<<"\nC\n"<<myC;
-	myG = robot.getGravity();
-	cout<<"\nG\n"<<myG;
-	myJac = robot.getJac();
-	cout<<"\nJac\n"<<myJac;
+	myKin = robot.get_T_0_ee();
+	cout<<"\n\nKin\n"<<myKin;
+	myJac = robot.get_J_ee();
+	cout<<"\n\nJac\n"<<myJac;
+	myM = robot.get_M();
+	cout<<"\n\nM\n"<<myM;
+	myC = robot.get_C();
+	cout<<"\n\nC\n"<<myC;
+	myG = robot.get_G();
+	cout<<"\n\nG\n"<<myG;
+	Yr = robot.get_Yr();
+	cout<<"\n\nYr\n"<<Yr;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
 	
@@ -95,7 +104,7 @@ int main(){
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
-	robot.save_inertial_REG(saved_inertial_file);
+	// robot.save_inertial_REG(saved_inertial_file);
 
 	// Eigen::VectorXd param_DYN(N_PAR);
 	// Eigen::VectorXd param_DYN_afterLoad(N_PAR);

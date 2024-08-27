@@ -1,7 +1,7 @@
 #ifndef KINEMATICS_H
 #define KINEMATICS_H
 
-#include "Robot.h"
+#include "robot.h"
 
 namespace thunder_ns{
 

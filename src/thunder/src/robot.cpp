@@ -308,16 +308,26 @@ namespace thunder_ns{
 	// 	myCodeGen.generate(savePath);
 	// }
 
-	std::vector<std::string> Robot::getFunctionNames() {
-		std::vector<std::string> name_funs;
+	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
+		std::vector<fun_obj> functions;
 		int sz = casadi_fun.size();
-		name_funs.resize(sz);
+		functions.resize(sz);
 		int i=0;
-		for (auto &m : casadi_fun){
-			name_funs[i] = m.first;
+		for (auto &f : casadi_fun){
+			std::string name = f.first;
+			functions[i].name = f.first;
+			functions[i].description = fun_descr[name];
+			functions[i].args = fun_args[name];
+			functions[i].out_size.resize(2);
+			functions[i].out_size[0] = model[name].size1();
+			functions[i].out_size[1] = model[name].size2();
+			if (!onlyNames){
+				functions[i].expr = model[name];
+				functions[i].fun = f.second;
+			}
 			i++;
 		}
-		return name_funs;
+		return functions;
 	}
 
 	// std::vector<casadi::Function> Robot::getCasadiFunctions() {

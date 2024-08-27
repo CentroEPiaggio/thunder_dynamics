@@ -10,10 +10,10 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-#include "library/RobKinAdv.h"
+// #include "library/RobKinAdv.h"
 // #include "library/RobReg.h"
 // #include "library/RobDyn.h"
-// #include "library/robot.h"
+#include "library/robot.h"
 #include "library/kinematics.h"
 #include "library/dynamics.h"
 #include "library/regressors.h"
@@ -121,7 +121,7 @@ int main(){
 	// Eigen::MatrixXd DH_table;
 	// FrameOffset Base_to_L0;
 	// FrameOffset Ln_to_EE;
-	std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
+	std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15"};
 
 	// ----------------------------------------------------------------------------//
 	// ------------------------------ TESTS ---------------------------------------//
@@ -134,15 +134,17 @@ int main(){
 		int nj = robot.get_numJoints();
 		Eigen::VectorXd param_DYN = robot.get_par_DYN();
 
-		int n_rep = 10;
+		int n_rep = 100;
+		int min_dur = 999999999;
 		auto time_start = high_resolution_clock::now();
 		auto time_stop = high_resolution_clock::now();
-		auto duration = duration_cast<microseconds>(time_stop - time_start).count();
+		auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
 		/* Matrices */
-		Eigen::MatrixXd Yr(nj, nj*N_PAR_LINK);
+		Eigen::MatrixXd myYr(nj, nj*N_PAR_LINK);
 		Eigen::MatrixXd myM(nj, nj);
 		Eigen::MatrixXd myC(nj, nj);
+		Eigen::MatrixXd myC_std(nj, nj);
 		Eigen::MatrixXd myG(nj, 1);
 		Eigen::MatrixXd myKin(4, 4);
 		Eigen::MatrixXd myJac(6, nj);
@@ -164,41 +166,105 @@ int main(){
 		robot.set_ddqr(ddqr);
 		// cout<<"ddqr set"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){myKin = robot.get("T_0_ee");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time kin: "<<duration/n_rep<<" us"<<endl;
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myKin = robot.get("T_0_ee");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time kin: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myKin = robot.get("T_0_ee");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time Kin: "<<(float)min_dur/1000<<" us"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){myJac = robot.get("J_ee");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time jac: "<<duration/n_rep<<" us"<<endl;
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myJac = robot.get("J_ee");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time jac: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myJac = robot.get("J_ee");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time Jac: "<<(float)min_dur/1000<<" us"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){myM = robot.get("M");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time M: "<<duration/n_rep<<" us"<<endl;
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myM = robot.get("M");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time M: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myM = robot.get("M");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time M: "<<(float)min_dur/1000<<" us"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){myC = robot.get("C");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time C: "<<duration/n_rep<<" us"<<endl;
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myC = robot.get("C");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time C: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myC = robot.get("C");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time C: "<<(float)min_dur/1000<<" us"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){myG = robot.get("G");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time G: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myC_std = robot.get("C_std");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time C_std: "<<(float)min_dur/1000<<" us"<<endl;
 
-		time_start = high_resolution_clock::now();
-		for(int i=0; i<n_rep; i++){Yr = robot.get("Yr");};
-		time_stop = high_resolution_clock::now();
-		duration = duration_cast<microseconds>(time_stop - time_start).count();
-		cout<<"time Yr: "<<duration/n_rep<<" us"<<endl<<endl;
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myG = robot.get("G");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time G: "<<duration/n_rep<<" us"<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myG = robot.get("G");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time G: "<<(float)min_dur/1000<<" us"<<endl;
+
+		// time_start = high_resolution_clock::now();
+		// for(int i=0; i<n_rep; i++){myYr = robot.get("Yr");};
+		// time_stop = high_resolution_clock::now();
+		// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+		// cout<<"time Yr: "<<duration/n_rep<<" us"<<endl<<endl;
+		min_dur = 999999999;
+		for (int i=0; i<n_rep; i++){
+			time_start = high_resolution_clock::now();
+			myYr = robot.get("Yr");
+			time_stop = high_resolution_clock::now();
+			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+			min_dur = (duration<min_dur) ? duration : min_dur;
+		}
+		cout<<"time Yr: "<<(float)min_dur/1000<<" us"<<endl<<endl;
 	}
 
 	return 0;

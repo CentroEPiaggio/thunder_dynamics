@@ -1,7 +1,7 @@
 #ifndef REGRESSORS_H
 #define REGRESSORS_H
 
-#include "Robot.h"
+#include "robot.h"
 
 namespace thunder_ns{
 

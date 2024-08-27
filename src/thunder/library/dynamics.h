@@ -1,7 +1,7 @@
 #ifndef DYNAMICS_H
 #define DYNAMICS_H
 
-#include "Robot.h"
+#include "robot.h"
 
 namespace thunder_ns{
 

@@ -7,10 +7,12 @@ to Thunder_2:
 	☐ change all parameters (par_DYN, par_REG) when the function set_par.. is used!!
 	☐ gravity not in base frame class
 	☐ dynamics not clean
+	☐ regressors not clean
 	☐ FrameOffset not so general, use T as internal transformation and provide conversions
 	☐ create thunder_robot from thunder
-	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
+	✔ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot @done (8/27/2024, 11:13:54 AM)
 	☐ multithreading
+	☐ is possible to have two different robots? due to casadi definitions on generated file?
 	
 INFO:
 	- thunder take the file <robot>.yaml that contains the configuration of the robot
@@ -38,7 +40,7 @@ Program:
 	✔ thunder from bin @done (4/4/2024, 10:43:15 AM)
 	☐ there is a copy of utils functions from urdf2dh_inertial to thunder_robot. Another way is to add another library with general methods, or to add functions on thunder_robot creation (bad). Maybe the better choice is to create a folder with all files of the library inside(thunder_robot, robot_gen, thunder_utils)
 	☐ build from scratch to see warnings
-	☐ thunder copy generated files into thunder_robot project (not working for now)
+	✔ thunder copy generated files into thunder_robot project (not working for now) @done (8/27/2024, 12:41:17 PM)
 	
 thunder:
 	☐ dynamic matrix derivatives

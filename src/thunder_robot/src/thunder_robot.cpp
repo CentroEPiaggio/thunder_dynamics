@@ -42,7 +42,6 @@ namespace thunder_ns{
 		// dotPinvJac_gen.resize(num_joints,6);
 		// dotPinvJacPos_gen.resize(num_joints,3);
 		kin_gen.resize(4,4);
-		mass_gen.resize(num_joints,num_joints);
 		coriolis_gen.resize(num_joints,num_joints);
 		gravity_gen.resize(num_joints,1);
 	}
@@ -183,16 +182,6 @@ namespace thunder_ns{
 		double* output_[] = {reg_gen.data()};
 		
 		int check = Yr_fun(input_, output_, p3, p4, 0);
-	}
-	
-	void thunder_robot::computeMass_gen(){
-		long long p3[M_fun_SZ_IW];
-		double p4[M_fun_SZ_W];
-
-		const double* input_[] = {q.data(), param_DYN.data()};
-		double* output_[] = {mass_gen.data()};
-		
-		int check = M_fun(input_, output_, p3, p4, 0);
 	}
 	
 	void thunder_robot::computeCoriolis_gen(){
@@ -448,7 +437,19 @@ namespace thunder_ns{
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getReg(){computeReg_gen(); return reg_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getMass(){computeMass_gen(); return mass_gen;};
+	Eigen::MatrixXd thunder_robot::getMass(){
+		Eigen::MatrixXd mass_gen;
+		mass_gen.resize(num_joints,num_joints);
+		long long p3[M_fun_SZ_IW];
+		double p4[M_fun_SZ_W];
+
+		const double* input_[] = {q.data(), param_DYN.data()};
+		double* output_[] = {mass_gen.data()};
+		
+		int check = M_fun(input_, output_, p3, p4, 0);
+
+		return mass_gen;
+	}
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getCoriolis(){computeCoriolis_gen(); return coriolis_gen;};
 	/* Get regressor matrix */

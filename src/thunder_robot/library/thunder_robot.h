@@ -21,10 +21,10 @@ namespace thunder_ns{
 			/* Joints' variables */
 			Eigen::VectorXd q, dq, dqr, ddqr, param_REG, param_DYN;
 			/* Output of generated code */
-			Eigen::MatrixXd kin_gen, jac_gen, dotJac_gen, pinvJac_gen, reg_gen, mass_gen, coriolis_gen, gravity_gen;
+			Eigen::MatrixXd kin_gen, jac_gen, dotJac_gen, pinvJac_gen, reg_gen, coriolis_gen, gravity_gen;
 			/* Compute generated code */
 			void computeKin_gen(), computeJac_gen(), computeDotJac_gen(), computePinvJac_gen();
-			void computeMass_gen(), computeCoriolis_gen(), computeGravity_gen();
+			void computeCoriolis_gen(), computeGravity_gen();
 			void computeReg_gen();
 
 			void update_inertial_DYN();

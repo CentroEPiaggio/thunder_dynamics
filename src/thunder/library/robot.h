@@ -17,6 +17,7 @@ namespace thunder_ns{
 	// 	std::vector<fun_obj> functions;
 	// };
 	constexpr int N_PAR_LINK = 10;
+	typedef struct fun_obj fun_obj;
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
@@ -116,8 +117,8 @@ namespace thunder_ns{
 			// Eigen::VectorXd param_KIN, par_DYN, par_REG;
 			// void update();
 			// void generate_code(std::string& savePath);
-			std::vector<std::string> getFunctionNames();
-			std::vector<casadi::Function> getCasadiFunctions();
+			std::vector<fun_obj> get_functions(bool onlyNames = 1);
+			// std::vector<casadi::Function> getCasadiFunctions();
 			int add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr = "");
 			void generate_library(const std::string& savePath, const std::string& name_file);
 

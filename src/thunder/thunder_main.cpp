@@ -23,14 +23,14 @@ In particular generate code to compute for franka emika panda robot:
 // #include "library/RobKinAdv.h"
 // #include "library/RobReg.h"
 // #include "library/RobDyn.h"
-#include "library/robot.h"
-#include "library/kinematics.h"
-#include "library/dynamics.h"
-#include "library/regressors.h"
+#include "utils.h"
+#include "robot.h"
+#include "kinematics.h"
+#include "dynamics.h"
+#include "regressors.h"
 
 #include <yaml-cpp/yaml.h>
 #include "urdf2dh_inertial.h"
-#include "utils.h"
 #include "genYaml.h"
 
 using namespace thunder_ns;
@@ -40,7 +40,7 @@ using std::cout;
 using std::endl;
 
 bool use_gripper = false;
-bool COPY_GEN_FLAG = false;
+bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
 #define MU_JACOB 0.0
 
 // --- paths and files (default) --- //
@@ -49,11 +49,10 @@ std::string path_robot = "../robots/";
 std::string config_file = path_robot + robot_name + "/robot.yaml";
 std::string robot_name_gen = robot_name + "_gen";
 std::string path_gen = path_robot + robot_name + "/generatedFiles/";
-const std::string PATH_THUNDER_ROBOT = "../../thunder_robot/";
-const std::string PATH_COPY_H = PATH_THUNDER_ROBOT + "library/robot_gen.h";
-const std::string PATH_COPY_CPP = PATH_THUNDER_ROBOT + "src/robot_gen.cpp";
-const std::string PATH_COPY_YAML = PATH_THUNDER_ROBOT + "robots/robot/robot_inertial_REG.yaml";
-
+const std::string PATH_THUNDER_ROBOT = "../thunder_robot_template/";
+const std::string PATH_COPY_H = "../../thunder_robot/library/";
+const std::string PATH_COPY_CPP = "../../thunder_robot/src/";
+const std::string PATH_COPY_YAML = "../../thunder_robot/robots/";
 
 int main(int argc, char* argv[]){
 	// --- Variables --- //
@@ -149,44 +148,10 @@ int main(int argc, char* argv[]){
 	}
 	// ---------- end parsing ---------- //
 
-	/* RobKinAdv and RobReg object */
-	// RobKinAdv kinrobot;
-	// RobReg regrobot;
-	// RobDyn dynrobot;
-	// kinrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE, MU_JACOB);
-	// regrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
-	// dynrobot.init(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
-
 	Robot robot(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
 	compute_kinematics(robot);
 	compute_dynamics(robot);
 	compute_regressors(robot);
-
-	/* Get Casadi Functions */
-	// std::vector<casadi::Function> kin_vec, reg_vec, dyn_vec, all_vec;
-	// kin_vec = kinrobot.getCasadiFunctions();
-	// reg_vec = regrobot.getCasadiFunctions();
-	// dyn_vec = dynrobot.getCasadiFunctions();
-	// std::vector<casadi::Function> fun_vec;
-	// fun_vec = robot.getCasadiFunctions();
-
-	/* Merge casadi function */
-	// int dim1, dim2,dim3;
-	// dim1 = kin_vec.size();
-	// dim2 = reg_vec.size();
-	// dim3 = dyn_vec.size();
-	// int dim = fun_vec.size();
-
-	// for (int i=2; i<dim1; i++){     // exclude kinematic and jacobian
-	// 	all_vec.push_back(kin_vec[i]);
-	// }
-	// for (int i=0; i<dim2; i++){
-	// 	all_vec.push_back(reg_vec[i]);
-	// }
-	// for (int i=2; i<dim3; i++){     // exclude kinematic and jacobian
-	// 	all_vec.push_back(dyn_vec[i]);
-	// }
-	// if(all_vec.size()!=dim1+dim2+dim3-4) cout<<"Merge Error"<<endl;
 
 	// --- Generate merge code --- //
 	std::string relativePath = path_gen;
@@ -216,8 +181,10 @@ int main(int argc, char* argv[]){
 		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
 		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
 	}else{
-		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
-		thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
+		// thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
+		// thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
+		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "thunder_robot.cpp";
+		thunder_robot_h_path = PATH_THUNDER_ROBOT + "thunder_robot.h";
 	}
 
 	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
@@ -229,7 +196,7 @@ int main(int argc, char* argv[]){
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
 	// --- change the necessary into thunder_robot --- //
-	int changed = change_to_robot("robot", robot_name, nj, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
+	int changed = change_to_robot("robot", robot_name, robot, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
 	if (!changed) {
 		cout<<"problem on changing robot name:"<<endl;
 		return 0;
@@ -242,24 +209,44 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 
-	// // --- copy generated files in thunder_robot project --- //
-	// if(COPY_GEN_FLAG){
-	// 	// Problem here, on inertial_reg for sure!
-	// 	std::filesystem::path sourcePath;
-	// 	std::filesystem::path sourceDestPath;
+	std::cout<<"Library generated!"<<std::endl;
 
-	// 	sourcePath = absolutePath + robot_name_gen + ".h";
-	// 	sourceDestPath = PATH_COPY_H;
-	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	// --- copy generated files in thunder_robot project --- //
+	if(COPY_GEN_FLAG){
+		// Problem here, on inertial_reg for sure!
+		std::filesystem::path sourcePath;
+		std::filesystem::path sourceDestPath;
 
-	// 	sourcePath = absolutePath + robot_name_gen + ".cpp";
-	// 	sourceDestPath = PATH_COPY_CPP;
-	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		// copy .h generated files
+		sourcePath = absolutePath + robot_name_gen + ".h";
+		sourceDestPath = PATH_COPY_H + robot_name_gen + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy .cpp generated files
+		sourcePath = absolutePath + robot_name_gen + ".cpp";
+		sourceDestPath = PATH_COPY_CPP + robot_name_gen + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 		
-	// 	sourcePath = absolutePath + robot_name + "_inertial_REG.yaml";
-	// 	sourceDestPath = PATH_COPY_YAML;
-	// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-	// }
+		// copy inertial files
+		sourcePath = absolutePath + robot_name + "_inertial_REG.yaml";
+		sourceDestPath = PATH_COPY_YAML + robot_name + "_inertial_REG.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = absolutePath + robot_name + "_inertial_DYN.yaml";
+		sourceDestPath = PATH_COPY_YAML + robot_name + "_inertial_DYN.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy thunder_robot
+		sourcePath = path_gen + "thunder_" + robot_name + ".h";
+		sourceDestPath = PATH_COPY_H + "thunder_" + robot_name + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = path_gen + "thunder_" + robot_name + ".cpp";
+		sourceDestPath = PATH_COPY_CPP + "thunder_" + robot_name + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		std::cout<<"Copied to thunder_robot!"<<std::endl;
+	}
+
+	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<microseconds>(time_stop - time_start);
 	std::cout<<"done in "<<((double)duration.count())/1000<<" ms!"<<endl; 
