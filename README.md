@@ -34,17 +34,19 @@ where `<path>` is the relative path from the `thunder` binary and the folder con
 The file `<robot>.yaml` is a configuration file that contain all the information about the robot.
 The DH table takes the trasformation in the order a, alpha, d, theta.
 The inertial parameters are expressed in the DH frames with the same convention.
-An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda.
+An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda or a 3 d.o.f RRR manipulator.
 
 
 The framework will create a `generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
 - `thunder_<robot>.h`, `thunder_<robot>.cpp` is the wrapper class for the generated files.
-- `<robot>_inertial_REG` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
+- `<robot>_inertial_DYN` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
+- `<robot>_inertial_REG` is another parameter's file that have the classical parameters in which the system is linear to.
 
 In order to use the framework you can write on your own C++ program:
 ```C++
 #include "thunder_<robot>.h"
+#include <eigen3/Eigen/Dense>
 
 int main(){
 	// init variables
@@ -58,11 +60,17 @@ int main(){
 	// set configuration
 	my_robot.setArguments(q, dq, dq_r, ddq_r);
 	// set inertial param from vector
-	my_robot.set_inertial_REG(params);
+	my_robot.set_inertial_REG(params); // or set_inertial_DYN()
 	// or load it from file
-	my_robot.load_inertial_REG(".../<robot>_inertial_REG.yaml");
-	// compute regressor
-	eigen3::MatrixXd Y = my_robot.get_regressor();
+	my_robot.load_inertial_REG(".../<robot>_inertial_REG.yaml"); // or DYN
+
+	// - compute standard quantities - //
+	Eigen::MatrixXd T = my_robot.get_T_0_ee(); // end-effector kinematics
+	Eigen::MatrixXd J = my_robot.get_J_ee(); // end-effector Jacobian matrix
+	Eigen::MatrixXd M = my_robot.get_M(); // Mass matrix
+	Eigen::MatrixXd C = my_robot.get_C(); // Coriolis matrix
+	Eigen::MatrixXd G = my_robot.get_G(); // Gravity vector
+	Eigen::MatrixXd Yr = my_robot.get_Yr(); // regressor matrix
 	...
 }
 ```
@@ -76,25 +84,23 @@ The library requires casadi and yaml-cpp that are already included in the docker
 Here you can find different classes implemented with casadi library to generalize serial manipulator control.
 The main classes contained in `thunder` are:
 
-* `CasadiObj`: abstract object useful to:
-   - convert casadi element to eigen element
-   - obtain matrix
-   - generate code
-   - ...
-* `RobKinBasic`: (derived from `CasadiObj`) useful for compute:
-   - forward kinematic
-   - jacobian.
-* `RobKinAdv`: (derived from `RobKinBasic`) useful for compute:
-   - derivative of jacobian
-   - pseudo-inverve of jacobian
-   - derivative of pseudo-inverve of jacobian
-   - ... 
-* `RobDyn`: (derived from `RobKinBasic`) useful for compute:
-   - mass matrix
-   - coriolis matrix
-   - gravity matrix
-* `RobReg`: (derived from `RobKinBasic`) useful for compute:
-   - regressor 
+* `Robot`: object that contain everything needed to the robot:
+   - contain all the robot functions (kinematics, dynamics...)
+   - functions can be dynamically added to the robot
+   - all the functions added to the robot can be exported on the thunder_robot class with code generation
+   - with the function `add_function()` is possible to add expressions to the internal robot functions
+   - following modules permits to expand the robot functionalities by adding functions
+* `kinematics`: contain standard kinematic functions:
+   - T_0_i: return the transformation 0->Li
+   - J_i: jacobian of the frame i
+   - J_ee_dot: jacobian derivative
+   - J_ee_pinv: jacobian pseudoinverse
+* `dynamics`: contain standard dynamic functions:
+   - M: mass matrix
+   - C: coriolis matrix
+   - G: gravity matrix
+* `RobReg`: contain the regressor formulation:
+   - Yr: regressor matrix 
 
 the content of the classes is then integrated in the C++ library `<robot>_gen.h/cpp` and the `thunder_<robot>` class provide a wrapper for the automatically generated code.
 
