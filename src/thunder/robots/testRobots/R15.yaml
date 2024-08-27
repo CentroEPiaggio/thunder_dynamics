@@ -1,0 +1,234 @@
+# -------------------------- #
+## ----- Robot Config ----- ##
+# -------------------------- #
+
+# --- Constants --- #
+PI_2: &PI_2           1.5707963267948966
+PI_2_neg: &PI_2_neg  -1.5707963267948966
+
+
+# --- Hyperparameters --- #
+num_joints: 15
+
+# joint types: 'R' or 'P'
+type_joints: 'RRRRRRRRRRRRRRR'
+
+# DH convention: a -> alpha -> d -> theta
+DH: [0,  0,         1, 0,
+     0,  *PI_2,     0, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     0,  *PI_2_neg, 0, 0,
+     0,  *PI_2,     2, 0,
+     1,  0,         0, 0]
+
+# gravity vector
+gravity: [0, 0, -9.81]
+
+# world to link_0
+Base_to_L0:
+  tr: [0, 0, 0]
+  ypr: [0, 0, 0]
+
+# Link_n to EE
+# Ln_to_EE:
+#   tr: [0, 0, 0]
+#   ypr: [0, 0, 0]
+Ln_to_EE:
+  tr: [1, 0, 0]
+  ypr: [0, 0, *PI_2_neg]
+
+
+# -------------------------------- #
+## ----- Initial Parameters ----- ##
+# -------------------------------- #
+
+# inertial parameters expressed w.r.t. DH frames
+inertial:
+  link1:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link2:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link3:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link4:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link5:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link6:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link7:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link8:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link9:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link10:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link11:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+  
+  link12:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link13:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link14:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0
+
+  link15:
+    mass: 1.0
+    CoM_x: 1.0
+    CoM_y: 1.0
+    CoM_z: 1.0
+    Ixx: 1.0
+    Ixy: 1.0
+    Ixz: 1.0
+    Iyy: 1.0
+    Iyz: 1.0
+    Izz: 1.0

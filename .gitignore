@@ -1,6 +1,7 @@
 .devcontainer/.bash_history
 bin/
 **/build/
-**/generatedFiles/
+**generatedFiles/
 *_gen.h
 *_gen.cpp
+src/thunder_robot/robots/robot/saved_robot_inertial_REG.yaml

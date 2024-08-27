@@ -7,7 +7,6 @@ PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
 PI_4_neg: &PI_4_neg  -0.7853981633974483
 
-
 # --- Hyperparameters --- #
 num_joints: 7
 
@@ -34,7 +33,7 @@ Base_to_L0:
 # Link_n to EE
 Ln_to_EE:
   tr: [0, 0, 0]
-  ypr: [*PI_4_neg, 0, 0]
+  ypr: [0, 0, 0]
 
 
 # -------------------------------- #

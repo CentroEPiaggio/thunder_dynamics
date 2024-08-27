@@ -4,7 +4,7 @@
 // constexpr std::string path_yaml_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored";
 // constexpr std::string path_copy_DH_REG = "../robots/franka/generatedFiles/inertial_REG_stored_copy";
 
-const int N_JOINTS = 7;
+const int N_JOINTS = 3;
 const int N_PAR_LINK = 10;
 
 using namespace thunder_ns;
@@ -38,11 +38,10 @@ namespace thunder_ns{
 		jac_gen.resize(6,num_joints);
 		dotJac_gen.resize(6,num_joints);
 		pinvJac_gen.resize(num_joints,6);
-		pinvJacPos_gen.resize(num_joints,3);
-		dotPinvJac_gen.resize(num_joints,6);
-		dotPinvJacPos_gen.resize(num_joints,3);
+		// pinvJacPos_gen.resize(num_joints,3);
+		// dotPinvJac_gen.resize(num_joints,6);
+		// dotPinvJacPos_gen.resize(num_joints,3);
 		kin_gen.resize(4,4);
-		mass_gen.resize(num_joints,num_joints);
 		coriolis_gen.resize(num_joints,num_joints);
 		gravity_gen.resize(num_joints,1);
 	}
@@ -81,6 +80,21 @@ namespace thunder_ns{
 		}
 	}
 
+	void thunder_robot::update_inertial_REG(){
+		for (int i=0; i<num_joints; i++){
+			Eigen::VectorXd p_dyn = param_DYN.segment(N_PAR_LINK*i, N_PAR_LINK);
+			double mass = p_dyn(0);
+			Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
+			Eigen::Vector3d m_CoM = mass * CoM;
+			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
+			Eigen::Vector<double, 6> I_tmp_v;
+			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
+			Eigen::Vector<double, 6> I;
+			I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
+			param_REG.segment(N_PAR_LINK*i, N_PAR_LINK) << mass, CoM, I+I_tmp_v;
+		}
+	}
+
 	void thunder_robot::set_inertial_REG(const Eigen::VectorXd& param_){
 		if(param_.size() == N_PAR_LINK*num_joints){
 			param_REG = param_;
@@ -89,6 +103,19 @@ namespace thunder_ns{
 		}
 		// conversion from REG to DYN
 		update_inertial_DYN();
+		// computeMass_gen();
+		// computeCoriolis_gen();
+		// computeGravity_gen();
+	}
+
+	void thunder_robot::set_inertial_DYN(const Eigen::VectorXd& param_){
+		if(param_.size() == N_PAR_LINK*num_joints){
+			param_DYN = param_;
+		} else{
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+		}
+		// conversion from REG to DYN
+		update_inertial_REG();
 		// computeMass_gen();
 		// computeCoriolis_gen();
 		// computeGravity_gen();
@@ -148,112 +175,102 @@ namespace thunder_ns{
 	// }
 	
 	void thunder_robot::computeReg_gen(){
-		long long p3[regr_fun_SZ_IW];
-		double p4[regr_fun_SZ_W];
+		long long p3[Yr_fun_SZ_IW];
+		double p4[Yr_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data(), dqr.data(), ddqr.data()};
 		double* output_[] = {reg_gen.data()};
 		
-		int check = regr_fun(input_, output_, p3, p4, 0);
-	}
-	
-	void thunder_robot::computeMass_gen(){
-		long long p3[mass_fun_SZ_IW];
-		double p4[mass_fun_SZ_W];
-
-		const double* input_[] = {q.data(), param_DYN.data()};
-		double* output_[] = {mass_gen.data()};
-		
-		int check = mass_fun(input_, output_, p3, p4, 0);
+		int check = Yr_fun(input_, output_, p3, p4, 0);
 	}
 	
 	void thunder_robot::computeCoriolis_gen(){
-		long long p3[coriolis_fun_SZ_IW];
-		double p4[coriolis_fun_SZ_W];
+		long long p3[C_fun_SZ_IW];
+		double p4[C_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data(), param_DYN.data()};
 		double* output_[] = {coriolis_gen.data()};
 		
-		int check = coriolis_fun(input_, output_, p3, p4, 0);
+		int check = C_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeGravity_gen(){
-		long long p3[gravity_fun_SZ_IW];
-		double p4[gravity_fun_SZ_W];
+		long long p3[G_fun_SZ_IW];
+		double p4[G_fun_SZ_W];
 
 		const double* input_[] = {q.data(), param_DYN.data()};
 		double* output_[] = {gravity_gen.data()};
-		int check = gravity_fun(input_, output_, p3, p4, 0);
+		int check = G_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeJac_gen(){
-		long long p3[jac_fun_SZ_IW];
-		double p4[jac_fun_SZ_W];
+		long long p3[J_ee_fun_SZ_IW];
+		double p4[J_ee_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {jac_gen.data()};
 
-		int check = jac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computeDotJac_gen(){
-		long long p3[dotJac_fun_SZ_IW];
-		double p4[dotJac_fun_SZ_W];
+		long long p3[J_ee_dot_fun_SZ_IW];
+		double p4[J_ee_dot_fun_SZ_W];
 
 		const double* input_[] = {q.data(), dq.data()};
 		double* output_[] = {dotJac_gen.data()};
 
-		int check = dotJac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_dot_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::computePinvJac_gen(){
-		long long p3[pinvJac_fun_SZ_IW];
-		double p4[pinvJac_fun_SZ_W];
+		long long p3[J_ee_pinv_fun_SZ_IW];
+		double p4[J_ee_pinv_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {pinvJac_gen.data()};
 
-		int check = pinvJac_fun(input_, output_, p3, p4, 0);
+		int check = J_ee_pinv_fun(input_, output_, p3, p4, 0);
 	}
 	
-	void thunder_robot::computePinvJacPos_gen(){
-		long long p3[pinvJacPos_fun_SZ_IW];
-		double p4[pinvJacPos_fun_SZ_W];
+	// void thunder_robot::computePinvJacPos_gen(){
+	// 	long long p3[pinvJacPos_fun_SZ_IW];
+	// 	double p4[pinvJacPos_fun_SZ_W];
 
-		const double* input_[] = {q.data()};
-		double* output_[] = {pinvJacPos_gen.data()};
+	// 	const double* input_[] = {q.data()};
+	// 	double* output_[] = {pinvJacPos_gen.data()};
 
-		int check = pinvJacPos_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = pinvJacPos_fun(input_, output_, p3, p4, 0);
+	// }
 
-	void thunder_robot::computeDotPinvJac_gen(){
-		long long p3[dotPinvJac_fun_SZ_IW];
-		double p4[dotPinvJac_fun_SZ_W];
+	// void thunder_robot::computeDotPinvJac_gen(){
+	// 	long long p3[dotPinvJac_fun_SZ_IW];
+	// 	double p4[dotPinvJac_fun_SZ_W];
 
-		const double* input_[] = {q.data(),dq.data()};
-		double* output_[] = {dotPinvJac_gen.data()};
+	// 	const double* input_[] = {q.data(),dq.data()};
+	// 	double* output_[] = {dotPinvJac_gen.data()};
 
-		int check = dotPinvJac_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = dotPinvJac_fun(input_, output_, p3, p4, 0);
+	// }
 
-	void thunder_robot::computeDotPinvJacPos_gen(){
-		long long p3[dotPinvJacPos_fun_SZ_IW];
-		double p4[dotPinvJacPos_fun_SZ_W];
+	// void thunder_robot::computeDotPinvJacPos_gen(){
+	// 	long long p3[dotPinvJacPos_fun_SZ_IW];
+	// 	double p4[dotPinvJacPos_fun_SZ_W];
 
-		const double* input_[] = {q.data(),dq.data()};
-		double* output_[] = {dotPinvJacPos_gen.data()};
+	// 	const double* input_[] = {q.data(),dq.data()};
+	// 	double* output_[] = {dotPinvJacPos_gen.data()};
 
-		int check = dotPinvJacPos_fun(input_, output_, p3, p4, 0);
-	}
+	// 	int check = dotPinvJacPos_fun(input_, output_, p3, p4, 0);
+	// }
 
 	void thunder_robot::computeKin_gen(){
-		long long p3[kin_fun_SZ_IW];
-		double p4[kin_fun_SZ_W];
+		long long p3[T_0_ee_fun_SZ_IW];
+		double p4[T_0_ee_fun_SZ_W];
 
 		const double* input_[] = {q.data()};
 		double* output_[] = {kin_gen.data()};
 
-		int check = kin_fun(input_, output_, p3, p4, 0);
+		int check = T_0_ee_fun(input_, output_, p3, p4, 0);
 	}
 
 	void thunder_robot::load_inertial_REG(std::string file_path){
@@ -282,6 +299,34 @@ namespace thunder_ns{
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 		}
 		update_inertial_DYN();
+	}
+
+	void thunder_robot::load_inertial_DYN(std::string file_path){
+		try {
+			YAML::Node config = YAML::LoadFile(file_path);
+			
+			double mass, cmx, cmy, cmz, xx, xy, xz, yy, yz, zz;
+			int i = 0;
+			for (const auto& node : config) {
+				std::string linkName = node.first.as<std::string>();
+				mass = node.second["mass"].as<double>();
+				cmx = node.second["CoM_x"].as<double>();
+				cmy = node.second["CoM_y"].as<double>();
+				cmz = node.second["CoM_z"].as<double>();
+				xx = node.second["Ixx"].as<double>();
+				xy = node.second["Ixy"].as<double>();
+				xz = node.second["Ixz"].as<double>();
+				yy = node.second["Iyy"].as<double>();
+				yz = node.second["Iyz"].as<double>();
+				zz = node.second["Izz"].as<double>();
+
+				param_DYN.segment(N_PAR_LINK*i, N_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
+				i++;
+			}
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		}
+		update_inertial_REG();
 	}
 
 	void thunder_robot::save_inertial_REG(std::string path_yaml_DH_REG){
@@ -356,10 +401,55 @@ namespace thunder_ns{
 		// }
 	}
 
+	void thunder_robot::save_inertial_DYN(std::string path_yaml_DH_DYN){
+		std::vector<std::string> keys_reg;
+		keys_reg.resize(5);
+		keys_reg[0] = "mass"; keys_reg[1] = "CoM_"; keys_reg[2] = "I"; keys_reg[3] = "DYN"; keys_reg[4] = "dynamics";
+		std::vector<LinkProp> links_prop_DYN;
+		links_prop_DYN.resize(num_joints);
+
+		for(int i=0; i<num_joints; i++){
+			links_prop_DYN[i].name = "link" + std::to_string(i+1);
+			links_prop_DYN[i].mass = param_DYN[N_PAR_LINK*i + 0];
+			links_prop_DYN[i].xyz = {param_DYN[N_PAR_LINK*i + 1], param_DYN[N_PAR_LINK*i + 2], param_DYN[N_PAR_LINK*i + 3]};
+			links_prop_DYN[i].parI[0] = param_DYN[N_PAR_LINK*i + 4];
+			links_prop_DYN[i].parI[1] = param_DYN[N_PAR_LINK*i + 5];
+			links_prop_DYN[i].parI[2] = param_DYN[N_PAR_LINK*i + 6];
+			links_prop_DYN[i].parI[3] = param_DYN[N_PAR_LINK*i + 7];
+			links_prop_DYN[i].parI[4] = param_DYN[N_PAR_LINK*i + 8];
+			links_prop_DYN[i].parI[5] = param_DYN[N_PAR_LINK*i + 9];
+		}
+		// create file
+		try {
+			YAML::Emitter emitter;
+			fillInertialYaml(num_joints, emitter, links_prop_DYN, keys_reg);
+			std::ofstream fout(path_yaml_DH_DYN);
+			fout << emitter.c_str();
+			fout.close();
+
+			std::cout << "param_DYN saved on path: " << path_yaml_DH_DYN << std::endl;
+
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+		}
+	}
+
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getReg(){computeReg_gen(); return reg_gen;};
 	/* Get regressor matrix */
-	Eigen::MatrixXd thunder_robot::getMass(){computeMass_gen(); return mass_gen;};
+	Eigen::MatrixXd thunder_robot::getMass(){
+		Eigen::MatrixXd mass_gen;
+		mass_gen.resize(num_joints,num_joints);
+		long long p3[M_fun_SZ_IW];
+		double p4[M_fun_SZ_W];
+
+		const double* input_[] = {q.data(), param_DYN.data()};
+		double* output_[] = {mass_gen.data()};
+		
+		int check = M_fun(input_, output_, p3, p4, 0);
+
+		return mass_gen;
+	}
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getCoriolis(){computeCoriolis_gen(); return coriolis_gen;};
 	/* Get regressor matrix */
@@ -370,12 +460,12 @@ namespace thunder_ns{
 	Eigen::MatrixXd thunder_robot::getDotJac(){computeDotJac_gen(); return dotJac_gen;};
 	/* Get pseudo-inverse jacobian matrix */
 	Eigen::MatrixXd thunder_robot::getPinvJac(){computePinvJac_gen(); return pinvJac_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getPinvJacPos(){computePinvJacPos_gen(); return pinvJacPos_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix */
-	Eigen::MatrixXd thunder_robot::getDotPinvJac(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
-	/* Get derivative of pseudo-inverse jacobian matrix only position */
-	Eigen::MatrixXd thunder_robot::getDotPinvJacPos(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix only position */
+	// Eigen::MatrixXd thunder_robot::getPinvJacPos(){computePinvJacPos_gen(); return pinvJacPos_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix */
+	// Eigen::MatrixXd thunder_robot::getDotPinvJac(){computeDotPinvJac_gen(); return dotPinvJac_gen;};
+	// /* Get derivative of pseudo-inverse jacobian matrix only position */
+	// Eigen::MatrixXd thunder_robot::getDotPinvJacPos(){computeDotPinvJacPos_gen(); return dotPinvJacPos_gen;};
 	/* Get regressor matrix */
 	Eigen::MatrixXd thunder_robot::getKin(){computeKin_gen(); return kin_gen;};
 

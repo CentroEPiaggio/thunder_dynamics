@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "cd .devcontainer && sudo chmod +x ./setup_init.sh && chmod +x ./setup_bin.sh && ./setup_init.sh",
+	"postCreateCommand": "sudo chmod 777 -R . && cd .devcontainer && touch .bash_history && ./setup_init.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
@@ -33,7 +33,8 @@
 				"ms-vscode.cpptools-extension-pack",
 				"eamodio.gitlens",
 				"vscode-icons-team.vscode-icons",
-				"sandy081.todotasks"
+				"sandy081.todotasks",
+				"twxs.cmake"
 			]
 		}
 	},

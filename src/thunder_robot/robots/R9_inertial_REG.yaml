@@ -1,0 +1,110 @@
+# Inertial parameters referred to Denavit-Hartenberg parametrization to use regressor
+# 
+
+link1:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link2:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link3:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link4:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link5:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link6:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link7:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link8:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
+
+link9:
+  mass: 1
+  m_CoM_x: 1
+  m_CoM_y: 1
+  m_CoM_z: 1
+  Ixx: 3
+  Ixy: 0
+  Ixz: 0
+  Iyy: 3
+  Iyz: 0
+  Izz: 3
