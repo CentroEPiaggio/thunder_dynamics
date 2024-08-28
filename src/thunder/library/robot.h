@@ -16,7 +16,7 @@ namespace thunder_ns{
 	// class Module{
 	// 	std::vector<fun_obj> functions;
 	// };
-	constexpr int N_PAR_LINK = 10;
+	// constexpr int N_PAR_LINK = 10;
 	typedef struct fun_obj fun_obj;
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
@@ -32,6 +32,7 @@ namespace thunder_ns{
 
 		protected:
 			int _numJoints_;
+			int N_PAR_LINK;
 			/* Joints' type string */
 			std::string _jointsType_;
 			/* Denavit-Hartenberg parameterization table */
@@ -40,7 +41,6 @@ namespace thunder_ns{
 			FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
 			FrameOffset _Ln2EE_;
-			// int N_PAR_LINK;
 			// casadi::SX gravity;
 			// Input of casadi function //
 			std::map<std::string, casadi::SX> args;
@@ -96,6 +96,7 @@ namespace thunder_ns{
 			Eigen::MatrixXd get(std::string name);
 			// get functions
 			int get_numJoints();
+			int get_numParLink();
 			std::string get_jointsType();
 			Eigen::MatrixXd get_DHTable();
 			FrameOffset get_world2L0();

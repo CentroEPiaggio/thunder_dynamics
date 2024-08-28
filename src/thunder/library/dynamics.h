@@ -5,7 +5,7 @@
 
 namespace thunder_ns{
 
-    std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(casadi::SX);
+    std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX);
     casadi::SX dq_select(const casadi::SX& dq_);
     casadi::SX stdCmatrix(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
     std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot);

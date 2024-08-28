@@ -7,7 +7,7 @@
 
 namespace thunder_ns{
 
-	// extern constexpr int N_PAR_LINK = 10;
+	// extern constexpr int nParLink = 10;
 
     casadi::SXVector createQ() {
 
@@ -57,7 +57,7 @@ namespace thunder_ns{
     int compute_regressors(Robot& robot, bool advanced){
 		// parameters from robot
 		int nj = robot.get_numJoints();
-		// const int N_PAR_LINK = robot.get_N_PAR_LINK();
+		int nParLink = robot.get_numParLink();
 		// auto _jointsType_ = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
@@ -96,10 +96,10 @@ namespace thunder_ns{
 
 		casadi::SX g = _world2L0_.get_gravity();
 
-		casadi::SX Yr(nj,N_PAR_LINK*nj);        // regressor matrix
-		casadi::SX reg_M(nj, N_PAR_LINK*nj);
-		casadi::SX reg_C(nj, N_PAR_LINK*nj);
-		casadi::SX reg_G(nj, N_PAR_LINK*nj);
+		casadi::SX Yr(nj,nParLink*nj);        // regressor matrix
+		casadi::SX reg_M(nj, nParLink*nj);
+		casadi::SX reg_C(nj, nParLink*nj);
+		casadi::SX reg_G(nj, nParLink*nj);
 				
 		casadi::Slice allRows;
 		casadi::Slice allCols(0,nj);          
@@ -187,7 +187,7 @@ namespace thunder_ns{
 			casadi::SX Yr_i = horzcat(Y0r_i,Y1r_i,Y2r_i);
 			
 			// final regressors 
-			casadi::Slice selCols(i*N_PAR_LINK, (i+1)*N_PAR_LINK);          // Select current columns of matrix regressor
+			casadi::Slice selCols(i*nParLink, (i+1)*nParLink);          // Select current columns of matrix regressor
 			Yr(allRows,selCols) = Yr_i;
 			reg_M(allRows,selCols) = reg_M_i;
 			reg_C(allRows,selCols) = reg_C_i;

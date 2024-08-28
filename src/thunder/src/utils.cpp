@@ -13,6 +13,7 @@ namespace thunder_ns{
 		
 		// - get parameters from robot - //
 		int n_joints = robot.get_numJoints();
+		int n_par_link = robot.get_numParLink();
 		std::vector<fun_obj> functions = robot.get_functions();
 
 		// --- file .h --- //
@@ -40,10 +41,10 @@ namespace thunder_ns{
 			// - insert functions - //
 			string functions_string = "";
 			for (int i=0; i<functions.size(); i++){
-				functions_string.append("\t\t\t// - " + functions[i].description + " - //\n");
-				functions_string.append("\t\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
+				functions_string.append("\t\t// - " + functions[i].description + " - //\n");
+				functions_string.append("\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
 			}
-			replace_all(file_content_h, "//#-FUNCTIONS_H-#//", functions_string);
+			replace_all(file_content_h, "/*#-FUNCTIONS_H-#*/", functions_string);
 
 			// - overwrite file_h - //
 			ofstream out_h(file_path_h);
@@ -64,9 +65,11 @@ namespace thunder_ns{
 			file_cpp.close(); // close the file_cpp
 
 			// - change num_joints - //
-			size_t index_joints = file_content_cpp.find("N_JOINTS");
-			size_t index_semicolon = file_content_cpp.find(';', index_joints);
-			file_content_cpp.replace(index_joints, index_semicolon - index_joints, "N_JOINTS = " + to_string(n_joints));
+			// size_t index_joints = file_content_cpp.find("N_JOINTS");
+			// size_t index_semicolon = file_content_cpp.find(';', index_joints);
+			// file_content_cpp.replace(index_joints, index_semicolon - index_joints, "N_JOINTS = " + to_string(n_joints));
+			replace_all(file_content_cpp, "/*#-N_JOINTS-#*/", to_string(n_joints));
+			replace_all(file_content_cpp, "/*#-N_PAR_LINK-#*/", to_string(n_par_link));
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_cpp, from_robot, to_robot);
@@ -77,25 +80,25 @@ namespace thunder_ns{
 				std::string fun_name = functions[i].name;
 				std::vector<std::string> fun_args = functions[i].args;
 				std::vector<int> out_size = functions[i].out_size;
-				functions_string.append("\t// - " + functions[i].description + " - //\n");
-				functions_string.append("\tEigen::MatrixXd thunder_" + to_robot + "::get_" + fun_name + "(){\n");
-				functions_string.append("\t\tEigen::MatrixXd out;\n");
-				functions_string.append("\t\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
-				functions_string.append("\t\tlong long p3[" + fun_name + "_fun_SZ_IW];\n");
-				functions_string.append("\t\tdouble p4[" + fun_name + "_fun_SZ_W];\n");
+				functions_string.append("// - " + functions[i].description + " - //\n");
+				functions_string.append("Eigen::MatrixXd thunder_" + to_robot + "::get_" + fun_name + "(){\n");
+				functions_string.append("\tEigen::MatrixXd out;\n");
+				functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
+				functions_string.append("\tlong long p3[" + fun_name + "_fun_SZ_IW];\n");
+				functions_string.append("\tdouble p4[" + fun_name + "_fun_SZ_W];\n");
 				// inputs
-				functions_string.append("\t\tconst double* input_[] = {" + fun_args[0]+".data()");
+				functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
 				for (int j=1; j<fun_args.size(); j++){
 					functions_string.append(", " + fun_args[j]+".data()");
 				}
 				functions_string.append("};\n");
 				// output
-				functions_string.append("\t\tdouble* output_[] = {out.data()};\n");
-				functions_string.append("\t\tint check = " + fun_name + "_fun(input_, output_, p3, p4, 0);\n");
-				functions_string.append("\t\treturn out;\n");
-				functions_string.append("\t}\n\n");
+				functions_string.append("\tdouble* output_[] = {out.data()};\n");
+				functions_string.append("\tint check = " + fun_name + "_fun(input_, output_, p3, p4, 0);\n");
+				functions_string.append("\treturn out;\n");
+				functions_string.append("}\n\n");
 			}
-			replace_all(file_content_cpp, "//#-FUNCTIONS_CPP-#//", functions_string);
+			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
 
 			// - overwrite file_cpp - //
 			ofstream out_cpp(file_path_cpp);

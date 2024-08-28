@@ -13,9 +13,9 @@ namespace thunder_ns{
 
 	// constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	// constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
-	// extern constexpr int N_PAR_LINK = 10;
+	// extern constexpr int nParLink = 10;
 
-	std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, casadi::SX par_DYN){
+	std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
 		
 		// dynamics need
 		casadi::SXVector _mass_vec_(nj);
@@ -31,20 +31,20 @@ namespace thunder_ns{
 
 		for(int i=0; i<nj; i++){
 			
-			_mass_vec_[i] = par_DYN(i*N_PAR_LINK,0);
+			_mass_vec_[i] = par_DYN(i*nParLink,0);
 			for(int j=0; j<3; j++){
-				_distCM_[i](j,0) = par_DYN(i*N_PAR_LINK+j+1,0);
+				_distCM_[i](j,0) = par_DYN(i*nParLink+j+1,0);
 			}
 
-			tempI(0,0) = par_DYN(i*N_PAR_LINK+4,0);
-			tempI(0,1) = par_DYN(i*N_PAR_LINK+5,0);
-			tempI(0,2) = par_DYN(i*N_PAR_LINK+6,0);
+			tempI(0,0) = par_DYN(i*nParLink+4,0);
+			tempI(0,1) = par_DYN(i*nParLink+5,0);
+			tempI(0,2) = par_DYN(i*nParLink+6,0);
 			tempI(1,0) = tempI(0,1);
-			tempI(1,1) = par_DYN(i*N_PAR_LINK+7,0);
-			tempI(1,2) = par_DYN(i*N_PAR_LINK+8,0);
+			tempI(1,1) = par_DYN(i*nParLink+7,0);
+			tempI(1,2) = par_DYN(i*nParLink+8,0);
 			tempI(2,0) = tempI(0,2);
 			tempI(2,1) = tempI(1,2);
-			tempI(2,2) = par_DYN(i*N_PAR_LINK+9,0);
+			tempI(2,2) = par_DYN(i*nParLink+9,0);
 
 			_J_3x3_[i] = tempI;
 		}
@@ -114,6 +114,7 @@ namespace thunder_ns{
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot){
 		// parameters from robot
 		auto _numJoints_ = robot.get_numJoints();
+		auto _nParLink_ = robot.get_numParLink();
 		auto _jointsType_ = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
@@ -124,7 +125,7 @@ namespace thunder_ns{
 			compute_chain(robot);
 		}
 
-		auto par_inertial = createInertialParameters(_numJoints_, _par_DYN_);
+		auto par_inertial = createInertialParameters(_numJoints_, _nParLink_, _par_DYN_);
 		// casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		casadi::SXVector _distCM_ = std::get<1>(par_inertial);
 		// casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
@@ -204,6 +205,7 @@ namespace thunder_ns{
 	casadi::SXVector compute_dynamics(Robot& robot){
 		// parameters from robot
 		auto nj = robot.get_numJoints();
+		auto nParLink = robot.get_numParLink();
 		// auto jointsType_ = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
@@ -215,7 +217,7 @@ namespace thunder_ns{
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
-		auto par_inertial = createInertialParameters(nj, _par_DYN_);
+		auto par_inertial = createInertialParameters(nj, nParLink, _par_DYN_);
 		casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		// casadi::SXVector _distCM_ = std::get<1>(par_inertial);
 		casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
