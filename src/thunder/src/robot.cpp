@@ -23,6 +23,7 @@ namespace thunder_ns{
 
 	Robot::Robot(const int numJoints, const std::string jointsType, const Eigen::MatrixXd& DHtable, FrameOffset& base_frame, FrameOffset& ee_frame){
 		_numJoints_ = numJoints;
+		N_PAR_LINK = 10;
 		_jointsType_ = jointsType;
 		_DHtable_ = DHtable;
 		_world2L0_ = base_frame;
@@ -353,6 +354,10 @@ namespace thunder_ns{
 
 	int Robot::get_numJoints(){
 		return _numJoints_;
+	}
+
+	int Robot::get_numParLink(){
+		return N_PAR_LINK;
 	}
 
 	std::string Robot::get_jointsType(){

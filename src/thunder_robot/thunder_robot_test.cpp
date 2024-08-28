@@ -18,7 +18,6 @@
 const std::string inertial_file = "../robots/RRR_inertial_REG.yaml";
 // const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_REG.yaml";
 
-using namespace thunder_ns;
 using namespace std::chrono;
 using std::cout;
 using std::endl;
