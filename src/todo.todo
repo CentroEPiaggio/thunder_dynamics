@@ -1,3 +1,9 @@
+new features:
+	☐ symbolic selectivity: possible to choose variables that are symbolic
+	☐ generalize kinematics: not DH or URDF, parameters enter directly into the Transform matrix
+	☐ analytic Jacobian: choose a parametrization and provide conversions
+	☐ elastic
+
 to Thunder_2:
 	✔ start from kinematics, it is taken from RobKin, modify it to insert in Robot passed in the arguments the model and so on... use add_function to add to the model and so on @done (8/22/2024, 1:53:59 PM)
 	✔ args to fun_args, fun_args is a map<string,vector>? @done (8/22/2024, 1:54:02 PM)

@@ -156,6 +156,7 @@ int main(){
 	Eigen::Matrix<double, NJ, NJ*PARAM> Yr_dyn;
 	Eigen::Matrix<double, NJ, NJ> myM;
 	Eigen::Matrix<double, NJ, NJ> myC;
+	Eigen::Matrix<double, NJ, NJ> myC_std;
 	Eigen::Matrix<double, NJ, 1> myG;
 	Eigen::Matrix<double, 4, 4> myKin;
 	Eigen::Matrix<double, 6, NJ> myJac;
@@ -168,10 +169,10 @@ int main(){
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();//setOnes();
+	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	// cout<<"q set"<<endl;
@@ -214,6 +215,8 @@ int main(){
 	cout<<endl<<"M\n"<<myM<<endl;
 	myC = robot.get("C");
 	cout<<endl<<"C\n"<<myC<<endl;
+	myC_std = robot.get("C");
+	cout<<endl<<"C_std\n"<<myC_stc<<endl;
 	myG = robot.get("G");
 	cout<<endl<<"G\n"<<myG<<endl;
 
