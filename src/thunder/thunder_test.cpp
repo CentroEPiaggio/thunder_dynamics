@@ -10,9 +10,6 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-// #include "library/RobKinAdv.h"
-// #include "library/RobReg.h"
-// #include "library/RobDyn.h"
 #include "library/robot.h"
 #include "library/kinematics.h"
 #include "library/dynamics.h"
@@ -215,8 +212,8 @@ int main(){
 	cout<<endl<<"M\n"<<myM<<endl;
 	myC = robot.get("C");
 	cout<<endl<<"C\n"<<myC<<endl;
-	myC_std = robot.get("C");
-	cout<<endl<<"C_std\n"<<myC_stc<<endl;
+	myC_std = robot.get("C_std");
+	cout<<endl<<"C_std\n"<<myC_std<<endl;
 	myG = robot.get("G");
 	cout<<endl<<"G\n"<<myG<<endl;
 

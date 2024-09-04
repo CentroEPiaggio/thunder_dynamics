@@ -39,7 +39,6 @@ using namespace std::chrono;
 using std::cout;
 using std::endl;
 
-bool use_gripper = false;
 bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
 #define MU_JACOB 0.0
 
@@ -180,7 +179,9 @@ int main(int argc, char* argv[]){
 	if (std::filesystem::is_directory(currentPath/"neededFiles")){
 		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
 		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
+		COPY_GEN_FLAG = false;
 	}else{
+		std::cout<<"No neededFiles found, ok if you are using thunder from build!"<<std::endl;
 		// thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
 		// thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
 		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "thunder_robot.cpp";
