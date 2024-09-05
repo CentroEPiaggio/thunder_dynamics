@@ -76,6 +76,8 @@ namespace thunder_ns{
 
 			// - insert functions - //
 			string functions_string = "";
+			string functions_pybindings = "";
+
 			for (int i=0; i<functions.size(); i++){
 				std::string fun_name = functions[i].name;
 				std::vector<std::string> fun_args = functions[i].args;
@@ -97,9 +99,13 @@ namespace thunder_ns{
 				functions_string.append("\tint check = " + fun_name + "_fun(input_, output_, p3, p4, 0);\n");
 				functions_string.append("\treturn out;\n");
 				functions_string.append("}\n\n");
+
+				// pybindings
+				functions_pybindings.append("\t\t.def(\"get_" + fun_name + "\", &thunder_" + to_robot + "::get_" + fun_name + ")\n");
 			}
 			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
-
+			replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
+			
 			// - overwrite file_cpp - //
 			ofstream out_cpp(file_path_cpp);
 			out_cpp << file_content_cpp;

@@ -1,6 +1,9 @@
 #include "thunder_robot.h"
 #include "robot_gen.h"
 
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+
 thunder_robot::thunder_robot(){
 	n_joints = /*#-N_JOINTS-#*/;
 	n_par_link = /*#-N_PAR_LINK-#*/;
@@ -339,3 +342,30 @@ Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
 
 // ----- generated functions ----- //
 /*#-FUNCTIONS_CPP-#*/
+
+
+// ----- Python bindings ----- //
+namespace py = pybind11;
+
+PYBIND11_MODULE(thunder_robot_py, m) {
+	py::class_<thunder_robot>(m, "Thunderrobot")
+		.def(py::init<>())
+		.def("resizeVariables", &thunder_robot::resizeVariables)
+		.def("setArguments", &thunder_robot::setArguments)
+		.def("set_q", &thunder_robot::set_q)
+		.def("set_dq", &thunder_robot::set_dq)
+		.def("set_dqr", &thunder_robot::set_dqr)
+		.def("set_ddqr", &thunder_robot::set_ddqr)
+		.def("set_inertial_REG", &thunder_robot::set_inertial_REG)
+		.def("set_inertial_DYN", &thunder_robot::set_inertial_DYN)
+		.def("get_inertial_REG", &thunder_robot::get_inertial_REG)
+		.def("get_inertial_DYN", &thunder_robot::get_inertial_DYN)
+		.def("load_inertial_REG", &thunder_robot::load_inertial_REG)
+		.def("save_inertial_REG", &thunder_robot::save_inertial_REG)
+		.def("load_inertial_DYN", &thunder_robot::load_inertial_DYN)
+		.def("save_inertial_DYN", &thunder_robot::save_inertial_DYN)
+		.def("get_numJoints", &thunder_robot::get_numJoints)
+		.def("get_numParLink", &thunder_robot::get_numParLink)
+		.def("get_numParams", &thunder_robot::get_numParams)
+/*#-GENERATED_PYTHON_BINDINGS-#*/
+}
