@@ -101,7 +101,7 @@ namespace thunder_ns{
 				functions_string.append("}\n\n");
 
 				// pybindings
-				functions_pybindings.append("\t\t.def(\"get_" + fun_name + "\", &thunder_" + to_robot + "::get_" + fun_name + ")\n");
+				functions_pybindings.append("\t\t.def(\"get_" + fun_name + "\", &thunder_" + to_robot + "::get_" + fun_name + ", \""+ functions[i].description +"\")\n");
 			}
 			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
 			replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
