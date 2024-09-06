@@ -40,6 +40,7 @@ using std::cout;
 using std::endl;
 
 bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
+bool GEN_PYTHON_FLAG = false; // used to generate python binding
 #define MU_JACOB 0.0
 
 // --- paths and files (default) --- //
@@ -88,6 +89,18 @@ int main(int argc, char* argv[]){
 				if (argc > 3){ // take the robot name
 					robot_name = argv[3];
 					// robot_name is a valid name?
+
+					if (argc > 4){ // flag for python binding
+						std::string flag = argv[4];
+						if (flag == "python"){
+							GEN_PYTHON_FLAG = true;
+							std::cout << "Python binding will be generated." << std::endl;
+						}
+						else{
+							std::cout << "Flag not recognised." << std::endl;
+							return 0;
+						}
+					}
 				}
 			}
 		} else {
@@ -176,9 +189,12 @@ int main(int argc, char* argv[]){
 	std::filesystem::path sourceDestPath;
 	std::string thunder_robot_cpp_path;
 	std::string thunder_robot_h_path;
+	std::string python_cmake_file;
+
 	if (std::filesystem::is_directory(currentPath/"neededFiles")){
 		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
 		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
+		python_cmake_file = "neededFiles/CMakeLists.txt";
 		COPY_GEN_FLAG = false;
 	}else{
 		std::cout<<"No neededFiles found, ok if you are using thunder from build!"<<std::endl;
@@ -186,6 +202,7 @@ int main(int argc, char* argv[]){
 		// thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
 		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "thunder_robot.cpp";
 		thunder_robot_h_path = PATH_THUNDER_ROBOT + "thunder_robot.h";
+		python_cmake_file = PATH_THUNDER_ROBOT + "CMakeLists.txt";
 	}
 
 	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
@@ -195,6 +212,16 @@ int main(int argc, char* argv[]){
 	sourceDestPath = absolutePath + "thunder_" + robot_name + ".cpp";
 	sourcePath = thunder_robot_cpp_path;
 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+	if (GEN_PYTHON_FLAG){
+		// --- Generate python binding --- //
+		std::filesystem::copy_file(python_cmake_file, absolutePath +  "CMakeLists.txt", std::filesystem::copy_options::overwrite_existing);
+		int changed = update_cmake("robot", robot_name, absolutePath +  "CMakeLists.txt");
+		if (!changed) {
+			cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
+			return 0;
+		}
+	}
 
 	// --- change the necessary into thunder_robot --- //
 	int changed = change_to_robot("robot", robot_name, robot, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
@@ -212,6 +239,21 @@ int main(int argc, char* argv[]){
 
 	std::cout<<"Library generated!"<<std::endl;
 
+	if (GEN_PYTHON_FLAG){
+		std::cout<<"Starting build process fo python bindings"<<std::endl;
+
+		// --- Build python binding --- //
+		std::string build_dir = absolutePath + "build";
+		std::filesystem::create_directory(build_dir);
+		std::string build_command = "cd " + build_dir + " && cmake .. && make";
+		int build_result = system(build_command.c_str());
+		if (build_result != 0) {
+			cout << "Failed to build python binding." << endl;
+			return 0;
+		}
+		std::cout << "Python 3.10 bindings ready!" << std::endl;
+	}
+	
 	// --- copy generated files in thunder_robot project --- //
 	if(COPY_GEN_FLAG){
 		// Problem here, on inertial_reg for sure!

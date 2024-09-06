@@ -103,6 +103,9 @@ namespace thunder_ns{
 				// pybindings
 				functions_pybindings.append("\t\t.def(\"get_" + fun_name + "\", &thunder_" + to_robot + "::get_" + fun_name + ", \""+ functions[i].description +"\")\n");
 			}
+			//replace the last \n with a ;
+			functions_pybindings.pop_back();
+			functions_pybindings.append(";\n");
 			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
 			replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
 			
@@ -112,6 +115,29 @@ namespace thunder_ns{
 			out_cpp.close();
 		}
 
+		return 1;
+	}
+
+	int update_cmake(const string from_robot, const string to_robot, const string file_path){
+		ifstream file_cmake(file_path); // open in reading mode
+		if (!file_cmake.is_open()) {
+			cerr << "error in CMakeLists.txt template opening:" << file_path << endl;
+			return 0;
+		} else {
+			stringstream buffer_cmake;
+			buffer_cmake << file_cmake.rdbuf(); // read file_cmake on buffer_cmake
+			string file_content_cmake = buffer_cmake.str(); // file_cmake as string
+
+			file_cmake.close(); // close the file_cmake
+
+			// - substitute 'from_robot' wiht 'to_robot' - //
+			replace_all(file_content_cmake, from_robot, to_robot);
+
+			// - overwrite file_cmake - //
+			ofstream out_cmake(file_path);
+			out_cmake << file_content_cmake;
+			out_cmake.close();
+		}
 		return 1;
 	}
 
