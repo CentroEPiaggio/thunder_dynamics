@@ -13,7 +13,18 @@ namespace thunder_ns{
 		
 		// - get parameters from robot - //
 		int n_joints = robot.get_numJoints();
-		int n_par_link = robot.get_numParLink();
+		int numElasticJoints = robot.get_numElasticJoints();
+		bool ELASTIC = robot.get_ELASTIC();
+		int K_order = robot.get_K_order();
+		int D_order = robot.get_D_order();
+		int Dl_order = robot.get_Dl_order();
+		int Dm_order = robot.get_Dm_order();
+		// int numParDYN = robot.get_numParDYN();
+		// int numParREG = robot.get_numParREG();
+		// int numParELA = robot.get_numParELA();
+		std::vector<int> isElasticJoint = robot.get_isElasticJoint();
+		
+		// int STD_PAR_LINK = robot.STD_PAR_LINK;
 		std::vector<fun_obj> functions = robot.get_functions();
 
 		// --- file .h --- //
@@ -37,6 +48,25 @@ namespace thunder_ns{
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_h, from_robot, to_robot);
+
+			// - add variables - //
+			replace_all(file_content_h, "/*#-n_joints-#*/", to_string(n_joints));
+			replace_all(file_content_h, "/*#-ELASTIC-#*/", to_string(ELASTIC));
+			replace_all(file_content_h, "/*#-numElasticJoints-#*/", to_string(numElasticJoints));
+			replace_all(file_content_h, "/*#-K_order-#*/", to_string(K_order));
+			replace_all(file_content_h, "/*#-D_order-#*/", to_string(D_order));
+			replace_all(file_content_h, "/*#-Dl_order-#*/", to_string(Dl_order));
+			replace_all(file_content_h, "/*#-Dm_order-#*/", to_string(Dm_order));
+			// replace_all(file_content_h, "/*#-numParDYN-#*/", to_string(numParDYN));
+			// replace_all(file_content_h, "/*#-numParREG-#*/", to_string(numParREG));
+			// replace_all(file_content_h, "/*#-numParELA-#*/", to_string(numParELA));
+			// elastic joints
+			std::string eJ_str = "{" + to_string(isElasticJoint[0]);
+			for (int i=0; i<n_joints; i++){
+				eJ_str += ", " + to_string(isElasticJoint[i]);
+			}
+			eJ_str += "};";
+			replace_all(file_content_h, "/*#-isElasticJoint-#*/", eJ_str);
 
 			// - insert functions - //
 			string functions_string = "";
@@ -68,8 +98,8 @@ namespace thunder_ns{
 			// size_t index_joints = file_content_cpp.find("N_JOINTS");
 			// size_t index_semicolon = file_content_cpp.find(';', index_joints);
 			// file_content_cpp.replace(index_joints, index_semicolon - index_joints, "N_JOINTS = " + to_string(n_joints));
-			replace_all(file_content_cpp, "/*#-N_JOINTS-#*/", to_string(n_joints));
-			replace_all(file_content_cpp, "/*#-N_PAR_LINK-#*/", to_string(n_par_link));
+			// replace_all(file_content_cpp, "/*#-N_JOINTS-#*/", to_string(n_joints));
+			// replace_all(file_content_cpp, "/*#-N_PAR_LINK-#*/", to_string(STD_PAR_LINK));
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_cpp, from_robot, to_robot);
@@ -177,7 +207,22 @@ namespace thunder_ns{
 
 	casadi::SX hat(const casadi::SX& v) {
 		
-		casadi::SX skew(3, 3);
+		casadi::SX skew = casadi::SX::zeros(3,3);
+		
+		skew(0, 1) = -v(2);
+		skew(0, 2) = v(1);
+		skew(1, 0) = v(2);
+		skew(1, 2) = -v(0);
+		skew(2, 0) = -v(1);
+		skew(2, 1) = v(0);
+		
+		return skew;
+	}
+
+	Eigen::Matrix3d hat(const Eigen::Vector3d& v) {
+		
+		Eigen::Matrix3d skew(3, 3);
+		skew.setZero();
 		
 		skew(0, 1) = -v(2);
 		skew(0, 2) = v(1);

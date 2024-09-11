@@ -1,23 +1,32 @@
+improvings:
+	☐ no sense to have DHTable in eigen into robot
+	☐ FrameOffset into utils
+	☐ insert args or model only if order>0
+
 new features:
 	☐ symbolic selectivity: possible to choose variables that are symbolic
 	☐ generalize kinematics: not DH or URDF, parameters enter directly into the Transform matrix
 	☐ analytic Jacobian: choose a parametrization and provide conversions
 	☐ elastic
+	☐ arguments as a map, get also return arguments, function set("") imposta argomento, add_arg -> aggiunge un argomento simbolico
+	☐ default conscructor of Robot
+	☐ handling of different joint structure, fixed, defined by user
+	☐ add map with the compute functions, and add to the map kinematics, dynamics, regressors, then add method compute that calls each compute function
+	☐ initialize variable dimensions in initializer list of Robot
+	☐ save_arguments or parametere more generic, all in one file, kinematics, dynamics, elastic
+	☐ load arguments or parameters, one function for everything! (load_parameters(file) have to load par_DYN, par_K... all automatically)
+	☐ config file can be used by both robot and thunder_robot, save and load have to be the same!
 
-to Thunder_2:
-	✔ start from kinematics, it is taken from RobKin, modify it to insert in Robot passed in the arguments the model and so on... use add_function to add to the model and so on @done (8/22/2024, 1:53:59 PM)
-	✔ args to fun_args, fun_args is a map<string,vector>? @done (8/22/2024, 1:54:02 PM)
-	✔ modules take Robot as argument and add the functions inside @done (8/22/2024, 1:54:07 PM)
-	✔ maps that update together are: model, fun_args, fun_descr, casadi_fun @done (8/22/2024, 1:54:29 PM)
-	☐ loadYaml as member function of robot, maybe directly a constructor
-	☐ change all parameters (par_DYN, par_REG) when the function set_par.. is used!!
+to Thunder_3:
 	☐ gravity not in base frame class
+	☐ update_inertial_DYN/REG not efficient!, too mani conversions eigen-casadi
+	☐ generalize path with absolute_path
 	☐ dynamics not clean
 	☐ regressors not clean
 	☐ FrameOffset not so general, use T as internal transformation and provide conversions
 	☐ create thunder_robot from thunder
 	✔ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot @done (8/27/2024, 11:13:54 AM)
-	☐ multithreading
+
 	☐ is possible to have two different robots? due to casadi definitions on generated file?
 	
 INFO:
@@ -34,7 +43,7 @@ General:
 	✔ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils @done (3/29/2024, 11:32:20 AM)
 	✔ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot> @done (4/3/2024, 7:55:54 AM)
 	✔ let thunder generate robot_inertial_REG and put it into folder generatedFiles @done (4/7/2024, 4:15:21 PM)
-	☐ generalize path with absolute_path
+	☐ multithreading
 
 Program:
 	☐ 'thunder gen robot.yaml' generates a folder 'generatedFiles' and put inside
@@ -45,13 +54,12 @@ Program:
 	✔ program should use the yaml file to generate everything, options can be added like 'name'... @done (4/3/2024, 7:56:50 AM)
 	✔ thunder from bin @done (4/4/2024, 10:43:15 AM)
 	☐ there is a copy of utils functions from urdf2dh_inertial to thunder_robot. Another way is to add another library with general methods, or to add functions on thunder_robot creation (bad). Maybe the better choice is to create a folder with all files of the library inside(thunder_robot, robot_gen, thunder_utils)
-	☐ build from scratch to see warnings
 	✔ thunder copy generated files into thunder_robot project (not working for now) @done (8/27/2024, 12:41:17 PM)
 	
 thunder:
 	☐ dynamic matrix derivatives
 	☐ linearized system
-	☐ friction
+	✔ friction @done (9/6/2024, 6:06:31 AM)
 	☐ filtered regressor
 	☐ command line for create_robot
 
@@ -61,6 +69,5 @@ thunder_robot:
 	☐ C_regr_classic = 0.5*C_regr = 0.5*C_dyn
 
 issues:
-	☐ ypr in Ln_to_EE transform is misleading, expected x->y->z, right?
 	☐ simplify some casadi expression?
 	☐ test base_to_L0

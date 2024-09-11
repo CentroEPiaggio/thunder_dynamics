@@ -52,25 +52,25 @@ namespace thunder_ns{
 		return std::make_tuple(_mass_vec_, _distCM_, _J_3x3_);
 	}
 
-	casadi::SX dq_select(const casadi::SX& _dq_) {
-		int n = _dq_.size1();
+	casadi::SX dq_select(const casadi::SX& dq) {
+		int n = dq.size1();
 		
 		casadi::Slice allRows;
 		casadi::SX mat_dq = casadi::SX::zeros(n, n * n);
 		for (int i = 0; i < n; i++) {
 			casadi::Slice sel_col(i*n,(i+1)*n);   // Select columns
-			mat_dq(allRows, sel_col) = casadi::SX::eye(n)*_dq_(i);
+			mat_dq(allRows, sel_col) = casadi::SX::eye(n)*dq(i);
 		}
 		
 		return mat_dq;
 	}
 
-	casadi::SX stdCmatrix(const casadi::SX& M, const casadi::SX& _q_, const casadi::SX& _dq_, const casadi::SX& dq_sel_) {
-		int n = _q_.size1();
+	casadi::SX stdCmatrix(const casadi::SX& M, const casadi::SX& q, const casadi::SX& dq, const casadi::SX& dq_sel_) {
+		int n = q.size1();
 
-		casadi::SX jac_M = jacobian(M,_q_);
+		casadi::SX jac_M = jacobian(M,q);
 		
-		casadi::SX C123 = reshape(mtimes(jac_M,_dq_),n,n);
+		casadi::SX C123 = reshape(mtimes(jac_M,dq),n,n);
 		casadi::SX C132 = mtimes(dq_sel_,jac_M);
 		casadi::SX C231 = C132.T();
 
@@ -106,40 +106,40 @@ namespace thunder_ns{
 		// C[1] = C132;
 		// C[2] = C132.T();
 		casadi::SX C(n,n);
-		C = (C123 + C132 - C132.T())/2;
+		C = C123 + C132 - C132.T();
 
 		return C;
 	}
 
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot){
 		// parameters from robot
-		auto _numJoints_ = robot.get_numJoints();
-		auto _nParLink_ = robot.get_numParLink();
-		auto _jointsType_ = robot.get_jointsType();
+		auto numJoints = robot.get_numJoints();
+		auto _nParLink_ = robot.STD_PAR_LINK;
+		auto jointsType = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
 		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto _q_ = robot.model["q"];
-		auto _par_DYN_ = robot.model["par_DYN"];
+		auto q = robot.model["q"];
+		auto par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
 
-		auto par_inertial = createInertialParameters(_numJoints_, _nParLink_, _par_DYN_);
+		auto par_inertial = createInertialParameters(numJoints, _nParLink_, par_DYN);
 		// casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		casadi::SXVector _distCM_ = std::get<1>(par_inertial);
 		// casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 
-		casadi::SX Jci_pos(3, _numJoints_); // matrix of velocity jacobian
-		casadi::SX Ji_or(3, _numJoints_);   // matrix of omega jacobian
-		casadi::SXVector Ji_v(_numJoints_); // vector of matrix Ji_v
-		casadi::SXVector Ji_w(_numJoints_); // vector of matrix Ji_w
-		casadi::SXVector Ji(_numJoints_);		// complete jacobian
+		casadi::SX Jci_pos(3, numJoints); // matrix of velocity jacobian
+		casadi::SX Ji_or(3, numJoints);   // matrix of omega jacobian
+		casadi::SXVector Ji_v(numJoints); // vector of matrix Ji_v
+		casadi::SXVector Ji_w(numJoints); // vector of matrix Ji_w
+		casadi::SXVector Ji(numJoints);		// complete jacobian
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
 
-		for (int i = 0; i < _numJoints_; i++) {
+		for (int i = 0; i < numJoints; i++) {
 			casadi::SX k0(3,1);             // versor of joint i
 			casadi::SX O_0i(3,1);           // distance of joint i from joint 0
 			casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
@@ -156,9 +156,9 @@ namespace thunder_ns{
 			O_Ci = O_0i + mtimes(R0i,_distCM_[i]);
 			
 			// First column of jacobian
-			if (_jointsType_[0] == 'P') {
+			if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
 				Jci_pos(allRows,0) = k0;
-			} else if (_jointsType_[0] == 'R') {
+			} else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
 				Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
 				Ji_or(allRows,0) = k0;
 			} else {
@@ -177,9 +177,9 @@ namespace thunder_ns{
 				kj_1 = T_0j_1(r_rot_idx, 2);
 				O_j_1Ci = O_Ci - T_0j_1(r_tra_idx, 3);
 
-				if (_jointsType_[j] == 'P') {
+				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
 					Jci_pos(allRows, j) = kj_1;
-				} else if (_jointsType_[j] == 'R') {
+				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
 					Jci_pos(allRows, j) = mtimes(hat(kj_1),O_j_1Ci);
 					Ji_or(allRows, j) = kj_1;
 				} else {
@@ -202,29 +202,29 @@ namespace thunder_ns{
 		return std::make_tuple(Ji_v, Ji_w);
 	}
 
-	casadi::SXVector compute_dynamics(Robot& robot){
+	int compute_MCG(Robot& robot){
 		// parameters from robot
 		auto nj = robot.get_numJoints();
-		auto nParLink = robot.get_numParLink();
+		auto nParLink = robot.STD_PAR_LINK;
 		// auto jointsType_ = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
 		FrameOffset& base_frame = _world2L0_;
 		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto _q_ = robot.model["q"];
-		auto _dq_ = robot.model["dq"];
-		auto _par_DYN_ = robot.model["par_DYN"];
+		auto q = robot.model["q"];
+		auto dq = robot.model["dq"];
+		auto par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
-		auto par_inertial = createInertialParameters(nj, nParLink, _par_DYN_);
+		auto par_inertial = createInertialParameters(nj, nParLink, par_DYN);
 		casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		// casadi::SXVector _distCM_ = std::get<1>(par_inertial);
 		casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 		
-		casadi::SX dq_sel_ = dq_select(_dq_);
+		casadi::SX dq_sel_ = dq_select(dq);
 
-		// const int nj = _q_.size1();
+		// const int nj = q.size1();
 		
 		// casadi::SXVector Ti(nj);
 		casadi::SX T0i;
@@ -274,43 +274,89 @@ namespace thunder_ns{
 			G = G + Gi.T();
 		}
 		
-		C = stdCmatrix(M,_q_,_dq_,dq_sel_);
-		C_std = stdCmatrix_classic(M,_q_,_dq_,dq_sel_);
+		C = stdCmatrix(M,q,dq,dq_sel_);
+		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
 		robot.add_function("M", M, {"q","par_DYN"}, "Manipulator mass matrix");
 		robot.add_function("C", C, {"q","dq","par_DYN"}, "Manipulator Coriolis matrix");
 		robot.add_function("C_std", C_std, {"q","dq","par_DYN"}, "Classic formulation of the manipulator Coriolis matrix");
 		robot.add_function("G", G, {"q","par_DYN"}, "Manipulator gravity terms");
 
-		return {M,C,G};
+		return 1;
 	}
-	
-	// int compute_Mass(Robot& robot) {
 
-	// 	// parameters from robot
-	// 	auto _numJoints_ = robot.get_numJoints();
-	// 	auto _jointsType_ = robot.get_jointsType();
-	// 	auto _DHtable_ = robot.get_DHTable();
-	// 	auto _world2L0_ = robot.get_world2L0();
-	// 	auto _Ln2EE_ = robot.get_Ln2EE();
-	// 	auto _q_ = robot.model["q"];
+	int compute_elastic(Robot& robot){
+		// parameters from robot
+		int nj = robot.get_numJoints();
+		bool ELASTIC = robot.get_ELASTIC();
 
-	// 	// computing Mass matrix
+		if (ELASTIC > 0){
+			int numElasticJoints = robot.get_numElasticJoints();
+			std::vector<int> isElasticJoint = robot.get_isElasticJoint();
+			int K_order = robot.get_K_order();
+			int D_order = robot.get_D_order();
+			int Dm_order = robot.get_Dm_order();
+			auto q = robot.model["q"];
+			auto x = robot.model["x"];
+			auto dq = robot.model["dq"];
+			auto dx = robot.model["dx"];
+			auto par_K = robot.model["par_K"];
+			auto par_D = robot.model["par_D"];
+			auto par_Dm = robot.model["par_Dm"];
 
-	// 	return 1;
-	// }
+			casadi::SX K(numElasticJoints);
+			casadi::SX D(numElasticJoints);
+			casadi::SX Dm(numElasticJoints);
+			for (int i=0; i<numElasticJoints; i++){
+				for (int ord=0; ord<K_order; ord++){
+					K(i) += pow(q-x, ord) * par_K(i*K_order+ord);
+				}
+				for (int ord=0; ord<D_order; ord++){
+					D(i) += pow(dq-dx, ord) * par_D(i*D_order+ord);
+				}
+				for (int ord=0; ord<Dm_order; ord++){
+					Dm(i) += pow(dq-dx, ord) * par_Dm(i*Dm_order+ord);
+				}
+			}
+			if (K_order > 0) robot.add_function("K", K, {"q", "x","par_K"}, "SEA manipulator elastic coupling");
+			if (D_order > 0) robot.add_function("D", D, {"dq", "dx","par_D"}, "SEA manipulator dampind coupling");
+			if (Dm_order > 0) robot.add_function("Dm", Dm, {"dx","par_Dm"}, "SEA manipulator motor damping");
+			return 1;
+		} else return 0;
+	}
+
+	int compute_Dl(Robot& robot){
+		// parameters from robot
+		int Dl_order = robot.get_Dl_order();
+
+		if (Dl_order > 0){
+			int nj = robot.get_numJoints();
+			auto dq = robot.model["dq"];
+			auto par_Dl = robot.model["par_Dl"];
+
+			casadi::SX Dl(nj);
+			for (int i=0; i<nj; i++){
+				for (int ord=0; ord<Dl_order; ord++){
+					Dl(i) += pow(dq, ord) * par_Dl(i*Dl_order+ord);
+				}
+			}
+
+			robot.add_function("Dl", Dl, {"dq","par_Dl"}, "Manipulator link friction");
+			return 1;
+		} else return 0;
+	}
 
 	// compute everything
-	// int compute_dynamics(Robot& robot, bool advanced){
-	// 	if (!compute_Mass(robot)) return 0;
-	// 	if (!compute_Coriolis(robot)) return 0;
-	// 	if (!compute_Gravity(robot)) return 0;
+	int compute_dynamics(Robot& robot, bool advanced){
+		if (!compute_MCG(robot)) return 0;
+		if (!compute_Dl(robot)) return 0;
+		if (!compute_elastic(robot)) return 0;
+		
+		if (advanced){
+			// matrix derivatives and so on
+		}
 
-	// 	if (advanced){
-	// 		// matrix derivatives and so on
-	// 	}
-
-	// 	return 1;
-	// }
+		return 1;
+	}
 
 }
