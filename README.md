@@ -60,9 +60,9 @@ int main(){
 	// set configuration
 	my_robot.setArguments(q, dq, dq_r, ddq_r);
 	// set inertial param from vector
-	my_robot.set_inertial_REG(params); // or set_inertial_DYN()
+	my_robot.set_par_REG(params); // or set_par_DYN()
 	// or load it from file
-	my_robot.load_inertial_REG(".../<robot>_inertial_REG.yaml"); // or DYN
+	my_robot.load_par_REG(".../<robot>_inertial_REG.yaml"); // or DYN
 
 	// - compute standard quantities - //
 	Eigen::MatrixXd T = my_robot.get_T_0_ee(); // end-effector kinematics

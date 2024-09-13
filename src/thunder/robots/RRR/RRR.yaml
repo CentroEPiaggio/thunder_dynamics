@@ -10,8 +10,8 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 # --- Hyperparameters --- #
 num_joints: 3
 
-# joint types: 'R' or 'P'
-type_joints: 'RRR'
+# joint types: 'R': rotoidal, 'P': prismatic
+type_joints: ['R', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
 DH: [0,  0,      1, 0,
