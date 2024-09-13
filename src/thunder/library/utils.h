@@ -13,7 +13,7 @@ namespace thunder_ns{
 	struct Config{
 		int numJoints;
 		std::vector<std::string> jointsType;
-		Eigen::MatrixXd DHtable;
+		casadi::SX DHtable;
 		FrameOffset base_frame;
 		FrameOffset ee_frame;
 		int Dl_order = 0;

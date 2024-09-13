@@ -54,7 +54,7 @@ namespace thunder_ns{
 		return E_;
 	}
 
-    int compute_regressors(Robot& robot, bool advanced){
+	int compute_Yr(Robot& robot){
 		// parameters from robot
 		int nj = robot.get_numJoints();
 		int nParLink = robot.STD_PAR_LINK;
@@ -199,6 +199,41 @@ namespace thunder_ns{
 		if (!robot.add_function("reg_C", reg_C, {"q", "dq", "dqr"}, "Regressor matrix of term C*dqr")) return 0;
 		if (!robot.add_function("reg_G", reg_G, {"q"}, "Regressor matrix of term G")) return 0;
 
+		return 1;
+	}
+
+	int compute_reg_Dl(Robot& robot){
+		// parameters from robot
+		int nj = robot.get_numJoints();
+		int nParLink = robot.STD_PAR_LINK;
+		int Dl_order = robot.get_Dl_order();
+		// auto jointsType = robot.get_jointsType();
+		// auto _DHtable_ = robot.get_DHTable();
+		// auto _world2L0_ = robot.get_world2L0();
+		// auto _Ln2EE_ = robot.get_Ln2EE();
+		auto dq = robot.model["dq"];
+		if (Dl_order==0) return 0;
+		auto par_Dl = robot.model["par_Dl"];
+		if (robot.model.count("Dl") == 0){
+			compute_Dl(robot);
+		}
+		auto Dl = robot.model["Dl"];
+
+		casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par_Dl);
+
+		if (!robot.add_function("reg_Dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
+
+		return 1;
+	}
+
+    int compute_regressors(Robot& robot, bool advanced){
+		int Dl_order = robot.get_Dl_order();
+
+		if (!compute_Yr(robot)) return 0;
+		if (Dl_order>0){
+			if (!compute_reg_Dl(robot)) return 0;
+		}
+		
 		return 1;
 	}
 

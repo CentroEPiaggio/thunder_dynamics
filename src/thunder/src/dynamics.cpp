@@ -304,18 +304,18 @@ namespace thunder_ns{
 			auto par_D = robot.model["par_D"];
 			auto par_Dm = robot.model["par_Dm"];
 
-			casadi::SX K(numElasticJoints);
-			casadi::SX D(numElasticJoints);
-			casadi::SX Dm(numElasticJoints);
+			casadi::SX K(numElasticJoints,1);
+			casadi::SX D(numElasticJoints,1);
+			casadi::SX Dm(numElasticJoints,1);
 			for (int i=0; i<numElasticJoints; i++){
 				for (int ord=0; ord<K_order; ord++){
-					K(i) += pow(q-x, ord) * par_K(i*K_order+ord);
+					K(i) += pow(q(i)-x(i), ord) * par_K(i*K_order+ord);
 				}
 				for (int ord=0; ord<D_order; ord++){
-					D(i) += pow(dq-dx, ord) * par_D(i*D_order+ord);
+					D(i) += pow(dq(i)-dx(i), ord) * par_D(i*D_order+ord);
 				}
 				for (int ord=0; ord<Dm_order; ord++){
-					Dm(i) += pow(dq-dx, ord) * par_Dm(i*Dm_order+ord);
+					Dm(i) += pow(dq(i)-dx(i), ord) * par_Dm(i*Dm_order+ord);
 				}
 			}
 			if (K_order > 0) robot.add_function("K", K, {"q", "x","par_K"}, "SEA manipulator elastic coupling");
@@ -334,10 +334,10 @@ namespace thunder_ns{
 			auto dq = robot.model["dq"];
 			auto par_Dl = robot.model["par_Dl"];
 
-			casadi::SX Dl(nj);
+			casadi::SX Dl(nj,1);
 			for (int i=0; i<nj; i++){
 				for (int ord=0; ord<Dl_order; ord++){
-					Dl(i) += pow(dq, ord) * par_Dl(i*Dl_order+ord);
+					Dl(i) += pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
 				}
 			}
 

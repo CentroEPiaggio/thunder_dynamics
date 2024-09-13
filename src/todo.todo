@@ -1,5 +1,4 @@
 improvings:
-	☐ no sense to have DHTable in eigen into robot
 	☐ FrameOffset into utils
 	☐ insert args or model only if order>0
 
@@ -34,6 +33,7 @@ INFO:
 	- thunder creates <robot>_gen.h, <robot>_gen.cpp
 	- thunder take thunder_robot and rename it to thunder_<robot>, changing inside the necessary. Then copy it to generatedFiles
 	- thunder generates the <robot>_inertial_REG.yaml from the config file 
+	- elastic and friction regressors implemented with jacobian
 
 General:
 	✔ Modules kinematics, dynamics, regressors @done (8/24/2024, 5:18:33 PM)
