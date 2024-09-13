@@ -32,26 +32,39 @@ int main(){
 	// ---------------------------------------------------------------------------------//
 
 	int NJ = robot.get_numJoints();
+	int NEJ = robot.get_numElasticJoints();
 	int N_PARAM_DYN = robot.get_numParDYN();
 	int N_PARAM_REG = robot.get_numParREG();
 	int N_PARAM_DL = NJ*robot.get_Dl_order();
+	int N_PARAM_K = NEJ*robot.get_K_order();
+	int N_PARAM_D = NEJ*robot.get_D_order();
+	int N_PARAM_DM = NEJ*robot.get_Dm_order();
 	// int N_PARAM_ELA = robot.get_numParELA();
 
 	/* Matrices declaration*/
 	Eigen::VectorXd par_DYN(N_PARAM_DYN);
 	Eigen::VectorXd par_REG(N_PARAM_REG);
 	Eigen::VectorXd par_Dl(N_PARAM_DL);
+	Eigen::VectorXd par_K(N_PARAM_K);
+	Eigen::VectorXd par_D(N_PARAM_D);
+	Eigen::VectorXd par_Dm(N_PARAM_DM);
 	// Eigen::VectorXd par_ELA(N_PARAM_ELA);
 	Eigen::MatrixXd Yr(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_M(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
+	Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
+	Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
+	Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
 	Eigen::MatrixXd M(NJ, NJ);
 	Eigen::MatrixXd C(NJ, NJ);
 	Eigen::MatrixXd C_std(NJ, NJ);
 	Eigen::MatrixXd G(NJ, 1);
 	Eigen::MatrixXd Dl(NJ, 1);
+	Eigen::MatrixXd K(NEJ, 1);
+	Eigen::MatrixXd D(NEJ, 1);
+	Eigen::MatrixXd Dm(NEJ, 1);
 	Eigen::MatrixXd Kin(4, 4);
 	Eigen::MatrixXd Jac(6, NJ);
 
@@ -61,28 +74,38 @@ int main(){
 
 	// arguments
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
+	Eigen::VectorXd x(NEJ), dx(NEJ), ddxr(NEJ);
 
 	// get quantities
 	par_REG = robot.get_par_REG();
 	par_DYN = robot.get_par_DYN();
 	par_Dl = robot.get_par_Dl();
+	par_K = robot.get_par_K();
+	par_D = robot.get_par_D();
+	par_Dm = robot.get_par_Dm();
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
 	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
+	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
+	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
+	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
 
 	/* Test */
 	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
 	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
 	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
 	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
-	// cout<<"q set"<<endl;
 	robot.set_dq(dq);
-	// cout<<"dq set"<<endl;
 	robot.set_dqr(dqr);
-	// cout<<"dqr set"<<endl;
 	robot.set_ddqr(ddqr);
+	robot.set_x(x);
+	robot.set_dx(dx);
+	robot.set_ddxr(ddxr);
 	// cout<<"ddqr set"<<endl;
 	// robot.set_par_DYN(par_DYN);
 	// cout<<"par_DYN set"<<endl<<robot.get_par_DYN()<<endl<<endl;
@@ -123,12 +146,21 @@ int main(){
 	cout<<endl<<"G\n"<<G<<endl;
 	Dl = robot.get("Dl");
 	cout<<endl<<"D_link\n"<<Dl<<endl;
+	K = robot.get("K");
+	cout<<endl<<"K\n"<<K<<endl;
+	D = robot.get("D");
+	cout<<endl<<"D_coupling\n"<<D<<endl;
+	Dm = robot.get("Dm");
+	cout<<endl<<"D_motor\n"<<Dm<<endl;
 
 	Yr = robot.get("Yr");
 	reg_M = robot.get("reg_M");
 	reg_C = robot.get("reg_C");
 	reg_G = robot.get("reg_G");
 	reg_Dl = robot.get("reg_Dl");
+	reg_K = robot.get("reg_K");
+	reg_D = robot.get("reg_D");
+	reg_Dm = robot.get("reg_Dm");
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;

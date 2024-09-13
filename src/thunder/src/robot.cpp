@@ -664,18 +664,18 @@ namespace thunder_ns{
 			// cout<<"p_dyn:"<<endl<<p_dyn<<endl<<endl;
 			double mass = p_dyn(0);
 			Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
-			cout<<"CoM:"<<endl<<CoM<<endl<<endl;
+			// cout<<"CoM:"<<endl<<CoM<<endl<<endl;
 			Eigen::Vector3d m_CoM = mass * CoM;
-			cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
+			// cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
 			Eigen::Matrix3d I_tmp = mass * (hat(CoM) * hat(CoM).transpose());
-			cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
+			// cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
 			Eigen::Matrix<double, 6, 1> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
-			cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
+			// cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
 			Eigen::Matrix<double, 6, 1> I;
 			I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
-			cout<<"I:"<<endl<<I<<endl<<endl;
-			cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
+			// cout<<"I:"<<endl<<I<<endl<<endl;
+			// cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
 			// Eigen::VectorXd Dl;
 			// Dl.resize(Dl_order);
 			// for(int j=0; j<Dl_order; j++){

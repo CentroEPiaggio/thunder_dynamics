@@ -7,14 +7,14 @@ PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 # --- FLAGS --- #
-ELASTIC_MODEL: false        # use elastic model, requires elastic part, should be true or false, NOT 0 or 1
+ELASTIC_MODEL: true        # use elastic model, requires elastic part, should be true or false, NOT 0 or 1
 
 # --- Hyperparameters --- #
 num_joints: 3           # number of joints
 Dl_order: 2             # link friction order, 0 to not use link friction
 
 # joint types: 'R': rotoidal, 'P': prismatic, 'R_SEA': SEA rotoidal
-type_joints: ['R', 'R', 'R']
+type_joints: ['R_SEA', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
 DH: [0,  0,      1, 0,

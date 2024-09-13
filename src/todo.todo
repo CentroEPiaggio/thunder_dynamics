@@ -1,6 +1,7 @@
 improvings:
 	☐ FrameOffset into utils
 	☐ insert args or model only if order>0
+	☐ selection matrix for elastic joints
 
 new features:
 	☐ symbolic selectivity: possible to choose variables that are symbolic

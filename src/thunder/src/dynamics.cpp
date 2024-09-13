@@ -309,18 +309,18 @@ namespace thunder_ns{
 			casadi::SX Dm(numElasticJoints,1);
 			for (int i=0; i<numElasticJoints; i++){
 				for (int ord=0; ord<K_order; ord++){
-					K(i) += pow(q(i)-x(i), ord) * par_K(i*K_order+ord);
+					K(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
 				}
 				for (int ord=0; ord<D_order; ord++){
-					D(i) += pow(dq(i)-dx(i), ord) * par_D(i*D_order+ord);
+					D(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
 				}
 				for (int ord=0; ord<Dm_order; ord++){
-					Dm(i) += pow(dq(i)-dx(i), ord) * par_Dm(i*Dm_order+ord);
+					Dm(i) += pow(dx(i), ord+1) * par_Dm(i*Dm_order+ord);
 				}
 			}
-			if (K_order > 0) robot.add_function("K", K, {"q", "x","par_K"}, "SEA manipulator elastic coupling");
-			if (D_order > 0) robot.add_function("D", D, {"dq", "dx","par_D"}, "SEA manipulator dampind coupling");
-			if (Dm_order > 0) robot.add_function("Dm", Dm, {"dx","par_Dm"}, "SEA manipulator motor damping");
+			if (K_order > 0) robot.add_function("K", K, {"q", "x", "par_K"}, "SEA manipulator elastic coupling");
+			if (D_order > 0) robot.add_function("D", D, {"dq", "dx", "par_D"}, "SEA manipulator dampind coupling");
+			if (Dm_order > 0) robot.add_function("Dm", Dm, {"dx", "par_Dm"}, "SEA manipulator motor damping");
 			return 1;
 		} else return 0;
 	}
@@ -337,7 +337,7 @@ namespace thunder_ns{
 			casadi::SX Dl(nj,1);
 			for (int i=0; i<nj; i++){
 				for (int ord=0; ord<Dl_order; ord++){
-					Dl(i) += pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
+					Dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
 				}
 			}
 
