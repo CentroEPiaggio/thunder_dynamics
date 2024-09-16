@@ -10,7 +10,7 @@ namespace thunder_ns{
 
 	class Robot;
 
-	struct Config{
+	typedef struct Config{
 		int numJoints;
 		std::vector<std::string> jointsType;
 		casadi::SX DHtable;
@@ -21,26 +21,36 @@ namespace thunder_ns{
 		int K_order = 0;
 		int D_order = 0;
 		int Dm_order = 0;
-	};
+	}Config;
 
-	struct fun_obj{
+	typedef struct fun_obj{
 		std::string name;
 		std::string description;
 		std::vector<std::string> args;
 		std::vector<int> out_size;
 		casadi::SX expr;
 		casadi::Function fun;
-	};
+	}fun_obj;
 
-	// class fun_obj{
-	// 	std::string name;
-	// 	std::string description;
-	// 	casadi::SX expr;
-	// 	std::vector<casadi::SX> args;
-	// 	casadi::Function fun;
-	// };
+	typedef struct LinkProp {
+		std::string name;
+		double mass;
+		std::vector<double> parI = std::vector<double>(6); // Inertia in the order xx, xy, xz, yy, yz, zz
+		std::vector<double> xyz = std::vector<double>(3); // Origin xyz as std::vector
+		std::vector<double> rpy = std::vector<double>(3);
+	}LinkProp;
 
-	// fun_obj create_function(std::string name, std::string description, casadi::SX expr, std::vector<casadi::SX> args);
+
+	typedef struct urdf2dh_T{
+		std::vector<double> xyz;
+		std::vector<double> rpy;
+	}urdf2dh_T;
+
+	void transformBodyInertial(std::vector<double> d_i, std::vector<double> rpy_i, const LinkProp body_urdf, LinkProp &body);
+	void mergeBodyInertial(const LinkProp body1, const LinkProp body2, LinkProp &newBody);
+
+	Eigen::Matrix3d rpyRot(const std::vector<double> rpy);
+	Eigen::Matrix3d createI(const std::vector<double> parI);
 
 	int change_to_robot(const std::string from_robot, const std::string to_robot, Robot& robot, const std::string file_path_h, const std::string file_path_cpp);
 

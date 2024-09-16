@@ -15,11 +15,11 @@ Usable only for generated code from casadi library! */
 class thunder_robot{
 
 	private:
-		/* Number of joints */
-		int n_joints;
-		int n_par_link;
+		// standard number of parameters
+		const int STD_PAR_LINK = 10;
 		/* Joints' variables */
-		Eigen::VectorXd q, dq, dqr, ddqr, par_REG, par_DYN;
+		Eigen::VectorXd q, dq, dqr, ddqr, par_DYN, par_REG, par_Dl;
+		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
 
 		void update_inertial_DYN();
 		void update_inertial_REG();
@@ -46,6 +46,18 @@ class thunder_robot{
 		Eigen::Matrix3d hat(const Eigen::Vector3d v);
 		
 	public:
+		const int n_joints = /*#-n_joints-#*/;
+		const bool ELASTIC = /*#-ELASTIC-#*/;
+		const int numElasticJoints = /*#-numElasticJoints-#*/;
+		const int K_order = /*#-K_order-#*/;
+		const int D_order = /*#-D_order-#*/;
+		const int Dl_order = /*#-Dl_order-#*/;
+		const int Dm_order = /*#-Dm_order-#*/;
+		const int numParDYN = STD_PAR_LINK*n_joints;
+		const int numParREG = STD_PAR_LINK*n_joints;
+		// const int numParELA = /*#-numParELA-#*/;
+		const int isElasticJoint[/*#-n_joints-#*/] = /*#-isElasticJoint-#*/;
+
 		/* Empty constructor, initialization inside */
 		thunder_robot();
 		/* Constructor to init variables*/
@@ -63,19 +75,37 @@ class thunder_robot{
 		void set_dq(const Eigen::VectorXd& dq_);
 		void set_dqr(const Eigen::VectorXd& dqr_);
 		void set_ddqr(const Eigen::VectorXd& ddqr_);
-		void set_inertial_REG(const Eigen::VectorXd& par_);
-		void set_inertial_DYN(const Eigen::VectorXd& par_);
-		Eigen::VectorXd get_inertial_REG();
-		Eigen::VectorXd get_inertial_DYN();
+		void set_x(const Eigen::VectorXd& x_);
+		void set_dx(const Eigen::VectorXd& dx_);
+		void set_ddxr(const Eigen::VectorXd& ddxr_);
+		void set_par_REG(const Eigen::VectorXd& par_);
+		void set_par_DYN(const Eigen::VectorXd& par_);
+		void set_par_K(const Eigen::VectorXd& par_);
+		void set_par_D(const Eigen::VectorXd& par_);
+		void set_par_Dm(const Eigen::VectorXd& par_);
+		void set_par_Dl(const Eigen::VectorXd& par_);
+		// void set_par_ELA(const Eigen::VectorXd& par_);
+		Eigen::VectorXd get_par_REG();
+		Eigen::VectorXd get_par_DYN();
+		Eigen::VectorXd get_par_K();
+		Eigen::VectorXd get_par_D();
+		Eigen::VectorXd get_par_Dm();
+		Eigen::VectorXd get_par_Dl();
+		// Eigen::VectorXd get_par_ELA();
 
-		void load_inertial_REG(std::string);
-		void save_inertial_REG(std::string);
-		void load_inertial_DYN(std::string);
-		void save_inertial_DYN(std::string);
+		void load_par_REG(std::string);
+		void save_par_REG(std::string);
+		void load_par_DYN(std::string);
+		void save_par_DYN(std::string);
+		void load_par_elastic(std::string);
+		// void load_par_ELA(std::string);
+		// void save_par_ELA(std::string);
 
 		int get_numJoints();
-		int get_numParLink();
-		int get_numParams();
+		// int get_numParLink();
+		int get_numParDYN();
+		int get_numParREG();
+		// int get_numParELA();
 
 		// ----- generated functions ----- //
 		/*#-FUNCTIONS_H-#*/

@@ -50,6 +50,7 @@ namespace thunder_ns{
 			/* Joints' type string */
 			std::vector<std::string> jointsType;
 			std::vector<int> isElasticJoint;
+			// casadi::SX elasticSel;
 			/* Denavit-Hartenberg parameterization table */
 			casadi::SX _DHtable_;
 			/* Frame offset between world-frame and link 0*/

@@ -40,7 +40,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	robot.load_inertial_DYN(inertial_file);
+	robot.load_par_DYN(inertial_file);
 	const int NJ = robot.get_numJoints();
 	const int N_PAR = robot.get_numParams();
 

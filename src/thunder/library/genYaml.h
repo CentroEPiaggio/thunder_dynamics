@@ -1,9 +1,11 @@
 #ifndef GEN_YAML
 #define GEN_YAML
 
+#include "utils.h"
+
 namespace thunder_ns{
 
-	void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent);
+	// void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent);
 
 	void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
 

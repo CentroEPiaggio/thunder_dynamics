@@ -46,6 +46,7 @@ namespace thunder_ns{
 		}
 		numElasticJoints = 0;
 		isElasticJoint.resize(numJoints);
+		// elasticSel = casadi::SX::zeros(numJoints,numJoints);
 		for (int i=0; i<numJoints; i++){
 			isElasticJoint[i] = 0;
 			// numParLink[i] = STD_PAR_LINK;
@@ -54,6 +55,7 @@ namespace thunder_ns{
 				// numParLink[i] += K_order + D_order;
 				isElasticJoint[i] = 1;
 				numElasticJoints++;
+				// elasticSel(i,i) = 1;
 			}
 		}
 		// numParELA = numElasticJoints*(PAR_ELA_LINK);
