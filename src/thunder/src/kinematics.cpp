@@ -89,7 +89,8 @@ namespace thunder_ns{
 		// parameters from robot
 		auto numJoints = robot.get_numJoints();
 		auto jointsType = robot.get_jointsType();
-		auto _DHtable_ = robot.get_DHTable();
+		// auto _DHtable_ = robot.get_DHTable();
+		auto _kinParams_ = robot.get_kin_pars();
 		auto _world2L0_ = robot.get_world2L0();
 		auto _Ln2EE_ = robot.get_Ln2EE();
 		auto q = robot.model["q"];
@@ -100,6 +101,8 @@ namespace thunder_ns{
 	   
 		// Ti is transformation from link i-1 to link i
 		Ti[0] = DHTemplate(_DHtable_.row(0), q(0), jointsType[0]);
+		Ti[0] = casadi::SX::skew(_kinParams_[0][3,6]) + 
+
 		// T0i is transformation from link 0 to link i
 		T0i[0] = casadi::SX::mtimes({_world2L0_.get_transform(), Ti[0]});
 		if (!robot.add_function("T_0", Ti[0], {"q"}, "relative transformation from frame base to frame 1")) return 0;

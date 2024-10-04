@@ -4,6 +4,9 @@
 #include "../library/dynamics.h"
 #include "../library/regressors.h"
 #include "../library/utils.h"
+#include "../library/ConfigLoader.h"
+#include "../library/DHConfigLoader.h"
+#include "../library/URDFConfigLoader.h"
 
 /* File name of generated code */
 // #define GENERATED_FILE "kin_basic_fun.cpp"
@@ -60,7 +63,7 @@ namespace thunder_ns{
 
 		// N_PAR_LINK = 10;
 		// jointsType = jointsType;
-		_DHtable_ = conf.DHtable;
+		// _DHtable_ = conf.DHtable;
 		_world2L0_ = conf.base_frame;
 		// N_PAR_LINK = 10;
 		// gravity = base_frame.get_gravity();
@@ -74,9 +77,9 @@ namespace thunder_ns{
 
 	void Robot::initVarsFuns(){
 		
-		if (_DHtable_.rows() != numJoints || _DHtable_.cols() != 4){
-			throw std::runtime_error("DHTemplate: Error size of DH table");
-		}
+		// if (_DHtable_.rows() != numJoints || _DHtable_.cols() != 4){
+		// 	throw std::runtime_error("DHTemplate: Error size of DH table");
+		// }
 		if ((int)jointsType.size()!=numJoints){
 			throw std::runtime_error("DHFwkinJoints: Error size of joints string");
 		}
@@ -484,8 +487,8 @@ namespace thunder_ns{
 		return jointsType;
 	}
 
-	Eigen::MatrixXd Robot::get_DHTable(){
-		return _DHtable_;
+	std::vector<std::vector<casadi::SX>> Robot::get_kin_pars(){
+		return _KinParams_;
 	}
 
 	FrameOffset Robot::get_world2L0(){
@@ -743,65 +746,21 @@ namespace thunder_ns{
 		myCodeGen.generate(savePath);
 	}
 
-	Config load_config(std::string file){
-		int nj;
-		FrameOffset Base_to_L0;
-		FrameOffset Ln_to_EE;
-		Config conf;
-		// ----- parsing yaml file ----- //
-		try {
-			// load yaml
-			YAML::Node config_file = YAML::LoadFile(file);
 
-			// Number of joints
-			nj = config_file["num_joints"].as<int>();
-			conf.numJoints = nj;
+    Config load_config(std::string file) {
+        std::unique_ptr<ConfigLoader> loader;
 
-			// joints_type
-			// YAML::Node type_joints = config_file["type_joints"];
-			// jType = type_joints.as<std::string>();
-			conf.jointsType = config_file["type_joints"].as<std::vector<std::string>>();
-			std::vector<std::string> jType = conf.jointsType;
+        if (file.ends_with(".urdf")) {
+            loader = std::make_unique<URDFConfigLoader>();
+        } else if (file.ends_with(".dh")) {
+            loader = std::make_unique<DHConfigLoader>();
+        } else {
+            throw std::runtime_error("Unsupported file type");
+        }
 
-			if (config_file["Dl_order"]) conf.Dl_order = config_file["Dl_order"].as<int>();
-			if (config_file["ELASTIC_MODEL"]){
-				conf.ELASTIC = config_file["ELASTIC_MODEL"].as<bool>();
-				if (conf.ELASTIC){
-					conf.K_order = config_file["elastic"]["K_order"].as<int>();
-					conf.D_order = config_file["elastic"]["D_order"].as<int>();
-					conf.Dm_order = config_file["elastic"]["Dm_order"].as<int>();
-				}
-			}
-			// Denavit-Hartenberg
-			std::vector<double> dh_vect = config_file["DH"].as<std::vector<double>>();
-			conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-
-			// gravity
-			std::vector<double> gravity = config_file["gravity"].as<std::vector<double>>();
-
-			// frames offsets
-			YAML::Node frame_base = config_file["Base_to_L0"];
-			YAML::Node frame_ee = config_file["Ln_to_EE"];
-
-			std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
-			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
-			Base_to_L0.set_translation(tr);
-			Base_to_L0.set_ypr(ypr);
-			Base_to_L0.set_gravity(gravity);
-			conf.base_frame = Base_to_L0;
-
-			tr = frame_ee["tr"].as<std::vector<double>>();
-			ypr = frame_ee["ypr"].as<std::vector<double>>();
-			Ln_to_EE.set_translation(tr);
-			Ln_to_EE.set_ypr(ypr);
-			conf.ee_frame = Ln_to_EE;
-
-		} catch (const YAML::Exception& e) {
-			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-		}
-
-		return conf;
-	}
+        return loader->load(file);
+    }
+	
 
 	Robot robot_from_file(std::string file, bool compute){
 		// create config

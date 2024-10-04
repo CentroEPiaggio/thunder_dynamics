@@ -13,7 +13,9 @@ namespace thunder_ns{
 	struct Config{
 		int numJoints;
 		std::vector<std::string> jointsType;
-		Eigen::MatrixXd DHtable;
+		// Parametrize robot as sequence of transforms from base-joint-...-joint-ee
+		// Suppose origin is at joint axis, with z-axis to joint axis
+		std::vector<Eigen::MatrixXd> KinParams;
 		FrameOffset base_frame;
 		FrameOffset ee_frame;
 		int Dl_order = 0;
@@ -45,6 +47,7 @@ namespace thunder_ns{
 	int change_to_robot(const std::string from_robot, const std::string to_robot, Robot& robot, const std::string file_path_h, const std::string file_path_cpp);
 
 	void replace_all(std::string& str, const std::string& from_str, const std::string& to_str);
+	int update_cmake(const std::string from_robot, const std::string to_robot, const std::string file_path);
 
 	casadi::SX hat(const casadi::SX& v);
 	Eigen::Matrix3d hat(const Eigen::Vector3d& v);
