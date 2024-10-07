@@ -5,8 +5,6 @@
 #include <pybind11/eigen.h>
 
 thunder_robot::thunder_robot(){
-	n_joints = /*#-N_JOINTS-#*/;
-	n_par_link = /*#-N_PAR_LINK-#*/;
 	resizeVariables();
 }
 
@@ -15,13 +13,23 @@ void thunder_robot::resizeVariables(){
 	dq = Eigen::VectorXd::Zero(n_joints);
 	dqr = Eigen::VectorXd::Zero(n_joints);
 	ddqr = Eigen::VectorXd::Zero(n_joints);
-	par_REG = Eigen::VectorXd::Zero(n_par_link*n_joints);
-	par_DYN = Eigen::VectorXd::Zero(n_par_link*n_joints);
+	x = Eigen::VectorXd::Zero(numElasticJoints);
+	dx = Eigen::VectorXd::Zero(numElasticJoints);
+	ddxr = Eigen::VectorXd::Zero(numElasticJoints);
+	par_REG = Eigen::VectorXd::Zero(STD_PAR_LINK*n_joints);
+	par_DYN = Eigen::VectorXd::Zero(STD_PAR_LINK*n_joints);
+	par_Dl = Eigen::VectorXd::Zero(Dl_order*n_joints);
+	par_K = Eigen::VectorXd::Zero(K_order*numElasticJoints);
+	par_D = Eigen::VectorXd::Zero(D_order*numElasticJoints);
+	par_Dm = Eigen::VectorXd::Zero(Dm_order*numElasticJoints);
+	// par_ELA = Eigen::VectorXd::Zero(numParELA);
 }
 
 int thunder_robot::get_numJoints() {return n_joints;};
-int thunder_robot::get_numParLink() {return n_joints;};
-int thunder_robot::get_numParams() {return par_REG.size();};
+// int thunder_robot::get_numParLink() {return n_joints;};
+int thunder_robot::get_numParDYN() {return STD_PAR_LINK*n_joints;};
+int thunder_robot::get_numParREG() {return STD_PAR_LINK*n_joints;};
+// int thunder_robot::get_numParELA() {return numParELA;};
 
 void thunder_robot::setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_){
 	if(q_.size() == n_joints && dq_.size()== n_joints && dqr_.size()==n_joints && ddqr_.size()==n_joints){
@@ -66,9 +74,33 @@ void thunder_robot::set_ddqr(const Eigen::VectorXd& ddqr_){
 	}
 }
 
+void thunder_robot::set_x(const Eigen::VectorXd& x_){
+	if(x_.size() == n_joints){
+		x = x_;
+	} else{
+		std::cout<<"in set_x: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_dx(const Eigen::VectorXd& dx_){
+	if(dx_.size() == n_joints){
+		dx = dx_;
+	} else{
+		std::cout<<"in set_dx: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_ddxr(const Eigen::VectorXd& ddxr_){
+	if(ddxr_.size() == n_joints){
+		ddxr = ddxr_;
+	} else{
+		std::cout<<"in set_ddxr: invalid dimensions of arguments\n";
+	}
+}
+
 void thunder_robot::update_inertial_DYN(){
 	for (int i=0; i<n_joints; i++){
-		Eigen::VectorXd p_reg = par_REG.segment(n_par_link*i, n_par_link);
+		Eigen::VectorXd p_reg = par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
 		double mass = p_reg(0);
 		Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
 		Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
@@ -76,13 +108,13 @@ void thunder_robot::update_inertial_DYN(){
 		I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 		Eigen::Matrix<double, 6, 1> I;
 		I << p_reg(4), p_reg(5), p_reg(6), p_reg(7), p_reg(8), p_reg(9);
-		par_DYN.segment(n_par_link*i, n_par_link) << mass, CoM, I-I_tmp_v;
+		par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I-I_tmp_v;
 	}
 }
 
 void thunder_robot::update_inertial_REG(){
 	for (int i=0; i<n_joints; i++){
-		Eigen::VectorXd p_dyn = par_DYN.segment(n_par_link*i, n_par_link);
+		Eigen::VectorXd p_dyn = par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK);
 		double mass = p_dyn(0);
 		Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
 		Eigen::Vector3d m_CoM = mass * CoM;
@@ -91,22 +123,12 @@ void thunder_robot::update_inertial_REG(){
 		I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 		Eigen::Matrix<double, 6, 1> I;
 		I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
-		par_REG.segment(n_par_link*i, n_par_link) << mass, CoM, I+I_tmp_v;
+		par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I+I_tmp_v;
 	}
 }
 
-void thunder_robot::set_inertial_REG(const Eigen::VectorXd& par_){
-	if(par_.size() == n_par_link*n_joints){
-		par_REG = par_;
-	} else{
-		std::cout<<"in setArguments: invalid dimensions of arguments\n";
-	}
-	// conversion from REG to DYN
-	update_inertial_DYN();
-}
-
-void thunder_robot::set_inertial_DYN(const Eigen::VectorXd& par_){
-	if(par_.size() == n_par_link*n_joints){
+void thunder_robot::set_par_DYN(const Eigen::VectorXd& par_){
+	if(par_.size() == STD_PAR_LINK*n_joints){
 		par_DYN = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -115,15 +137,73 @@ void thunder_robot::set_inertial_DYN(const Eigen::VectorXd& par_){
 	update_inertial_REG();
 }
 
-Eigen::VectorXd thunder_robot::get_inertial_REG(){
-	return par_REG;
+void thunder_robot::set_par_REG(const Eigen::VectorXd& par_){
+	if(par_.size() == STD_PAR_LINK*n_joints){
+		par_REG = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+	// conversion from REG to DYN
+	update_inertial_DYN();
 }
 
-Eigen::VectorXd thunder_robot::get_inertial_DYN(){
+void thunder_robot::set_par_K(const Eigen::VectorXd& par_){
+	if(par_.size() == K_order*numElasticJoints){
+		par_K = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_par_D(const Eigen::VectorXd& par_){
+	if(par_.size() == D_order*numElasticJoints){
+		par_D = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_par_Dm(const Eigen::VectorXd& par_){
+	if(par_.size() == Dm_order*numElasticJoints){
+		par_Dm = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
+	if(par_.size() == Dl_order*n_joints){
+		par_Dl = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+}
+
+Eigen::VectorXd thunder_robot::get_par_DYN(){
 	return par_DYN;
 }
 
-void thunder_robot::load_inertial_REG(std::string file_path){
+Eigen::VectorXd thunder_robot::get_par_REG(){
+	return par_REG;
+}
+
+Eigen::VectorXd thunder_robot::get_par_K(){
+	return par_K;
+}
+
+Eigen::VectorXd thunder_robot::get_par_D(){
+	return par_D;
+}
+
+Eigen::VectorXd thunder_robot::get_par_Dm(){
+	return par_Dm;
+}
+
+Eigen::VectorXd thunder_robot::get_par_Dl(){
+	return par_Dl;
+}
+
+void thunder_robot::load_par_REG(std::string file_path){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
 		
@@ -142,7 +222,7 @@ void thunder_robot::load_inertial_REG(std::string file_path){
 			yz = node.second["Iyz"].as<double>();
 			zz = node.second["Izz"].as<double>();
 
-			par_REG.segment(n_par_link*i, n_par_link) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+			par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
 			i++;
 		}
 	} catch (const YAML::Exception& e) {
@@ -151,7 +231,7 @@ void thunder_robot::load_inertial_REG(std::string file_path){
 	update_inertial_DYN();
 }
 
-void thunder_robot::load_inertial_DYN(std::string file_path){
+void thunder_robot::load_par_DYN(std::string file_path){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
 		
@@ -170,7 +250,7 @@ void thunder_robot::load_inertial_DYN(std::string file_path){
 			yz = node.second["Iyz"].as<double>();
 			zz = node.second["Izz"].as<double>();
 
-			par_DYN.segment(n_par_link*i, n_par_link) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
+			par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
 			i++;
 		}
 	} catch (const YAML::Exception& e) {
@@ -179,7 +259,44 @@ void thunder_robot::load_inertial_DYN(std::string file_path){
 	update_inertial_REG();
 }
 
-void thunder_robot::save_inertial_REG(std::string path_yaml_DH_REG){
+void thunder_robot::load_par_elastic(std::string file_path){
+	// ----- parsing yaml elastic ----- //
+	try {
+		// load yaml
+		YAML::Node config_file = YAML::LoadFile(file_path);
+		// parse elastic
+		YAML::Node elastic = config_file["elastic"];
+		int i = 0;
+		for (const auto& node : elastic["joints"]) {
+			
+			if (i==numElasticJoints) break;
+			std::string jointName = node.first.as<std::string>();
+			// stiffness
+			for (int j=0; j<K_order; j++){
+				std::vector<float> K = node.second["K"].as<std::vector<float>>();
+				par_K(K_order*i+j) = K[j];
+			}
+			// coupling friction
+			for (int j=0; j<D_order; j++){
+				std::vector<float> D = node.second["D"].as<std::vector<float>>();
+				par_D(D_order*i + j) = D[j];
+			}
+			// motor friction
+			for (int j=0; j<Dm_order; j++){
+				std::vector<float> Dm = node.second["Dm"].as<std::vector<float>>();
+				par_Dm(Dm_order*i + j) = Dm[j];
+			}
+
+			i++;
+		}
+		// std::cout<<"YAML_DH letto"<<std::endl;
+		// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+	} catch (const YAML::Exception& e) {
+		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+	}
+}
+
+void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 	std::vector<std::string> keys_reg;
 	keys_reg.resize(5);
 	keys_reg[0] = "mass"; keys_reg[1] = "m_CoM_"; keys_reg[2] = "I"; keys_reg[3] = "REG"; keys_reg[4] = "regressor";
@@ -188,14 +305,14 @@ void thunder_robot::save_inertial_REG(std::string path_yaml_DH_REG){
 
 	for(int i=0; i<n_joints; i++){
 		links_prop_REG[i].name = "link" + std::to_string(i+1);
-		links_prop_REG[i].mass = par_REG[n_par_link*i + 0];
-		links_prop_REG[i].xyz = {par_REG[n_par_link*i + 1], par_REG[n_par_link*i + 2], par_REG[n_par_link*i + 3]};
-		links_prop_REG[i].parI[0] = par_REG[n_par_link*i + 4];
-		links_prop_REG[i].parI[1] = par_REG[n_par_link*i + 5];
-		links_prop_REG[i].parI[2] = par_REG[n_par_link*i + 6];
-		links_prop_REG[i].parI[3] = par_REG[n_par_link*i + 7];
-		links_prop_REG[i].parI[4] = par_REG[n_par_link*i + 8];
-		links_prop_REG[i].parI[5] = par_REG[n_par_link*i + 9];
+		links_prop_REG[i].mass = par_REG[STD_PAR_LINK*i + 0];
+		links_prop_REG[i].xyz = {par_REG[STD_PAR_LINK*i + 1], par_REG[STD_PAR_LINK*i + 2], par_REG[STD_PAR_LINK*i + 3]};
+		links_prop_REG[i].parI[0] = par_REG[STD_PAR_LINK*i + 4];
+		links_prop_REG[i].parI[1] = par_REG[STD_PAR_LINK*i + 5];
+		links_prop_REG[i].parI[2] = par_REG[STD_PAR_LINK*i + 6];
+		links_prop_REG[i].parI[3] = par_REG[STD_PAR_LINK*i + 7];
+		links_prop_REG[i].parI[4] = par_REG[STD_PAR_LINK*i + 8];
+		links_prop_REG[i].parI[5] = par_REG[STD_PAR_LINK*i + 9];
 	}
 	// create file
 	try {
@@ -212,7 +329,7 @@ void thunder_robot::save_inertial_REG(std::string path_yaml_DH_REG){
 	}
 }
 
-void thunder_robot::save_inertial_DYN(std::string path_yaml_DH_DYN){
+void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	std::vector<std::string> keys_reg;
 	keys_reg.resize(5);
 	keys_reg[0] = "mass"; keys_reg[1] = "CoM_"; keys_reg[2] = "I"; keys_reg[3] = "DYN"; keys_reg[4] = "dynamics";
@@ -221,14 +338,14 @@ void thunder_robot::save_inertial_DYN(std::string path_yaml_DH_DYN){
 
 	for(int i=0; i<n_joints; i++){
 		links_prop_DYN[i].name = "link" + std::to_string(i+1);
-		links_prop_DYN[i].mass = par_DYN[n_par_link*i + 0];
-		links_prop_DYN[i].xyz = {par_DYN[n_par_link*i + 1], par_DYN[n_par_link*i + 2], par_DYN[n_par_link*i + 3]};
-		links_prop_DYN[i].parI[0] = par_DYN[n_par_link*i + 4];
-		links_prop_DYN[i].parI[1] = par_DYN[n_par_link*i + 5];
-		links_prop_DYN[i].parI[2] = par_DYN[n_par_link*i + 6];
-		links_prop_DYN[i].parI[3] = par_DYN[n_par_link*i + 7];
-		links_prop_DYN[i].parI[4] = par_DYN[n_par_link*i + 8];
-		links_prop_DYN[i].parI[5] = par_DYN[n_par_link*i + 9];
+		links_prop_DYN[i].mass = par_DYN[STD_PAR_LINK*i + 0];
+		links_prop_DYN[i].xyz = {par_DYN[STD_PAR_LINK*i + 1], par_DYN[STD_PAR_LINK*i + 2], par_DYN[STD_PAR_LINK*i + 3]};
+		links_prop_DYN[i].parI[0] = par_DYN[STD_PAR_LINK*i + 4];
+		links_prop_DYN[i].parI[1] = par_DYN[STD_PAR_LINK*i + 5];
+		links_prop_DYN[i].parI[2] = par_DYN[STD_PAR_LINK*i + 6];
+		links_prop_DYN[i].parI[3] = par_DYN[STD_PAR_LINK*i + 7];
+		links_prop_DYN[i].parI[4] = par_DYN[STD_PAR_LINK*i + 8];
+		links_prop_DYN[i].parI[5] = par_DYN[STD_PAR_LINK*i + 9];
 	}
 	// create file
 	try {

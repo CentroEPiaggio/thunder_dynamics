@@ -46,6 +46,7 @@ namespace thunder_ns{
 		}
 		numElasticJoints = 0;
 		isElasticJoint.resize(numJoints);
+		// elasticSel = casadi::SX::zeros(numJoints,numJoints);
 		for (int i=0; i<numJoints; i++){
 			isElasticJoint[i] = 0;
 			// numParLink[i] = STD_PAR_LINK;
@@ -54,6 +55,7 @@ namespace thunder_ns{
 				// numParLink[i] += K_order + D_order;
 				isElasticJoint[i] = 1;
 				numElasticJoints++;
+				// elasticSel(i,i) = 1;
 			}
 		}
 		// numParELA = numElasticJoints*(PAR_ELA_LINK);
@@ -73,8 +75,7 @@ namespace thunder_ns{
 	}
 
 	void Robot::initVarsFuns(){
-		
-		if (_DHtable_.rows() != numJoints || _DHtable_.cols() != 4){
+		if (_DHtable_.rows() != numJoints || _DHtable_.columns() != 4){
 			throw std::runtime_error("DHTemplate: Error size of DH table");
 		}
 		if ((int)jointsType.size()!=numJoints){
@@ -417,15 +418,6 @@ namespace thunder_ns{
 		return param_Dl;
 	}
 
-	// Eigen::VectorXd Robot::get_par_ELA(){
-	// 	const casadi::SX& par_REG_casadi = args["par_ELA"];
-	// 	int numPar = STD_PAR_LINK*numJoints;
-	// 	Eigen::VectorXd par_ELA(sz);
-	// 	std::vector<casadi::SXElem> res_elements = par_ELA_casadi.get_elements();
-	// 	std::transform(res_elements.begin(), res_elements.end(), par_ELA.data(), mapFunction);
-	// 	return par_ELA;
-	// }
-
 	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
 		std::vector<fun_obj> functions;
 		int sz = casadi_fun.size();
@@ -484,7 +476,7 @@ namespace thunder_ns{
 		return jointsType;
 	}
 
-	Eigen::MatrixXd Robot::get_DHTable(){
+	casadi::SX Robot::get_DHTable(){
 		return _DHtable_;
 	}
 
@@ -597,9 +589,9 @@ namespace thunder_ns{
 
 	// to modify this file, load_par_elastic
 	int Robot::load_par_elastic(std::string file){
-		casadi::SX param_K(numElasticJoints*K_order);
-		casadi::SX param_D(numElasticJoints*D_order);
-		casadi::SX param_Dm(numElasticJoints*Dm_order);
+		casadi::SX param_K(numElasticJoints*K_order,1);
+		casadi::SX param_D(numElasticJoints*D_order,1);
+		casadi::SX param_Dm(numElasticJoints*Dm_order,1);
 		// ----- parsing yaml elastic ----- //
 		try {
 			// load yaml
@@ -674,18 +666,18 @@ namespace thunder_ns{
 			// cout<<"p_dyn:"<<endl<<p_dyn<<endl<<endl;
 			double mass = p_dyn(0);
 			Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
-			cout<<"CoM:"<<endl<<CoM<<endl<<endl;
+			// cout<<"CoM:"<<endl<<CoM<<endl<<endl;
 			Eigen::Vector3d m_CoM = mass * CoM;
-			cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
+			// cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
 			Eigen::Matrix3d I_tmp = mass * (hat(CoM) * hat(CoM).transpose());
-			cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
+			// cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
 			Eigen::Matrix<double, 6, 1> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
-			cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
+			// cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
 			Eigen::Matrix<double, 6, 1> I;
 			I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
-			cout<<"I:"<<endl<<I<<endl<<endl;
-			cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
+			// cout<<"I:"<<endl<<I<<endl<<endl;
+			// cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
 			// Eigen::VectorXd Dl;
 			// Dl.resize(Dl_order);
 			// for(int j=0; j<Dl_order; j++){
@@ -774,7 +766,14 @@ namespace thunder_ns{
 			}
 			// Denavit-Hartenberg
 			std::vector<double> dh_vect = config_file["DH"].as<std::vector<double>>();
-			conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			casadi::SX DHtable_tmp(nj,4);
+			for (int i=0; i<nj; i++){
+				for (int j=0; j<4; j++){
+					DHtable_tmp(i,j) = dh_vect[4*i + j];
+				}
+			}
+			conf.DHtable = DHtable_tmp;
 
 			// gravity
 			std::vector<double> gravity = config_file["gravity"].as<std::vector<double>>();

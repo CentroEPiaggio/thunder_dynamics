@@ -54,7 +54,7 @@ namespace thunder_ns{
 		return E_;
 	}
 
-    int compute_regressors(Robot& robot, bool advanced){
+	int compute_Yr(Robot& robot){
 		// parameters from robot
 		int nj = robot.get_numJoints();
 		int nParLink = robot.STD_PAR_LINK;
@@ -200,6 +200,82 @@ namespace thunder_ns{
 		if (!robot.add_function("reg_G", reg_G, {"q"}, "Regressor matrix of term G")) return 0;
 
 		return 1;
+	}
+
+	int compute_reg_Dl(Robot& robot){
+		// parameters from robot
+		int nj = robot.get_numJoints();
+		int nParLink = robot.STD_PAR_LINK;
+		int Dl_order = robot.get_Dl_order();
+		// auto jointsType = robot.get_jointsType();
+		// auto _DHtable_ = robot.get_DHTable();
+		// auto _world2L0_ = robot.get_world2L0();
+		// auto _Ln2EE_ = robot.get_Ln2EE();
+		auto dq = robot.model["dq"];
+		if (Dl_order==0) return 0;
+		auto par_Dl = robot.model["par_Dl"];
+		if (robot.model.count("Dl") == 0){
+			compute_Dl(robot);
+		}
+		auto Dl = robot.model["Dl"];
+
+		casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par_Dl);
+
+		if (!robot.add_function("reg_Dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
+
+		return 1;
+	}
+
+	int compute_reg_elastic(Robot& robot){
+		// parameters from robot
+		int nj = robot.get_numJoints();
+		int nej = robot.get_numElasticJoints();
+		// int nParLink = robot.STD_PAR_LINK;
+		int K_order = robot.get_K_order();
+		int D_order = robot.get_D_order();
+		int Dm_order = robot.get_Dm_order();
+		// auto jointsType = robot.get_jointsType();
+		// auto _DHtable_ = robot.get_DHTable();
+		// auto _world2L0_ = robot.get_world2L0();
+		// auto _Ln2EE_ = robot.get_Ln2EE();
+		auto dq = robot.model["dq"];
+		auto dx = robot.model["dx"];
+		auto par_K = robot.model["par_K"];
+		auto par_D = robot.model["par_D"];
+		auto par_Dm = robot.model["par_Dm"];
+
+		if (robot.model.count("K") == 0){
+			compute_elastic(robot);
+		}
+		auto K = robot.model["K"];
+		auto D = robot.model["D"];
+		auto Dm = robot.model["Dm"];
+
+		casadi::SX reg_K = casadi::SX::jacobian(K, par_K);
+		casadi::SX reg_D = casadi::SX::jacobian(D, par_D);
+		casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm);
+
+		if (!robot.add_function("reg_K", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
+		if (!robot.add_function("reg_D", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
+		if (!robot.add_function("reg_Dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
+
+		return 1;
+	}
+
+    int compute_regressors(Robot& robot, bool advanced){
+		int ret = 1;
+		bool ELASTIC = robot.get_ELASTIC();
+		int Dl_order = robot.get_Dl_order();
+
+		if (!compute_Yr(robot)) ret=0;
+		if (Dl_order>0){
+			if (!compute_reg_Dl(robot)) ret=0;
+		}
+		if (ELASTIC){
+			if (!compute_reg_elastic(robot)) ret=0;
+		}
+		
+		return ret;
 	}
 
     

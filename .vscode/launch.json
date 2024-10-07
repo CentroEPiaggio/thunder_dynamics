@@ -33,6 +33,33 @@
 				}
 		},
 		{
+			"name": "thunder gen",
+			"type": "cppdbg", 
+			"request": "launch",
+			"program": "/home/thunder_dev/thunder_dynamics/src/thunder/build/thunder",
+			"args": ["gen", "../robots/RRR/RRR.yaml", "testRRR"],
+			"stopAtEntry": false,
+			"cwd": "/home/thunder_dev/thunder_dynamics/src/thunder/build",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"miDebuggerPath": "/usr/bin/gdb",
+			"preLaunchTask": "makeThunder",		//compila prima di eseguire
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb and add better child debugging",
+					// detach-on-fork dovrebbe migliorare il debug per i figli
+					"text": "-enable-pretty-printing -gdb-set detach-on-fork off",
+					"ignoreFailures": true
+				}
+			],
+			"logging": 
+				{ 
+					"trace": true, 
+					"traceResponse": true 
+				}
+		},
+		{
 			"name": "thunder_robot",
 			"type": "cppdbg", 
 			"request": "launch",

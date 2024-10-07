@@ -50,8 +50,9 @@ namespace thunder_ns{
 			/* Joints' type string */
 			std::vector<std::string> jointsType;
 			std::vector<int> isElasticJoint;
+			// casadi::SX elasticSel;
 			/* Denavit-Hartenberg parameterization table */
-			Eigen::MatrixXd _DHtable_;
+			casadi::SX _DHtable_;
 			/* Frame offset between world-frame and link 0*/
 			FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
@@ -116,7 +117,7 @@ namespace thunder_ns{
 			// std::vector<int> get_numParLink();
 			// int get_numParLink(int i);
 			std::vector<std::string> get_jointsType();
-			Eigen::MatrixXd get_DHTable();
+			casadi::SX get_DHTable();
 			FrameOffset get_world2L0();
 			FrameOffset get_Ln2EE();
 			// int get_numParLink(int i);

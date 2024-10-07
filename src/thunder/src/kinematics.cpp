@@ -12,17 +12,17 @@ namespace thunder_ns{
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
   
-	casadi::SX DHTemplate(const Eigen::MatrixXd& rowDHTable, const casadi::SX qi, std::string jointType) {
+	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX qi, std::string jointType) {
 		
-		double a;
-		double alpha;
+		casadi::SX a;
+		casadi::SX alpha;
 		casadi::SX d;
 		casadi::SX theta;
 		
 		casadi::SX ct;      // cos(theta)
 		casadi::SX st;      // sin(theta)
-		double ca;          // cos(alpha)
-		double sa;          // sin(alpha)
+		casadi::SX ca;          // cos(alpha)
+		casadi::SX sa;          // sin(alpha)
 		
 		casadi::SX Ti(4,4); // output
 		
@@ -97,16 +97,17 @@ namespace thunder_ns{
 		// computing chain
 		casadi::SXVector Ti(numJoints);    // Output
 		casadi::SXVector T0i(numJoints+1);   // Output
+		casadi::Slice allCols(0,4);   
 	   
 		// Ti is transformation from link i-1 to link i
-		Ti[0] = DHTemplate(_DHtable_.row(0), q(0), jointsType[0]);
+		Ti[0] = DHTemplate(_DHtable_(0,allCols), q(0), jointsType[0]);
 		// T0i is transformation from link 0 to link i
 		T0i[0] = casadi::SX::mtimes({_world2L0_.get_transform(), Ti[0]});
 		if (!robot.add_function("T_0", Ti[0], {"q"}, "relative transformation from frame base to frame 1")) return 0;
 		if (!robot.add_function("T_0_0", T0i[0], {"q"}, "absolute transformation from frame base to frame 1")) return 0;
 
 		for (int i = 1; i < numJoints; i++) {
-			Ti[i] = DHTemplate(_DHtable_.row(i), q(i), jointsType[i]);
+			Ti[i] = DHTemplate(_DHtable_(i,allCols), q(i), jointsType[i]);
 			T0i[i] = casadi::SX::mtimes({T0i[i-1], Ti[i]});
 			
 			if (!robot.add_function("T_"+std::to_string(i), Ti[i], {"q"}, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;

@@ -11,11 +11,12 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-#include "thunder_RRR.h"
+#include "thunder_seaRRR.h"
 
 // #define NJ 3
-// #define N_PAR 30
-const std::string inertial_file = "../robots/RRR_inertial_REG.yaml";
+// #define N_PARAM_DYN 30
+const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
+const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 // const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_REG.yaml";
 
 using namespace std::chrono;
@@ -33,37 +34,32 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_RRR robot;
+	thunder_seaRRR robot;
 
-	robot.load_inertial_REG(inertial_file);
+	robot.load_par_DYN(inertial_file);
 	const int NJ = robot.get_numJoints();
-	const int N_PAR = robot.get_numParams();
+	const int N_PARAM_DYN = robot.get_numParDYN();
+	int N_PARAM_REG = robot.get_numParREG();
+	int N_PARAM_DL = NJ*robot.Dl_order;
 
-	// Eigen::VectorXd param_REG(N_PAR*NJ);
-	// Eigen::VectorXd param_DYN(N_PAR*NJ);
+	Eigen::VectorXd par_DYN(N_PARAM_DYN);
+	Eigen::VectorXd par_REG(N_PARAM_REG);
+	Eigen::VectorXd par_Dl(N_PARAM_DL);
 
-	/* Matrix */
-	
-	// Eigen::MatrixXd<double, NJ, N_PAR> Yr;
-	// Eigen::MatrixXd<double, NJ, NJ> myM;
-	// Eigen::MatrixXd<double, NJ, NJ> myC;
-	// Eigen::MatrixXd<double, NJ, 1> myG;
-	// Eigen::MatrixXd<double, 6, NJ> myJac;
-	// Eigen::MatrixXd<double, 6, NJ> myJacCM;
-	// Eigen::MatrixXd<double, NJ, 1> tau_cmd_dyn;
-	// Eigen::MatrixXd<double, NJ, 1> tau_cmd_reg;
-
-	Eigen::MatrixXd Yr(NJ, N_PAR);
+	Eigen::MatrixXd Yr(NJ, N_PARAM_REG);
+	Eigen::MatrixXd reg_M(NJ, N_PARAM_DYN);
+	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
+	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
+	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
 	Eigen::MatrixXd myM(NJ, NJ);
 	Eigen::MatrixXd myC(NJ, NJ);
 	Eigen::VectorXd myG(NJ);
+	Eigen::MatrixXd Dl(NJ, 1);
 	Eigen::MatrixXd myKin(4,4);
 	Eigen::MatrixXd myJac(6,NJ);
 	Eigen::MatrixXd myJacCM(6,NJ);
 	Eigen::VectorXd tau_cmd_dyn(NJ);
 	Eigen::VectorXd tau_cmd_reg(NJ);
-
-	Eigen::VectorXd param_REG(N_PAR);
 
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
@@ -73,15 +69,17 @@ int main(){
 	dqr = dqr.setOnes();
 	ddqr = ddqr.setOnes();
 
-	// kinrobot.setArguments(q,dq);
-	// regrobot.setArguments(q,dq,dqr,ddqr);
-	// dynrobot.setArguments(q,dq,param_DYN);
-
 	robot.setArguments(q, dq, dqr, ddqr);
 
-	param_REG = robot.get_inertial_REG();
-	cout<<"\nPar_REG\n"<<param_REG;
+	// get parameters
+	par_REG = robot.get_par_REG();
+	par_DYN = robot.get_par_DYN();
+	par_Dl = robot.get_par_Dl();
+	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
+	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
+	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
 
+	// kinematics and dynamics
 	myKin = robot.get_T_0_ee();
 	cout<<"\n\nKin\n"<<myKin;
 	myJac = robot.get_J_ee();
@@ -92,27 +90,59 @@ int main(){
 	cout<<"\n\nC\n"<<myC;
 	myG = robot.get_G();
 	cout<<"\n\nG\n"<<myG;
+	Dl = robot.get_Dl();
+	cout<<"\n\nD_link\n"<<Dl;
 	Yr = robot.get_Yr();
 	cout<<"\n\nYr\n"<<Yr;
 
 	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
 	
-	tau_cmd_reg = Yr*param_REG;
+	tau_cmd_reg = Yr*par_REG;
 
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
-	// robot.save_inertial_REG(saved_inertial_file);
+	if (robot.ELASTIC){
+		int NEJ = robot.numElasticJoints;
+		robot.load_par_elastic(inertial_file);
 
-	// Eigen::VectorXd param_DYN(N_PAR);
-	// Eigen::VectorXd param_DYN_afterLoad(N_PAR);
-	// param_DYN = robot.get_inertial_DYN();
-	// cout<<"\nparam_DYN:\n"<<param_DYN<<endl;
-	// robot.save_inertial_DYN("file_inertial_dyn");
-	// robot.load_inertial_DYN("file_inertial_dyn");
-	// param_DYN_afterLoad = robot.get_inertial_DYN();
-	// cout<<"\nparam_DYN error:\n"<<param_DYN-param_DYN_afterLoad<<endl;
+		Eigen::VectorXd x(NEJ), dx(NEJ), ddxr(NEJ);
+		x = 2*x.setOnes();
+		dx = 2*dx.setOnes();
+		ddxr = 2*ddxr.setOnes();
+		robot.set_x(x);
+		robot.set_dx(dx);
+		robot.set_ddxr(ddxr);
+
+		int N_PARAM_K = NEJ*robot.K_order;
+		int N_PARAM_D = NEJ*robot.D_order;
+		int N_PARAM_DM = NEJ*robot.Dm_order;
+		Eigen::VectorXd par_K(N_PARAM_K);
+		Eigen::VectorXd par_D(N_PARAM_D);
+		Eigen::VectorXd par_Dm(N_PARAM_DM);
+		Eigen::MatrixXd K(NEJ, 1);
+		Eigen::MatrixXd D(NEJ, 1);
+		Eigen::MatrixXd Dm(NEJ, 1);
+		Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
+		Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
+		Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
+
+		par_K = robot.get_par_K();
+		par_D = robot.get_par_D();
+		par_Dm = robot.get_par_Dm();
+		cout<<endl<<"par_K:"<<endl<<par_K.transpose()<<endl;
+		cout<<endl<<"par_D:"<<endl<<par_D.transpose()<<endl;
+		cout<<endl<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl;
+
+		K = robot.get_K();
+		cout<<endl<<"K\n"<<K<<endl;
+		// D = robot.get_D();
+		// cout<<endl<<"D_coupling\n"<<D<<endl;
+		Dm = robot.get_Dm();
+		cout<<endl<<"D_motor\n"<<Dm<<endl;
+
+	}
 
 	return 0;
 }

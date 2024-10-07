@@ -1,5 +1,5 @@
-#ifndef THUNDER_RRR_H
-#define THUNDER_RRR_H
+#ifndef THUNDER_seaRRR_H
+#define THUNDER_seaRRR_H
 
 #include <iostream>
 #include <string>
@@ -9,17 +9,17 @@
 #include <fstream>
 
 
-/* Class thunder_RRR 
+/* Class thunder_seaRRR 
 Useful functions for adaptive control with Slotine-Li regressor
 Usable only for generated code from casadi library! */
-class thunder_RRR{
+class thunder_seaRRR{
 
 	private:
-		/* Number of joints */
-		int n_joints;
-		int n_par_link;
+		// standard number of parameters
+		const int STD_PAR_LINK = 10;
 		/* Joints' variables */
-		Eigen::VectorXd q, dq, dqr, ddqr, par_REG, par_DYN;
+		Eigen::VectorXd q, dq, dqr, ddqr, par_DYN, par_REG, par_Dl;
+		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
 
 		void update_inertial_DYN();
 		void update_inertial_REG();
@@ -46,12 +46,24 @@ class thunder_RRR{
 		Eigen::Matrix3d hat(const Eigen::Vector3d v);
 		
 	public:
+		const int n_joints = 3;
+		const bool ELASTIC = 1;
+		const int numElasticJoints = 1;
+		const int K_order = 1;
+		const int D_order = 0;
+		const int Dl_order = 1;
+		const int Dm_order = 1;
+		const int numParDYN = STD_PAR_LINK*n_joints;
+		const int numParREG = STD_PAR_LINK*n_joints;
+		// const int numParELA = /*#-numParELA-#*/;
+		const int isElasticJoint[3] = {1, 0, 0};
+
 		/* Empty constructor, initialization inside */
-		thunder_RRR();
+		thunder_seaRRR();
 		/* Constructor to init variables*/
-		// thunder_RRR(const int);
+		// thunder_seaRRR(const int);
 		/* Destructor*/
-		~thunder_RRR() = default;
+		~thunder_seaRRR() = default;
 		
 		/* Resize variables */
 		void resizeVariables();
@@ -63,19 +75,37 @@ class thunder_RRR{
 		void set_dq(const Eigen::VectorXd& dq_);
 		void set_dqr(const Eigen::VectorXd& dqr_);
 		void set_ddqr(const Eigen::VectorXd& ddqr_);
-		void set_inertial_REG(const Eigen::VectorXd& par_);
-		void set_inertial_DYN(const Eigen::VectorXd& par_);
-		Eigen::VectorXd get_inertial_REG();
-		Eigen::VectorXd get_inertial_DYN();
+		void set_x(const Eigen::VectorXd& x_);
+		void set_dx(const Eigen::VectorXd& dx_);
+		void set_ddxr(const Eigen::VectorXd& ddxr_);
+		void set_par_REG(const Eigen::VectorXd& par_);
+		void set_par_DYN(const Eigen::VectorXd& par_);
+		void set_par_K(const Eigen::VectorXd& par_);
+		void set_par_D(const Eigen::VectorXd& par_);
+		void set_par_Dm(const Eigen::VectorXd& par_);
+		void set_par_Dl(const Eigen::VectorXd& par_);
+		// void set_par_ELA(const Eigen::VectorXd& par_);
+		Eigen::VectorXd get_par_REG();
+		Eigen::VectorXd get_par_DYN();
+		Eigen::VectorXd get_par_K();
+		Eigen::VectorXd get_par_D();
+		Eigen::VectorXd get_par_Dm();
+		Eigen::VectorXd get_par_Dl();
+		// Eigen::VectorXd get_par_ELA();
 
-		void load_inertial_REG(std::string);
-		void save_inertial_REG(std::string);
-		void load_inertial_DYN(std::string);
-		void save_inertial_DYN(std::string);
+		void load_par_REG(std::string);
+		void save_par_REG(std::string);
+		void load_par_DYN(std::string);
+		void save_par_DYN(std::string);
+		void load_par_elastic(std::string);
+		// void load_par_ELA(std::string);
+		// void save_par_ELA(std::string);
 
 		int get_numJoints();
-		int get_numParLink();
-		int get_numParams();
+		// int get_numParLink();
+		int get_numParDYN();
+		int get_numParREG();
+		// int get_numParELA();
 
 		// ----- generated functions ----- //
 				// - Manipulator Coriolis matrix - //
@@ -83,6 +113,12 @@ class thunder_RRR{
 
 		// - Classic formulation of the manipulator Coriolis matrix - //
 		Eigen::MatrixXd get_C_std();
+
+		// - Manipulator link friction - //
+		Eigen::MatrixXd get_Dl();
+
+		// - SEA manipulator motor damping - //
+		Eigen::MatrixXd get_Dm();
 
 		// - Manipulator gravity terms - //
 		Eigen::MatrixXd get_G();
@@ -117,6 +153,9 @@ class thunder_RRR{
 		// - Pseudo-Inverse of jacobian matrix - //
 		Eigen::MatrixXd get_J_ee_pinv();
 
+		// - SEA manipulator elastic coupling - //
+		Eigen::MatrixXd get_K();
+
 		// - Manipulator mass matrix - //
 		Eigen::MatrixXd get_M();
 
@@ -150,8 +189,20 @@ class thunder_RRR{
 		// - Regressor matrix of term C*dqr - //
 		Eigen::MatrixXd get_reg_C();
 
+		// - Regressor matrix of the coupling damping - //
+		Eigen::MatrixXd get_reg_D();
+
+		// - Regressor matrix of the link friction - //
+		Eigen::MatrixXd get_reg_Dl();
+
+		// - Regressor matrix of the motor friction - //
+		Eigen::MatrixXd get_reg_Dm();
+
 		// - Regressor matrix of term G - //
 		Eigen::MatrixXd get_reg_G();
+
+		// - Regressor matrix of the coupling stiffness - //
+		Eigen::MatrixXd get_reg_K();
 
 		// - Regressor matrix of term M*ddqr - //
 		Eigen::MatrixXd get_reg_M();
