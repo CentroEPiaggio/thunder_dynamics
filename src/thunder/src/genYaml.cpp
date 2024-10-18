@@ -16,7 +16,7 @@ Generate two yaml files of inertial parameters (only for arm + hand) to use stan
 #include <random>
 
 #include <yaml-cpp/yaml.h>
-#include "urdf2dh_inertial.h"
+// #include "urdf2dh_inertial.h"
 #include "genYaml.h"
 
 // #define num_joints 7 // 7 links + hand
@@ -37,10 +37,6 @@ std::string common_comment = "";
 
 namespace thunder_ns{
 
-	// void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent);
-
-	// void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_);
-
 	int genInertial_files(const std::string robot_name, const int num_joints, const std::string config_file, const std::string out_DYN_file, const std::string out_REG_file){
 
 		std::vector<std::string> keys_dyn;
@@ -58,33 +54,14 @@ namespace thunder_ns{
 		links_prop_DH.resize(num_joints);
 		links_prop_REG.resize(num_joints);
 
-		// Eigen::Matrix3d I0,IG;
-		// Eigen::Vector3d dOG;
-
-		// transform.resize(num_joints);
-		// transform[0].rpy = {+M_PI_2,0,0};   // link transform
-		// transform[1].rpy = {-M_PI_2,0,0};
-		// transform[2].rpy = {-M_PI_2,0,0};
-		// transform[3].rpy = {+M_PI_2,0,0};
-		// transform[4].rpy = {-M_PI_2,0,0};
-		// transform[5].rpy = {-M_PI_2,0,0};
-		
-		// transform[0].xyz = {0,0,0};         // link 1
-		// transform[1].xyz = {0,0,0};
-		// transform[2].xyz = {-0.0825,0,0};
-		// transform[3].xyz = {0.0825,0,0};
-		// transform[4].xyz = {0,0,0};
-		// transform[5].xyz = {-0.088,0,0};
-
-		// transform[6].rpy = {0,0,0};
-		// transform[6].xyz = {0,0,-0.107};
-
 		//------------------------------------Extract Variables-----------------------------------------//
 
 		try {
 			YAML::Node config = YAML::LoadFile(config_file);
-
 			YAML::Node inertial = config["inertial"];
+			int Dl_order=0;
+			if (config["Dl_order"]) Dl_order = config["Dl_order"].as<int>();
+			// std::cout<<"Dl_order: " << Dl_order << std::endl;
 			
 			int link_index = 0;
 			for (const auto& node : inertial) {
@@ -107,6 +84,16 @@ namespace thunder_ns{
 				properties.parI[3] = node.second["Iyy"].as<double>();
 				properties.parI[4] = node.second["Iyz"].as<double>();
 				properties.parI[5] = node.second["Izz"].as<double>();
+				// link friction
+				if (Dl_order){
+					properties.Dl.resize(Dl_order);
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+					properties.Dl = Dl;
+					// std::cout<<"Dl_read: " << Dl << std::endl;
+					// for (int j=0; j<Dl_order; j++){
+					// 	properties.Dl[j] = Dl[j];
+					// }
+				}
 
 				// // debug:
 				// std::cout<< linkName + ": "<<std::endl;
@@ -138,15 +125,14 @@ namespace thunder_ns{
 				links_prop_REG[i].parI[3] = I0(1,1);
 				links_prop_REG[i].parI[4] = I0(1,2);
 				links_prop_REG[i].parI[5] = I0(2,2);
+				links_prop_REG[i].Dl = tmp_link.Dl;
+				// std::cout<<"Dl_par: " << links_prop_REG[i].Dl << std::endl;
 			}
 
 			// --- save <robot>_inertial_REG.yaml --- //
 			try {
 				YAML::Emitter emitter;
 				fillInertialYaml(num_joints, emitter, links_prop_REG, keys_reg);
-				// std::string pp;
-				// if((int)coeff_p[w]==0) pp="";
-				// else pp = "_p" + std::to_string((int)coeff_p[w]);
 				std::ofstream fout(out_REG_file);
 				fout << emitter.c_str();
 				fout.close();
@@ -158,9 +144,6 @@ namespace thunder_ns{
 			try {
 				YAML::Emitter emitter;
 				fillInertialYaml(num_joints, emitter, links_prop_DH, keys_dyn);
-				// std::string pp;
-				// if((int)coeff_p[w]==0) pp="";
-				// else pp = "_p" + std::to_string((int)coeff_p[w]);
 				std::ofstream fout(out_DYN_file);
 				fout << emitter.c_str();
 				fout.close();
@@ -169,115 +152,12 @@ namespace thunder_ns{
 				return 0;
 			}
 
-			// if (copy_flag){
-			// 	std::string absolutePath;
-			// 	std::filesystem::path sourcePath;
-			// 	std::filesystem::path sourceDestPath;
-			// 	absolutePath = std::filesystem::current_path();
-			// 	sourcePath = absolutePath + "/" + out_inertial_file + ".yaml";
-			// 	sourceDestPath = path_copy_DH_REG;
-			// 	std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::update_existing);
-			// 	std::cout<<"Files yaml copied"<<std::endl;
-			// }  
-
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 			return 0;
 		}
 		return 1;
 	}
-
-	// 	//-----------------------Convert inertial parameters from URDF to DH----------------------------//
-
-	// 	for (int i = 1; i<=num_joints; i++){
-	// 		transformBodyInertial(transform[i-1].xyz,transform[i-1].rpy,links_prop[i],links_prop_DH[i-1]);
-	// 	}
-
-	// 	/* Merge link 7 parameters and hand parameters */
-
-	// 	if (use_gripper){
-
-	// 		LinkProp link_7, link_hand, newlink_7;
-			
-	// 		link_7 = links_prop_DH[6];
-	// 		link_hand = links_prop_DH[7];
-	// 		mergeBodyInertial(link_7,link_hand,newlink_7);
-	// 		newlink_7.name = link_7.name;
-	// 		links_prop_DH[6] = newlink_7;
-	// 	}
-		
-	// 	//----------------!!! Generate DH inertial parameters YAML only for TEST !!!-----------------------//
-		
-	// 	try {
-	// 		YAML::Emitter emitter;
-	// 		fillInertialYaml(num_joints, emitter, links_prop_DH, keys_dyn);
-	// 		std::ofstream fout(path_yaml_DH);
-	// 		fout << emitter.c_str();
-	// 		fout.close();
-
-	// 		std::cout << "Successfully generated YAML file of inertial parameter for DH parametrization"<<std::endl;
-	// 		std::cout<< " path: " << path_yaml_DH << std::endl;
-
-	// 	} catch (const YAML::Exception& e) {
-	// 		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-	// 		return 0;
-	// 	}
-		
-	// 	//------------------Generate YAML of inertial parameters for standard dynamic---------------------//
-
-	// 	try {
-	// 		YAML::Emitter emitter;
-	// 		fillInertialYaml(num_joints, emitter, links_prop_DH, keys_dyn);
-	// 		std::ofstream fout(path_yaml_DH_DYN + ".yaml");
-	// 		fout << emitter.c_str();
-	// 		fout.close();
-			
-	// 		std::cout << "Successfully generated YAML file of inertial parameters for dynamics"<<std::endl;
-	// 		std::cout<< " path: " << path_yaml_DH_DYN + ".yaml" << std::endl;
-
-	// 	} catch (const YAML::Exception& e) {
-	// 		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-	// 		return 0;
-	// 	}
-
-	// 	//------------------Generate YAML of inertial parameters for regressor---------------------//
-		
-	// 	LinkProp tmp_link;
-	// 	LinkProp tmp_DH_gauss;
-	// 	Eigen::Matrix3d I0,IG;
-	// 	Eigen::Vector3d dOG;
-	// 	double m;
-
-	// 	// Percentage of perturbation
-	// 	Eigen::VectorXd coeff_p(5);
-	// 	coeff_p << 0, 2, 5, 10, 20;
-
-	// 	for (int w=0;w<5;w++){
-
-			 
-	// 	}
-
-	// 	return 0;
-	// }
-
-	// void perturbateLinkProp(LinkProp original, LinkProp &perturbate, double percent){
-
-	// 	std::random_device rd;
-	// 	std::mt19937 gen(rd());
-	// 	std::normal_distribution<double> dist(0.0, percent/100);
-
-	// 	perturbate.name = original.name;
-	// 	perturbate.mass = original.mass*(1+dist(gen));
-	// 	perturbate.xyz[0] = original.xyz[0]*(1+dist(gen));
-	// 	perturbate.xyz[1] = original.xyz[1]*(1+dist(gen));
-	// 	perturbate.xyz[2] = original.xyz[2]*(1+dist(gen));
-	// 	perturbate.parI[0] = original.parI[0]*(1+dist(gen));
-	// 	perturbate.parI[1] = original.parI[1]*(1+dist(gen));
-	// 	perturbate.parI[2] = original.parI[2]*(1+dist(gen));
-	// 	perturbate.parI[3] = original.parI[3]*(1+dist(gen));
-	// 	perturbate.parI[4] = original.parI[4]*(1+dist(gen));
-	// 	perturbate.parI[5] = original.parI[5]*(1+dist(gen));
-	// }
 
 	void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
 
@@ -306,6 +186,9 @@ namespace thunder_ns{
 			linkNode[keys_[2]+"yy"] = link.parI[3];
 			linkNode[keys_[2]+"yz"] = link.parI[4];
 			linkNode[keys_[2]+"zz"] = link.parI[5];
+			// link friction
+			linkNode["Dl"] = link.Dl;
+			// std::cout<<"Dl_fill: " << link.Dl << std::endl;
 
 			emitter_ << YAML::BeginMap;
 			emitter_ << YAML::Key << nodeName;

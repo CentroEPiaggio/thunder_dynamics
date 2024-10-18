@@ -20,9 +20,6 @@ In particular generate code to compute for franka emika panda robot:
 #include <stdexcept>
 #include <chrono>
 
-// #include "library/RobKinAdv.h"
-// #include "library/RobReg.h"
-// #include "library/RobDyn.h"
 #include "utils.h"
 #include "robot.h"
 #include "kinematics.h"
@@ -30,7 +27,7 @@ In particular generate code to compute for franka emika panda robot:
 #include "regressors.h"
 
 #include <yaml-cpp/yaml.h>
-#include "urdf2dh_inertial.h"
+// #include "urdf2dh_inertial.h"
 #include "genYaml.h"
 
 using namespace thunder_ns;
@@ -40,6 +37,7 @@ using std::cout;
 using std::endl;
 
 bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
+bool COPY_GEN_CHRONO_FLAG = true; // used to copy generated files into thunder_robot_chrono project
 #define MU_JACOB 0.0
 
 // --- paths and files (default) --- //
@@ -52,14 +50,13 @@ const std::string PATH_THUNDER_ROBOT = "../thunder_robot_template/";
 const std::string PATH_COPY_H = "../../thunder_robot/library/";
 const std::string PATH_COPY_CPP = "../../thunder_robot/src/";
 const std::string PATH_COPY_YAML = "../../thunder_robot/robots/";
+const std::string PATH_COPY_CHRONO_H = "../../thunder_robot_chrono/library/";
+const std::string PATH_COPY_CHRONO_CPP = "../../thunder_robot_chrono/src/";
+const std::string PATH_COPY_CHRONO_YAML = "../../thunder_robot_chrono/robots/";
 
 int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
-	std::string jType;
-	Eigen::MatrixXd DH_table;
-	FrameOffset Base_to_L0;
-	FrameOffset Ln_to_EE;
 
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
@@ -104,53 +101,12 @@ int main(int argc, char* argv[]){
 	robot_name_gen = robot_name + "_gen";
 	path_gen = path_robot + robot_name + "_generatedFiles/";
 
-	// ---------------------------------- //
-	// ---------- YAML PARSING ---------- //
-	// ---------------------------------- //
-	try {
-		// --- load yaml --- //
-		YAML::Node config = YAML::LoadFile(config_file);
-
-		// Number of joints
-		YAML::Node num_joints = config["num_joints"];
-		nj = num_joints.as<double>();
-
-		// joints_type
-		YAML::Node type_joints = config["type_joints"];
-		jType = type_joints.as<std::string>();
-
-		// Denavit-Hartenberg
-		std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
-		DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-
-		// gravity
-		std::vector<double> gravity = config["gravity"].as<std::vector<double>>();
-
-		// frames offsets
-		YAML::Node frame_base = config["Base_to_L0"];
-		YAML::Node frame_ee = config["Ln_to_EE"];
-
-		std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
-		std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
-		Base_to_L0.set_translation(tr);
-		Base_to_L0.set_ypr(ypr);
-		Base_to_L0.set_gravity(gravity);
-
-		tr = frame_ee["tr"].as<std::vector<double>>();
-		ypr = frame_ee["ypr"].as<std::vector<double>>();
-		Ln_to_EE.set_translation(tr);
-		Ln_to_EE.set_ypr(ypr);
-
-	} catch (const YAML::Exception& e) {
-		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-		return 0;
-	}
-	// ---------- end parsing ---------- //
-
-	Robot robot(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
+	// --- Robot creation --- //
+	Robot robot = robot_from_file(config_file, 0);
 	compute_kinematics(robot);
 	compute_dynamics(robot);
 	compute_regressors(robot);
+	nj = robot.get_numJoints();
 
 	// --- Generate merge code --- //
 	std::string relativePath = path_gen;
@@ -179,7 +135,8 @@ int main(int argc, char* argv[]){
 	if (std::filesystem::is_directory(currentPath/"neededFiles")){
 		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
 		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
-		COPY_GEN_FLAG = false;
+		COPY_GEN_FLAG = false;	// not copy into thunder_robot if thunder is used from bin
+		COPY_GEN_CHRONO_FLAG = false;
 	}else{
 		std::cout<<"No neededFiles found, ok if you are using thunder from build!"<<std::endl;
 		// thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
@@ -245,6 +202,41 @@ int main(int argc, char* argv[]){
 		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
 		std::cout<<"Copied to thunder_robot!"<<std::endl;
+	}
+
+	// --- copy generated files in thunder_robot project --- //
+	if(COPY_GEN_CHRONO_FLAG){
+		// Problem here, on inertial_reg for sure!
+		std::filesystem::path sourcePath;
+		std::filesystem::path sourceDestPath;
+
+		// copy .h generated files
+		sourcePath = absolutePath + robot_name_gen + ".h";
+		sourceDestPath = PATH_COPY_CHRONO_H + robot_name_gen + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy .cpp generated files
+		sourcePath = absolutePath + robot_name_gen + ".cpp";
+		sourceDestPath = PATH_COPY_CHRONO_CPP + robot_name_gen + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		
+		// copy inertial files
+		sourcePath = absolutePath + robot_name + "_inertial_REG.yaml";
+		sourceDestPath = PATH_COPY_CHRONO_YAML + robot_name + "_inertial_REG.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = absolutePath + robot_name + "_inertial_DYN.yaml";
+		sourceDestPath = PATH_COPY_CHRONO_YAML + robot_name + "_inertial_DYN.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy thunder_robot
+		sourcePath = path_gen + "thunder_" + robot_name + ".h";
+		sourceDestPath = PATH_COPY_CHRONO_H + "thunder_" + robot_name + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = path_gen + "thunder_" + robot_name + ".cpp";
+		sourceDestPath = PATH_COPY_CHRONO_CPP + "thunder_" + robot_name + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		std::cout<<"Copied to thunder_robot_chrono!"<<std::endl;
 	}
 
 	// --- elapsed time --- //

@@ -8,7 +8,6 @@
 #include <eigen3/Eigen/Dense>
 #include "FrameOffset.h"
 #include "utils.h"
-// #include "CasadiObj.h"
 
 namespace thunder_ns{
 
@@ -17,7 +16,13 @@ namespace thunder_ns{
 	// 	std::vector<fun_obj> functions;
 	// };
 	// constexpr int N_PAR_LINK = 10;
+
+	// configuration struct
+	
+	typedef struct Config Config;
 	typedef struct fun_obj fun_obj;
+	Config load_config(std::string file);
+	Robot robot_from_file(std::string file, bool compute = 1);
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
@@ -31,16 +36,29 @@ namespace thunder_ns{
 			// void compute();
 
 		protected:
-			int _numJoints_;
-			int N_PAR_LINK;
+			int numJoints;
+			int numElasticJoints = 0;
+			// int PAR_DYN_LINK;
+			// int PAR_REG_LINK;
+			// int PAR_ELA_LINK;
+			// int numParDYN;
+			// int numParREG;
+			// int numParELA;
+			bool ELASTIC = false;
+			// std::vector<int> numParLink;
+			// int N_PAR_LINK;
 			/* Joints' type string */
-			std::string _jointsType_;
+			std::vector<std::string> jointsType;
+			std::vector<int> isElasticJoint;
+			// casadi::SX elasticSel;
 			/* Denavit-Hartenberg parameterization table */
-			Eigen::MatrixXd _DHtable_;
+			casadi::SX _DHtable_;
 			/* Frame offset between world-frame and link 0*/
 			FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
 			FrameOffset _Ln2EE_;
+			// elastic parameters
+			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
 			// casadi::SX gravity;
 			// Input of casadi function //
 			std::map<std::string, casadi::SX> args;
@@ -48,8 +66,8 @@ namespace thunder_ns{
 			std::map<std::string, std::vector<std::string>> fun_args;
 			std::map<std::string, std::string> fun_descr;
 			// Variable for joints angle //
-			casadi::SX _q_, _dq_, _dqr_, _ddqr_;
-			casadi::SX _par_KIN_, _par_DYN_, _par_REG_;
+			// casadi::SX q, dq, dqr, ddqr;
+			// casadi::SX _par_KIN_, par_DYN, par_REG, par_ELA;
 			casadi::SXVector _mass_vec_;
 			casadi::SXVector _distCM_;
 			casadi::SXVector _J_3x3_;
@@ -71,13 +89,13 @@ namespace thunder_ns{
 			// double _mu_;
 
 		public:
+			const int STD_PAR_LINK = 10;
 			/* Init variables
 			numJoints: number of joints
 			DHTable: Denavit-Hartenberg table format [a alpha d theta]
 			jtsType: is string of "R" and "P"
 			base_frame: is used to set transformation between link0 and world_frame */
-			Robot(const int numJoints, const std::string jointsType, const Eigen::MatrixXd& DHtable, 
-				FrameOffset& base_frame, FrameOffset& ee_frame);
+			Robot(const Config conf);
 			/* Destructor */
 			// ~Robot(){};
 
@@ -96,22 +114,52 @@ namespace thunder_ns{
 			Eigen::MatrixXd get(std::string name);
 			// get functions
 			int get_numJoints();
-			int get_numParLink();
-			std::string get_jointsType();
-			Eigen::MatrixXd get_DHTable();
+			// std::vector<int> get_numParLink();
+			// int get_numParLink(int i);
+			std::vector<std::string> get_jointsType();
+			casadi::SX get_DHTable();
 			FrameOffset get_world2L0();
 			FrameOffset get_Ln2EE();
-			// int get_N_PAR_LINK();
+			// int get_numParLink(int i);
+			bool get_ELASTIC();
+			int get_K_order();
+			int get_D_order();
+			int get_Dl_order();
+			int get_Dm_order();
 			Eigen::VectorXd get_par_DYN();
 			Eigen::VectorXd get_par_REG();
+			Eigen::VectorXd get_par_K();
+			Eigen::VectorXd get_par_D();
+			Eigen::VectorXd get_par_Dm();
+			Eigen::VectorXd get_par_Dl();
+			// Eigen::VectorXd get_par_ELA();
+			int get_numParDYN();
+			int get_numParREG();
+			// int get_numParELA();
+			std::vector<int> get_isElasticJoint();
+			int get_numElasticJoints();
 			// set functions
 			int set_arg(std::string name, Eigen::VectorXd);
 			int set_q(Eigen::VectorXd);
 			int set_dq(Eigen::VectorXd);
 			int set_dqr(Eigen::VectorXd);
 			int set_ddqr(Eigen::VectorXd);
+			int set_x(Eigen::VectorXd);
+			int set_dx(Eigen::VectorXd);
+			int set_ddxr(Eigen::VectorXd);
 			int set_par_DYN(Eigen::VectorXd);
 			int set_par_REG(Eigen::VectorXd);
+			int set_par_K(Eigen::VectorXd);
+			int set_par_D(Eigen::VectorXd);
+			int set_par_Dm(Eigen::VectorXd);
+			int set_par_Dl(Eigen::VectorXd);
+			// int set_par_ELA(Eigen::VectorXd);
+			// load functions
+			int load_par_DYN(std::string config_file);
+			int load_par_REG(std::string config_file);
+			int load_par_elastic(std::string file);
+			int update_inertial_DYN();
+			int update_inertial_REG();
 			// std::map<std::string, Eigen::MatrixXd> get;
 			// std::map<std::string, bool> valid;
 			// Eigen::VectorXd q, dq, dqr, ddqr;

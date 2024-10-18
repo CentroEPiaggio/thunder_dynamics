@@ -12,26 +12,26 @@ namespace thunder_ns{
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
   
-	casadi::SX DHTemplate(const Eigen::MatrixXd& rowDHTable, const casadi::SX qi, char jointType) {
+	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX qi, std::string jointType) {
 		
-		double a;
-		double alpha;
+		casadi::SX a;
+		casadi::SX alpha;
 		casadi::SX d;
 		casadi::SX theta;
 		
 		casadi::SX ct;      // cos(theta)
 		casadi::SX st;      // sin(theta)
-		double ca;          // cos(alpha)
-		double sa;          // sin(alpha)
+		casadi::SX ca;          // cos(alpha)
+		casadi::SX sa;          // sin(alpha)
 		
 		casadi::SX Ti(4,4); // output
 		
 		// Check
-		if (jointType == 'P') {
+		if ((jointType == "P")||(jointType == "P_SEA")) {
 			d = rowDHTable(2) + qi;
 			theta = rowDHTable(3);
 		}
-		else if (jointType == 'R') {
+		else if ((jointType == "R")||(jointType == "R_SEA")) {
 			d = rowDHTable(2);
 			theta = rowDHTable(3) + qi;
 		}
@@ -87,26 +87,27 @@ namespace thunder_ns{
 	int compute_chain(Robot& robot) {
 
 		// parameters from robot
-		auto _numJoints_ = robot.get_numJoints();
-		auto _jointsType_ = robot.get_jointsType();
+		auto numJoints = robot.get_numJoints();
+		auto jointsType = robot.get_jointsType();
 		auto _DHtable_ = robot.get_DHTable();
 		auto _world2L0_ = robot.get_world2L0();
 		auto _Ln2EE_ = robot.get_Ln2EE();
-		auto _q_ = robot.model["q"];
+		auto q = robot.model["q"];
 
 		// computing chain
-		casadi::SXVector Ti(_numJoints_);    // Output
-		casadi::SXVector T0i(_numJoints_+1);   // Output
+		casadi::SXVector Ti(numJoints);    // Output
+		casadi::SXVector T0i(numJoints+1);   // Output
+		casadi::Slice allCols(0,4);   
 	   
 		// Ti is transformation from link i-1 to link i
-		Ti[0] = DHTemplate(_DHtable_.row(0), _q_(0), _jointsType_[0]);
+		Ti[0] = DHTemplate(_DHtable_(0,allCols), q(0), jointsType[0]);
 		// T0i is transformation from link 0 to link i
 		T0i[0] = casadi::SX::mtimes({_world2L0_.get_transform(), Ti[0]});
 		if (!robot.add_function("T_0", Ti[0], {"q"}, "relative transformation from frame base to frame 1")) return 0;
 		if (!robot.add_function("T_0_0", T0i[0], {"q"}, "absolute transformation from frame base to frame 1")) return 0;
 
-		for (int i = 1; i < _numJoints_; i++) {
-			Ti[i] = DHTemplate(_DHtable_.row(i), _q_(i), _jointsType_[i]);
+		for (int i = 1; i < numJoints; i++) {
+			Ti[i] = DHTemplate(_DHtable_(i,allCols), q(i), jointsType[i]);
 			T0i[i] = casadi::SX::mtimes({T0i[i-1], Ti[i]});
 			
 			if (!robot.add_function("T_"+std::to_string(i), Ti[i], {"q"}, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
@@ -114,10 +115,10 @@ namespace thunder_ns{
 		}
 
 		// end-effector transform
-		T0i[_numJoints_] = casadi::SX::mtimes({T0i[_numJoints_-1], _Ln2EE_.get_transform()});
+		T0i[numJoints] = casadi::SX::mtimes({T0i[numJoints-1], _Ln2EE_.get_transform()});
 
-		if (!robot.add_function("T_0_"+std::to_string(_numJoints_), T0i[_numJoints_], {"q"}, "absolute transformation from frame base to end_effector")) return 0;
-		if (!robot.add_function("T_0_ee", T0i[_numJoints_], {"q"}, "absolute transformation from frame 0 to end_effector")) return 0;
+		if (!robot.add_function("T_0_"+std::to_string(numJoints), T0i[numJoints], {"q"}, "absolute transformation from frame base to end_effector")) return 0;
+		if (!robot.add_function("T_0_ee", T0i[numJoints], {"q"}, "absolute transformation from frame 0 to end_effector")) return 0;
 		// std::cout<<"functions created"<<std::endl;
 
 		return 1;
@@ -127,11 +128,11 @@ namespace thunder_ns{
 
 		// parameters from robot
 		int nj = robot.get_numJoints();
-		auto _jointsType_ = robot.get_jointsType();
+		auto jointsType = robot.get_jointsType();
 		auto _world2L0_ = robot.get_world2L0();
 		auto _Ln2EE_ = robot.get_Ln2EE();
 		// auto _DHtable_ = robot.get_DHTable();
-		auto _q_ = robot.model["q"];
+		auto q = robot.model["q"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -166,9 +167,9 @@ namespace thunder_ns{
 			// std::cout << "O_0i: " << O_0i << std::endl;
 
 			// First column of jacobian
-			if (_jointsType_[0] == 'P') {
+			if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
 				Ji_pos(allRows,0) = k0;
-			} else if (_jointsType_[0] == 'R') {
+			} else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
 				Ji_pos(allRows,0) = mtimes(hat(k0),O_0i);
 				// std::cout << "Ji_pos: " << Ji_pos << std::endl;
 				Ji_or(allRows,0) = k0;
@@ -194,9 +195,9 @@ namespace thunder_ns{
 				// std::cout << "T_0j_1: " << T_0j_1 << std::endl;
 				// std::cout << "O_j_1i: " << O_j_1i << std::endl;
 
-				if (_jointsType_[j] == 'P') {
+				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
 					Ji_pos(allRows, j) = kj_1;
-				} else if (_jointsType_[j] == 'R') {
+				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
 					Ji_pos(allRows, j) = mtimes(hat(kj_1),O_j_1i);
 					// std::cout << "Ji_pos: " << Ji_pos << std::endl;
 					Ji_or(allRows, j) = kj_1;
@@ -238,13 +239,13 @@ namespace thunder_ns{
 		if (robot.model.count("J_ee") == 0){
 			compute_jacobians(robot);
 		}
-		casadi::SX _q_ = robot.model["q"];
-		casadi::SX _dq_ = robot.model["dq"];
+		casadi::SX q = robot.model["q"];
+		casadi::SX dq = robot.model["dq"];
 		casadi::SX Jn = robot.model["J_ee"];
 
 		// jacobian derivatives
-		casadi::SX dJn = casadi::SX::jtimes(Jn,_q_,_dq_);
-		// casadi::SX ddJn = casadi::SX::jtimes(dJn,_q_,_dq_) + casadi::SX::jtimes(dJn,_dq_,_ddq_);
+		casadi::SX dJn = casadi::SX::jtimes(Jn,q,dq);
+		// casadi::SX ddJn = casadi::SX::jtimes(dJn,q,dq) + casadi::SX::jtimes(dJn,dq,_ddq_);
 		robot.add_function("J_ee_dot", dJn, {"q","dq"}, "Time derivative of jacobian matrix");
 
 		// jacobian inverse

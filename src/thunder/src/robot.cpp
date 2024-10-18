@@ -1,5 +1,8 @@
+#include <yaml-cpp/yaml.h>
 #include "../library/robot.h"
 #include "../library/kinematics.h"
+#include "../library/dynamics.h"
+#include "../library/regressors.h"
 #include "../library/utils.h"
 
 /* File name of generated code */
@@ -13,7 +16,8 @@
 // #define MU 0.02
 // #define N_PAR_LINK = 10
 
-using namespace std;
+using std::cout;
+using std::endl;
 
 namespace thunder_ns{
 
@@ -21,15 +25,48 @@ namespace thunder_ns{
 	// constexpr unsigned int N_PAR_LINK = 10; // number of link+joint parameters
 	// constexpr unsigned int NUMBER_FUNCTIONS = 10; // number of generable functions
 
-	Robot::Robot(const int numJoints, const std::string jointsType, const Eigen::MatrixXd& DHtable, FrameOffset& base_frame, FrameOffset& ee_frame){
-		_numJoints_ = numJoints;
-		N_PAR_LINK = 10;
-		_jointsType_ = jointsType;
-		_DHtable_ = DHtable;
-		_world2L0_ = base_frame;
+	Robot::Robot(const Config conf){
+		numJoints = conf.numJoints;
+		jointsType = conf.jointsType;
+		// numParLink.resize(numJoints);
+		ELASTIC = conf.ELASTIC;
+		K_order = conf.K_order;
+		D_order = conf.D_order;
+		Dl_order = conf.Dl_order;
+		Dm_order = conf.Dm_order;
+		// obtain number of parameters
+		// PAR_DYN_LINK = STD_PAR_LINK + Dl_order;
+		// PAR_REG_LINK = STD_PAR_LINK + Dl_order;
+		// PAR_ELA_LINK = K_order + D_order + Dm_order;
+		// numParDYN = STD_PAR_LINK*numJoints;
+		// numParREG = numParDYN;
+		if (jointsType.size()!=numJoints){
+			// problem on number of joints or joints type !!!
+			// --- To handle!!! --- //
+		}
+		numElasticJoints = 0;
+		isElasticJoint.resize(numJoints);
+		// elasticSel = casadi::SX::zeros(numJoints,numJoints);
+		for (int i=0; i<numJoints; i++){
+			isElasticJoint[i] = 0;
+			// numParLink[i] = STD_PAR_LINK;
+			if ((jointsType[i] == "R_SEA")||(jointsType[i] == "P_SEA")) {
+				// numParELA += K_order + D_order + Dm_order;
+				// numParLink[i] += K_order + D_order;
+				isElasticJoint[i] = 1;
+				numElasticJoints++;
+				// elasticSel(i,i) = 1;
+			}
+		}
+		// numParELA = numElasticJoints*(PAR_ELA_LINK);
+
+		// N_PAR_LINK = 10;
+		// jointsType = jointsType;
+		_DHtable_ = conf.DHtable;
+		_world2L0_ = conf.base_frame;
 		// N_PAR_LINK = 10;
 		// gravity = base_frame.get_gravity();
-		_Ln2EE_ = ee_frame;
+		_Ln2EE_ = conf.ee_frame;
 		valid = 1;
 		// _mu_ = MU;
 
@@ -38,90 +75,68 @@ namespace thunder_ns{
 	}
 
 	void Robot::initVarsFuns(){
-		
-		if (_DHtable_.rows() != _numJoints_ || _DHtable_.cols() != 4){
+		if (_DHtable_.rows() != numJoints || _DHtable_.columns() != 4){
 			throw std::runtime_error("DHTemplate: Error size of DH table");
 		}
-		if ((int)_jointsType_.size()!=_numJoints_){
+		if ((int)jointsType.size()!=numJoints){
 			throw std::runtime_error("DHFwkinJoints: Error size of joints string");
 		}
 
-		_q_ = casadi::SX::sym("_q_", _numJoints_,1);
-		_dq_ = casadi::SX::sym("_dq_", _numJoints_,1);
-		_dqr_ = casadi::SX::sym("_dqr_", _numJoints_,1);
-		_ddqr_ = casadi::SX::sym("_ddqr_", _numJoints_,1);
-		// _par_KIN_ = casadi::SX::sym("_par_DYN_", N_PAR_KIN,1);
-		_par_DYN_ = casadi::SX::sym("_par_DYN_", N_PAR_LINK*_numJoints_,1);
-		_par_REG_ = casadi::SX::sym("_par_REG_", N_PAR_LINK*_numJoints_,1);
+		casadi::SX q = casadi::SX::sym("q", numJoints,1);
+		casadi::SX dq = casadi::SX::sym("dq", numJoints,1);
+		casadi::SX dqr = casadi::SX::sym("dqr", numJoints,1);
+		casadi::SX ddqr = casadi::SX::sym("ddqr", numJoints,1);
+		casadi::SX x = casadi::SX::sym("x", numElasticJoints,1);
+		casadi::SX dx = casadi::SX::sym("dx", numElasticJoints,1);
+		casadi::SX ddxr = casadi::SX::sym("ddxr", numElasticJoints,1);
+		// _par_KIN_ = casadi::SX::sym("par_DYN", N_PAR_KIN,1);
+		casadi::SX par_DYN = casadi::SX::sym("par_DYN", STD_PAR_LINK*numJoints,1);
+		casadi::SX par_REG = casadi::SX::sym("par_REG", STD_PAR_LINK*numJoints,1);
+		casadi::SX par_Dl = casadi::SX::sym("par_Dl", numJoints*Dl_order,1);
+		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
+		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
+		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
 		
 		// model update
-		model.insert({"q", _q_});
-		model.insert({"dq", _dq_});
-		model.insert({"dqr", _dqr_});
-		model.insert({"ddqr", _ddqr_});
+		model.insert({"q", q});
+		model.insert({"dq", dq});
+		model.insert({"dqr", dqr});
+		model.insert({"ddqr", ddqr});
 		// model.insert({"par_KIN", _par_KIN_});
-		model.insert({"par_DYN", _par_DYN_});
-		model.insert({"par_REG", _par_REG_});
+		model.insert({"par_DYN", par_DYN});
+		model.insert({"par_REG", par_REG});
+		if (Dl_order > 0){
+			model.insert({"par_Dl", par_Dl});
+		}
+		if (ELASTIC){
+			model.insert({"x", x});
+			model.insert({"dx", dx});
+			model.insert({"ddxr", ddxr});
+			model.insert({"par_K", par_K});
+			model.insert({"par_D", par_D});
+			model.insert({"par_Dm", par_Dm});
+		}
 
-		// functions update
-		// casadi_fun.insert
-
-		// numerical values
-		// q = Eigen::VectorXd::Zero(_numJoints_,1);
-		// dq = Eigen::VectorXd::Zero(_numJoints_,1);
-		// dqr = Eigen::VectorXd::Zero(_numJoints_,1);
-		// ddqr = Eigen::VectorXd::Zero(_numJoints_,1);
-		// par_DYN = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
-		// par_REG = Eigen::VectorXd::Zero(N_PAR_LINK*_numJoints_);
-		args.insert({"q", casadi::SX::zeros(_numJoints_,1)});
-		args.insert({"dq", casadi::SX::zeros(_numJoints_,1)});
-		args.insert({"dqr", casadi::SX::zeros(_numJoints_,1)});
-		args.insert({"ddqr", casadi::SX::zeros(_numJoints_,1)});
+		args.insert({"q", casadi::SX::zeros(numJoints)});
+		args.insert({"dq", casadi::SX::zeros(numJoints)});
+		args.insert({"dqr", casadi::SX::zeros(numJoints)});
+		args.insert({"ddqr", casadi::SX::zeros(numJoints)});
 		// args.insert({"par_KIN", par_KIN});
-		args.insert({"par_DYN", casadi::SX::zeros(N_PAR_LINK*_numJoints_)});
-		args.insert({"par_REG", casadi::SX::zeros(N_PAR_LINK*_numJoints_)});
-		
-		// make args a map?
-		// 0: q, 1: dq, 2: dqr, 3: ddqr, 4: par_DYN
-		// args.resize(5);
-		// for(int i=0; i<args.size(); i++){
-		// 	args[i].resize(_numJoints_,1);
-		// }
-		// args[4].resize(N_PAR_LINK*_numJoints_,1);
-	
-		// kinematic_res.resize(1);
-		// jacobian_res.resize(1);
-		// dotJacobian_res.resize(1);
-		// pinvJacobian_res.resize(1);
-		// pinvJacobianPos_res.resize(1);
-		// dotPinvJacobian_res.resize(1);
-		// dotPinvJacobianPos_res.resize(1);
-		// mass_res.resize(1);
-		// coriolis_res.resize(1);
-		// gravity_res.resize(1);
-
-		// init_fun_names();
-
-		// init_casadi_functions();
+		args.insert({"par_DYN", casadi::SX::zeros(STD_PAR_LINK*numJoints)});
+		args.insert({"par_REG", casadi::SX::zeros(STD_PAR_LINK*numJoints)});
+		if (Dl_order > 0){
+			args.insert({"par_Dl", casadi::SX::zeros(Dl_order*numJoints)});
+		}
+		if (ELASTIC){
+			args.insert({"x", casadi::SX::zeros(numElasticJoints)});
+			args.insert({"dx", casadi::SX::zeros(numElasticJoints)});
+			args.insert({"ddxr", casadi::SX::zeros(numElasticJoints)});
+			args.insert({"par_K", casadi::SX::zeros(K_order*numElasticJoints)});
+			args.insert({"par_D", casadi::SX::zeros(D_order*numElasticJoints)});
+			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints)});
+		}
+		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
 	}
-
-	// void Robot::init_fun_names(){
-
-	// }
-
-	// void Robot::init_casadi_functions(){
-	// 	// functions have to be added by various modules
-	// 	DHKin();
-	// 	DHJac();
-	// 	DHDotJac();
-	// 	DHPinvJac();
-	// 	DHPinvJacPos();
-	// 	DHDotPinvJac();
-	// 	DHDotPinvJacPos();
-	// 	DHKin();
-	// 	DHJac();
-	// 	mass_coriolis_gravity();
-	// }
 
 	Eigen::MatrixXd Robot::get(std::string name){
 		std::vector<casadi::SX> result;
@@ -167,15 +182,14 @@ namespace thunder_ns{
 		for (int i=0; i<sz; i++){
 			arg(i) = value(i);
 		}
-		// if name==par_DYN or par_REG change also the other one!!
 
 		return 1;
 	}
 
 	int Robot::set_q(Eigen::VectorXd value){
 		casadi::SX& q = args["q"];
-		if (value.size() == _numJoints_){
-			for (int i=0; i<_numJoints_; i++){
+		if (value.size() == numJoints){
+			for (int i=0; i<numJoints; i++){
 				q(i) = value(i);
 			}
 			return 1;
@@ -187,8 +201,8 @@ namespace thunder_ns{
 
 	int Robot::set_dq(Eigen::VectorXd value){
 		casadi::SX& dq = args["dq"];
-		if (value.size() == _numJoints_){
-			for (int i=0; i<_numJoints_; i++){
+		if (value.size() == numJoints){
+			for (int i=0; i<numJoints; i++){
 				dq(i) = value(i);
 			}
 			return 1;
@@ -200,8 +214,8 @@ namespace thunder_ns{
 
 	int Robot::set_dqr(Eigen::VectorXd value){
 		casadi::SX& dqr = args["dqr"];
-		if (value.size() == _numJoints_){
-			for (int i=0; i<_numJoints_; i++){
+		if (value.size() == numJoints){
+			for (int i=0; i<numJoints; i++){
 				dqr(i) = value(i);
 			}
 			return 1;
@@ -213,9 +227,48 @@ namespace thunder_ns{
 
 	int Robot::set_ddqr(Eigen::VectorXd value){
 		casadi::SX& ddqr = args["ddqr"];
-		if (value.size() == _numJoints_){
-			for (int i=0; i<_numJoints_; i++){
+		if (value.size() == numJoints){
+			for (int i=0; i<numJoints; i++){
 				ddqr(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_x(Eigen::VectorXd value){
+		casadi::SX& x = args["x"];
+		if (value.size() == numElasticJoints){
+			for (int i=0; i<numElasticJoints; i++){
+				x(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_dx(Eigen::VectorXd value){
+		casadi::SX& dx = args["dx"];
+		if (value.size() == numElasticJoints){
+			for (int i=0; i<numElasticJoints; i++){
+				dx(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_ddxr(Eigen::VectorXd value){
+		casadi::SX& ddxr = args["ddxr"];
+		if (value.size() == numElasticJoints){
+			for (int i=0; i<numElasticJoints; i++){
+				ddxr(i) = value(i);
 			}
 			return 1;
 		} else {
@@ -226,8 +279,9 @@ namespace thunder_ns{
 
 	int Robot::set_par_DYN(Eigen::VectorXd value){
 		casadi::SX& par_DYN = args["par_DYN"];
-		if (value.size() == N_PAR_LINK*_numJoints_){
-			for (int i=0; i<N_PAR_LINK*_numJoints_; i++){
+		int numPar = STD_PAR_LINK*numJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
 				par_DYN(i) = value(i);
 			}
 			return 1;
@@ -236,12 +290,14 @@ namespace thunder_ns{
 			return 0;
 		}
 		// change par_REG
+		update_inertial_REG();
 	}
 
 	int Robot::set_par_REG(Eigen::VectorXd value){
 		casadi::SX& par_REG = args["par_REG"];
-		if (value.size() == N_PAR_LINK*_numJoints_){
-			for (int i=0; i<N_PAR_LINK*_numJoints_; i++){
+		int numPar = STD_PAR_LINK*numJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
 				par_REG(i) = value(i);
 			}
 			return 1;
@@ -249,65 +305,118 @@ namespace thunder_ns{
 			std::cout<<"in setArguments: invalid dimensions of arguments\n";
 			return 0;
 		}
-		// change par_DYN
+		update_inertial_DYN();
+	}
+
+	int Robot::set_par_K(Eigen::VectorXd value){
+		casadi::SX& par_K = args["par_K"];
+		int numPar = K_order*numElasticJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
+				par_K(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_par_D(Eigen::VectorXd value){
+		casadi::SX& par_D = args["par_D"];
+		int numPar = D_order*numElasticJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
+				par_D(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_par_Dm(Eigen::VectorXd value){
+		casadi::SX& par_Dm = args["par_Dm"];
+		int numPar = Dm_order*numElasticJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
+				par_Dm(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_par_Dl(Eigen::VectorXd value){
+		casadi::SX& par_Dl = args["par_Dl"];
+		int numPar = Dl_order*numJoints;
+		if (value.size() == numPar){
+			for (int i=0; i<numPar; i++){
+				par_Dl(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
 	}
 
 	Eigen::VectorXd Robot::get_par_DYN(){
 		const casadi::SX& par_DYN_casadi = args["par_DYN"];
-		int sz = N_PAR_LINK*_numJoints_;
-		Eigen::VectorXd par_DYN(sz);
+		int numPar = STD_PAR_LINK*numJoints;
+		Eigen::VectorXd param_DYN(numPar);
 		std::vector<casadi::SXElem> res_elements = par_DYN_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), par_DYN.data(), mapFunction);
-		return par_DYN;
+		std::transform(res_elements.begin(), res_elements.end(), param_DYN.data(), mapFunction);
+		return param_DYN;
 	}
 
 	Eigen::VectorXd Robot::get_par_REG(){
 		const casadi::SX& par_REG_casadi = args["par_REG"];
-		int sz = N_PAR_LINK*_numJoints_;
-		Eigen::VectorXd par_REG(sz);
+		int numPar = STD_PAR_LINK*numJoints;
+		Eigen::VectorXd param_REG(numPar);
 		std::vector<casadi::SXElem> res_elements = par_REG_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), par_REG.data(), mapFunction);
-		return par_REG;
+		std::transform(res_elements.begin(), res_elements.end(), param_REG.data(), mapFunction);
+		return param_REG;
 	}
 
-	// void Robot::compute(){
-	// 	for(int i=0; i<_numJoints_; i++){
-	// 		args[0](i,0) = q(i);
-	// 		args[1](i,0) = dq(i);
-	// 		args[2](i,0) = dqr(i);
-	// 		args[3](i,0) = ddqr(i);
-	// 	}
-	// 	for(int i=0; i<N_PAR_LINK*_numJoints_; i++){
-	// 		args[4](i,0) = par_DYN(i);
-	// 	}
+	Eigen::VectorXd Robot::get_par_K(){
+		const casadi::SX& par_K_casadi = args["par_K"];
+		int numPar = K_order*numElasticJoints;
+		Eigen::VectorXd param_K(numPar);
+		std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
+		return param_K;
+	}
 
-	// 	kinematic_fun.call({args[0]},kinematic_res);
-	// 	jacobian_fun.call({args[0]},jacobian_res);
-	// 	dotJacobian_fun.call({args[0],args[1]},dotJacobian_res);
-	// 	pinvJacobian_fun.call({args[0]},pinvJacobian_res);
-	// 	pinvJacobianPos_fun.call({args[0]},pinvJacobianPos_res);
-	// 	dotPinvJacobian_fun.call({args[0],args[1]},dotPinvJacobian_res);
-	// 	dotPinvJacobianPos_fun.call({args[0],args[1]},dotPinvJacobianPos_res); 
-	// 	mass_fun.call({args[0],args[4]},mass_res);
-	// 	coriolis_fun.call({args[0],args[1],args[4]},coriolis_res);
-	// 	gravity_fun.call({args[0],args[4]},gravity_res);   
-	// }
+	Eigen::VectorXd Robot::get_par_D(){
+		const casadi::SX& par_D_casadi = args["par_D"];
+		int numPar = D_order*numElasticJoints;
+		Eigen::VectorXd param_D(numPar);
+		std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
+		return param_D;
+	}
 
-    // void Robot::generate_code(std::string& savePath){
-		
-	// 	// Options for c-code auto generation
-	// 	casadi::Dict opts = casadi::Dict();
-	// 	opts["cpp"] = true;
-	// 	opts["with_header"] = true;
-		
-	// 	// generate functions in c code
-	// 	casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(GENERATED_FILE, opts);
-	// 	for (const auto& f : casadi_fun) {
-	// 		myCodeGen.add(f.second);
-	// 	}
+	Eigen::VectorXd Robot::get_par_Dm(){
+		const casadi::SX& par_Dm_casadi = args["par_Dm"];
+		int numPar = Dm_order*numElasticJoints;
+		Eigen::VectorXd param_Dm(numPar);
+		std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
+		return param_Dm;
+	}
 
-	// 	myCodeGen.generate(savePath);
-	// }
+	Eigen::VectorXd Robot::get_par_Dl(){
+		const casadi::SX& par_Dl_casadi = args["par_Dl"];
+		int numPar = Dl_order*numJoints;
+		Eigen::VectorXd param_Dl(numPar);
+		std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
+		return param_Dl;
+	}
 
 	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
 		std::vector<fun_obj> functions;
@@ -331,40 +440,43 @@ namespace thunder_ns{
 		return functions;
 	}
 
-	// std::vector<casadi::Function> Robot::getCasadiFunctions() {
-		
-	// 	std::vector<casadi::Function> casadi_functions;
-	// 	int sz = functions.size();
-	// 	casadi_functions.resize(sz);
+	int Robot::get_numJoints(){
+		return numJoints;
+	}
 
-	// 	// casadi_funs[0] = kinematic_fun;
-	// 	// casadi_funs[1] = jacobian_fun;
-	// 	// casadi_funs[2] = dotJacobian_fun; 
-	// 	// casadi_funs[3] = pinvJacobian_fun;
-	// 	// casadi_funs[4] = pinvJacobianPos_fun;
-	// 	// casadi_funs[5] = dotPinvJacobian_fun;
-	// 	// casadi_funs[6] = dotPinvJacobianPos_fun;
+	bool Robot::get_ELASTIC(){ return ELASTIC;	};
+	int Robot::get_K_order(){ return K_order; };
+	int Robot::get_D_order(){ return D_order; };
+	int Robot::get_Dl_order(){ return Dl_order; };
+	int Robot::get_Dm_order(){ return Dm_order; };
+	int Robot::get_numElasticJoints(){ return numElasticJoints; };
+	std::vector<int> Robot::get_isElasticJoint(){ return isElasticJoint; };
 
-	// 	for (int i=0; i<sz; i++){
-	// 		casadi_functions[i] = functions[i].fun;
-	// 	}
-
-	// 	return casadi_functions;
+	// std::vector<int> Robot::get_numParLink(){
+	// 	return numParLink;
 	// }
 
-	int Robot::get_numJoints(){
-		return _numJoints_;
+	// int Robot::get_numParLink(int i){
+	// 	return numParLink[i];
+	// }
+
+	int Robot::get_numParDYN(){
+		return STD_PAR_LINK*numJoints;
 	}
 
-	int Robot::get_numParLink(){
-		return N_PAR_LINK;
+	int Robot::get_numParREG(){
+		return STD_PAR_LINK*numJoints;
 	}
 
-	std::string Robot::get_jointsType(){
-		return _jointsType_;
+	// int Robot::get_numParELA(){
+	// 	return numParELA;
+	// }
+
+	std::vector<std::string> Robot::get_jointsType(){
+		return jointsType;
 	}
 
-	Eigen::MatrixXd Robot::get_DHTable(){
+	casadi::SX Robot::get_DHTable(){
 		return _DHtable_;
 	}
 
@@ -376,13 +488,206 @@ namespace thunder_ns{
 		return _Ln2EE_;
 	}
 
-	// int Robot::get_N_PAR_LINK(){
-	// 	return N_PAR_LINK;
-	// }
+	int Robot::load_par_DYN(std::string file){
+		// Eigen::VectorXd param_DYN;
+		casadi::SX param_DYN(STD_PAR_LINK*numJoints,1);
+		casadi::SX param_Dl(Dl_order*numJoints,1);
+		// ----- parsing yaml inertial ----- //
+		try {
+			// load yaml
+			YAML::Node config_file = YAML::LoadFile(file);
+			// load inertial
+			YAML::Node inertial = config_file["inertial"];
+			int i = 0;
+			for (const auto& node : inertial) {
+				
+				if (i==numJoints) break;
+				std::string linkName = node.first.as<std::string>();
 
-	// void Robot::update(){
-	// 	// update the map get[] with the casadi functions
-	// }
+				// standard parameters
+				param_DYN(STD_PAR_LINK*i) = node.second["mass"].as<double>();
+				param_DYN(STD_PAR_LINK*i+1) = node.second["CoM_x"].as<double>();
+				param_DYN(STD_PAR_LINK*i+2) = node.second["CoM_y"].as<double>();
+				param_DYN(STD_PAR_LINK*i+3) = node.second["CoM_z"].as<double>();
+				param_DYN(STD_PAR_LINK*i+4) = node.second["Ixx"].as<double>();
+				param_DYN(STD_PAR_LINK*i+5) = node.second["Ixy"].as<double>();
+				param_DYN(STD_PAR_LINK*i+6) = node.second["Ixz"].as<double>();
+				param_DYN(STD_PAR_LINK*i+7) = node.second["Iyy"].as<double>();
+				param_DYN(STD_PAR_LINK*i+8) = node.second["Iyz"].as<double>();
+				param_DYN(STD_PAR_LINK*i+9) = node.second["Izz"].as<double>();
+				
+				// link friction
+				if (node.second["Dl"]){
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+					for (int j=0; j<Dl_order; j++){
+						param_Dl(Dl_order*i + j) = Dl[j];
+					}
+				}
+
+				i++;
+			}
+			// std::cout<<"YAML_DH letto"<<std::endl;
+			// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		}
+		args["par_DYN"] = param_DYN;
+		if (Dl_order > 0) args["par_Dl"] = param_Dl;
+		update_inertial_REG();
+		return 1;
+	}
+
+	int Robot::load_par_REG(std::string file){
+		// Eigen::VectorXd param_REG;
+		casadi::SX param_REG(STD_PAR_LINK*numJoints,1);
+		casadi::SX param_Dl(Dl_order*numJoints,1);
+		// casadi::SX::zeros(numJoints,1)
+		// ----- parsing yaml inertial ----- //
+		try {
+			// load yaml
+			YAML::Node config_file = YAML::LoadFile(file);
+			// load inertial
+			YAML::Node inertial = config_file["inertial"];
+			int i = 0;
+			for (const auto& node : inertial) {
+				
+				if (i==numJoints) break;
+				std::string linkName = node.first.as<std::string>();
+				
+				// standard parameters
+				param_REG(STD_PAR_LINK*i) = node.second["mass"].as<double>();
+				param_REG(STD_PAR_LINK*i+1) = node.second["m_CoM_x"].as<double>();
+				param_REG(STD_PAR_LINK*i+2) = node.second["m_CoM_y"].as<double>();
+				param_REG(STD_PAR_LINK*i+3) = node.second["m_CoM_z"].as<double>();
+				param_REG(STD_PAR_LINK*i+4) = node.second["Ixx"].as<double>();
+				param_REG(STD_PAR_LINK*i+5) = node.second["Ixy"].as<double>();
+				param_REG(STD_PAR_LINK*i+6) = node.second["Ixz"].as<double>();
+				param_REG(STD_PAR_LINK*i+7) = node.second["Iyy"].as<double>();
+				param_REG(STD_PAR_LINK*i+8) = node.second["Iyz"].as<double>();
+				param_REG(STD_PAR_LINK*i+9) = node.second["Izz"].as<double>();
+
+				// link friction
+				if (node.second["Dl"]){
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+					for (int j=0; j<Dl_order; j++){
+						param_Dl(Dl_order*i + j) = Dl[j];
+					}
+				}
+
+				i++;
+			}
+			// std::cout<<"YAML_DH letto"<<std::endl;
+			// std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		}
+		args["par_REG"] = param_REG;
+		if (Dl_order > 0) args["par_Dl"] = param_Dl;
+		update_inertial_DYN();
+		return 1;
+	}
+
+	// to modify this file, load_par_elastic
+	int Robot::load_par_elastic(std::string file){
+		casadi::SX param_K(numElasticJoints*K_order,1);
+		casadi::SX param_D(numElasticJoints*D_order,1);
+		casadi::SX param_Dm(numElasticJoints*Dm_order,1);
+		// ----- parsing yaml elastic ----- //
+		try {
+			// load yaml
+			YAML::Node config_file = YAML::LoadFile(file);
+			// parse elastic
+			YAML::Node elastic = config_file["elastic"];
+			int i = 0;
+			for (const auto& node : elastic["joints"]) {
+				
+				if (i==numElasticJoints) break;
+				std::string jointName = node.first.as<std::string>();
+				// stiffness
+				for (int j=0; j<K_order; j++){
+					std::vector<double> K = node.second["K"].as<std::vector<double>>();
+					param_K(K_order*i+j) = K[j];
+				}
+				// coupling friction
+				for (int j=0; j<D_order; j++){
+					std::vector<double> D = node.second["D"].as<std::vector<double>>();
+					param_D(D_order*i + j) = D[j];
+				}
+				// motor friction
+				for (int j=0; j<Dm_order; j++){
+					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
+					param_Dm(Dm_order*i + j) = Dm[j];
+				}
+
+				i++;
+			}
+			// std::cout<<"YAML_DH letto"<<std::endl;
+			// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		}
+		args["par_K"] = param_K;
+		args["par_D"] = param_D;
+		args["par_Dm"] = param_Dm;
+		return 1;
+	}
+
+	int Robot::update_inertial_DYN(){
+		// not efficient, should be made in casadi
+		Eigen::VectorXd param_REG = get_par_REG();
+		Eigen::VectorXd param_DYN(STD_PAR_LINK*numJoints);
+		for (int i=0; i<numJoints; i++){
+			Eigen::VectorXd p_reg = param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
+			double mass = p_reg(0);
+			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
+			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
+			Eigen::Matrix<double, 6, 1> I_tmp_v;
+			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
+			Eigen::Matrix<double, 6, 1> I;
+			I << p_reg(4), p_reg(5), p_reg(6), p_reg(7), p_reg(8), p_reg(9);
+			// Eigen::VectorXd Dl;
+			// Dl.resize(Dl_order);
+			// for(int j=0; j<Dl_order; j++){
+			// 	Dl(j) = param_REG(STD_PAR_LINK*i + STD_PAR_LINK + j);
+			// }
+			param_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I-I_tmp_v;
+		}
+		set_par_DYN(param_DYN);
+		return 1;
+	}
+
+	int Robot::update_inertial_REG(){
+		// not efficient, should be made in casadi
+		Eigen::VectorXd param_DYN = get_par_DYN();
+		// cout<<"param_DYN:"<<endl<<param_DYN<<endl<<endl;
+		Eigen::VectorXd param_REG(STD_PAR_LINK*numJoints);
+		for (int i=0; i<numJoints; i++){
+			Eigen::VectorXd p_dyn = param_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK);
+			// cout<<"p_dyn:"<<endl<<p_dyn<<endl<<endl;
+			double mass = p_dyn(0);
+			Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
+			// cout<<"CoM:"<<endl<<CoM<<endl<<endl;
+			Eigen::Vector3d m_CoM = mass * CoM;
+			// cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
+			Eigen::Matrix3d I_tmp = mass * (hat(CoM) * hat(CoM).transpose());
+			// cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
+			Eigen::Matrix<double, 6, 1> I_tmp_v;
+			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
+			// cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
+			Eigen::Matrix<double, 6, 1> I;
+			I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
+			// cout<<"I:"<<endl<<I<<endl<<endl;
+			// cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
+			// Eigen::VectorXd Dl;
+			// Dl.resize(Dl_order);
+			// for(int j=0; j<Dl_order; j++){
+			// 	Dl(j) = param_DYN(STD_PAR_LINK*i + STD_PAR_LINK + j);
+			// }
+			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I+I_tmp_v;
+		}
+		set_par_REG(param_REG);
+		return 1;
+	}
 
 	int Robot::add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr){
 		// maybe directly model[name] = ...?
@@ -429,5 +734,98 @@ namespace thunder_ns{
 		}
 		myCodeGen.generate(savePath);
 	}
+
+	Config load_config(std::string file){
+		int nj;
+		FrameOffset Base_to_L0;
+		FrameOffset Ln_to_EE;
+		Config conf;
+		// ----- parsing yaml file ----- //
+		try {
+			// load yaml
+			YAML::Node config_file = YAML::LoadFile(file);
+
+			// Number of joints
+			nj = config_file["num_joints"].as<int>();
+			conf.numJoints = nj;
+
+			// joints_type
+			// YAML::Node type_joints = config_file["type_joints"];
+			// jType = type_joints.as<std::string>();
+			conf.jointsType = config_file["type_joints"].as<std::vector<std::string>>();
+			std::vector<std::string> jType = conf.jointsType;
+
+			if (config_file["Dl_order"]) conf.Dl_order = config_file["Dl_order"].as<int>();
+			if (config_file["ELASTIC_MODEL"]){
+				conf.ELASTIC = config_file["ELASTIC_MODEL"].as<bool>();
+				if (conf.ELASTIC){
+					conf.K_order = config_file["elastic"]["K_order"].as<int>();
+					conf.D_order = config_file["elastic"]["D_order"].as<int>();
+					conf.Dm_order = config_file["elastic"]["Dm_order"].as<int>();
+				}
+			}
+			// Denavit-Hartenberg
+			std::vector<double> dh_vect = config_file["DH"].as<std::vector<double>>();
+			// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			casadi::SX DHtable_tmp(nj,4);
+			for (int i=0; i<nj; i++){
+				for (int j=0; j<4; j++){
+					DHtable_tmp(i,j) = dh_vect[4*i + j];
+				}
+			}
+			conf.DHtable = DHtable_tmp;
+
+			// gravity
+			std::vector<double> gravity = config_file["gravity"].as<std::vector<double>>();
+
+			// frames offsets
+			YAML::Node frame_base = config_file["Base_to_L0"];
+			YAML::Node frame_ee = config_file["Ln_to_EE"];
+
+			std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
+			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
+			Base_to_L0.set_translation(tr);
+			Base_to_L0.set_ypr(ypr);
+			Base_to_L0.set_gravity(gravity);
+			conf.base_frame = Base_to_L0;
+
+			tr = frame_ee["tr"].as<std::vector<double>>();
+			ypr = frame_ee["ypr"].as<std::vector<double>>();
+			Ln_to_EE.set_translation(tr);
+			Ln_to_EE.set_ypr(ypr);
+			conf.ee_frame = Ln_to_EE;
+
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+		}
+
+		return conf;
+	}
+
+	Robot robot_from_file(std::string file, bool compute){
+		// create config
+		Config conf = load_config(file);
+		cout<<"Configuration loaded!"<<endl;
+		Robot robot(conf);
+		cout<<"Robot created!"<<endl;
+		if (compute){
+			compute_kinematics(robot);
+			cout<<"Kinematics ok!"<<endl;
+			compute_dynamics(robot);
+			cout<<"Dynamics ok!"<<endl;
+			compute_regressors(robot);
+			cout<<"Regressors ok!"<<endl;
+		}
+
+		// --- load parameters --- //
+		robot.load_par_DYN(file);
+		if (conf.ELASTIC){
+			robot.load_par_elastic(file);
+		}
+
+		return robot;
+	}
+
+
 
 }
