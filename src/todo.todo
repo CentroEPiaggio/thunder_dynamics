@@ -1,5 +1,6 @@
 improvings:
-	☐ multiple robot library in the same folder, problem function names
+	✔ multiple robot library in the same folder @done (10/18/2024, 1:30:21 PM)
+	☐ robotName in config file. Needed for creation of library without the command './thunder gen', problems in name of generated functions
 	☐ idea for parameters: thunder created a configuration files with everything, maybe this file can be used to create robot and by thunder_robot both.
 	☐ thunder_robot can only load par_DYN and par_REG, general method needed for all the parameters
 	☐ thunder_utils with LinkProp and other classes needed both by thunder and thunder_robot
@@ -11,11 +12,11 @@ improvings:
 	☐ generalize path with absolute_path
 	☐ clean everything
 	☐ FrameOffset not so general, use T as internal transformation and provide conversions
-	✔ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot @done (8/27/2024, 11:13:54 AM)
-	☐ is possible to have two different robots? due to casadi definitions on generated file?
+	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
 	☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	☐ genYaml have to be into Robot, now is used to create parameter file from config_file
 	☐ improve the linkProp structure, must be general to all parameters in the map args
+	☐ copy robot from thunder to the main folder instead of having a fixed copy
 
 will be in Thunder:
 	✔ elasticity @done (10/17/2024, 3:05:53 PM)

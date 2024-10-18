@@ -689,15 +689,15 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr){
-		// maybe directly model[name] = ...?
-		if (model.count(name)){
+	int Robot::add_function(std::string f_name, casadi::SX expr, std::vector<std::string> f_args, std::string descr){
+		// maybe directly model[f_name] = ...?
+		if (model.count(f_name)){
 			// key already exists
 			return 0;
 		} else {
-			model[name] = expr;
-			fun_args[name] = f_args;
-			fun_descr[name] = descr;
+			model[f_name] = expr;
+			fun_args[f_name] = f_args;
+			fun_descr[f_name] = descr;
 
 			casadi::SXVector inputs(f_args.size());
 			// for (const auto& arg : f_args) {
@@ -709,9 +709,9 @@ namespace thunder_ns{
 				i++;
 			}
 
-			casadi::Function fun(name+"_fun", inputs, {densify(expr)});
+			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
 			// cout<<"fun: "<<fun<<endl;
-			casadi_fun[name] = fun;
+			casadi_fun[f_name] = fun;
 		}
 
 		return 1;

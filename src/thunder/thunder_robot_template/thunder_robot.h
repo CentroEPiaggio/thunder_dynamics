@@ -47,6 +47,7 @@ class thunder_robot{
 		Eigen::Matrix3d hat(const Eigen::Vector3d v);
 		
 	public:
+		const std::string robotName = "/*#-ROBOT_NAME-#*/";
 		const int n_joints = /*#-n_joints-#*/;
 		const bool ELASTIC = /*#-ELASTIC-#*/;
 		const int numElasticJoints = /*#-numElasticJoints-#*/;

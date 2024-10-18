@@ -103,6 +103,7 @@ int main(int argc, char* argv[]){
 
 	// --- Robot creation --- //
 	Robot robot = robot_from_file(config_file, 0);
+	robot.robotName = robot_name;
 	compute_kinematics(robot);
 	compute_dynamics(robot);
 	compute_regressors(robot);
