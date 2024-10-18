@@ -106,6 +106,7 @@ namespace thunder_ns{
 		// C[1] = C132;
 		// C[2] = C132.T();
 		casadi::SX C(n,n);
+    
 		C = C123 + C132 - C132.T();
 
 		return C;

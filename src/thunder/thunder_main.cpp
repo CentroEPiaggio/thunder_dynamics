@@ -138,6 +138,7 @@ int main(int argc, char* argv[]){
 		COPY_GEN_FLAG = false;	// not copy into thunder_robot if thunder is used from bin
 		COPY_GEN_CHRONO_FLAG = false;
 	}else{
+		std::cout<<"No neededFiles found, ok if you are using thunder from build!"<<std::endl;
 		// thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
 		// thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
 		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "thunder_robot.cpp";
