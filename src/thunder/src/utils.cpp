@@ -106,6 +106,7 @@ namespace thunder_ns{
 	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp){
 		
 		// - get parameters from robot - //
+		std::string robotName = robot.robotName;
 		int n_joints = robot.get_numJoints();
 		int numElasticJoints = robot.get_numElasticJoints();
 		bool ELASTIC = robot.get_ELASTIC();
@@ -144,6 +145,7 @@ namespace thunder_ns{
 			replace_all(file_content_h, from_robot, to_robot);
 
 			// - add variables - //
+			replace_all(file_content_h, "/*#-ROBOT_NAME-#*/", robotName);
 			replace_all(file_content_h, "/*#-n_joints-#*/", to_string(n_joints));
 			replace_all(file_content_h, "/*#-ELASTIC-#*/", to_string(ELASTIC));
 			replace_all(file_content_h, "/*#-numElasticJoints-#*/", to_string(numElasticJoints));
@@ -163,7 +165,7 @@ namespace thunder_ns{
 			replace_all(file_content_h, "/*#-isElasticJoint-#*/", eJ_str);
 
 			// - insert functions - //
-			string functions_string = "";
+			string functions_string = "\n";
 			for (int i=0; i<functions.size(); i++){
 				functions_string.append("\t\t// - " + functions[i].description + " - //\n");
 				functions_string.append("\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
@@ -199,9 +201,10 @@ namespace thunder_ns{
 			replace_all(file_content_cpp, from_robot, to_robot);
 
 			// - insert functions - //
-			string functions_string = "";
+			string functions_string = "\n";
 			for (int i=0; i<functions.size(); i++){
-				std::string fun_name = functions[i].name;
+				std::string fun_name = "get_" + functions[i].name;
+				std::string fun_name_gen = robotName + "_" + functions[i].name;
 				std::vector<std::string> fun_args = functions[i].args;
 				std::vector<int> out_size = functions[i].out_size;
 				// // function arguments
@@ -211,11 +214,11 @@ namespace thunder_ns{
 				// }
 				// other parts
 				functions_string.append("// - " + functions[i].description + " - //\n");
-				functions_string.append("Eigen::MatrixXd thunder_" + to_robot + "::get_" + fun_name + "(){\n");
+				functions_string.append("Eigen::MatrixXd thunder_" + to_robot + "::" + fun_name + "(){\n");
 				functions_string.append("\tEigen::MatrixXd out;\n");
 				functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
-				functions_string.append("\tlong long p3[" + fun_name + "_fun_SZ_IW];\n");
-				functions_string.append("\tdouble p4[" + fun_name + "_fun_SZ_W];\n");
+				functions_string.append("\tlong long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
+				functions_string.append("\tdouble p4[" + fun_name_gen + "_fun_SZ_W];\n");
 				// inputs
 				functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
 				for (int j=1; j<fun_args.size(); j++){
@@ -224,7 +227,7 @@ namespace thunder_ns{
 				functions_string.append("};\n");
 				// output
 				functions_string.append("\tdouble* output_[] = {out.data()};\n");
-				functions_string.append("\tint check = " + fun_name + "_fun(input_, output_, p3, p4, 0);\n");
+				functions_string.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
 				functions_string.append("\treturn out;\n");
 				functions_string.append("}\n\n");
 			}

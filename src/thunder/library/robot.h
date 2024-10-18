@@ -89,6 +89,7 @@ namespace thunder_ns{
 			// double _mu_;
 
 		public:
+			std::string robotName = "robot";
 			const int STD_PAR_LINK = 10;
 			/* Init variables
 			numJoints: number of joints
