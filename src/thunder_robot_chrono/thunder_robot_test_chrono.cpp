@@ -10,10 +10,10 @@
 #include <chrono>
 // #include <yaml-cpp/yaml.h>
 
-// #include "library/thunder_R3.h"
+#include "library/thunder_R3.h"
 // #include "library/thunder_R5.h"
 // #include "library/thunder_R7.h"
-#include "library/thunder_R9.h"
+// #include "library/thunder_R9.h"
 // #include "library/thunder_R15.h"
 // #include "library/thunder_R30.h"
 
@@ -21,7 +21,6 @@
 // #define N_PAR 30
 // const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
 
-using namespace thunder_ns;
 using namespace std::chrono;
 using std::cout;
 using std::endl;
@@ -30,9 +29,9 @@ int main(){
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
 
-	std::string inertial_file = "../robots/R9_inertial_DYN.yaml";
-	thunder_R9 robot;
-	cout<<"Robot: R9"<<endl;
+	std::string inertial_file = "../robots/R3_inertial_DYN.yaml";
+	thunder_R3 robot;
+	cout<<"Robot: R3"<<endl;
 
 	int n_rep = 10000;
 	int min_dur = 999999999;
@@ -42,7 +41,7 @@ int main(){
 
 	robot.load_par_DYN(inertial_file);
 	const int NJ = robot.get_numJoints();
-	const int N_PAR = robot.get_numParams();
+	const int N_PAR = robot.get_numParDYN();
 
 	Eigen::MatrixXd myKin(4, 4);
 	Eigen::MatrixXd myJac(6,NJ);
@@ -147,23 +146,23 @@ int main(){
 	return 0;
 }
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v){
-	Eigen::Matrix3d vhat;
+// Eigen::Matrix3d hat(const Eigen::Vector3d v){
+// 	Eigen::Matrix3d vhat;
 			
-	// chech
-	if(v.size() != 3 ){
-		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-	}
+// 	// chech
+// 	if(v.size() != 3 ){
+// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
+// 	}
 	
-	vhat(0,0) = 0;
-	vhat(0,1) = -v[2];
-	vhat(0,2) = v[1];
-	vhat(1,0) = v[2];
-	vhat(1,1) = 0;
-	vhat(1,2) = -v[0];
-	vhat(2,0) = -v[1];
-	vhat(2,1) = v[0];
-	vhat(2,2) = 0;
+// 	vhat(0,0) = 0;
+// 	vhat(0,1) = -v[2];
+// 	vhat(0,2) = v[1];
+// 	vhat(1,0) = v[2];
+// 	vhat(1,1) = 0;
+// 	vhat(1,2) = -v[0];
+// 	vhat(2,0) = -v[1];
+// 	vhat(2,1) = v[0];
+// 	vhat(2,2) = 0;
 
-	return vhat;
-}
+// 	return vhat;
+// }
