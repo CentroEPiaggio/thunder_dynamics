@@ -6,12 +6,15 @@
 PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
 
+# --- FLAGS --- #
+ELASTIC_MODEL: true        # use elastic model, requires elastic part, should be true or false, NOT 0 or 1
 
 # --- Hyperparameters --- #
-num_joints: 3
+num_joints: 3           # number of joints
+Dl_order: 2             # link friction order, 0 to not use link friction
 
-# joint types: 'R': rotoidal, 'P': prismatic
-type_joints: ['R', 'R', 'R']
+# joint types: 'R': rotoidal, 'P': prismatic, 'R_SEA': SEA rotoidal, 'P_SEA': SEA prismatic
+type_joints: ['R_SEA', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
 DH: [0,  0,      1, 0,
@@ -27,17 +30,14 @@ Base_to_L0:
   ypr: [0, 0, 0]
 
 # Link_n to EE
-# Ln_to_EE:
-#   tr: [0, 0, 0]
-#   ypr: [0, 0, 0]
 Ln_to_EE:
   tr: [1, 0, 0]
   ypr: [0, 0, *PI_2_neg]
 
 
-# -------------------------------- #
-## ----- Initial Parameters ----- ##
-# -------------------------------- #
+# --------------------------------- #
+## ----- Inertial Parameters ----- ##
+# --------------------------------- #
 
 # inertial parameters expressed w.r.t. DH frames
 inertial:
@@ -52,6 +52,7 @@ inertial:
     Iyy: 1.0
     Iyz: 1.0
     Izz: 1.0
+    Dl: [0.1, 0.01]
 
   link2:
     mass: 1.0
@@ -64,6 +65,7 @@ inertial:
     Iyy: 1.0
     Iyz: 1.0
     Izz: 1.0
+    Dl: [0.1, 0.01]
 
   link3:
     mass: 1.0
@@ -76,3 +78,30 @@ inertial:
     Iyy: 1.0
     Iyz: 1.0
     Izz: 1.0
+    Dl: [0.1, 0.01]
+
+
+# -------------------------------- #
+## ----- Elastic Parameters ----- ##
+# -------------------------------- #
+
+elastic:
+  K_order: 1
+  D_order: 0
+  Dm_order: 1
+  joints:
+    joint1: 
+      # index: 0
+      K: [1.0]
+      D: []
+      Dm: [0.1]
+    joint2:
+      # index: 1
+      K: [1.0, 0.0, 0.0]
+      D: [0.1, 0.0]
+      Dm: [0.1, 0.01]
+    joint3:
+      # index: 2
+      K: [1.0, 0.0, 0.0]
+      D: [0.1, 0.0]
+      Dm: [0.1, 0.01]
