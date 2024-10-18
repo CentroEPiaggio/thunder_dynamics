@@ -1,5 +1,3 @@
-☐ recreate libraries and test thunder_robot_chrono
-
 improvings:
 	☐ multiple robot library in the same folder, problem function names
 	☐ idea for parameters: thunder created a configuration files with everything, maybe this file can be used to create robot and by thunder_robot both.
