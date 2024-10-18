@@ -72,7 +72,7 @@ void thunder_robot::set_ddqr(const Eigen::VectorXd& ddqr_){
 }
 
 void thunder_robot::set_x(const Eigen::VectorXd& x_){
-	if(x_.size() == n_joints){
+	if(x_.size() == numElasticJoints){
 		x = x_;
 	} else{
 		std::cout<<"in set_x: invalid dimensions of arguments\n";
@@ -80,7 +80,7 @@ void thunder_robot::set_x(const Eigen::VectorXd& x_){
 }
 
 void thunder_robot::set_dx(const Eigen::VectorXd& dx_){
-	if(dx_.size() == n_joints){
+	if(dx_.size() == numElasticJoints){
 		dx = dx_;
 	} else{
 		std::cout<<"in set_dx: invalid dimensions of arguments\n";
@@ -88,7 +88,7 @@ void thunder_robot::set_dx(const Eigen::VectorXd& dx_){
 }
 
 void thunder_robot::set_ddxr(const Eigen::VectorXd& ddxr_){
-	if(ddxr_.size() == n_joints){
+	if(ddxr_.size() == numElasticJoints){
 		ddxr = ddxr_;
 	} else{
 		std::cout<<"in set_ddxr: invalid dimensions of arguments\n";
@@ -220,6 +220,14 @@ void thunder_robot::load_par_REG(std::string file_path){
 			zz = node.second["Izz"].as<double>();
 
 			par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+			
+			// link friction
+			for (int j=0; j<Dl_order; j++){
+				std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+				par_Dl(Dl_order*i+j) = Dl[j];
+				std::cout<<"Dl_"<<j<<": "<<Dl[j] << std::endl;
+			}
+
 			i++;
 		}
 	} catch (const YAML::Exception& e) {
@@ -235,6 +243,7 @@ void thunder_robot::load_par_DYN(std::string file_path){
 		double mass, cmx, cmy, cmz, xx, xy, xz, yy, yz, zz;
 		int i = 0;
 		for (const auto& node : config) {
+			// inertial parameters
 			std::string linkName = node.first.as<std::string>();
 			mass = node.second["mass"].as<double>();
 			cmx = node.second["CoM_x"].as<double>();
@@ -248,6 +257,14 @@ void thunder_robot::load_par_DYN(std::string file_path){
 			zz = node.second["Izz"].as<double>();
 
 			par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
+			
+			// link friction
+			for (int j=0; j<Dl_order; j++){
+				std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+				par_Dl(Dl_order*i+j) = Dl[j];
+				std::cout<<"Dl_"<<j<<": "<<Dl[j] << std::endl;
+			}
+
 			i++;
 		}
 	} catch (const YAML::Exception& e) {
@@ -270,18 +287,21 @@ void thunder_robot::load_par_elastic(std::string file_path){
 			std::string jointName = node.first.as<std::string>();
 			// stiffness
 			for (int j=0; j<K_order; j++){
-				std::vector<float> K = node.second["K"].as<std::vector<float>>();
+				std::vector<double> K = node.second["K"].as<std::vector<double>>();
 				par_K(K_order*i+j) = K[j];
+				std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
 			}
 			// coupling friction
 			for (int j=0; j<D_order; j++){
-				std::vector<float> D = node.second["D"].as<std::vector<float>>();
+				std::vector<double> D = node.second["D"].as<std::vector<double>>();
 				par_D(D_order*i + j) = D[j];
+				std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
 			}
 			// motor friction
 			for (int j=0; j<Dm_order; j++){
-				std::vector<float> Dm = node.second["Dm"].as<std::vector<float>>();
+				std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
 				par_Dm(Dm_order*i + j) = Dm[j];
+				std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
 			}
 
 			i++;
@@ -301,6 +321,7 @@ void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 	links_prop_REG.resize(n_joints);
 
 	for(int i=0; i<n_joints; i++){
+		links_prop_REG[i].Dl.resize(Dl_order);
 		links_prop_REG[i].name = "link" + std::to_string(i+1);
 		links_prop_REG[i].mass = par_REG[STD_PAR_LINK*i + 0];
 		links_prop_REG[i].xyz = {par_REG[STD_PAR_LINK*i + 1], par_REG[STD_PAR_LINK*i + 2], par_REG[STD_PAR_LINK*i + 3]};
@@ -310,6 +331,9 @@ void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 		links_prop_REG[i].parI[3] = par_REG[STD_PAR_LINK*i + 7];
 		links_prop_REG[i].parI[4] = par_REG[STD_PAR_LINK*i + 8];
 		links_prop_REG[i].parI[5] = par_REG[STD_PAR_LINK*i + 9];
+		for (int j=0; j<Dl_order; j++){
+			links_prop_REG[i].Dl[j] = par_Dl[Dl_order*i + j];
+		}
 	}
 	// create file
 	try {
@@ -334,6 +358,7 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	links_prop_DYN.resize(n_joints);
 
 	for(int i=0; i<n_joints; i++){
+		links_prop_DYN[i].Dl.resize(Dl_order);
 		links_prop_DYN[i].name = "link" + std::to_string(i+1);
 		links_prop_DYN[i].mass = par_DYN[STD_PAR_LINK*i + 0];
 		links_prop_DYN[i].xyz = {par_DYN[STD_PAR_LINK*i + 1], par_DYN[STD_PAR_LINK*i + 2], par_DYN[STD_PAR_LINK*i + 3]};
@@ -343,6 +368,9 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 		links_prop_DYN[i].parI[3] = par_DYN[STD_PAR_LINK*i + 7];
 		links_prop_DYN[i].parI[4] = par_DYN[STD_PAR_LINK*i + 8];
 		links_prop_DYN[i].parI[5] = par_DYN[STD_PAR_LINK*i + 9];
+		for (int j=0; j<Dl_order; j++){
+			links_prop_DYN[i].Dl[j] = par_Dl[Dl_order*i + j];
+		}
 	}
 	// create file
 	try {
@@ -386,6 +414,8 @@ void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std:
 		linkNode[keys_[2]+"yy"] = link.parI[3];
 		linkNode[keys_[2]+"yz"] = link.parI[4];
 		linkNode[keys_[2]+"zz"] = link.parI[5];
+		// link friction
+		linkNode["Dl"] = link.Dl;
 
 		emitter_ << YAML::BeginMap;
 		emitter_ << YAML::Key << nodeName;

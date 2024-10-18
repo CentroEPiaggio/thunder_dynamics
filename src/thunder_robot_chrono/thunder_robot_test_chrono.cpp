@@ -66,7 +66,7 @@ int main(){
 	// for(int i=0; i<n_rep; i++){myKin = robot.getKin();};
 	// time_stop = high_resolution_clock::now();
 	// duration = duration_cast<nanoseconds>(time_stop - time_start).count();
-	// cout<<"time kin: "<<(float)duration/1000<<" us"<<endl;
+	// cout<<"time kin: "<<(double)duration/1000<<" us"<<endl;
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
 		time_start = high_resolution_clock::now();
@@ -75,7 +75,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time Kin: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time Kin: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -85,7 +85,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time Jac: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time Jac: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -95,7 +95,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time M: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time M: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -105,7 +105,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time C: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time C: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -115,7 +115,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time C_std: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time C_std: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -125,7 +125,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time G: "<<(float)min_dur/1000<<" us"<<endl;
+	cout<<"time G: "<<(double)min_dur/1000<<" us"<<endl;
 
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
@@ -135,7 +135,7 @@ int main(){
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = (duration<min_dur) ? duration : min_dur;
 	}
-	cout<<"time Yr: "<<(float)min_dur/1000<<" us"<<endl<<endl;
+	cout<<"time Yr: "<<(double)min_dur/1000<<" us"<<endl<<endl;
 
 	// cout<<endl<<"\nKin\n"<<myKin;
 	// cout<<"\nJac\n"<<myJac;

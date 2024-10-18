@@ -11,9 +11,9 @@ ELASTIC_MODEL: true        # use elastic model, requires elastic part, should be
 
 # --- Hyperparameters --- #
 num_joints: 3           # number of joints
-Dl_order: 1             # link friction order, 0 to not use link friction
+Dl_order: 2             # link friction order, 0 to not use link friction
 
-# joint types: 'R': rotoidal, 'P': prismatic, 'R_SEA': SEA rotoidal
+# joint types: 'R': rotoidal, 'P': prismatic, 'R_SEA': SEA rotoidal, 'P_SEA': SEA prismatic
 type_joints: ['R_SEA', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
@@ -92,9 +92,9 @@ elastic:
   joints:
     joint1: 
       # index: 0
-      K: [1.0, 0.0, 0.0]
-      D: [0.01, 0.0]
-      Dm: [0.1, 0.01]
+      K: [1.0]
+      D: []
+      Dm: [0.1]
     joint2:
       # index: 1
       K: [1.0, 0.0, 0.0]

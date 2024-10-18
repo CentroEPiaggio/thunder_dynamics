@@ -518,7 +518,7 @@ namespace thunder_ns{
 				
 				// link friction
 				if (node.second["Dl"]){
-					std::vector<float> Dl = node.second["Dl"].as<std::vector<float>>();
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
 					for (int j=0; j<Dl_order; j++){
 						param_Dl(Dl_order*i + j) = Dl[j];
 					}
@@ -568,7 +568,7 @@ namespace thunder_ns{
 
 				// link friction
 				if (node.second["Dl"]){
-					std::vector<float> Dl = node.second["Dl"].as<std::vector<float>>();
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
 					for (int j=0; j<Dl_order; j++){
 						param_Dl(Dl_order*i + j) = Dl[j];
 					}
@@ -605,17 +605,17 @@ namespace thunder_ns{
 				std::string jointName = node.first.as<std::string>();
 				// stiffness
 				for (int j=0; j<K_order; j++){
-					std::vector<float> K = node.second["K"].as<std::vector<float>>();
+					std::vector<double> K = node.second["K"].as<std::vector<double>>();
 					param_K(K_order*i+j) = K[j];
 				}
 				// coupling friction
 				for (int j=0; j<D_order; j++){
-					std::vector<float> D = node.second["D"].as<std::vector<float>>();
+					std::vector<double> D = node.second["D"].as<std::vector<double>>();
 					param_D(D_order*i + j) = D[j];
 				}
 				// motor friction
 				for (int j=0; j<Dm_order; j++){
-					std::vector<float> Dm = node.second["Dm"].as<std::vector<float>>();
+					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
 					param_Dm(Dm_order*i + j) = Dm[j];
 				}
 

@@ -28,7 +28,7 @@ using std::endl;
 
 bool use_gripper = false;
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v);
+// Eigen::Matrix3d hat(const Eigen::Vector3d v);
 // extern int compute_kinematics(Robot robot);
 
 int main(){
@@ -93,7 +93,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time Kin: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time Kin: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -103,7 +103,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time Jac: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time Jac: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -113,7 +113,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time M: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time M: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -123,7 +123,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time C: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time C: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -133,7 +133,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time C_std: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time C_std: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -143,7 +143,7 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time G: "<<(float)min_dur/1000<<" us"<<endl;
+		cout<<"time G: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
@@ -153,29 +153,29 @@ int main(){
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
-		cout<<"time Yr: "<<(float)min_dur/1000<<" us"<<endl<<endl;
+		cout<<"time Yr: "<<(double)min_dur/1000<<" us"<<endl<<endl;
 	}
 
 	return 0;
 }
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v){
-	Eigen::Matrix3d vhat;
+// Eigen::Matrix3d hat(const Eigen::Vector3d v){
+// 	Eigen::Matrix3d vhat;
 			
-	// chech
-	if(v.size() != 3 ){
-		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-	}
+// 	// chech
+// 	if(v.size() != 3 ){
+// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
+// 	}
 	
-	vhat(0,0) = 0;
-	vhat(0,1) = -v[2];
-	vhat(0,2) = v[1];
-	vhat(1,0) = v[2];
-	vhat(1,1) = 0;
-	vhat(1,2) = -v[0];
-	vhat(2,0) = -v[1];
-	vhat(2,1) = v[0];
-	vhat(2,2) = 0;
+// 	vhat(0,0) = 0;
+// 	vhat(0,1) = -v[2];
+// 	vhat(0,2) = v[1];
+// 	vhat(1,0) = v[2];
+// 	vhat(1,1) = 0;
+// 	vhat(1,2) = -v[0];
+// 	vhat(2,0) = -v[1];
+// 	vhat(2,1) = v[0];
+// 	vhat(2,2) = 0;
 
-	return vhat;
-}
+// 	return vhat;
+// }

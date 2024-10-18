@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics)
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) v0.1.0 + 0.1.1
 
 The aim of `thunder_dynamics` is to generate code useful for robot's control.
 
@@ -34,7 +34,7 @@ where `<path>` is the relative path from the `thunder` binary and the folder con
 The file `<robot>.yaml` is a configuration file that contain all the information about the robot.
 The DH table takes the trasformation in the order a, alpha, d, theta.
 The inertial parameters are expressed in the DH frames with the same convention.
-An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda or a 3 d.o.f RRR manipulator.
+An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda, or a 3 d.o.f RRR manipulator, or a SEA robot.
 
 
 The framework will create a `generatedFiles/` directory containing some files:
@@ -62,7 +62,7 @@ int main(){
 	// set inertial param from vector
 	my_robot.set_par_REG(params); // or set_par_DYN()
 	// or load it from file
-	my_robot.load_par_REG(".../<robot>_inertial_REG.yaml"); // or DYN
+	my_robot.load_par_REG(".../<robot>_inertial_DYN.yaml"); // or REG
 
 	// - compute standard quantities - //
 	Eigen::MatrixXd T = my_robot.get_T_0_ee(); // end-effector kinematics
@@ -99,8 +99,16 @@ The main classes contained in `thunder` are:
    - M: mass matrix
    - C: coriolis matrix
    - G: gravity matrix
-* `RobReg`: contain the regressor formulation:
+   - Dl: link friction
+   - K: elastic actuator stiffness torque
+   - D: elastic actuator coupling damping
+   - Dm: elastic actuator motor friction
+* `regressors`: contain the regressor formulation:
    - Yr: regressor matrix 
+   - reg_M: regressor of $M\ddot{q}$
+   - reg_C: regressor of $C\dot{q}$
+   - reg_G: regressor of $G$
+   - reg_K, reg_D, reg_Dl, reg_Dm: regressors of other dynamics
 
 the content of the classes is then integrated in the C++ library `<robot>_gen.h/cpp` and the `thunder_<robot>` class provide a wrapper for the automatically generated code.
 

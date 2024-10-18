@@ -15,9 +15,11 @@
 
 // #define NJ 3
 // #define N_PARAM_DYN 30
+// const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
+// const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
 const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-// const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_REG.yaml";
+const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
 using std::cout;
@@ -90,8 +92,12 @@ int main(){
 	cout<<"\n\nC\n"<<myC;
 	myG = robot.get_G();
 	cout<<"\n\nG\n"<<myG;
-	Dl = robot.get_Dl();
-	cout<<"\n\nD_link\n"<<Dl;
+	// --- Should be commented if Dl does not exists, Uncomment for link friction --- //
+	if (robot.Dl_order){
+		Dl = robot.get_Dl();
+		cout<<"\n\nD_link\n"<<Dl;
+	}
+	// --- end --- //
 	Yr = robot.get_Yr();
 	cout<<"\n\nYr\n"<<Yr;
 
@@ -103,9 +109,16 @@ int main(){
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
+	// - save par test - //
+	// robot.save_par_DYN(saved_inertial_file);
+	// robot.load_par_DYN(saved_inertial_file);
+	// robot.save_par_DYN(saved_inertial_file);
+
+	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	if (robot.ELASTIC){
 		int NEJ = robot.numElasticJoints;
-		robot.load_par_elastic(inertial_file);
+		cout<<endl<<"num elastic joints: "<< NEJ<<endl;
+		robot.load_par_elastic(elastic_file);
 
 		Eigen::VectorXd x(NEJ), dx(NEJ), ddxr(NEJ);
 		x = 2*x.setOnes();
@@ -141,29 +154,29 @@ int main(){
 		// cout<<endl<<"D_coupling\n"<<D<<endl;
 		Dm = robot.get_Dm();
 		cout<<endl<<"D_motor\n"<<Dm<<endl;
-
 	}
+	// --- end --- //
 
 	return 0;
 }
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v){
-	Eigen::Matrix3d vhat;
+// Eigen::Matrix3d hat(const Eigen::Vector3d v){
+// 	Eigen::Matrix3d vhat;
 			
-	// chech
-	if(v.size() != 3 ){
-		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-	}
+// 	// chech
+// 	if(v.size() != 3 ){
+// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
+// 	}
 	
-	vhat(0,0) = 0;
-	vhat(0,1) = -v[2];
-	vhat(0,2) = v[1];
-	vhat(1,0) = v[2];
-	vhat(1,1) = 0;
-	vhat(1,2) = -v[0];
-	vhat(2,0) = -v[1];
-	vhat(2,1) = v[0];
-	vhat(2,2) = 0;
+// 	vhat(0,0) = 0;
+// 	vhat(0,1) = -v[2];
+// 	vhat(0,2) = v[1];
+// 	vhat(1,0) = v[2];
+// 	vhat(1,1) = 0;
+// 	vhat(1,2) = -v[0];
+// 	vhat(2,0) = -v[1];
+// 	vhat(2,1) = v[0];
+// 	vhat(2,2) = 0;
 
-	return vhat;
-}
+// 	return vhat;
+// }

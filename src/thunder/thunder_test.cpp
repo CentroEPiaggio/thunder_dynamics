@@ -19,12 +19,13 @@ using namespace thunder_ns;
 using std::cout;
 using std::endl;
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v);
+// Eigen::Matrix3d hat(const Eigen::Vector3d v);
 // extern int compute_kinematics(Robot robot);
 
 int main(){
 
 	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	Robot robot = robot_from_file(config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
@@ -54,9 +55,9 @@ int main(){
 	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
-	Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
-	Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
-	Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
+	Eigen::MatrixXd reg_K(NEJ, N_PARAM_K);
+	Eigen::MatrixXd reg_D(NEJ, N_PARAM_D);
+	Eigen::MatrixXd reg_Dm(NEJ, N_PARAM_DM);
 	Eigen::MatrixXd M(NJ, NJ);
 	Eigen::MatrixXd C(NJ, NJ);
 	Eigen::MatrixXd C_std(NJ, NJ);
@@ -144,23 +145,30 @@ int main(){
 	cout<<endl<<"C_std\n"<<C_std<<endl;
 	G = robot.get("G");
 	cout<<endl<<"G\n"<<G<<endl;
-	Dl = robot.get("Dl");
-	cout<<endl<<"D_link\n"<<Dl<<endl;
-	K = robot.get("K");
-	cout<<endl<<"K\n"<<K<<endl;
-	D = robot.get("D");
-	cout<<endl<<"D_coupling\n"<<D<<endl;
-	Dm = robot.get("Dm");
-	cout<<endl<<"D_motor\n"<<Dm<<endl;
+	if (robot.get_Dl_order()){
+		Dl = robot.get("Dl");
+		cout<<endl<<"D_link\n"<<Dl<<endl;
+		reg_Dl = robot.get("reg_Dl");
+	} else {
+		Dl.setZero();
+	}
+	if (robot.get_ELASTIC()){
+		K = robot.get("K");
+		cout<<endl<<"K\n"<<K<<endl;
+		D = robot.get("D");
+		cout<<endl<<"D_coupling\n"<<D<<endl;
+		Dm = robot.get("Dm");
+		cout<<endl<<"D_motor\n"<<Dm<<endl;
+		reg_K = robot.get("reg_K");
+		reg_D = robot.get("reg_D");
+		reg_Dm = robot.get("reg_Dm");
+	}
 
 	Yr = robot.get("Yr");
 	reg_M = robot.get("reg_M");
 	reg_C = robot.get("reg_C");
 	reg_G = robot.get("reg_G");
-	reg_Dl = robot.get("reg_Dl");
-	reg_K = robot.get("reg_K");
-	reg_D = robot.get("reg_D");
-	reg_Dm = robot.get("reg_Dm");
+
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
@@ -174,23 +182,23 @@ int main(){
 	return 0;
 }
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v){
-	Eigen::Matrix3d vhat;
+// Eigen::Matrix3d hat(const Eigen::Vector3d v){
+// 	Eigen::Matrix3d vhat;
 			
-	// chech
-	if(v.size() != 3 ){
-		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-	}
+// 	// chech
+// 	if(v.size() != 3 ){
+// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
+// 	}
 	
-	vhat(0,0) = 0;
-	vhat(0,1) = -v[2];
-	vhat(0,2) = v[1];
-	vhat(1,0) = v[2];
-	vhat(1,1) = 0;
-	vhat(1,2) = -v[0];
-	vhat(2,0) = -v[1];
-	vhat(2,1) = v[0];
-	vhat(2,2) = 0;
+// 	vhat(0,0) = 0;
+// 	vhat(0,1) = -v[2];
+// 	vhat(0,2) = v[1];
+// 	vhat(1,0) = v[2];
+// 	vhat(1,1) = 0;
+// 	vhat(1,2) = -v[0];
+// 	vhat(2,0) = -v[1];
+// 	vhat(2,1) = v[0];
+// 	vhat(2,2) = 0;
 
-	return vhat;
-}
+// 	return vhat;
+// }

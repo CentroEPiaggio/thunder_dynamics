@@ -58,8 +58,10 @@ namespace thunder_ns{
 
 		try {
 			YAML::Node config = YAML::LoadFile(config_file);
-
 			YAML::Node inertial = config["inertial"];
+			int Dl_order=0;
+			if (config["Dl_order"]) Dl_order = config["Dl_order"].as<int>();
+			// std::cout<<"Dl_order: " << Dl_order << std::endl;
 			
 			int link_index = 0;
 			for (const auto& node : inertial) {
@@ -82,6 +84,16 @@ namespace thunder_ns{
 				properties.parI[3] = node.second["Iyy"].as<double>();
 				properties.parI[4] = node.second["Iyz"].as<double>();
 				properties.parI[5] = node.second["Izz"].as<double>();
+				// link friction
+				if (Dl_order){
+					properties.Dl.resize(Dl_order);
+					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+					properties.Dl = Dl;
+					// std::cout<<"Dl_read: " << Dl << std::endl;
+					// for (int j=0; j<Dl_order; j++){
+					// 	properties.Dl[j] = Dl[j];
+					// }
+				}
 
 				// // debug:
 				// std::cout<< linkName + ": "<<std::endl;
@@ -113,6 +125,8 @@ namespace thunder_ns{
 				links_prop_REG[i].parI[3] = I0(1,1);
 				links_prop_REG[i].parI[4] = I0(1,2);
 				links_prop_REG[i].parI[5] = I0(2,2);
+				links_prop_REG[i].Dl = tmp_link.Dl;
+				// std::cout<<"Dl_par: " << links_prop_REG[i].Dl << std::endl;
 			}
 
 			// --- save <robot>_inertial_REG.yaml --- //
@@ -172,6 +186,9 @@ namespace thunder_ns{
 			linkNode[keys_[2]+"yy"] = link.parI[3];
 			linkNode[keys_[2]+"yz"] = link.parI[4];
 			linkNode[keys_[2]+"zz"] = link.parI[5];
+			// link friction
+			linkNode["Dl"] = link.Dl;
+			// std::cout<<"Dl_fill: " << link.Dl << std::endl;
 
 			emitter_ << YAML::BeginMap;
 			emitter_ << YAML::Key << nodeName;
