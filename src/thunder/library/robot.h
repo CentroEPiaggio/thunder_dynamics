@@ -52,19 +52,30 @@ namespace thunder_ns{
 			std::vector<int> isElasticJoint;
 			// casadi::SX elasticSel;
 			/* Denavit-Hartenberg parameterization table */
-			casadi::SX _DHtable_;
+			// casadi::SX _DHtable_;
 			/* Frame offset between world-frame and link 0*/
-			FrameOffset _world2L0_;
+			// FrameOffset _world2L0_;
 			/* Frame offset between end-effector and last link */
-			FrameOffset _Ln2EE_;
+			// FrameOffset _Ln2EE_;
 			// elastic parameters
 			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
 			// casadi::SX gravity;
+			// symbolic selectivity
+			// std::vector<int> DHtable_symb;
+			// std::vector<int> par_DYN_symb;
+			// std::vector<int> par_Dl_symb;
+			// std::vector<int> par_K_symb;
+			// std::vector<int> par_D_symb;
+			// std::vector<int> par_Dm_symb;
+			// std::vector<int> base_frame_symb;
+			// std::vector<int> ee_frame_symb;
+			// std::vector<int> gravity_symb;
 			// Input of casadi function //
 			std::map<std::string, casadi::SX> args;
 			std::map<std::string, casadi::Function> casadi_fun;
 			std::map<std::string, std::vector<std::string>> fun_args;
 			std::map<std::string, std::string> fun_descr;
+			std::map<std::string, std::vector<int>> symb;
 			// Variable for joints angle //
 			// casadi::SX q, dq, dqr, ddqr;
 			// casadi::SX _par_KIN_, par_DYN, par_REG, par_ELA;
@@ -90,13 +101,17 @@ namespace thunder_ns{
 
 		public:
 			std::string robotName = "robot";
-			const int STD_PAR_LINK = 10;
+			static const int STD_PAR_LINK = 10;
 			/* Init variables
 			numJoints: number of joints
-			DHTable: Denavit-Hartenberg table format [a alpha d theta]
+			DHtable: Denavit-Hartenberg table format [a alpha d theta]
 			jtsType: is string of "R" and "P"
 			base_frame: is used to set transformation between link0 and world_frame */
 			Robot(const Config conf);
+			int init_symb_parameters();
+			int subs_symb_par(std::string par);
+			std::vector<std::string> obtain_symb_parameters(std::vector<std::string>, std::vector<std::string>);
+			int update_symb_parameters();
 			/* Destructor */
 			// ~Robot(){};
 
@@ -118,9 +133,9 @@ namespace thunder_ns{
 			// std::vector<int> get_numParLink();
 			// int get_numParLink(int i);
 			std::vector<std::string> get_jointsType();
-			casadi::SX get_DHTable();
-			FrameOffset get_world2L0();
-			FrameOffset get_Ln2EE();
+			// casadi::SX get_DHTable();
+			// FrameOffset get_world2L0();
+			// FrameOffset get_Ln2EE();
 			// int get_numParLink(int i);
 			bool get_ELASTIC();
 			int get_K_order();

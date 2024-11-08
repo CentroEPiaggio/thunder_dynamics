@@ -60,13 +60,15 @@ namespace thunder_ns{
 		int nParLink = robot.STD_PAR_LINK;
 		// auto jointsType = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
-		auto _world2L0_ = robot.get_world2L0();
+		// auto _world2L0_ = robot.get_world2L0();
 		// auto _Ln2EE_ = robot.get_Ln2EE();
 		auto q = robot.model["q"];
 		auto dq = robot.model["dq"];
 		auto dqr = robot.model["dqr"];
 		auto ddqr = robot.model["ddqr"];
-		auto par_DYN = robot.model["par_DYN"];
+		// auto par_DYN = robot.model["par_DYN"];
+		// auto world2L0 = robot.model["world2L0"];
+		auto gravity = robot.model["gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -94,7 +96,7 @@ namespace thunder_ns{
 		casadi::SX Jwi(3, nj);
 		// std::tuple<casadi::SXVector, casadi::SXVector> J_tuple;
 
-		casadi::SX g = _world2L0_.get_gravity();
+		casadi::SX g = gravity;
 
 		casadi::SX Yr(nj,nParLink*nj);        // regressor matrix
 		casadi::SX reg_M(nj, nParLink*nj);
@@ -193,11 +195,15 @@ namespace thunder_ns{
 			reg_C(allRows,selCols) = reg_C_i;
 			reg_G(allRows,selCols) = reg_G_i;
 		}
-
-		if (!robot.add_function("Yr", Yr, {"q", "dq", "dqr", "ddqr"}, "Manipulator regressor matrix")) return 0;
-		if (!robot.add_function("reg_M", reg_M, {"q", "ddqr"}, "Regressor matrix of term M*ddqr")) return 0;
-		if (!robot.add_function("reg_C", reg_C, {"q", "dq", "dqr"}, "Regressor matrix of term C*dqr")) return 0;
-		if (!robot.add_function("reg_G", reg_G, {"q"}, "Regressor matrix of term G")) return 0;
+		std::vector<std::string> arg_list;
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr", "ddqr"}, {"DHtable", "world2L0", "gravity"});
+		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
+		arg_list = robot.obtain_symb_parameters({"q", "ddqr"}, {"DHtable", "world2L0"});
+		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr"}, {"DHtable", "world2L0"});
+		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
+		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "gravity"});
+		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
 	}
@@ -220,7 +226,6 @@ namespace thunder_ns{
 		auto Dl = robot.model["Dl"];
 
 		casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par_Dl);
-
 		if (!robot.add_function("reg_Dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
 
 		return 1;

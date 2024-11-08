@@ -6,9 +6,6 @@
 #include "../library/utils.h"
 
 /* File name of generated code */
-// #define GENERATED_FILE "kin_basic_fun.cpp"
-// #define GENERATED_FILE "kinematics_fun.cpp"
-// #define GENERATED_FILE "dynamics_fun.cpp"
 #define GENERATED_FILE "robot_gen.cpp"
 
 /* Define number of function generable */
@@ -60,24 +57,59 @@ namespace thunder_ns{
 		}
 		// numParELA = numElasticJoints*(PAR_ELA_LINK);
 
-		// N_PAR_LINK = 10;
-		// jointsType = jointsType;
-		_DHtable_ = conf.DHtable;
-		_world2L0_ = conf.base_frame;
-		// N_PAR_LINK = 10;
-		// gravity = base_frame.get_gravity();
-		_Ln2EE_ = conf.ee_frame;
+		// // N_PAR_LINK = 10;
+		// // jointsType = jointsType;
+		// _DHtable_ = conf.DHtable;
+		// _world2L0_ = conf.base_frame;
+		// // N_PAR_LINK = 10;
+		// // gravity = base_frame.get_gravity();
+		// _Ln2EE_ = conf.ee_frame;
 		valid = 1;
 		// _mu_ = MU;
 
+		// symbolic selectivity
+		symb["DHtable"] = conf.DHtable_symb;
+		symb["par_DYN"] = conf.par_DYN_symb;
+		symb["par_Dl"] = conf.par_Dl_symb;
+		symb["par_K"] = conf.par_K_symb;
+		symb["par_D"] = conf.par_D_symb;
+		symb["par_Dm"] = conf.par_Dm_symb;
+		symb["world2L0"] = conf.world2L0_symb;
+		symb["Ln2EE"] = conf.Ln2EE_symb;
+		symb["gravity"] = conf.gravity_symb;
+
+		// - parameters - //
+		casadi::SX DHtable = casadi::SX::sym("DHtable", numJoints,4);
+		casadi::SX world2L0 = casadi::SX::sym("world2L0", 6,1);
+		casadi::SX Ln2EE = casadi::SX::sym("Ln2EE", 6,1);
+		casadi::SX gravity = casadi::SX::sym("gravity", 3,1);
+		model.insert({"DHtable", DHtable});
+		model.insert({"world2L0", world2L0});
+		model.insert({"Ln2EE", Ln2EE});
+		model.insert({"gravity", gravity});
+
+		for (int i=0; i<3; i++){
+			world2L0(i) = casadi::SX(conf.base_frame.translation[i]);
+			world2L0(i+3) = conf.base_frame.ypr[i];
+			Ln2EE(i) = conf.ee_frame.translation[i];
+			Ln2EE(i+3) = conf.ee_frame.ypr[i];
+			gravity(i) = conf.base_frame.gravity[i];
+		}
+		args.insert({"DHtable", conf.DHtable});
+		args.insert({"world2L0", world2L0});
+		args.insert({"Ln2EE", Ln2EE});
+		args.insert({"gravity", gravity});
+
+		// - init all other variables - //
 		initVarsFuns();
+
 		// compute();
 	}
 
 	void Robot::initVarsFuns(){
-		if (_DHtable_.rows() != numJoints || _DHtable_.columns() != 4){
-			throw std::runtime_error("DHTemplate: Error size of DH table");
-		}
+		// if (_DHtable_.rows() != numJoints || _DHtable_.columns() != 4){
+		// 	throw std::runtime_error("DHTemplate: Error size of DH table");
+		// }
 		if ((int)jointsType.size()!=numJoints){
 			throw std::runtime_error("DHFwkinJoints: Error size of joints string");
 		}
@@ -96,6 +128,16 @@ namespace thunder_ns{
 		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
 		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
 		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
+
+		// to change ----------------------------------------------------------------------------!
+		// _DHtable_ = conf.DHtable;
+		// _world2L0_ = conf.base_frame;
+		// _Ln2EE_ = conf.ee_frame;
+		// std::vector<int> DHtable_symb;
+		// std::vector<int> world2L0_symb;
+		// std::vector<int> Ln2EE_symb;
+		// std::vector<int> gravity_symb;
+		//------------------------------------------------------------------------------
 		
 		// model update
 		model.insert({"q", q});
@@ -136,6 +178,7 @@ namespace thunder_ns{
 			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints)});
 		}
 		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
+
 	}
 
 	Eigen::MatrixXd Robot::get(std::string name){
@@ -476,17 +519,17 @@ namespace thunder_ns{
 		return jointsType;
 	}
 
-	casadi::SX Robot::get_DHTable(){
-		return _DHtable_;
-	}
+	// casadi::SX Robot::get_DHTable(){
+	// 	return _DHtable_;
+	// }
 
-	FrameOffset Robot::get_world2L0(){
-		return _world2L0_;
-	}
+	// FrameOffset Robot::get_world2L0(){
+	// 	return _world2L0_;
+	// }
 
-	FrameOffset Robot::get_Ln2EE(){
-		return _Ln2EE_;
-	}
+	// FrameOffset Robot::get_Ln2EE(){
+	// 	return _Ln2EE_;
+	// }
 
 	int Robot::load_par_DYN(std::string file){
 		// Eigen::VectorXd param_DYN;
@@ -497,28 +540,29 @@ namespace thunder_ns{
 			// load yaml
 			YAML::Node config_file = YAML::LoadFile(file);
 			// load inertial
-			YAML::Node inertial = config_file["inertial"];
+			YAML::Node dynamics = config_file["dynamics"];
 			int i = 0;
-			for (const auto& node : inertial) {
+			for (const auto& node : dynamics) {
+				YAML::Node inertial = node.second["inertial"];
 				
 				if (i==numJoints) break;
 				std::string linkName = node.first.as<std::string>();
 
 				// standard parameters
-				param_DYN(STD_PAR_LINK*i) = node.second["mass"].as<double>();
-				param_DYN(STD_PAR_LINK*i+1) = node.second["CoM_x"].as<double>();
-				param_DYN(STD_PAR_LINK*i+2) = node.second["CoM_y"].as<double>();
-				param_DYN(STD_PAR_LINK*i+3) = node.second["CoM_z"].as<double>();
-				param_DYN(STD_PAR_LINK*i+4) = node.second["Ixx"].as<double>();
-				param_DYN(STD_PAR_LINK*i+5) = node.second["Ixy"].as<double>();
-				param_DYN(STD_PAR_LINK*i+6) = node.second["Ixz"].as<double>();
-				param_DYN(STD_PAR_LINK*i+7) = node.second["Iyy"].as<double>();
-				param_DYN(STD_PAR_LINK*i+8) = node.second["Iyz"].as<double>();
-				param_DYN(STD_PAR_LINK*i+9) = node.second["Izz"].as<double>();
+				param_DYN(STD_PAR_LINK*i) = inertial["mass"].as<double>();
+				param_DYN(STD_PAR_LINK*i+1) = inertial["CoM_x"].as<double>();
+				param_DYN(STD_PAR_LINK*i+2) = inertial["CoM_y"].as<double>();
+				param_DYN(STD_PAR_LINK*i+3) = inertial["CoM_z"].as<double>();
+				param_DYN(STD_PAR_LINK*i+4) = inertial["Ixx"].as<double>();
+				param_DYN(STD_PAR_LINK*i+5) = inertial["Ixy"].as<double>();
+				param_DYN(STD_PAR_LINK*i+6) = inertial["Ixz"].as<double>();
+				param_DYN(STD_PAR_LINK*i+7) = inertial["Iyy"].as<double>();
+				param_DYN(STD_PAR_LINK*i+8) = inertial["Iyz"].as<double>();
+				param_DYN(STD_PAR_LINK*i+9) = inertial["Izz"].as<double>();
 				
 				// link friction
-				if (node.second["Dl"]){
-					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
+				if (node.second["friction"]){
+					std::vector<double> Dl = node.second["friction"]["Dl"].as<std::vector<double>>();
 					for (int j=0; j<Dl_order; j++){
 						param_Dl(Dl_order*i + j) = Dl[j];
 					}
@@ -735,8 +779,66 @@ namespace thunder_ns{
 		myCodeGen.generate(savePath);
 	}
 
+	int Robot::subs_symb_par(std::string par){
+		std::vector<int> symbolic = symb[par];
+		
+		for (int i=0; i<symbolic.size(); i++){
+			if (symbolic[i] == 0){
+				model[par](i) = args[par](i);
+			}
+		}
+
+		// cout<<"model: "<< model[par] << endl;
+		// cout<<"arg: "<< args[par] << endl;
+		return 1;
+	}
+
+	int Robot::init_symb_parameters(){
+		// - substitute non-symbolic variables with numbers - //
+		for (auto par : symb){
+			subs_symb_par(par.first);
+		}
+		// std::vector<int> symbolic = symb["DHtable"];
+		// for (int i=0; i<symbolic.size(); i++){
+		// 	if (symbolic[i] == 0){
+		// 		model["DHtable"][i] = args["DHtable"][i];
+		// 	}
+		// }
+		// std::vector<int> DHtable_symb;
+		// std::vector<int> par_DYN_symb;
+		// std::vector<int> par_Dl_symb;
+		// std::vector<int> par_K_symb;
+		// std::vector<int> par_D_symb;
+		// std::vector<int> par_Dm_symb;
+		// std::vector<int> world2L0_symb;
+		// std::vector<int> Ln2EE_symb;
+		// std::vector<int> gravity_symb;
+		return 1;
+	}
+
+	std::vector<std::string> Robot::obtain_symb_parameters(std::vector<std::string> par, std::vector<std::string> possible_par){
+		// - obtain parameters that have symbolic values inside - //
+		std::vector<std::string> arg_list = par;
+		for (auto& par : possible_par){
+			bool is_symb = false;
+			for (int v : symb[par]){
+				if (v) is_symb = true;
+			}
+			if (is_symb){
+				arg_list.push_back(par);
+			}
+		}
+		return arg_list;
+	}
+
+	int Robot::update_symb_parameters(){
+		// - resize parameter variables to right dimension - //
+		return 1;
+	}
+
 	Config load_config(std::string file){
 		int nj;
+		int STD_PAR_LINK = Robot::STD_PAR_LINK;
 		FrameOffset Base_to_L0;
 		FrameOffset Ln_to_EE;
 		Config conf;
@@ -748,6 +850,7 @@ namespace thunder_ns{
 			// Number of joints
 			nj = config_file["num_joints"].as<int>();
 			conf.numJoints = nj;
+			int Dl_order = 0;
 
 			// joints_type
 			// YAML::Node type_joints = config_file["type_joints"];
@@ -755,7 +858,8 @@ namespace thunder_ns{
 			conf.jointsType = config_file["type_joints"].as<std::vector<std::string>>();
 			std::vector<std::string> jType = conf.jointsType;
 
-			if (config_file["Dl_order"]) conf.Dl_order = config_file["Dl_order"].as<int>();
+			if (config_file["Dl_order"]) Dl_order = config_file["Dl_order"].as<int>();
+			conf.Dl_order = Dl_order;
 			if (config_file["ELASTIC_MODEL"]){
 				conf.ELASTIC = config_file["ELASTIC_MODEL"].as<bool>();
 				if (conf.ELASTIC){
@@ -765,7 +869,8 @@ namespace thunder_ns{
 				}
 			}
 			// Denavit-Hartenberg
-			std::vector<double> dh_vect = config_file["DH"].as<std::vector<double>>();
+			YAML::Node kinematics = config_file["kinematics"];
+			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
 			// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
 			casadi::SX DHtable_tmp(nj,4);
 			for (int i=0; i<nj; i++){
@@ -774,9 +879,11 @@ namespace thunder_ns{
 				}
 			}
 			conf.DHtable = DHtable_tmp;
+			// cout<<"dhtable: "<<DHtable_tmp<<endl;
 
-			// gravity
-			std::vector<double> gravity = config_file["gravity"].as<std::vector<double>>();
+			// - Gravity - //
+			YAML::Node gravity = config_file["gravity"];
+			std::vector<double> gravity_vect = gravity["value"].as<std::vector<double>>();
 
 			// frames offsets
 			YAML::Node frame_base = config_file["Base_to_L0"];
@@ -786,7 +893,7 @@ namespace thunder_ns{
 			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
 			Base_to_L0.set_translation(tr);
 			Base_to_L0.set_ypr(ypr);
-			Base_to_L0.set_gravity(gravity);
+			Base_to_L0.set_gravity(gravity_vect);
 			conf.base_frame = Base_to_L0;
 
 			tr = frame_ee["tr"].as<std::vector<double>>();
@@ -794,6 +901,157 @@ namespace thunder_ns{
 			Ln_to_EE.set_translation(tr);
 			Ln_to_EE.set_ypr(ypr);
 			conf.ee_frame = Ln_to_EE;
+
+			// - Dynamics - //
+			YAML::Node dynamics = config_file["dynamics"];
+			// std::vector<LinkProp> links(nj);
+			conf.links_DYN.resize(nj);
+			std::vector<int> par_DYN_symb;
+			std::vector<int> par_Dl_symb;
+			par_DYN_symb.resize(STD_PAR_LINK*nj);
+			par_Dl_symb.resize(Dl_order*nj);
+			int link_index = 0;
+			for (const auto& node : dynamics){
+				std::string linkName = node.first.as<std::string>();
+				conf.links_DYN[link_index].name = linkName;
+				YAML::Node inertial = node.second["inertial"];
+				// inertial
+				// conf.links_DYN[link_index].mass = inertial["mass"].as<double>();
+				// conf.links_DYN[link_index].xyz[0] = inertial["CoM_x"].as<double>();
+				// conf.links_DYN[link_index].xyz[1] = inertial["CoM_y"].as<double>();
+				// conf.links_DYN[link_index].xyz[2] = inertial["CoM_z"].as<double>();
+				// conf.links_DYN[link_index].parI[0] = inertial["Ixx"].as<double>();
+				// conf.links_DYN[link_index].parI[1] = inertial["Ixy"].as<double>();
+				// conf.links_DYN[link_index].parI[2] = inertial["Ixz"].as<double>();
+				// conf.links_DYN[link_index].parI[3] = inertial["Iyy"].as<double>();
+				// conf.links_DYN[link_index].parI[4] = inertial["Iyz"].as<double>();
+				// conf.links_DYN[link_index].parI[5] = inertial["Izz"].as<double>();
+				// symbolic selectivity
+				std::vector<int> link_symb;
+				if (inertial["symb"]){
+					link_symb = inertial["symb"].as<std::vector<int>>();
+				} else {
+					link_symb.resize(STD_PAR_LINK);
+					for (int i=0; i<STD_PAR_LINK; i++) link_symb[i] = 0;
+				}
+				for (int j=0; j<STD_PAR_LINK; j++){
+					par_DYN_symb[link_index*STD_PAR_LINK + j] = link_symb[j];
+				}
+				// friction
+				if (Dl_order){
+					conf.links_DYN[link_index].Dl.resize(Dl_order);
+					YAML::Node friction = node.second["friction"];
+					// std::vector<double> Dl = friction["Dl"].as<std::vector<double>>();
+					// conf.links_DYN[link_index].Dl = Dl;
+					// symbolic selectivity
+					std::vector<int> fric_symb;
+					if (friction["symb"]){
+						fric_symb = friction["symb"].as<std::vector<int>>();
+					} else {
+						fric_symb.resize(Dl_order);
+						for (int i=0; i<Dl_order; i++) fric_symb[i] = 0;
+					}
+					// std::vector<int> fric_symb = friction["symb"].as<std::vector<int>>();
+					for (int j=0; j<Dl_order; j++){
+						par_Dl_symb[link_index*Dl_order + j] = fric_symb[j];
+					}
+				}
+				link_index++;
+			}
+
+			// parse elastic
+			std::vector<int> par_K_symb;
+			std::vector<int> par_D_symb;
+			std::vector<int> par_Dm_symb;
+			if (conf.ELASTIC){
+				YAML::Node elastic = config_file["elastic"];
+				int index = 0;
+				int K_order = conf.K_order;
+				int D_order = conf.D_order;
+				int Dm_order = conf.Dm_order;
+				for (const auto& node : elastic["joints"]) {
+					std::string jointName = node.first.as<std::string>();
+					// stiffness
+					std::vector<int> K_symb;					
+					if (node.second["K_symb"]){
+						K_symb = node.second["K_symb"].as<std::vector<int>>();
+					} else {
+						K_symb.resize(K_order);
+						for (int i=0; i<K_order; i++) K_symb[i] = 0;
+					}
+					for (int v : K_symb){
+						par_K_symb.push_back(v);
+					}
+					// coupling friction
+					std::vector<int> D_symb;
+					if (node.second["D_symb"]){
+						D_symb = node.second["D_symb"].as<std::vector<int>>();
+					} else {
+						D_symb.resize(D_order);
+						for (int i=0; i<D_order; i++) D_symb[i] = 0;
+					}
+					for (int v : D_symb){
+						par_D_symb.push_back(v);
+					}
+					// motor friction
+					std::vector<int> Dm_symb;
+					if (node.second["Dm_symb"]){
+						Dm_symb = node.second["Dm_symb"].as<std::vector<int>>();
+					} else {
+						Dm_symb.resize(Dm_order);
+						for (int i=0; i<Dm_order; i++) Dm_symb[i] = 0;
+					}
+					for (int v : Dm_symb){
+						par_Dm_symb.push_back(v);
+					}
+
+					index++;
+				}
+			}
+			
+			// symbolic selectivity
+			if (config_file["kinematics"]["symb"]){
+				conf.DHtable_symb = config_file["kinematics"]["symb"].as<std::vector<int>>();
+			} else {
+				conf.DHtable_symb.resize(4*nj);
+				for (int i=0; i<4*nj; i++) conf.DHtable_symb[i] = 0;
+			}
+			conf.par_DYN_symb = par_DYN_symb;
+			conf.par_Dl_symb = par_Dl_symb;
+			conf.par_K_symb = par_K_symb;
+			conf.par_D_symb = par_D_symb;
+			conf.par_Dm_symb = par_Dm_symb;
+			if (config_file["Base_to_L0"]["symb"]){
+				conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
+			} else {
+				conf.world2L0_symb.resize(6);
+				for (int i=0; i<6; i++) conf.world2L0_symb[i] = 0;
+			}
+			// conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
+			if (config_file["Ln_to_EE"]["symb"]){
+				conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
+			} else {
+				conf.Ln2EE_symb.resize(6);
+				for (int i=0; i<6; i++) conf.Ln2EE_symb[i] = 0;
+			}
+			// conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
+			if (config_file["gravity"]["symb"]){
+				conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
+			} else {
+				conf.gravity_symb.resize(3);
+				for (int i=0; i<3; i++) conf.gravity_symb[i] = 0;
+			}
+			// conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
+			
+			// std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
+			// // conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			// casadi::SX DHtable_tmp(nj,4);
+			// for (int i=0; i<nj; i++){
+			// 	for (int j=0; j<4; j++){
+			// 		DHtable_tmp(i,j) = dh_vect[4*i + j];
+			// 	}
+			// }
+			// conf.DHtable = DHtable_tmp;
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -807,21 +1065,29 @@ namespace thunder_ns{
 		Config conf = load_config(file);
 		cout<<"Configuration loaded!"<<endl;
 		Robot robot(conf);
-		cout<<"Robot created!"<<endl;
+		// --- load parameters --- //
+		robot.load_par_DYN(file);
+		if (conf.ELASTIC){
+			robot.load_par_elastic(file);
+		}
+		// --- compute functions --- //
 		if (compute){
+			// - symbolic selectivity - //
+			robot.init_symb_parameters();
+			cout<<"symbolic parameters ok!"<<endl;
+			// - compute functions - //
 			compute_kinematics(robot);
 			cout<<"Kinematics ok!"<<endl;
 			compute_dynamics(robot);
 			cout<<"Dynamics ok!"<<endl;
 			compute_regressors(robot);
 			cout<<"Regressors ok!"<<endl;
+			// - update parameters - //
+			robot.update_symb_parameters();
+			cout<<"symbolic parameters ready!"<<endl;
 		}
-
-		// --- load parameters --- //
-		robot.load_par_DYN(file);
-		if (conf.ELASTIC){
-			robot.load_par_elastic(file);
-		}
+		
+		cout<<"Robot created!"<<endl;
 
 		return robot;
 	}

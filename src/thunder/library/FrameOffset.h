@@ -14,7 +14,7 @@ namespace thunder_ns{
 	/* Homogenous transformation of offset frame */
 	class FrameOffset {
 
-		private:
+		public:
 
 			/* [yaw, pitch, roll] */
 			std::vector<double> ypr;
@@ -24,8 +24,6 @@ namespace thunder_ns{
 			std::vector<double> gravity;
 			/* Operator hat */
 			casadi::SX hat(const std::vector<double>&);
-
-		public:
 
 			/* Empty constructor */
 			FrameOffset();

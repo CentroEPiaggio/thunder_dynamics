@@ -24,7 +24,7 @@ using std::endl;
 
 int main(){
 
-	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	std::string config_file = "../robots/RRR/RRR.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	Robot robot = robot_from_file(config_file, 1); 	// create robot and compute quantities
 
