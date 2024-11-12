@@ -1060,11 +1060,12 @@ namespace thunder_ns{
 		return conf;
 	}
 
-	Robot robot_from_file(std::string file, bool compute){
+	Robot robot_from_file(std::string robot_name, std::string file, bool compute){
 		// create config
 		Config conf = load_config(file);
 		cout<<"Configuration loaded!"<<endl;
 		Robot robot(conf);
+		robot.robotName = robot_name;
 		// --- load parameters --- //
 		robot.load_par_DYN(file);
 		if (conf.ELASTIC){

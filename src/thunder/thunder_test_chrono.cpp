@@ -42,7 +42,7 @@ int main(){
 	for (std::string& r : robots){
 		auto time_start_rob = high_resolution_clock::now();
 		std::cout<<"Robot: "<< r <<std::endl;
-		Robot robot = robot_from_file("../robots/testRobots/" + r + ".yaml");
+		Robot robot = robot_from_file(r, "../robots/testRobots/" + r + ".yaml");
 		auto time_stop_rob = high_resolution_clock::now();
 		auto duration_rob = duration_cast<microseconds>(time_stop_rob - time_start_rob).count();
 		cout<<"robot created in "<<duration_rob<<" us"<<endl;

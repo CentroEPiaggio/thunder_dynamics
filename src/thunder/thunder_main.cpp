@@ -102,11 +102,10 @@ int main(int argc, char* argv[]){
 	path_gen = path_robot + robot_name + "_generatedFiles/";
 
 	// --- Robot creation --- //
-	Robot robot = robot_from_file(config_file, 0);
-	robot.robotName = robot_name;
-	compute_kinematics(robot);
-	compute_dynamics(robot);
-	compute_regressors(robot);
+	Robot robot = robot_from_file(robot_name, config_file, 1);
+	// compute_kinematics(robot);
+	// compute_dynamics(robot);
+	// compute_regressors(robot);
 	nj = robot.get_numJoints();
 
 	// --- Generate merge code --- //

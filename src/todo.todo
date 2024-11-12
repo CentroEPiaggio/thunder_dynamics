@@ -5,6 +5,7 @@
 ✔ symbolic functions not complete @done (11/8/2024, 6:42:46 PM)
 ✔ something to have arguments of parameters in casadi functions @done (11/8/2024, 6:43:02 PM)
 ✔ change compute functions to take model instead of private variables DHtable... @done (11/8/2024, 6:43:08 PM)
+✔ errore in thunder main per la generazione della libreria, rimane robot da qualche parte @done (11/12/2024, 9:38:02 AM)
 ☐ change load parameters into args, where?
 ✔ test symbolic selectivity when there is no "symb", errors? @done (11/8/2024, 6:43:19 PM)
 ☐ change load and save in order to use new file structure, do not save inertial DYN, save only REG, use configFile to load, write next instructions in improvings
@@ -13,9 +14,10 @@
 ☐ load_par is old, need to change the structure as genYaml
 ✔ dynamics in config @done (10/24/2024, 11:53:13 AM)
 ✔ symbolic flags in Config @done (10/24/2024, 11:53:17 AM)
-☐ substitute values in parameters before computing functions
+✔ substitute values in parameters before computing functions @done (11/12/2024, 9:55:51 AM)
 
 improvings:
+	☐ add version control for config file
 	☐ frameOffset into utils.spatial and generic wrt robot and thunder_robot
 	☐ delet par_REG from model
 	☐ add integrity checks and validity of robot
@@ -55,6 +57,7 @@ improvings:
 	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
 
 will be in Thunder:
+	☐ thunder_control: basic controllers that uses thunder_robot
 	✔ elasticity @done (10/17/2024, 3:05:53 PM)
 	☐ symbolic selectivity: possible to choose variables that are symbolic
 	☐ better yaml file, kinematics, dynamics, elastic, ...

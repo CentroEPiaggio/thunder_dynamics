@@ -1,6 +1,7 @@
 # -------------------------- #
 ## ----- Robot Config ----- ##
 # -------------------------- #
+version: 0.2
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
@@ -46,7 +47,7 @@ Ln_to_EE:
 dynamics:
   link1:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
       CoM_x: 1.0
       CoM_y: 1.0
@@ -63,7 +64,7 @@ dynamics:
 
   link2:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
       CoM_x: 1.0
       CoM_y: 1.0
@@ -80,7 +81,7 @@ dynamics:
 
   link3:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
       CoM_x: 1.0
       CoM_y: 1.0
