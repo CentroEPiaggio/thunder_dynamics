@@ -80,8 +80,8 @@ class thunder_robot{
 		void set_x(const Eigen::VectorXd& x_);
 		void set_dx(const Eigen::VectorXd& dx_);
 		void set_ddxr(const Eigen::VectorXd& ddxr_);
-		void set_par_REG(const Eigen::VectorXd& par_);
-		void set_par_DYN(const Eigen::VectorXd& par_);
+		void set_par_REG(const Eigen::VectorXd& par_, bool update_DYN = true);
+		void set_par_DYN(const Eigen::VectorXd& par_, bool update_REG = true);
 		void set_par_K(const Eigen::VectorXd& par_);
 		void set_par_D(const Eigen::VectorXd& par_);
 		void set_par_Dm(const Eigen::VectorXd& par_);
@@ -95,11 +95,13 @@ class thunder_robot{
 		Eigen::VectorXd get_par_Dl();
 		// Eigen::VectorXd get_par_ELA();
 
-		void load_par_REG(std::string);
+		Eigen::VectorXd load_par_REG(std::string, bool update_DYN = true);
 		void save_par_REG(std::string);
-		void load_par_DYN(std::string);
-		void save_par_DYN(std::string);
-		void load_par_elastic(std::string);
+		void load_par(std::string, bool update_REG = true);
+		void save_par(std::string);
+		// void load_par_DYN(std::string);
+		// void save_par_DYN(std::string);
+		// void load_par_elastic(std::string);
 		// void load_par_ELA(std::string);
 		// void save_par_ELA(std::string);
 

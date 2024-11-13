@@ -6,17 +6,27 @@
 ✔ something to have arguments of parameters in casadi functions @done (11/8/2024, 6:43:02 PM)
 ✔ change compute functions to take model instead of private variables DHtable... @done (11/8/2024, 6:43:08 PM)
 ✔ errore in thunder main per la generazione della libreria, rimane robot da qualche parte @done (11/12/2024, 9:38:02 AM)
+✔ is symbolic selectivity working? check times.. seems that parameters does not change time so much @done (11/13/2024, 5:18:22 PM)
+☐ update_conf() function to save updated configuration file
+✔ load_config() have to load everything @done (11/13/2024, 9:07:30 AM)
+✔ save_conf() in Robot, taken from genYaml, with kinematics, elastic, ee, world, everything @done (11/13/2024, 9:11:15 AM)
+✔ load_conf() in Robot, with everything. load_config have to use load_par? why to use a function to create config and not directly a constructor? @done (11/13/2024, 9:11:21 AM)
 ☐ change load parameters into args, where?
 ✔ test symbolic selectivity when there is no "symb", errors? @done (11/8/2024, 6:43:19 PM)
-☐ change load and save in order to use new file structure, do not save inertial DYN, save only REG, use configFile to load, write next instructions in improvings
+✔ change load and save in order to use new file structure, do not save inertial DYN, save only REG, use configFile to load, write next instructions in improvings @done (11/13/2024, 11:26:12 AM)
 ✔ load symbolic selectivity from config_file @done (11/8/2024, 6:43:30 PM)
-☐ in Robot(config) usa i parametri salvati e i simbolici per costruire il robot.
-☐ load_par is old, need to change the structure as genYaml
+✔ in Robot(config) usa i parametri salvati e i simbolici per costruire il robot. @done (11/13/2024, 5:16:34 PM)
+✔ load_par is old, need to change the structure as genYaml @done (11/13/2024, 11:26:21 AM)
+✔ change load and save in thunder_robot, following new structure @done (11/13/2024, 11:26:27 AM)
+☐ parse kinematics in load_par() in thunder_robot
 ✔ dynamics in config @done (10/24/2024, 11:53:13 AM)
 ✔ symbolic flags in Config @done (10/24/2024, 11:53:17 AM)
 ✔ substitute values in parameters before computing functions @done (11/12/2024, 9:55:51 AM)
 
 improvings:
+	☐ use casadi::SX for everything in thunder, Eigen for thunder_robot.. check if better
+	☐ robot_from_file() as Robot constructor
+	☐ delete Config and use YAML::Node? in contructor from file, Robot save into config and extract from config in the same function
 	☐ add version control for config file
 	☐ frameOffset into utils.spatial and generic wrt robot and thunder_robot
 	☐ delet par_REG from model
@@ -57,6 +67,7 @@ improvings:
 	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
 
 will be in Thunder:
+	☐ user-defined compute functions, functions to add to the robot creation that adds features to Robot
 	☐ thunder_control: basic controllers that uses thunder_robot
 	✔ elasticity @done (10/17/2024, 3:05:53 PM)
 	☐ symbolic selectivity: possible to choose variables that are symbolic

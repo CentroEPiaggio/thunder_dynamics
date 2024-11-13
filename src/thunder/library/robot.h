@@ -4,6 +4,7 @@
 #include <string>
 // #include <map> // used for model and functions into Robot, like dictionaries
 // #include <functional>
+#include <yaml-cpp/yaml.h>
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
 #include "FrameOffset.h"
@@ -21,7 +22,7 @@ namespace thunder_ns{
 	
 	typedef struct Config Config;
 	typedef struct fun_obj fun_obj;
-	Config load_config(std::string file);
+	// Config load_config(std::string file);
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute = 1);
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
@@ -29,6 +30,7 @@ namespace thunder_ns{
 		private:
 			// int N_functions;
 			// std::vector<fun_obj> functions;
+			int parse_config();
 			void initVarsFuns();
 			/* Create and initialize casadi function */
 			// void init_casadi_functions();
@@ -107,7 +109,12 @@ namespace thunder_ns{
 			DHtable: Denavit-Hartenberg table format [a alpha d theta]
 			jtsType: is string of "R" and "P"
 			base_frame: is used to set transformation between link0 and world_frame */
-			Robot(const Config conf);
+			Robot(const std::string config_file);
+			Robot(const YAML::Node yaml);
+			// Robot(const Config conf);
+			YAML::Node config_yaml;
+			YAML::Node load_config(std::string config_file);
+			int load_config(YAML::Node yaml);
 			int init_symb_parameters();
 			int subs_symb_par(std::string par);
 			std::vector<std::string> obtain_symb_parameters(std::vector<std::string>, std::vector<std::string>);
@@ -128,6 +135,7 @@ namespace thunder_ns{
 			int valid;
 			std::map<std::string, casadi::SX> model;
 			Eigen::MatrixXd get(std::string name);
+			casadi::SX get_sx(std::string name);
 			// get functions
 			int get_numJoints();
 			// std::vector<int> get_numParLink();
@@ -171,9 +179,12 @@ namespace thunder_ns{
 			int set_par_Dl(Eigen::VectorXd);
 			// int set_par_ELA(Eigen::VectorXd);
 			// load functions
-			int load_par_DYN(std::string config_file);
-			int load_par_REG(std::string config_file);
-			int load_par_elastic(std::string file);
+			int load_par(std::string config_file, bool update_REG = 1);
+			casadi::SX load_par_REG(std::string config_file, bool update_DYN = 1);
+			// int load_par_elastic(std::string file);
+			void update_conf();
+			int save_conf(std::string par_file);
+			int save_par_REG(std::string par_file);
 			int update_inertial_DYN();
 			int update_inertial_REG();
 			// std::map<std::string, Eigen::MatrixXd> get;

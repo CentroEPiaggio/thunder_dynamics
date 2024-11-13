@@ -124,24 +124,24 @@ void thunder_robot::update_inertial_REG(){
 	}
 }
 
-void thunder_robot::set_par_DYN(const Eigen::VectorXd& par_){
+void thunder_robot::set_par_DYN(const Eigen::VectorXd& par_, bool update_REG){
 	if(par_.size() == STD_PAR_LINK*n_joints){
 		par_DYN = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
 	// conversion from REG to DYN
-	update_inertial_REG();
+	if (update_REG)	update_inertial_REG();
 }
 
-void thunder_robot::set_par_REG(const Eigen::VectorXd& par_){
+void thunder_robot::set_par_REG(const Eigen::VectorXd& par_, bool update_DYN){
 	if(par_.size() == STD_PAR_LINK*n_joints){
 		par_REG = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
 	// conversion from REG to DYN
-	update_inertial_DYN();
+	if (update_DYN)	update_inertial_DYN();
 }
 
 void thunder_robot::set_par_K(const Eigen::VectorXd& par_){
@@ -200,118 +200,158 @@ Eigen::VectorXd thunder_robot::get_par_Dl(){
 	return par_Dl;
 }
 
-void thunder_robot::load_par_REG(std::string file_path){
+Eigen::VectorXd thunder_robot::load_par_REG(std::string file_path, bool update_DYN){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
-		
-		double mass, m_cmx, m_cmy, m_cmz, xx, xy, xz, yy, yz, zz;
-		int i = 0;
-		for (const auto& node : config) {
-			std::string linkName = node.first.as<std::string>();
-			mass = node.second["mass"].as<double>();
-			m_cmx = node.second["m_CoM_x"].as<double>();
-			m_cmy = node.second["m_CoM_y"].as<double>();
-			m_cmz = node.second["m_CoM_z"].as<double>();
-			xx = node.second["Ixx"].as<double>();
-			xy = node.second["Ixy"].as<double>();
-			xz = node.second["Ixz"].as<double>();
-			yy = node.second["Iyy"].as<double>();
-			yz = node.second["Iyz"].as<double>();
-			zz = node.second["Izz"].as<double>();
+		int i;
+		// --- Parse dynamics REG --- //
+		if (config["dynamics"]){
+			YAML::Node dynamics = config["dynamics"];
+			double mass, m_cmx, m_cmy, m_cmz, xx, xy, xz, yy, yz, zz;
+			i = 0;
+			for (const auto& node : dynamics) {
+				if (i==n_joints) break;
+				YAML::Node inertial = node.second["inertial"];
+				std::string linkName = node.first.as<std::string>();
+				mass = inertial["mass"].as<double>();
+				m_cmx = inertial["m_CoM_x"].as<double>();
+				m_cmy = inertial["m_CoM_y"].as<double>();
+				m_cmz = inertial["m_CoM_z"].as<double>();
+				xx = inertial["Ixx"].as<double>();
+				xy = inertial["Ixy"].as<double>();
+				xz = inertial["Ixz"].as<double>();
+				yy = inertial["Iyy"].as<double>();
+				yz = inertial["Iyz"].as<double>();
+				zz = inertial["Izz"].as<double>();
 
-			par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
-			
-			// link friction
-			for (int j=0; j<Dl_order; j++){
-				std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
-				par_Dl(Dl_order*i+j) = Dl[j];
-				std::cout<<"Dl_"<<j<<": "<<Dl[j] << std::endl;
+				par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,m_cmx,m_cmy,m_cmz,xx,xy,xz,yy,yz,zz;
+				
+				i++;
 			}
-
-			i++;
+			if (update_DYN) update_inertial_DYN();
 		}
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 	}
-	update_inertial_DYN();
+	return par_REG;
 }
 
-void thunder_robot::load_par_DYN(std::string file_path){
+void thunder_robot::load_par(std::string file_path, bool update_REG){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
+		int i;
+		// --- Parse kinematics --- //
+		// to do!
+		if (config["kinematics"]){
+			YAML::Node kinematics = config["kinematics"];
+		}
 		
-		double mass, cmx, cmy, cmz, xx, xy, xz, yy, yz, zz;
-		int i = 0;
-		for (const auto& node : config) {
-			// inertial parameters
-			std::string linkName = node.first.as<std::string>();
-			mass = node.second["mass"].as<double>();
-			cmx = node.second["CoM_x"].as<double>();
-			cmy = node.second["CoM_y"].as<double>();
-			cmz = node.second["CoM_z"].as<double>();
-			xx = node.second["Ixx"].as<double>();
-			xy = node.second["Ixy"].as<double>();
-			xz = node.second["Ixz"].as<double>();
-			yy = node.second["Iyy"].as<double>();
-			yz = node.second["Iyz"].as<double>();
-			zz = node.second["Izz"].as<double>();
+		// --- Parse dynamics --- //
+		if (config["dynamics"]){
+			YAML::Node dynamics = config["dynamics"];
+			double mass, cmx, cmy, cmz, xx, xy, xz, yy, yz, zz;
+			i=0;
+			for (const auto& node : dynamics) {
+				if (i==n_joints) break;
+				YAML::Node inertial = node.second["inertial"];
+				// - inertial parameters - //
+				std::string linkName = node.first.as<std::string>();
+				mass = inertial["mass"].as<double>();
+				cmx = inertial["CoM_x"].as<double>();
+				cmy = inertial["CoM_y"].as<double>();
+				cmz = inertial["CoM_z"].as<double>();
+				xx = inertial["Ixx"].as<double>();
+				xy = inertial["Ixy"].as<double>();
+				xz = inertial["Ixz"].as<double>();
+				yy = inertial["Iyy"].as<double>();
+				yz = inertial["Iyz"].as<double>();
+				zz = inertial["Izz"].as<double>();
 
-			par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
-			
-			// link friction
-			for (int j=0; j<Dl_order; j++){
-				std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
-				par_Dl(Dl_order*i+j) = Dl[j];
-				std::cout<<"Dl_"<<j<<": "<<Dl[j] << std::endl;
+				par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
+				
+				// - link friction - //
+				if (node.second["friction"]){
+					std::vector<double> Dl = node.second["friction"]["Dl"].as<std::vector<double>>();
+					for (int j=0; j<Dl_order; j++){
+						par_Dl(Dl_order*i + j) = Dl[j];
+					}
+				}
+				i++;
 			}
+			if (update_REG) update_inertial_REG();
+		}
 
-			i++;
+		// --- Parse elastic --- //
+		if (config["elastic"]){
+			YAML::Node elastic = config["elastic"];
+			i = 0;
+			for (const auto& node : elastic["joints"]) {
+				if (i==numElasticJoints) break;
+				std::string jointName = node.first.as<std::string>();
+				// stiffness
+				for (int j=0; j<K_order; j++){
+					std::vector<double> K = node.second["K"].as<std::vector<double>>();
+					par_K(K_order*i+j) = K[j];
+					std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
+				}
+				// coupling friction
+				for (int j=0; j<D_order; j++){
+					std::vector<double> D = node.second["D"].as<std::vector<double>>();
+					par_D(D_order*i + j) = D[j];
+					std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
+				}
+				// motor friction
+				for (int j=0; j<Dm_order; j++){
+					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
+					par_Dm(Dm_order*i + j) = Dm[j];
+					std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
+				}
+				i++;
+			}
 		}
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 	}
-	update_inertial_REG();
 }
 
-void thunder_robot::load_par_elastic(std::string file_path){
-	// ----- parsing yaml elastic ----- //
-	try {
-		// load yaml
-		YAML::Node config_file = YAML::LoadFile(file_path);
-		// parse elastic
-		YAML::Node elastic = config_file["elastic"];
-		int i = 0;
-		for (const auto& node : elastic["joints"]) {
+// void thunder_robot::load_par_elastic(std::string file_path){
+// 	// ----- parsing yaml elastic ----- //
+// 	try {
+// 		// load yaml
+// 		YAML::Node config_file = YAML::LoadFile(file_path);
+// 		// parse elastic
+// 		YAML::Node elastic = config_file["elastic"];
+// 		int i = 0;
+// 		for (const auto& node : elastic["joints"]) {
 			
-			if (i==numElasticJoints) break;
-			std::string jointName = node.first.as<std::string>();
-			// stiffness
-			for (int j=0; j<K_order; j++){
-				std::vector<double> K = node.second["K"].as<std::vector<double>>();
-				par_K(K_order*i+j) = K[j];
-				std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
-			}
-			// coupling friction
-			for (int j=0; j<D_order; j++){
-				std::vector<double> D = node.second["D"].as<std::vector<double>>();
-				par_D(D_order*i + j) = D[j];
-				std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
-			}
-			// motor friction
-			for (int j=0; j<Dm_order; j++){
-				std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
-				par_Dm(Dm_order*i + j) = Dm[j];
-				std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
-			}
-
-			i++;
-		}
-		// std::cout<<"YAML_DH letto"<<std::endl;
-		// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
-	} catch (const YAML::Exception& e) {
-		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-	}
-}
+// 			if (i==numElasticJoints) break;
+// 			std::string jointName = node.first.as<std::string>();
+// 			// stiffness
+// 			for (int j=0; j<K_order; j++){
+// 				std::vector<double> K = node.second["K"].as<std::vector<double>>();
+// 				par_K(K_order*i+j) = K[j];
+// 				std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
+// 			}
+// 			// coupling friction
+// 			for (int j=0; j<D_order; j++){
+// 				std::vector<double> D = node.second["D"].as<std::vector<double>>();
+// 				par_D(D_order*i + j) = D[j];
+// 				std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
+// 			}
+// 			// motor friction
+// 			for (int j=0; j<Dm_order; j++){
+// 				std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
+// 				par_Dm(Dm_order*i + j) = Dm[j];
+// 				std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
+// 			}
+// 			i++;
+// 		}
+// 		// std::cout<<"YAML_DH letto"<<std::endl;
+// 		// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+// 	} catch (const YAML::Exception& e) {
+// 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+// 	}
+// }
 
 void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 	std::vector<std::string> keys_reg;
@@ -350,7 +390,7 @@ void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 	}
 }
 
-void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
+void thunder_robot::save_par(std::string path_yaml_DH_DYN){
 	std::vector<std::string> keys_reg;
 	keys_reg.resize(5);
 	keys_reg[0] = "mass"; keys_reg[1] = "CoM_"; keys_reg[2] = "I"; keys_reg[3] = "DYN"; keys_reg[4] = "dynamics";
@@ -389,7 +429,8 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 
 // Other functions
 void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
-	YAML::Node control;
+	YAML::Node yamlFile;
+	YAML::Node dynamicsNode;
 
 	emitter_.SetIndent(2);
 	emitter_.SetSeqFormat(YAML::Flow);
@@ -402,25 +443,30 @@ void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std:
 		LinkProp link = links_prop_[i];    
 		YAML::Node linkNode;
 		std::string nodeName;
+		YAML::Node linkInertia;
+		YAML::Node linkFric;
 
 		nodeName = link.name;
-		linkNode[keys_[0]] = link.mass;
-		linkNode[keys_[1]+"x"] = link.xyz[0];
-		linkNode[keys_[1]+"y"] = link.xyz[1];
-		linkNode[keys_[1]+"z"] = link.xyz[2];
-		linkNode[keys_[2]+"xx"] = link.parI[0];
-		linkNode[keys_[2]+"xy"] = link.parI[1];
-		linkNode[keys_[2]+"xz"] = link.parI[2];
-		linkNode[keys_[2]+"yy"] = link.parI[3];
-		linkNode[keys_[2]+"yz"] = link.parI[4];
-		linkNode[keys_[2]+"zz"] = link.parI[5];
+		linkInertia[keys_[0]] = link.mass;
+		linkInertia[keys_[1]+"x"] = link.xyz[0];
+		linkInertia[keys_[1]+"y"] = link.xyz[1];
+		linkInertia[keys_[1]+"z"] = link.xyz[2];
+		linkInertia[keys_[2]+"xx"] = link.parI[0];
+		linkInertia[keys_[2]+"xy"] = link.parI[1];
+		linkInertia[keys_[2]+"xz"] = link.parI[2];
+		linkInertia[keys_[2]+"yy"] = link.parI[3];
+		linkInertia[keys_[2]+"yz"] = link.parI[4];
+		linkInertia[keys_[2]+"zz"] = link.parI[5];
 		// link friction
-		linkNode["Dl"] = link.Dl;
+		linkFric["Dl"] = link.Dl;
 
-		emitter_ << YAML::BeginMap;
-		emitter_ << YAML::Key << nodeName;
-		emitter_ << linkNode;
-		emitter_ << YAML::EndMap << YAML::Newline;
+		linkNode["inertial"] = linkInertia;
+		linkNode["friction"] = linkFric;
+		dynamicsNode[nodeName] = linkNode;
+
+		yamlFile["dynamics"] = dynamicsNode;
+		emitter_ << yamlFile << YAML::Newline;
+
 	}
 }
 

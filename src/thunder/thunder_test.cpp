@@ -177,7 +177,13 @@ int main(){
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl;
+	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+
+	// - symbolic quantities - //
+	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
+	// cout << "M_symb: " << robot.model["M"] << endl;
+	cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
+	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
 	return 0;
 }

@@ -12,13 +12,13 @@
 
 // #include "thunder_robot.h"
 #include "thunder_RRR.h"
-#include "thunder_seaRRR.h"
+// #include "thunder_seaRRR.h"
 
 // #define NJ 3
 // #define N_PARAM_DYN 30
 // const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string inertial_file = "../robots/RRR_inertial_DYN.yaml";
+const std::string par_file = "../robots/RRR_par.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_DYN.yaml";
 
@@ -39,7 +39,7 @@ int main(){
 
 	thunder_RRR robot;
 
-	robot.load_par_DYN(inertial_file);
+	robot.load_par(par_file);
 	const int NJ = robot.get_numJoints();
 	const int N_PARAM_DYN = robot.get_numParDYN();
 	int N_PARAM_REG = robot.get_numParREG();

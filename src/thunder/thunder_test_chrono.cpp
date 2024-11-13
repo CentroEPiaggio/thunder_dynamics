@@ -151,6 +151,7 @@ int main(){
 			min_dur = (duration<min_dur) ? duration : min_dur;
 		}
 		cout<<"time Yr: "<<(double)min_dur/1000<<" us"<<endl<<endl;
+		cout<<"G: " << robot.model["G"] << endl<<endl;
 	}
 
 	return 0;
