@@ -135,7 +135,7 @@ namespace thunder_ns{
 			int valid;
 			std::map<std::string, casadi::SX> model;
 			Eigen::MatrixXd get(std::string name);
-			casadi::SX get_sx(std::string name);
+			// casadi::SX get_sx(std::string name);
 			// get functions
 			int get_numJoints();
 			// std::vector<int> get_numParLink();
@@ -150,6 +150,7 @@ namespace thunder_ns{
 			int get_D_order();
 			int get_Dl_order();
 			int get_Dm_order();
+			Eigen::VectorXd get_par(std::string par);
 			Eigen::VectorXd get_par_DYN();
 			Eigen::VectorXd get_par_REG();
 			Eigen::VectorXd get_par_K();
@@ -185,6 +186,7 @@ namespace thunder_ns{
 			void update_conf();
 			int save_conf(std::string par_file);
 			int save_par_REG(std::string par_file);
+			int save_par(std::vector<std::string> par_list, std::string par_file);
 			int update_inertial_DYN();
 			int update_inertial_REG();
 			// std::map<std::string, Eigen::MatrixXd> get;

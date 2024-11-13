@@ -185,6 +185,9 @@ int main(){
 	cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
 	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
+	// - save parameters - //
+	robot.save_par({"world2L0", "Ln2EE"}, "../robots/RRR/RRR_generatedFiles/saved_par.yaml");
+
 	return 0;
 }
 

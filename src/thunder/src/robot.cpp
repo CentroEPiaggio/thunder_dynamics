@@ -722,6 +722,15 @@ namespace thunder_ns{
 		}
 	}
 
+	Eigen::VectorXd Robot::get_par(std::string par){
+		const casadi::SX& par_casadi = args[par];
+		int numPar = par_casadi.size1() * par_casadi.size2();
+		Eigen::VectorXd param(numPar);
+		std::vector<casadi::SXElem> res_elements = par_casadi.get_elements();
+		std::transform(res_elements.begin(), res_elements.end(), param.data(), mapFunction);
+		return param;
+	}
+
 	Eigen::VectorXd Robot::get_par_DYN(){
 		const casadi::SX& par_DYN_casadi = args["par_DYN"];
 		int numPar = STD_PAR_LINK*numJoints;
@@ -1051,6 +1060,39 @@ namespace thunder_ns{
 			yamlFile["dynamics"] = dynamicsNode;
 			emitter << yamlFile << YAML::Newline;
 			
+			std::ofstream fout(par_file);
+			fout << emitter.c_str();
+			fout.close();
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+			return 0;
+		}
+		return 1;
+	}
+
+	int Robot::save_par(std::vector<std::string> par_list, std::string par_file){
+		try {
+			YAML::Emitter emitter;
+			emitter.SetIndent(2);
+			emitter.SetSeqFormat(YAML::Flow);
+
+			YAML::Node yamlFile;
+
+			for (auto& par : par_list){
+				// YAML::Node par_node;
+				// par_node[par] = args[par];
+				// emitter << par_node << YAML::Newline;
+				// yamlFile[par] = args[par];
+
+				std::cout << par + "_sx: " << args[par] << endl;
+				Eigen::VectorXd vect_eig = get_par(par);
+				std::cout << par + "_eig: " << vect_eig << endl;
+				std::vector<double> vect_std(vect_eig.data(), vect_eig.data() + vect_eig.rows() * vect_eig.cols());
+				yamlFile[par] = vect_std;
+				
+			}
+			emitter << yamlFile << YAML::Newline;
+
 			std::ofstream fout(par_file);
 			fout << emitter.c_str();
 			fout.close();
