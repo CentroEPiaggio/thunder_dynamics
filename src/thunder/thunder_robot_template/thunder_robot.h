@@ -20,6 +20,8 @@ class thunder_robot{
 		/* Joints' variables */
 		Eigen::VectorXd q, dq, dqr, ddqr, par_DYN, par_REG, par_Dl;
 		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
+		Eigen::MatrixXd DHtable;
+		Eigen::VectorXd gravity, world2L0, Ln2EE;
 
 		void update_inertial_DYN();
 		void update_inertial_REG();
@@ -86,6 +88,10 @@ class thunder_robot{
 		void set_par_D(const Eigen::VectorXd& par_);
 		void set_par_Dm(const Eigen::VectorXd& par_);
 		void set_par_Dl(const Eigen::VectorXd& par_);
+		void set_DHtable(const Eigen::MatrixXd& par_);
+		void set_gravity(const Eigen::VectorXd& par_);
+		void set_world2L0(const Eigen::VectorXd& par_);
+		void set_Ln2EE(const Eigen::VectorXd& par_);
 		// void set_par_ELA(const Eigen::VectorXd& par_);
 		Eigen::VectorXd get_par_REG();
 		Eigen::VectorXd get_par_DYN();
@@ -93,12 +99,16 @@ class thunder_robot{
 		Eigen::VectorXd get_par_D();
 		Eigen::VectorXd get_par_Dm();
 		Eigen::VectorXd get_par_Dl();
+		Eigen::MatrixXd get_DHtable();
+		Eigen::VectorXd get_gravity();
+		Eigen::VectorXd get_world2L0();
+		Eigen::VectorXd get_Ln2EE();
 		// Eigen::VectorXd get_par_ELA();
 
 		Eigen::VectorXd load_par_REG(std::string, bool update_DYN = true);
 		void save_par_REG(std::string);
-		void load_par(std::string, bool update_REG = true);
-		void save_par(std::string);
+		void load_conf(std::string, bool update_REG = true);
+		void save_par_DYN(std::string);
 		// void load_par_DYN(std::string);
 		// void save_par_DYN(std::string);
 		// void load_par_elastic(std::string);

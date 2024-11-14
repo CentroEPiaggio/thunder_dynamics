@@ -186,7 +186,10 @@ int main(){
 	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
 	// - save parameters - //
-	robot.save_par({"world2L0", "Ln2EE"}, "../robots/RRR/RRR_generatedFiles/saved_par.yaml");
+	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
+	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
+	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
+	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
 
 	return 0;
 }

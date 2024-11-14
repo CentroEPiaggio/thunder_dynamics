@@ -176,6 +176,22 @@ void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
 	}
 }
 
+void thunder_robot::set_DHtable(const Eigen::MatrixXd& par_){
+	DHtable = par_;
+}
+
+void thunder_robot::set_gravity(const Eigen::VectorXd& par_){
+	gravity = par_;
+}
+
+void thunder_robot::set_world2L0(const Eigen::VectorXd& par_){
+	world2L0 = par_;
+}
+
+void thunder_robot::set_Ln2EE(const Eigen::VectorXd& par_){
+	Ln2EE = par_;
+}
+
 Eigen::VectorXd thunder_robot::get_par_DYN(){
 	return par_DYN;
 }
@@ -198,6 +214,22 @@ Eigen::VectorXd thunder_robot::get_par_Dm(){
 
 Eigen::VectorXd thunder_robot::get_par_Dl(){
 	return par_Dl;
+}
+
+Eigen::MatrixXd thunder_robot::get_DHtable(){
+	return DHtable;
+}
+
+Eigen::VectorXd thunder_robot::get_gravity(){
+	return gravity;
+}
+
+Eigen::VectorXd thunder_robot::get_world2L0(){
+	return world2L0;
+}
+
+Eigen::VectorXd thunder_robot::get_Ln2EE(){
+	return Ln2EE;
 }
 
 Eigen::VectorXd thunder_robot::load_par_REG(std::string file_path, bool update_DYN){
@@ -236,14 +268,43 @@ Eigen::VectorXd thunder_robot::load_par_REG(std::string file_path, bool update_D
 	return par_REG;
 }
 
-void thunder_robot::load_par(std::string file_path, bool update_REG){
+void thunder_robot::load_conf(std::string file_path, bool update_REG){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
 		int i;
 		// --- Parse kinematics --- //
-		// to do!
 		if (config["kinematics"]){
+			// Denavit-Hartenberg
 			YAML::Node kinematics = config["kinematics"];
+			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
+			// DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			DHtable.resize(n_joints,4);
+			for (int i=0; i<n_joints; i++){
+				for (int j=0; j<4; j++){
+					DHtable(i,j) = dh_vect[4*i + j];
+				}
+			}
+		}
+		// - Frame Offsets - //
+		if (config["Base_to_L0"]){
+			world2L0.resize(6);
+			YAML::Node frame_base = config["Base_to_L0"];
+			std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
+			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
+			for (int i=0; i<3; i++){
+				world2L0(i) = tr[i];
+				world2L0(i+3) = ypr[i];
+			}
+		}
+		if (config["Ln_to_EE"]){
+			Ln2EE.resize(6);
+			YAML::Node frame_ee = config["Ln_to_EE"];
+			std::vector<double> tr = frame_ee["tr"].as<std::vector<double>>();
+			std::vector<double> ypr = frame_ee["ypr"].as<std::vector<double>>();
+			for (int i=0; i<3; i++){
+				Ln2EE(i) = tr[i];
+				Ln2EE(i+3) = ypr[i];
+			}
 		}
 		
 		// --- Parse dynamics --- //
@@ -279,6 +340,15 @@ void thunder_robot::load_par(std::string file_path, bool update_REG){
 				i++;
 			}
 			if (update_REG) update_inertial_REG();
+		}
+		// - Gravity - //
+		if (config["gravity"]){
+			gravity.resize(3);
+			YAML::Node gravity_node = config["gravity"];
+			std::vector<double> gravity_vect = gravity_node["value"].as<std::vector<double>>();
+			for (int i=0; i<3; i++){
+				gravity(i) = gravity_vect[i];
+			}
 		}
 
 		// --- Parse elastic --- //
@@ -390,7 +460,7 @@ void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
 	}
 }
 
-void thunder_robot::save_par(std::string path_yaml_DH_DYN){
+void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	std::vector<std::string> keys_reg;
 	keys_reg.resize(5);
 	keys_reg[0] = "mass"; keys_reg[1] = "CoM_"; keys_reg[2] = "I"; keys_reg[3] = "DYN"; keys_reg[4] = "dynamics";

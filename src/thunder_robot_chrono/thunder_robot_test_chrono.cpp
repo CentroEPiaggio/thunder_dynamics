@@ -19,7 +19,7 @@
 
 // #define NJ 3
 // #define N_PAR 30
-// const std::string inertial_file = "../robots/robot/robot_inertial_REG.yaml";
+// const std::string config_file = "../robots/robot/robot_inertial_REG.yaml";
 
 using namespace std::chrono;
 using std::cout;
@@ -29,9 +29,9 @@ int main(){
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
 
-	std::string inertial_file = "../robots/R7_par.yaml";
-	thunder_R7 robot;
-	cout<<"Robot: R7"<<endl;
+	std::string config_file = "../robots/R3_conf.yaml";
+	thunder_R3 robot;
+	cout<<"Robot: R3"<<endl;
 
 	int n_rep = 10000;
 	int min_dur = 999999999;
@@ -39,7 +39,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	robot.load_par(inertial_file);
+	robot.load_conf(config_file);
 	const int NJ = robot.get_numJoints();
 	const int N_PAR = robot.get_numParDYN();
 
@@ -145,24 +145,3 @@ int main(){
 
 	return 0;
 }
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v){
-// 	Eigen::Matrix3d vhat;
-			
-// 	// chech
-// 	if(v.size() != 3 ){
-// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-// 	}
-	
-// 	vhat(0,0) = 0;
-// 	vhat(0,1) = -v[2];
-// 	vhat(0,2) = v[1];
-// 	vhat(1,0) = v[2];
-// 	vhat(1,1) = 0;
-// 	vhat(1,2) = -v[0];
-// 	vhat(2,0) = -v[1];
-// 	vhat(2,1) = v[0];
-// 	vhat(2,2) = 0;
-
-// 	return vhat;
-// }

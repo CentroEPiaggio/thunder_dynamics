@@ -60,7 +60,7 @@ int main(){
 	// set configuration
 	my_robot.setArguments(q, dq, dq_r, ddq_r);
 	// load parameters
-	my_robot.load_par("path/to/par/file"); // or load_par_REG()
+	my_robot.load_conf("path/to/par/file"); // or load_par_REG()
 	// or set it at runtime from vector
 	my_robot.set_par_DYN(params); // or set_par_REG(), or set_par_<par>()
 

@@ -161,7 +161,7 @@ int main(int argc, char* argv[]){
 	}
 
 	// --- generate parameters files --- //
-	std::string par_file = path_gen + robot_name + "_par.yaml";
+	std::string par_file = path_gen + robot_name + "_conf.yaml";
 	std::string par_REG_file = path_gen + robot_name + "_par_REG.yaml";
 	robot.save_conf(par_file);
 	robot.save_par_REG(par_REG_file);
@@ -190,8 +190,8 @@ int main(int argc, char* argv[]){
 		sourcePath = absolutePath + robot_name + "_par_REG.yaml";
 		sourceDestPath = PATH_COPY_YAML + robot_name + "_par_REG.yaml";
 		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-		sourcePath = absolutePath + robot_name + "_par.yaml";
-		sourceDestPath = PATH_COPY_YAML + robot_name + "_par.yaml";
+		sourcePath = absolutePath + robot_name + "_conf.yaml";
+		sourceDestPath = PATH_COPY_YAML + robot_name + "_conf.yaml";
 		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
 		// copy thunder_robot
@@ -225,8 +225,8 @@ int main(int argc, char* argv[]){
 		sourcePath = absolutePath + robot_name + "_par_REG.yaml";
 		sourceDestPath = PATH_COPY_CHRONO_YAML + robot_name + "_par_REG.yaml";
 		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-		sourcePath = absolutePath + robot_name + "_par.yaml";
-		sourceDestPath = PATH_COPY_CHRONO_YAML + robot_name + "_par.yaml";
+		sourcePath = absolutePath + robot_name + "_conf.yaml";
+		sourceDestPath = PATH_COPY_CHRONO_YAML + robot_name + "_conf.yaml";
 		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
 
 		// copy thunder_robot

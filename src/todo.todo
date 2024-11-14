@@ -7,7 +7,10 @@
 ✔ change compute functions to take model instead of private variables DHtable... @done (11/8/2024, 6:43:08 PM)
 ✔ errore in thunder main per la generazione della libreria, rimane robot da qualche parte @done (11/12/2024, 9:38:02 AM)
 ✔ is symbolic selectivity working? check times.. seems that parameters does not change time so much @done (11/13/2024, 5:18:22 PM)
+☐ not all values from one parameter are symbolic?
+☐ save_conf and load_conf not ready, for now there are save_par, load_par
 ☐ update_conf() function to save updated configuration file
+✔ load_par() try to load all parameters, use load_pars()? or just use the arguments to choose what to do @done (11/14/2024, 7:14:56 AM)
 ✔ load_config() have to load everything @done (11/13/2024, 9:07:30 AM)
 ✔ save_conf() in Robot, taken from genYaml, with kinematics, elastic, ee, world, everything @done (11/13/2024, 9:11:15 AM)
 ✔ load_conf() in Robot, with everything. load_config have to use load_par? why to use a function to create config and not directly a constructor? @done (11/13/2024, 9:11:21 AM)
@@ -24,7 +27,12 @@
 ✔ substitute values in parameters before computing functions @done (11/12/2024, 9:55:51 AM)
 
 improvings:
-	☐ use casadi::SX for everything in thunder, Eigen for thunder_robot.. check if better
+	☐ parameters in thunder_robot depending on the symbolic choose
+	☐ integrate load_conf_par() into parse_config()
+	☐ save and load par in thunder_robot as generic functions
+	☐ check dimensions in load_par() in robot
+	☐ parse_config() in robot is too big
+	☐ use casadi::SX for everything in thunder, Eigen for thunder_robot.. check if better!
 	☐ robot_from_file() as Robot constructor
 	☐ delete Config and use YAML::Node? in contructor from file, Robot save into config and extract from config in the same function
 	☐ add version control for config file
@@ -70,8 +78,8 @@ will be in Thunder:
 	☐ user-defined compute functions, functions to add to the robot creation that adds features to Robot
 	☐ thunder_control: basic controllers that uses thunder_robot
 	✔ elasticity @done (10/17/2024, 3:05:53 PM)
-	☐ symbolic selectivity: possible to choose variables that are symbolic
-	☐ better yaml file, kinematics, dynamics, elastic, ...
+	✔ symbolic selectivity: possible to choose variables that are symbolic @done (11/14/2024, 10:37:50 AM)
+	✔ better yaml file, kinematics, dynamics, elastic, ... @done (11/14/2024, 10:37:56 AM)
 	☐ generalize kinematics: not DH or URDF, parameters enter directly into the Transform matrix
 	☐ analytic Jacobian: choose a parametrization and provide conversions
 	☐ arguments as a map, get also return arguments, function set("") imposta argomento, add_arg -> aggiunge un argomento simbolico
@@ -79,12 +87,13 @@ will be in Thunder:
 	☐ handling of different joint structure, fixed, defined by user
 	☐ add map with the compute functions, and add to the map kinematics, dynamics, regressors, then add method compute that calls each compute function
 	☐ initialize variable dimensions in initializer list of Robot
-	☐ save_arguments or parametere more generic, all in one file, kinematics, dynamics, elastic --> <robot>_config.yaml
+	✔ save_arguments or parameters more generic, all in one file, kinematics, dynamics, elastic --> <robot>_conf.yaml @done (11/14/2024, 10:40:09 AM)
 	☐ generate inertial_REG separately, for the use of regressor or adaptive control
 	☐ load arguments or parameters, one function for everything! (load_par(file) have to load par_DYN, par_K... all automatically)
 	☐ config file should be used by both robot and thunder_robot, save and load have to be the same!
 	
 INFO:
+	- load_conf read and parse the configuration file, load_par read the file that has the same structure as the internal args map, same for save
 	- thunder take the file <robot>.yaml that contains the configuration of the robot
 	- thunder creates <robot>_gen.h, <robot>_gen.cpp
 	- thunder take thunder_robot and rename it to thunder_<robot>, changing inside the necessary. Then copy it to generatedFiles

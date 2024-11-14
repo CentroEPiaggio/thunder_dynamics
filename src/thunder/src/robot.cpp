@@ -722,7 +722,7 @@ namespace thunder_ns{
 		}
 	}
 
-	Eigen::VectorXd Robot::get_par(std::string par){
+	Eigen::VectorXd Robot::get_arg(std::string par){
 		const casadi::SX& par_casadi = args[par];
 		int numPar = par_casadi.size1() * par_casadi.size2();
 		Eigen::VectorXd param(numPar);
@@ -855,7 +855,7 @@ namespace thunder_ns{
 	// 	return _Ln2EE_;
 	// }
 
-	int Robot::load_par(std::string file, bool update_REG){
+	int Robot::load_conf_par(std::string file, bool update_REG){
 		// Eigen::VectorXd param_DYN;
 		casadi::SX param_DYN(STD_PAR_LINK*numJoints,1);
 		casadi::SX param_Dl(Dl_order*numJoints,1);
@@ -988,6 +988,34 @@ namespace thunder_ns{
 		return param_REG;
 	}
 
+	int Robot::load_par(std::string par_file, std::vector<std::string> par_list){
+		try {
+			// load yaml
+			YAML::Node yamlFile = YAML::LoadFile(par_file);
+			if (par_list.size() == 0){
+				for (const auto& node : yamlFile){
+					std::vector<double> par_vect = node.second.as<std::vector<double>>();
+					casadi::SX& par = args[node.first.as<std::string>()];
+					for (int i=0; i<par_vect.size(); i++){
+						par(i) = par_vect[i];
+					}
+				}
+			} else {
+				for (std::string par_str : par_list){
+					std::vector<double> par_vect = yamlFile[par_str].as<std::vector<double>>();
+					casadi::SX& par = args[par_str];
+					for (int i=0; i<par_vect.size(); i++){
+						par(i) = par_vect[i];
+					}
+				}
+			}
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while loading parameters: " << e.what() << std::endl;
+			return 0;
+		}
+		return 1;
+	}
+
 	// to modify this file, load_par_elastic
 	// int Robot::load_par_elastic(std::string file){		
 	// 	return 1;
@@ -1070,7 +1098,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::save_par(std::vector<std::string> par_list, std::string par_file){
+	int Robot::save_par(std::string par_file, std::vector<std::string> par_list){
 		try {
 			YAML::Emitter emitter;
 			emitter.SetIndent(2);
@@ -1085,7 +1113,7 @@ namespace thunder_ns{
 				// yamlFile[par] = args[par];
 
 				std::cout << par + "_sx: " << args[par] << endl;
-				Eigen::VectorXd vect_eig = get_par(par);
+				Eigen::VectorXd vect_eig = get_arg(par);
 				std::cout << par + "_eig: " << vect_eig << endl;
 				std::vector<double> vect_std(vect_eig.data(), vect_eig.data() + vect_eig.rows() * vect_eig.cols());
 				yamlFile[par] = vect_std;
@@ -1494,7 +1522,7 @@ namespace thunder_ns{
 		Robot robot(file);
 		robot.robotName = robot_name;
 		// --- load parameters --- //
-		robot.load_par(file);
+		robot.load_conf_par(file);
 		// --- compute functions --- //
 		if (compute){
 			// - symbolic selectivity - //

@@ -150,7 +150,7 @@ namespace thunder_ns{
 			int get_D_order();
 			int get_Dl_order();
 			int get_Dm_order();
-			Eigen::VectorXd get_par(std::string par);
+			Eigen::VectorXd get_arg(std::string par);
 			Eigen::VectorXd get_par_DYN();
 			Eigen::VectorXd get_par_REG();
 			Eigen::VectorXd get_par_K();
@@ -180,13 +180,14 @@ namespace thunder_ns{
 			int set_par_Dl(Eigen::VectorXd);
 			// int set_par_ELA(Eigen::VectorXd);
 			// load functions
-			int load_par(std::string config_file, bool update_REG = 1);
+			int load_conf_par(std::string config_file, bool update_REG = 1);
 			casadi::SX load_par_REG(std::string config_file, bool update_DYN = 1);
+			int load_par(std::string par_file, std::vector<std::string> par_list = {});
 			// int load_par_elastic(std::string file);
 			void update_conf();
 			int save_conf(std::string par_file);
 			int save_par_REG(std::string par_file);
-			int save_par(std::vector<std::string> par_list, std::string par_file);
+			int save_par(std::string par_file, std::vector<std::string> par_list = {});
 			int update_inertial_DYN();
 			int update_inertial_REG();
 			// std::map<std::string, Eigen::MatrixXd> get;

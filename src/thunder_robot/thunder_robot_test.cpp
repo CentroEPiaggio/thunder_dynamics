@@ -18,7 +18,7 @@
 // #define N_PARAM_DYN 30
 // const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string par_file = "../robots/RRR_par.yaml";
+const std::string conf_file = "../robots/RRR_conf.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_DYN.yaml";
 
@@ -39,7 +39,7 @@ int main(){
 
 	thunder_RRR robot;
 
-	robot.load_par(par_file);
+	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
 	const int N_PARAM_DYN = robot.get_numParDYN();
 	int N_PARAM_REG = robot.get_numParREG();
@@ -160,24 +160,3 @@ int main(){
 
 	return 0;
 }
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v){
-// 	Eigen::Matrix3d vhat;
-			
-// 	// chech
-// 	if(v.size() != 3 ){
-// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-// 	}
-	
-// 	vhat(0,0) = 0;
-// 	vhat(0,1) = -v[2];
-// 	vhat(0,2) = v[1];
-// 	vhat(1,0) = v[2];
-// 	vhat(1,1) = 0;
-// 	vhat(1,2) = -v[0];
-// 	vhat(2,0) = -v[1];
-// 	vhat(2,1) = v[0];
-// 	vhat(2,2) = 0;
-
-// 	return vhat;
-// }
