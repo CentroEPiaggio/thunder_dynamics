@@ -7,8 +7,12 @@
 ✔ change compute functions to take model instead of private variables DHtable... @done (11/8/2024, 6:43:08 PM)
 ✔ errore in thunder main per la generazione della libreria, rimane robot da qualche parte @done (11/12/2024, 9:38:02 AM)
 ✔ is symbolic selectivity working? check times.. seems that parameters does not change time so much @done (11/13/2024, 5:18:22 PM)
-☐ not all values from one parameter are symbolic?
-☐ save_conf and load_conf not ready, for now there are save_par, load_par
+✔ symbolic variables cannot be copied, check of add_function that have to exclude some parameters without recreating vector @done (11/19/2024, 5:01:41 PM)
+✔ update_symb_parameters() to do and verify it works, have to be something in the function creation! @done (11/19/2024, 5:01:49 PM)
+✔ not all values from one parameter are symbolic? @done (11/19/2024, 5:01:57 PM)
+☐ save_par_DYN problem on thunder_robot
+☐ check load_conf in thunder_robot, should work with symbolic selectivity, add symbolic flags and resize parameters
+☐ save_conf and load_conf not ready, for now there are save_par, load_par in thunder
 ☐ update_conf() function to save updated configuration file
 ✔ load_par() try to load all parameters, use load_pars()? or just use the arguments to choose what to do @done (11/14/2024, 7:14:56 AM)
 ✔ load_config() have to load everything @done (11/13/2024, 9:07:30 AM)
@@ -27,6 +31,7 @@
 ✔ substitute values in parameters before computing functions @done (11/12/2024, 9:55:51 AM)
 
 improvings:
+	☐ add_function does nothing if the function already exists
 	☐ parameters in thunder_robot depending on the symbolic choose
 	☐ integrate load_conf_par() into parse_config()
 	☐ save and load par in thunder_robot as generic functions

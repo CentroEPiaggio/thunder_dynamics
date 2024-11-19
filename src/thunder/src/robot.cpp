@@ -443,16 +443,6 @@ namespace thunder_ns{
 		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
 		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
 		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
-
-		// to change ----------------------------------------------------------------------------!
-		// _DHtable_ = conf.DHtable;
-		// _world2L0_ = conf.base_frame;
-		// _Ln2EE_ = conf.ee_frame;
-		// std::vector<int> DHtable_symb;
-		// std::vector<int> world2L0_symb;
-		// std::vector<int> Ln2EE_symb;
-		// std::vector<int> gravity_symb;
-		//------------------------------------------------------------------------------
 		
 		// model update
 		model.insert({"q", q});
@@ -493,6 +483,25 @@ namespace thunder_ns{
 			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints)});
 		}
 		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
+
+		// // - symbolics - //
+		// symb.insert({"q", casadi::SX::zeros(numElasticJoints)})
+		std::vector<int> q_symb(numJoints, 1);
+		std::vector<int> dq_symb(numJoints, 1);
+		std::vector<int> dqr_symb(numJoints, 1);
+		std::vector<int> ddqr_symb(numJoints, 1);
+		symb.insert({"q", q_symb});
+		symb.insert({"dq", dq_symb});
+		symb.insert({"dqr", dqr_symb});
+		symb.insert({"ddqr", ddqr_symb});
+		if (ELASTIC){
+			std::vector<int> x_symb(numElasticJoints, 1);
+			std::vector<int> dx_symb(numElasticJoints, 1);
+			std::vector<int> ddxr_symb(numElasticJoints, 1);
+			symb.insert({"x", x_symb});
+			symb.insert({"dx", dx_symb});
+			symb.insert({"ddxr", ddxr_symb});
+		}
 
 	}
 
@@ -1112,9 +1121,9 @@ namespace thunder_ns{
 				// emitter << par_node << YAML::Newline;
 				// yamlFile[par] = args[par];
 
-				std::cout << par + "_sx: " << args[par] << endl;
+				// std::cout << par + "_sx: " << args[par] << endl;
 				Eigen::VectorXd vect_eig = get_arg(par);
-				std::cout << par + "_eig: " << vect_eig << endl;
+				// std::cout << par + "_eig: " << vect_eig << endl;
 				std::vector<double> vect_std(vect_eig.data(), vect_eig.data() + vect_eig.rows() * vect_eig.cols());
 				yamlFile[par] = vect_std;
 				
@@ -1202,10 +1211,37 @@ namespace thunder_ns{
 			// for (const auto& arg : f_args) {
 			// 	inputs.push_back(model[arg]);
 			// }
-			int i=0;
+			int arg_index=0;
 			for (const auto& arg : f_args) {
-				inputs[i] = model[arg];
-				i++;
+				// - resize parameters - //
+				// int sz_original = args[arg].size();
+				// std::cout << "arg: " << arg << std::endl;
+				std::vector<int>& symb_flag = symb[arg];
+				std::vector<casadi::SX> par_symb;
+				casadi::SX& par_model = model[arg];
+				// cout << "model[arg]: " << par_model << endl;
+				// cout << "symb_flag: " << symb_flag << endl;
+				int sz_original = par_model.size().first;
+				// casadi::SX par_model_new = casadi::SX::zeros(sz_original);
+				// casadi::SX new_par(sz_original,1);
+				int sz = 0;
+				for (int i=0; i<sz_original; i++){
+					if (symb_flag[i]){
+						par_symb.push_back(par_model(i));
+						// par_model_new(sz) = par_model(i);
+						sz++;
+					}
+				}
+				casadi::SX par_symb_new = casadi::SX::vertcat(par_symb);
+				// casadi::Slice newsize(0,sz);
+				// par_model = par_model(newsize,1);
+				// par_arg = par_arg(newsize,1);
+				// par_model_new.resize(sz,1);
+				// cout << "par_model_new: " << par_symb_new << endl;
+
+				inputs[arg_index] = par_symb_new;
+				// inputs[arg_index] = model[arg](newsize, 0);
+				arg_index++;
 			}
 
 			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
@@ -1239,7 +1275,7 @@ namespace thunder_ns{
 		
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
-				model[par](i) = args[par](i);
+				model[par](i) = (double)args[par](i);
 			}
 		}
 
@@ -1288,6 +1324,25 @@ namespace thunder_ns{
 
 	int Robot::update_symb_parameters(){
 		// - resize parameter variables to right dimension - //
+		for (auto par_symb : symb){
+			int sz_original = par_symb.second.size();
+			std::string par_name = par_symb.first;
+			casadi::SX& par_model = model[par_name];
+			casadi::SX& par_arg = args[par_name];
+			// casadi::SX new_par(sz_original,1);
+			int sz = 0;
+			for (int i=0; i<sz_original; i++){
+				if (par_symb.second[i]){
+					par_model(sz) = par_model(i);
+					par_arg(sz) = par_arg(i);
+					sz++;
+				}
+			}
+			par_model.resize(sz,1);
+			par_arg.resize(sz,1);
+			// cout << "par_model: " << par_model << endl;
+			// cout << "par_arg: " << par_arg << endl;
+		}
 		return 1;
 	}
 

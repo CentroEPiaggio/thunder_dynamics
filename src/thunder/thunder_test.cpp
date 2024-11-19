@@ -193,24 +193,3 @@ int main(){
 
 	return 0;
 }
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v){
-// 	Eigen::Matrix3d vhat;
-			
-// 	// chech
-// 	if(v.size() != 3 ){
-// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-// 	}
-	
-// 	vhat(0,0) = 0;
-// 	vhat(0,1) = -v[2];
-// 	vhat(0,2) = v[1];
-// 	vhat(1,0) = v[2];
-// 	vhat(1,1) = 0;
-// 	vhat(1,2) = -v[0];
-// 	vhat(2,0) = -v[1];
-// 	vhat(2,1) = v[0];
-// 	vhat(2,2) = 0;
-
-// 	return vhat;
-// }

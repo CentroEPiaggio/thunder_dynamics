@@ -20,7 +20,7 @@
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 const std::string conf_file = "../robots/RRR_conf.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_DYN.yaml";
+const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
 using std::cout;
@@ -111,7 +111,7 @@ int main(){
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
 	// - save par test - //
-	// robot.save_par_DYN(saved_inertial_file);
+	robot.save_par_DYN(saved_inertial_file);
 	// robot.load_par_DYN(saved_inertial_file);
 	// robot.save_par_DYN(saved_inertial_file);
 

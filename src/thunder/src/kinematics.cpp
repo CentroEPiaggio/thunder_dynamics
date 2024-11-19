@@ -12,7 +12,7 @@ namespace thunder_ns{
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
   
-	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX qi, std::string jointType) {
+	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX& qi, std::string jointType) {
 		
 		casadi::SX a;
 		casadi::SX alpha;
@@ -123,10 +123,10 @@ namespace thunder_ns{
 		// auto DHtable = robot.get_DHTable();
 		// auto world2L0 = robot.get_world2L0();
 		// auto Ln2EE = robot.get_Ln2EE();
-		auto q = robot.model["q"];
-		auto DHtable = robot.model["DHtable"];
-		auto world2L0 = robot.model["world2L0"];
-		auto Ln2EE = robot.model["Ln2EE"];
+		auto& q = robot.model["q"];
+		auto& DHtable = robot.model["DHtable"];
+		auto& world2L0 = robot.model["world2L0"];
+		auto& Ln2EE = robot.model["Ln2EE"];
 		// auto gravity = robot.model["gravity"];
 
 		// computing chain
@@ -171,10 +171,10 @@ namespace thunder_ns{
 		// auto world2L0 = robot.get_world2L0();
 		// auto Ln2EE = robot.get_Ln2EE();
 		// auto DHtable = robot.get_DHTable();
-		auto q = robot.model["q"];
-		auto DHtable = robot.model["DHtable"];
-		auto world2L0 = robot.model["world2L0"];
-		auto Ln2EE = robot.model["Ln2EE"];
+		auto& q = robot.model["q"];
+		auto& DHtable = robot.model["DHtable"];
+		auto& world2L0 = robot.model["world2L0"];
+		auto& Ln2EE = robot.model["Ln2EE"];
 		// auto gravity = robot.model["gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
@@ -291,9 +291,9 @@ namespace thunder_ns{
 		if (robot.model.count("J_ee") == 0){
 			compute_jacobians(robot);
 		}
-		casadi::SX q = robot.model["q"];
-		casadi::SX dq = robot.model["dq"];
-		casadi::SX Jn = robot.model["J_ee"];
+		casadi::SX& q = robot.model["q"];
+		casadi::SX& dq = robot.model["dq"];
+		casadi::SX& Jn = robot.model["J_ee"];
 
 		// jacobian derivatives
 		casadi::SX dJn = casadi::SX::jtimes(Jn,q,dq);
