@@ -443,12 +443,14 @@ namespace thunder_ns{
 		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
 		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
 		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
+		casadi::SX w = casadi::SX::sym("w", 6,1);
 		
 		// model update
 		model.insert({"q", q});
 		model.insert({"dq", dq});
 		model.insert({"dqr", dqr});
 		model.insert({"ddqr", ddqr});
+		model.insert({"w", w});
 		// model.insert({"par_KIN", _par_KIN_});
 		model.insert({"par_DYN", par_DYN});
 		model.insert({"par_REG", par_REG});
@@ -464,23 +466,24 @@ namespace thunder_ns{
 			model.insert({"par_Dm", par_Dm});
 		}
 
-		args.insert({"q", casadi::SX::zeros(numJoints)});
-		args.insert({"dq", casadi::SX::zeros(numJoints)});
-		args.insert({"dqr", casadi::SX::zeros(numJoints)});
-		args.insert({"ddqr", casadi::SX::zeros(numJoints)});
+		args.insert({"q", casadi::SX::zeros(numJoints,1)});
+		args.insert({"dq", casadi::SX::zeros(numJoints,1)});
+		args.insert({"dqr", casadi::SX::zeros(numJoints,1)});
+		args.insert({"ddqr", casadi::SX::zeros(numJoints,1)});
+		args.insert({"w", casadi::SX::zeros(6)});
 		// args.insert({"par_KIN", par_KIN});
-		args.insert({"par_DYN", casadi::SX::zeros(STD_PAR_LINK*numJoints)});
-		args.insert({"par_REG", casadi::SX::zeros(STD_PAR_LINK*numJoints)});
+		args.insert({"par_DYN", casadi::SX::zeros(STD_PAR_LINK*numJoints,1)});
+		args.insert({"par_REG", casadi::SX::zeros(STD_PAR_LINK*numJoints,1)});
 		if (Dl_order > 0){
-			args.insert({"par_Dl", casadi::SX::zeros(Dl_order*numJoints)});
+			args.insert({"par_Dl", casadi::SX::zeros(Dl_order*numJoints,1)});
 		}
 		if (ELASTIC){
-			args.insert({"x", casadi::SX::zeros(numElasticJoints)});
-			args.insert({"dx", casadi::SX::zeros(numElasticJoints)});
-			args.insert({"ddxr", casadi::SX::zeros(numElasticJoints)});
-			args.insert({"par_K", casadi::SX::zeros(K_order*numElasticJoints)});
-			args.insert({"par_D", casadi::SX::zeros(D_order*numElasticJoints)});
-			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints)});
+			args.insert({"x", casadi::SX::zeros(numElasticJoints,1)});
+			args.insert({"dx", casadi::SX::zeros(numElasticJoints,1)});
+			args.insert({"ddxr", casadi::SX::zeros(numElasticJoints,1)});
+			args.insert({"par_K", casadi::SX::zeros(K_order*numElasticJoints,1)});
+			args.insert({"par_D", casadi::SX::zeros(D_order*numElasticJoints,1)});
+			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints,1)});
 		}
 		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
 
@@ -490,10 +493,12 @@ namespace thunder_ns{
 		std::vector<int> dq_symb(numJoints, 1);
 		std::vector<int> dqr_symb(numJoints, 1);
 		std::vector<int> ddqr_symb(numJoints, 1);
+		std::vector<int> w_symb(6, 1);
 		symb.insert({"q", q_symb});
 		symb.insert({"dq", dq_symb});
 		symb.insert({"dqr", dqr_symb});
 		symb.insert({"ddqr", ddqr_symb});
+		symb.insert({"w", w_symb});
 		if (ELASTIC){
 			std::vector<int> x_symb(numElasticJoints, 1);
 			std::vector<int> dx_symb(numElasticJoints, 1);

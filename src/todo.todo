@@ -1,5 +1,8 @@
+☐ test kinematic regressors on thunder_robot
+
 improvings:
 	Paramaters:
+		☐ DHtable as a vector instead a matrix
 		☐ load_par and save_par that load/save all parameters in thunder_robot
 		☐ save_conf and load_conf not ready (works but not update parameters, use update_conf() for that), for now there are save_par, load_par in thunder
 		☐ parameters as enum in thunder_robot? need something to generalize and use string to call?
@@ -32,7 +35,11 @@ improvings:
 		☐ check number of elements in symbolic flags and values are equal in conf_file when load from thunder and thunder_robot
 		☐ parameters in thunder_robot depending on the symbolic choose
 		☐ clean symbolic selectivity
+	Kinematic regressors:
+		☐ check other parameters other than ee poaitions
+		☐ generalize to other kinematics, like urdf...
 	General:
+		☐ SX to MX?
 		☐ thunder_robot_test does not have to change with the robot, use macro to test elasticity (the problem is thet the methods does not exists)
 		☐ add_function does nothing if the function already exists
 		☐ check dimensions in load_par() in robot

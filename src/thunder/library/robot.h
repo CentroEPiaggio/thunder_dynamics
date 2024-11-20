@@ -77,7 +77,6 @@ namespace thunder_ns{
 			std::map<std::string, casadi::Function> casadi_fun;
 			std::map<std::string, std::vector<std::string>> fun_args;
 			std::map<std::string, std::string> fun_descr;
-			std::map<std::string, std::vector<int>> symb;
 			// Variable for joints angle //
 			// casadi::SX q, dq, dqr, ddqr;
 			// casadi::SX _par_KIN_, par_DYN, par_REG, par_ELA;
@@ -134,6 +133,7 @@ namespace thunder_ns{
 			/* Variable for joints in set arguments */
 			int valid;
 			std::map<std::string, casadi::SX> model;
+			std::map<std::string, std::vector<int>> symb;
 			Eigen::MatrixXd get(std::string name);
 			// casadi::SX get_sx(std::string name);
 			// get functions

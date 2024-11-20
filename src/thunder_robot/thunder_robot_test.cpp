@@ -122,8 +122,14 @@ int main(){
 	// - set par test - //
 	Eigen::Vector3d par_ee({3, 3, 3});
 	robot.set_Ln2EE(par_ee);
-	cout << "world2L0: " << robot.get_world2L0() << endl;
-	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
+	cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
+	cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
+
+	// - kinematic regressors - //
+	Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
+	robot.set_w(wrench);
+	cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl<<endl;
+	cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
 
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){

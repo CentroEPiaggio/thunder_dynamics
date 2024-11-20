@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.3.4
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.3.4 + 0.1.0
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -109,6 +109,8 @@ The main classes contained in `thunder` are:
    - reg_C: regressor of $C\dot{q}$
    - reg_G: regressor of $G$
    - reg_K, reg_D, reg_Dl, reg_Dm: regressors of other dynamics
+   - reg_Jdq: regressor of $\omega = J\dot{q}$
+   - reg_JTw: regressor of $\tau = J^T w$
 
 the content of the classes is then integrated in the C++ library `<robot>_gen.h/cpp` and the `thunder_<robot>` class provide a wrapper for the automatically generated code.
 

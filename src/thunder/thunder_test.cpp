@@ -185,6 +185,17 @@ int main(){
 	cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
 	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
+	// - kinematic regressors - //
+	Eigen::VectorXd wrench(6);
+	wrench << 1, 1, 1, 1, 1, 1;
+	robot.set_arg("w", wrench);
+	auto reg_omega = robot.get("reg_Jdq");
+	auto reg_tau = robot.get("reg_JTw");
+	// auto reg_omega = robot.model["reg_Jdq"];
+	// auto reg_tau = robot.model["reg_JTw"];
+	cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+
 	// - save parameters - //
 	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
 	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
