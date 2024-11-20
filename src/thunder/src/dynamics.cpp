@@ -118,9 +118,10 @@ namespace thunder_ns{
 		auto _nParLink_ = robot.STD_PAR_LINK;
 		auto jointsType = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
-		auto _world2L0_ = robot.get_world2L0();
+		// auto world2L0 = robot.get_world2L0();
 		// auto _Ln2EE_ = robot.get_Ln2EE();
 		auto q = robot.model["q"];
+		auto world2L0 = robot.model["world2L0"];
 		auto par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
@@ -139,6 +140,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
+		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < numJoints; i++) {
 			casadi::SX k0(3,1);             // versor of joint i
@@ -189,15 +191,18 @@ namespace thunder_ns{
 			}
 
 			// Add offset from world-frame transformation
-			Jci_pos = mtimes(_world2L0_.get_rotation(),Jci_pos);
-			Ji_or = mtimes(_world2L0_.get_rotation(),Ji_or);
+			// Jci_pos = mtimes(world2L0.get_rotation(),Jci_pos);
+			// Ji_or = mtimes(world2L0.get_rotation(),Ji_or);
+			Jci_pos = mtimes(world_rot,Jci_pos);
+			Ji_or = mtimes(world_rot,Ji_or);
 			
 			Ji_v[i] = Jci_pos;
 			Ji_w[i] = Ji_or;
 
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
-			robot.add_function("J_cm_"+std::to_string(i), Ji[i], {"q", "par_DYN"}, "Jacobian of center of mass of link "+std::to_string(i));
+			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
+			robot.add_function("J_cm_"+std::to_string(i), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i));
 		}
 
 		return std::make_tuple(Ji_v, Ji_w);
@@ -209,12 +214,13 @@ namespace thunder_ns{
 		auto nParLink = robot.STD_PAR_LINK;
 		// auto jointsType_ = robot.get_jointsType();
 		// auto _DHtable_ = robot.get_DHTable();
-		auto _world2L0_ = robot.get_world2L0();
-		FrameOffset& base_frame = _world2L0_;
+		// auto world2L0 = robot.get_world2L0();
+		// FrameOffset& base_frame = world2L0;
 		// auto _Ln2EE_ = robot.get_Ln2EE();
 		auto q = robot.model["q"];
 		auto dq = robot.model["dq"];
 		auto par_DYN = robot.model["par_DYN"];
+		auto gravity = robot.model["gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -235,7 +241,7 @@ namespace thunder_ns{
 		casadi::SXVector Jwi(nj);
 		std::tuple<casadi::SXVector, casadi::SXVector> J_tuple;
 
-		casadi::SX g = base_frame.get_gravity();
+		casadi::SX g = gravity; //base_frame.get_gravity();
 
 		casadi::SX M(nj,nj);
 		casadi::SX C(nj,nj);
@@ -278,10 +284,15 @@ namespace thunder_ns{
 		C = stdCmatrix(M,q,dq,dq_sel_);
 		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
-		robot.add_function("M", M, {"q","par_DYN"}, "Manipulator mass matrix");
-		robot.add_function("C", C, {"q","dq","par_DYN"}, "Manipulator Coriolis matrix");
-		robot.add_function("C_std", C_std, {"q","dq","par_DYN"}, "Classic formulation of the manipulator Coriolis matrix");
-		robot.add_function("G", G, {"q","par_DYN"}, "Manipulator gravity terms");
+		std::vector<std::string> arg_list;
+		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("M", M, arg_list, "Manipulator mass matrix");
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("C", C, arg_list, "Manipulator Coriolis matrix");
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("C_std", C_std, arg_list, "Classic formulation of the manipulator Coriolis matrix");
+		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		robot.add_function("G", G, arg_list, "Manipulator gravity terms");
 
 		return 1;
 	}
@@ -319,9 +330,19 @@ namespace thunder_ns{
 					Dm(i) += pow(dx(i), ord+1) * par_Dm(i*Dm_order+ord);
 				}
 			}
-			if (K_order > 0) robot.add_function("K", K, {"q", "x", "par_K"}, "SEA manipulator elastic coupling");
-			if (D_order > 0) robot.add_function("D", D, {"dq", "dx", "par_D"}, "SEA manipulator dampind coupling");
-			if (Dm_order > 0) robot.add_function("Dm", Dm, {"dx", "par_Dm"}, "SEA manipulator motor damping");
+			std::vector<std::string> arg_list;
+			if (K_order > 0) {
+				arg_list = robot.obtain_symb_parameters({"q", "x"}, {"par_K"});
+				robot.add_function("K", K, arg_list, "SEA manipulator elastic coupling");
+			}
+			if (D_order > 0) {
+				arg_list = robot.obtain_symb_parameters({"dq", "dx"}, {"par_D"});
+				robot.add_function("D", D, arg_list, "SEA manipulator dampind coupling");
+			}
+			if (Dm_order > 0) {
+				arg_list = robot.obtain_symb_parameters({"dx"}, {"par_Dm"});
+				robot.add_function("Dm", Dm, arg_list, "SEA manipulator motor damping");
+			}
 			return 1;
 		} else return 0;
 	}
@@ -341,8 +362,9 @@ namespace thunder_ns{
 					Dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
 				}
 			}
-
-			robot.add_function("Dl", Dl, {"dq","par_Dl"}, "Manipulator link friction");
+			std::vector<std::string> arg_list;
+			arg_list = robot.obtain_symb_parameters({"dq"}, {"par_Dl"});
+			robot.add_function("Dl", Dl, arg_list, "Manipulator link friction");
 			return 1;
 		} else return 0;
 	}

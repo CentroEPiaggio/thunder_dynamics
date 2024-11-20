@@ -12,15 +12,15 @@
 
 // #include "thunder_robot.h"
 #include "thunder_RRR.h"
-#include "thunder_seaRRR.h"
+// #include "thunder_seaRRR.h"
 
 // #define NJ 3
 // #define N_PARAM_DYN 30
 // const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string inertial_file = "../robots/RRR_inertial_DYN.yaml";
+const std::string conf_file = "../robots/RRR_conf.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string saved_inertial_file = "../robots/robot/saved_robot_inertial_DYN.yaml";
+const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
 using std::cout;
@@ -39,7 +39,7 @@ int main(){
 
 	thunder_RRR robot;
 
-	robot.load_par_DYN(inertial_file);
+	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
 	const int N_PARAM_DYN = robot.get_numParDYN();
 	int N_PARAM_REG = robot.get_numParREG();
@@ -111,9 +111,19 @@ int main(){
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
 	// - save par test - //
-	// robot.save_par_DYN(saved_inertial_file);
+	robot.save_par_DYN(saved_inertial_file);
 	// robot.load_par_DYN(saved_inertial_file);
 	// robot.save_par_DYN(saved_inertial_file);
+
+	// - conf loading test - //
+	cout << "world2L0: " << robot.get_world2L0() << endl;
+	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
+
+	// - set par test - //
+	Eigen::Vector3d par_ee({3, 3, 3});
+	robot.set_Ln2EE(par_ee);
+	cout << "world2L0: " << robot.get_world2L0() << endl;
+	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
 
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){
@@ -160,24 +170,3 @@ int main(){
 
 	return 0;
 }
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v){
-// 	Eigen::Matrix3d vhat;
-			
-// 	// chech
-// 	if(v.size() != 3 ){
-// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-// 	}
-	
-// 	vhat(0,0) = 0;
-// 	vhat(0,1) = -v[2];
-// 	vhat(0,2) = v[1];
-// 	vhat(1,0) = v[2];
-// 	vhat(1,1) = 0;
-// 	vhat(1,2) = -v[0];
-// 	vhat(2,0) = -v[1];
-// 	vhat(2,1) = v[0];
-// 	vhat(2,2) = 0;
-
-// 	return vhat;
-// }

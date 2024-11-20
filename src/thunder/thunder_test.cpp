@@ -24,9 +24,9 @@ using std::endl;
 
 int main(){
 
-	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	std::string config_file = "../robots/RRR/RRR.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	Robot robot = robot_from_file(config_file, 1); 	// create robot and compute quantities
+	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
 	// ------------------------------TEST CLASSES---------------------------------------//
@@ -177,28 +177,19 @@ int main(){
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl;
+	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+
+	// - symbolic quantities - //
+	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
+	// cout << "M_symb: " << robot.model["M"] << endl;
+	cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
+	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
+
+	// - save parameters - //
+	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
+	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
+	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
+	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
 
 	return 0;
 }
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v){
-// 	Eigen::Matrix3d vhat;
-			
-// 	// chech
-// 	if(v.size() != 3 ){
-// 		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-// 	}
-	
-// 	vhat(0,0) = 0;
-// 	vhat(0,1) = -v[2];
-// 	vhat(0,2) = v[1];
-// 	vhat(1,0) = v[2];
-// 	vhat(1,1) = 0;
-// 	vhat(1,2) = -v[0];
-// 	vhat(2,0) = -v[1];
-// 	vhat(2,1) = v[0];
-// 	vhat(2,2) = 0;
-
-// 	return vhat;
-// }

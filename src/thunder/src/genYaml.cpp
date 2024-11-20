@@ -1,5 +1,5 @@
 /* 
-Generate two yaml files of inertial parameters (only for arm + hand) to use standard equation of dynamic and regressor.
+Generate two yaml files of inertial parameters to use standard equation of dynamic and regressor.
 
 	The inertial parameters are referred to joints' frame(!) of denavit parametrization.
 
@@ -58,14 +58,15 @@ namespace thunder_ns{
 
 		try {
 			YAML::Node config = YAML::LoadFile(config_file);
-			YAML::Node inertial = config["inertial"];
+			YAML::Node dynamics = config["dynamics"];
 			int Dl_order=0;
 			if (config["Dl_order"]) Dl_order = config["Dl_order"].as<int>();
 			// std::cout<<"Dl_order: " << Dl_order << std::endl;
-			
-			int link_index = 0;
-			for (const auto& node : inertial) {
 
+			int link_index = 0;
+			for (const auto& node : dynamics) {
+
+				YAML::Node inertial = node.second["inertial"];
 				LinkProp properties;
 				std::string linkName = node.first.as<std::string>();
 				// YAML::Node mass = node.second["mass"];
@@ -74,19 +75,20 @@ namespace thunder_ns{
 				// std::string xyzStr, rpyStr;
 				
 				properties.name = linkName;
-				properties.mass = node.second["mass"].as<double>();
-				properties.xyz[0] = node.second["CoM_x"].as<double>();
-				properties.xyz[1] = node.second["CoM_y"].as<double>();
-				properties.xyz[2] = node.second["CoM_z"].as<double>();
-				properties.parI[0] = node.second["Ixx"].as<double>();
-				properties.parI[1] = node.second["Ixy"].as<double>();
-				properties.parI[2] = node.second["Ixz"].as<double>();
-				properties.parI[3] = node.second["Iyy"].as<double>();
-				properties.parI[4] = node.second["Iyz"].as<double>();
-				properties.parI[5] = node.second["Izz"].as<double>();
+				properties.mass = inertial["mass"].as<double>();
+				properties.xyz[0] = inertial["CoM_x"].as<double>();
+				properties.xyz[1] = inertial["CoM_y"].as<double>();
+				properties.xyz[2] = inertial["CoM_z"].as<double>();
+				properties.parI[0] = inertial["Ixx"].as<double>();
+				properties.parI[1] = inertial["Ixy"].as<double>();
+				properties.parI[2] = inertial["Ixz"].as<double>();
+				properties.parI[3] = inertial["Iyy"].as<double>();
+				properties.parI[4] = inertial["Iyz"].as<double>();
+				properties.parI[5] = inertial["Izz"].as<double>();
 				// link friction
 				if (Dl_order){
 					properties.Dl.resize(Dl_order);
+					YAML::Node friction = node.second["friction"];
 					std::vector<double> Dl = node.second["Dl"].as<std::vector<double>>();
 					properties.Dl = Dl;
 					// std::cout<<"Dl_read: " << Dl << std::endl;
@@ -161,40 +163,60 @@ namespace thunder_ns{
 
 	void fillInertialYaml(int num_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
 
-		YAML::Node control;
+		YAML::Node yamlFile;
+		YAML::Node dynamicsNode;
 
 		emitter_.SetIndent(2);
 		emitter_.SetSeqFormat(YAML::Flow);
 		emitter_ << YAML::Comment(
 			"Inertial parameters referred to Denavit-Hartenberg parametrization to use " + keys_[4] + "\n" + common_comment);
 		emitter_ << YAML::Newline;
+		// emitter_ << YAML::BeginMap;
+		// emitter_ << YAML::Key << "dynamics";
 
 		for (int i=0; i<num_joints; i++) {
 
-			LinkProp link = links_prop_[i];    
+			LinkProp link = links_prop_[i];
 			YAML::Node linkNode;
+			YAML::Node linkInertia;
+			YAML::Node linkFric;
 			std::string nodeName;
 
 			nodeName = link.name;
-			linkNode[keys_[0]] = link.mass;
-			linkNode[keys_[1]+"x"] = link.xyz[0];
-			linkNode[keys_[1]+"y"] = link.xyz[1];
-			linkNode[keys_[1]+"z"] = link.xyz[2];
-			linkNode[keys_[2]+"xx"] = link.parI[0];
-			linkNode[keys_[2]+"xy"] = link.parI[1];
-			linkNode[keys_[2]+"xz"] = link.parI[2];
-			linkNode[keys_[2]+"yy"] = link.parI[3];
-			linkNode[keys_[2]+"yz"] = link.parI[4];
-			linkNode[keys_[2]+"zz"] = link.parI[5];
+			linkInertia[keys_[0]] = link.mass;
+			linkInertia[keys_[1]+"x"] = link.xyz[0];
+			linkInertia[keys_[1]+"y"] = link.xyz[1];
+			linkInertia[keys_[1]+"z"] = link.xyz[2];
+			linkInertia[keys_[2]+"xx"] = link.parI[0];
+			linkInertia[keys_[2]+"xy"] = link.parI[1];
+			linkInertia[keys_[2]+"xz"] = link.parI[2];
+			linkInertia[keys_[2]+"yy"] = link.parI[3];
+			linkInertia[keys_[2]+"yz"] = link.parI[4];
+			linkInertia[keys_[2]+"zz"] = link.parI[5];
 			// link friction
-			linkNode["Dl"] = link.Dl;
+			linkFric["Dl"] = link.Dl;
 			// std::cout<<"Dl_fill: " << link.Dl << std::endl;
 
-			emitter_ << YAML::BeginMap;
-			emitter_ << YAML::Key << nodeName;
-			emitter_ << linkNode;
-			emitter_ << YAML::EndMap << YAML::Newline;
+			linkNode["inertial"] = linkInertia;
+			linkNode["friction"] = linkFric;
+			dynamicsNode[nodeName] = linkNode;
+
+			// emitter_ << YAML::BeginMap;
+			// emitter_ << YAML::Key << nodeName;
+			// 	emitter_ << YAML::BeginMap;
+			// 	emitter_ << YAML::Key << "inertial" << linkInertia;
+			// 		// emitter_ << linkInertia;
+			// 	// emitter_ << YAML::BeginMap;
+			// 	emitter_ << YAML::Key << "friction" << linkFric;
+			// 		// emitter_ << linkFric;
+			// 	// emitter_ << YAML::EndMap; // << YAML::Newline;
+			// 	emitter_ << YAML::EndMap; // << YAML::Newline;
+			// 	// emitter_ << YAML::EndMap << YAML::Newline;
+			// emitter_ << YAML::EndMap;// << YAML::Newline;
 		}
+		yamlFile["dynamics"] = dynamicsNode;
+		emitter_ << yamlFile << YAML::Newline;
+		// emitter_ << YAML::EndMap << YAML::Newline;
 	}
 
 }
