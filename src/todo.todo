@@ -10,51 +10,36 @@
 ✔ symbolic variables cannot be copied, check of add_function that have to exclude some parameters without recreating vector @done (11/19/2024, 5:01:41 PM)
 ✔ update_symb_parameters() to do and verify it works, have to be something in the function creation! @done (11/19/2024, 5:01:49 PM)
 ✔ not all values from one parameter are symbolic? @done (11/19/2024, 5:01:57 PM)
-☐ save_par_DYN problem on thunder_robot
-☐ check load_conf in thunder_robot, should work with symbolic selectivity, add symbolic flags and resize parameters
-☐ save_conf and load_conf not ready, for now there are save_par, load_par in thunder
-☐ update_conf() function to save updated configuration file
+✔ save_par_DYN problem on thunder_robot @done (11/20/2024, 12:09:41 PM)
+✔ check load_conf in thunder_robot, should work with symbolic selectivity, add symbolic flags and resize parameters @done (11/20/2024, 12:09:50 PM)
 ✔ load_par() try to load all parameters, use load_pars()? or just use the arguments to choose what to do @done (11/14/2024, 7:14:56 AM)
 ✔ load_config() have to load everything @done (11/13/2024, 9:07:30 AM)
 ✔ save_conf() in Robot, taken from genYaml, with kinematics, elastic, ee, world, everything @done (11/13/2024, 9:11:15 AM)
 ✔ load_conf() in Robot, with everything. load_config have to use load_par? why to use a function to create config and not directly a constructor? @done (11/13/2024, 9:11:21 AM)
-☐ change load parameters into args, where?
 ✔ test symbolic selectivity when there is no "symb", errors? @done (11/8/2024, 6:43:19 PM)
 ✔ change load and save in order to use new file structure, do not save inertial DYN, save only REG, use configFile to load, write next instructions in improvings @done (11/13/2024, 11:26:12 AM)
 ✔ load symbolic selectivity from config_file @done (11/8/2024, 6:43:30 PM)
 ✔ in Robot(config) usa i parametri salvati e i simbolici per costruire il robot. @done (11/13/2024, 5:16:34 PM)
 ✔ load_par is old, need to change the structure as genYaml @done (11/13/2024, 11:26:21 AM)
 ✔ change load and save in thunder_robot, following new structure @done (11/13/2024, 11:26:27 AM)
-☐ parse kinematics in load_par() in thunder_robot
 ✔ dynamics in config @done (10/24/2024, 11:53:13 AM)
 ✔ symbolic flags in Config @done (10/24/2024, 11:53:17 AM)
 ✔ substitute values in parameters before computing functions @done (11/12/2024, 9:55:51 AM)
 
 improvings:
-	☐ add_function does nothing if the function already exists
-	☐ parameters in thunder_robot depending on the symbolic choose
-	☐ integrate load_conf_par() into parse_config()
-	☐ save and load par in thunder_robot as generic functions
-	☐ check dimensions in load_par() in robot
-	☐ parse_config() in robot is too big
-	☐ use casadi::SX for everything in thunder, Eigen for thunder_robot.. check if better!
-	☐ robot_from_file() as Robot constructor
-	☐ delete Config and use YAML::Node? in contructor from file, Robot save into config and extract from config in the same function
-	☐ add version control for config file
-	☐ frameOffset into utils.spatial and generic wrt robot and thunder_robot
-	☐ delet par_REG from model
-	☐ add integrity checks and validity of robot
-	☐ change get_transform
-	☐ check for jacobian error
-	☐ new file structure
+	Paramaters:
+		☐ load_par and save_par that load/save all parameters in thunder_robot
+		☐ save_conf and load_conf not ready (works but not update parameters, use update_conf() for that), for now there are save_par, load_par in thunder
+		☐ parameters as enum in thunder_robot? need something to generalize and use string to call?
+		☐ integrate load_conf_par() into parse_config()
+		☐ save and load par in thunder_robot as generic functions
 		☐ some parameter init is in Robot(Config), every parameter should be loaded in config and then added to args, now parameters are loaded with load
 		☐ genYaml have to be into Robot, now is used to create parameter file from config_file
-		☐ there is no save for parameters into Robot
-		☐ create save_parameters and use it in genYaml in fillInertialYaml
-		☐ fillYaml creates the config file for the robot, used by both thunder and thunder_robot
+		✔ there is no save for parameters into Robot @done (11/20/2024, 12:19:06 PM)
+		☐ not use fillInertialYaml, ore improve it
 		☐ structure that contain all parameters in robot, dynamics, kinematics and others
-		☐ save_par save all parameters in a file, maybe is the config file?
-		☐ save and load for both thunder and thunder_robot
+		✔ save_par save all parameters in a file, maybe is the config file? @done (11/20/2024, 12:20:24 PM)
+		☐ check save and load for both thunder and thunder_robot
 		☐ use LinkProp to save all parameters?, create a structure that can be used by both Robot and thunder_robot
 		☐ now parameters are loaded after the creation, load parameters from the config file in the robot creation phase
 		☐ add elasticity to linkProp parameters
@@ -65,21 +50,49 @@ improvings:
 		☐ thunder_utils with LinkProp and other classes needed both by thunder and thunder_robot
 		☐ FrameOffset part of linkProp? maybe into utils?
 		☐ FrameOffset not so general, use T as internal transformation and provide conversions
-	☐ elasticity
+		☐ insert args or model only if order>0
+	elasticity:
 		☐ selection matrix for elastic joints
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
-	✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
-	☐ clean symbolic selectivity
-	✔ multiple robot library in the same folder @done (10/18/2024, 1:30:21 PM)
-	☐ robotName in config file. Needed for creation of library without the command './thunder gen', problems in name of generated functions
-	☐ insert args or model only if order>0
-	☐ gravity not in base frame class
-	☐ update_inertial_DYN/REG not efficient!, too many conversions eigen-casadi
-	☐ generalize path with absolute_path
-	☐ clean everything
-	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
-
-will be in Thunder:
+	Symbolic selectivity:
+		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
+		☐ load symbolics selectivity from conf in thunder_robot, now only on world_frame, ee_frame and gravity
+		☐ check number of elements in symbolic flags and values are equal in conf_file when load from thunder and thunder_robot
+		☐ parameters in thunder_robot depending on the symbolic choose
+		☐ clean symbolic selectivity
+	General:
+		☐ thunder_robot_test does not have to change with the robot, use macro to test elasticity (the problem is thet the methods does not exists)
+		☐ add_function does nothing if the function already exists
+		☐ check dimensions in load_par() in robot
+		☐ parse_config() in robot is too big
+		☐ use casadi::SX for everything in thunder, Eigen for thunder_robot.. check if better!
+		☐ delete par_REG from model
+		☐ robot_from_file() as Robot constructor
+		☐ delete Config and use YAML::Node? in contructor from file, Robot save into config and extract from config in the same function
+		☐ add version control for config file
+		☐ frameOffset into utils.spatial and generic wrt robot and thunder_robot
+		☐ add integrity checks and validity of robot
+		☐ change get_transform
+		☐ check for jacobian error
+		☐ new file structure
+		☐ robotName in config file? Needed for creation of library without the command './thunder gen', problems in name of generated functions
+		☐ gravity not in base frame class
+		☐ update_inertial_DYN/REG not efficient!, too many conversions eigen-casadi
+		☐ generalize path with absolute_path
+		☐ clean everything
+		☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
+	
+will be in Thunder_dynamics:
+	thunder:
+		☐ dynamic matrix derivatives
+		☐ linearized system
+		✔ friction @done (9/6/2024, 6:06:31 AM)
+		☐ filtered regressor
+		☐ command line for create_robot
+	thunder_robot:
+		✔ load and save inertial parameters @done (4/3/2024, 7:57:43 AM)
+		☐ manage inertial_DYN
+		✔ C_regr_classic = 0.5*C_regr = 0.5*C_dyn @done (9/13/2024, 12:27:38 PM)
 	☐ user-defined compute functions, functions to add to the robot creation that adds features to Robot
 	☐ thunder_control: basic controllers that uses thunder_robot
 	✔ elasticity @done (10/17/2024, 3:05:53 PM)
@@ -113,6 +126,7 @@ General:
 	✔ let thunder copy thunder_robot.h/.cpp into generatedFiles folder, use function in utils @done (3/29/2024, 11:32:20 AM)
 	✔ change the thunder_robot in generatedFiles like N_JOINTS or robot in <robot> @done (4/3/2024, 7:55:54 AM)
 	✔ let thunder generate robot_inertial_REG and put it into folder generatedFiles @done (4/7/2024, 4:15:21 PM)
+	✔ multiple robot library in the same folder @done (10/18/2024, 1:30:21 PM)
 	☐ multithreading
 
 Program:
@@ -126,18 +140,6 @@ Program:
 	☐ there is a copy of utils functions from urdf2dh_inertial to thunder_robot. Another way is to add another library with general methods, or to add functions on thunder_robot creation (bad). Maybe the better choice is to create a folder with all files of the library inside(thunder_robot, robot_gen, thunder_utils)
 	✔ thunder copy generated files into thunder_robot project (not working for now) @done (8/27/2024, 12:41:17 PM)
 	
-thunder:
-	☐ dynamic matrix derivatives
-	☐ linearized system
-	✔ friction @done (9/6/2024, 6:06:31 AM)
-	☐ filtered regressor
-	☐ command line for create_robot
-
-thunder_robot:
-	✔ load and save inertial parameters @done (4/3/2024, 7:57:43 AM)
-	☐ manage inertial_DYN
-	✔ C_regr_classic = 0.5*C_regr = 0.5*C_dyn @done (9/13/2024, 12:27:38 PM)
-
 issues:
 	☐ error on first column of jacobian? K is always [0;0;1]?
 	☐ simplify some casadi expression?

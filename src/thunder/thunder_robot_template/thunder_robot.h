@@ -22,6 +22,7 @@ class thunder_robot{
 		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
 		Eigen::MatrixXd DHtable;
 		Eigen::VectorXd gravity, world2L0, Ln2EE;
+		std::vector<int> gravity_symb, world2L0_symb, Ln2EE_symb;
 
 		void update_inertial_DYN();
 		void update_inertial_REG();

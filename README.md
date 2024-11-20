@@ -115,9 +115,23 @@ the content of the classes is then integrated in the C++ library `<robot>_gen.h/
 ## Symbolic selectivity of parameters
 Each parameter specified in the config file can be symbolic or not based on the `symb:` control boxes in the specific parameter.
 For example, in the inertial parameters it is sufficient to write `symb: [1,1,1,1,1,1,1,1,1,1]` to enable the symbolic computation of the classical dynamics.
-The same functionality can be used to change some parameters in the compiled functions without the necessity of re-build the code.
-This features is particulary important in applications like adaptive control, where parameters have to adapt at real time.
+This functionality can be used to change some parameters in the compiled functions without the necessity of re-build the code., a features which is particulary important in applications like adaptive control, where parameters have to adapt at real time.
 
+The parameters in the yaml file are something like:
+```yaml
+
+parameter:
+  symb: [0,0,1] 		# only the third element of parameter is symbolic
+  value: [1, 2, 3] 		# initial values of the parameter
+...
+}
+```
+
+then in the built code it is possible to write
+```C++
+thunder_<robot> myRobot;
+myRobot.set_parameter(1); 	# this change the symbolic third element of parameter from 3 to 1
+```
 
 ## Installation
 Steps for installation:

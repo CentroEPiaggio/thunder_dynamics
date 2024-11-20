@@ -19,7 +19,10 @@ void thunder_robot::resizeVariables(){
 	par_K = Eigen::VectorXd::Zero(K_order*numElasticJoints);
 	par_D = Eigen::VectorXd::Zero(D_order*numElasticJoints);
 	par_Dm = Eigen::VectorXd::Zero(Dm_order*numElasticJoints);
-	// par_ELA = Eigen::VectorXd::Zero(numParELA);
+	DHtable = Eigen::MatrixXd::Zero(n_joints,4);
+	world2L0 = Eigen::VectorXd::Zero(6);
+	Ln2EE = Eigen::VectorXd::Zero(6);
+	gravity = Eigen::VectorXd::Zero(3);
 }
 
 int thunder_robot::get_numJoints() {return n_joints;};
@@ -125,7 +128,7 @@ void thunder_robot::update_inertial_REG(){
 }
 
 void thunder_robot::set_par_DYN(const Eigen::VectorXd& par_, bool update_REG){
-	if(par_.size() == STD_PAR_LINK*n_joints){
+	if(par_.size() == par_DYN.size()){
 		par_DYN = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -135,7 +138,7 @@ void thunder_robot::set_par_DYN(const Eigen::VectorXd& par_, bool update_REG){
 }
 
 void thunder_robot::set_par_REG(const Eigen::VectorXd& par_, bool update_DYN){
-	if(par_.size() == STD_PAR_LINK*n_joints){
+	if(par_.size() == par_REG.size()){
 		par_REG = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -145,7 +148,7 @@ void thunder_robot::set_par_REG(const Eigen::VectorXd& par_, bool update_DYN){
 }
 
 void thunder_robot::set_par_K(const Eigen::VectorXd& par_){
-	if(par_.size() == K_order*numElasticJoints){
+	if(par_.size() == par_K.size()){
 		par_K = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -153,7 +156,7 @@ void thunder_robot::set_par_K(const Eigen::VectorXd& par_){
 }
 
 void thunder_robot::set_par_D(const Eigen::VectorXd& par_){
-	if(par_.size() == D_order*numElasticJoints){
+	if(par_.size() == par_D.size()){
 		par_D = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -161,7 +164,7 @@ void thunder_robot::set_par_D(const Eigen::VectorXd& par_){
 }
 
 void thunder_robot::set_par_Dm(const Eigen::VectorXd& par_){
-	if(par_.size() == Dm_order*numElasticJoints){
+	if(par_.size() == par_Dm.size()){
 		par_Dm = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -169,7 +172,7 @@ void thunder_robot::set_par_Dm(const Eigen::VectorXd& par_){
 }
 
 void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
-	if(par_.size() == Dl_order*n_joints){
+	if(par_.size() == par_Dl.size()){
 		par_Dl = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
@@ -177,19 +180,35 @@ void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
 }
 
 void thunder_robot::set_DHtable(const Eigen::MatrixXd& par_){
-	DHtable = par_;
+	if(par_.size() == DHtable.size()){
+		DHtable = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
 }
 
 void thunder_robot::set_gravity(const Eigen::VectorXd& par_){
-	gravity = par_;
+	if(par_.size() == gravity.size()){
+		gravity = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
 }
 
 void thunder_robot::set_world2L0(const Eigen::VectorXd& par_){
-	world2L0 = par_;
+	if(par_.size() == world2L0.size()){
+		world2L0 = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
 }
 
 void thunder_robot::set_Ln2EE(const Eigen::VectorXd& par_){
-	Ln2EE = par_;
+	if(par_.size() == Ln2EE.size()){
+		Ln2EE = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
 }
 
 Eigen::VectorXd thunder_robot::get_par_DYN(){
@@ -271,7 +290,7 @@ Eigen::VectorXd thunder_robot::load_par_REG(std::string file_path, bool update_D
 void thunder_robot::load_conf(std::string file_path, bool update_REG){
 	try {
 		YAML::Node config = YAML::LoadFile(file_path);
-		int i;
+		int index;
 		// --- Parse kinematics --- //
 		if (config["kinematics"]){
 			// Denavit-Hartenberg
@@ -289,31 +308,72 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 		if (config["Base_to_L0"]){
 			world2L0.resize(6);
 			YAML::Node frame_base = config["Base_to_L0"];
+			if (frame_base["symb"]){
+				world2L0_symb = frame_base["symb"].as<std::vector<int>>();
+			} else {
+				// no parameters here
+			}
+			// int sz = 0;
+			// for (int v : world2L0_symb) if (v) sz++;
+			// std::cout << "sz: " << sz << std::endl;
 			std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
 			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
+			// Eigen::VectorXd world2L0_new(sz);
+			int sz1=0, sz2=0;
 			for (int i=0; i<3; i++){
-				world2L0(i) = tr[i];
-				world2L0(i+3) = ypr[i];
+				if (world2L0_symb[i]){
+					world2L0(sz1) = tr[i];
+					sz1++;
+				}
 			}
+			for (int i=0; i<3; i++){
+				if (world2L0_symb[i+3]){
+					world2L0(sz1+sz2) = ypr[i];
+					sz2++;
+				}
+			}
+			world2L0.conservativeResize(sz1+sz2);
+			// world2L0 = world2L0_new;
 		}
+
 		if (config["Ln_to_EE"]){
 			Ln2EE.resize(6);
 			YAML::Node frame_ee = config["Ln_to_EE"];
+			if (frame_ee["symb"]){
+				Ln2EE_symb = frame_ee["symb"].as<std::vector<int>>();
+			} else {
+				// no parameters here
+			}
+			// int sz = 0;
+			// for (int v : Ln2EE_symb) if (v) sz++;
+			// std::cout << "sz: " << sz << std::endl;
 			std::vector<double> tr = frame_ee["tr"].as<std::vector<double>>();
 			std::vector<double> ypr = frame_ee["ypr"].as<std::vector<double>>();
+			// Eigen::VectorXd Ln2EE_new(sz);
+			int sz1=0, sz2=0;
 			for (int i=0; i<3; i++){
-				Ln2EE(i) = tr[i];
-				Ln2EE(i+3) = ypr[i];
+				if (Ln2EE_symb[i]){
+					Ln2EE(sz1) = tr[i];
+					sz1++;
+				}
 			}
+			for (int i=0; i<3; i++){
+				if (Ln2EE_symb[i+3]){
+					Ln2EE(sz1+sz2) = ypr[i];
+					sz2++;
+				}
+			}
+			Ln2EE.conservativeResize(sz1+sz2);
+			// Ln2EE = Ln2EE_new;
 		}
 		
 		// --- Parse dynamics --- //
 		if (config["dynamics"]){
 			YAML::Node dynamics = config["dynamics"];
 			double mass, cmx, cmy, cmz, xx, xy, xz, yy, yz, zz;
-			i=0;
+			index=0;
 			for (const auto& node : dynamics) {
-				if (i==n_joints) break;
+				if (index==n_joints) break;
 				YAML::Node inertial = node.second["inertial"];
 				// - inertial parameters - //
 				std::string linkName = node.first.as<std::string>();
@@ -328,16 +388,16 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 				yz = inertial["Iyz"].as<double>();
 				zz = inertial["Izz"].as<double>();
 
-				par_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
+				par_DYN.segment(STD_PAR_LINK*index, STD_PAR_LINK) << mass,cmx,cmy,cmz,xx,xy,xz,yy,yz,zz;
 				
 				// - link friction - //
 				if (node.second["friction"]){
 					std::vector<double> Dl = node.second["friction"]["Dl"].as<std::vector<double>>();
 					for (int j=0; j<Dl_order; j++){
-						par_Dl(Dl_order*i + j) = Dl[j];
+						par_Dl(Dl_order*index + j) = Dl[j];
 					}
 				}
-				i++;
+				index++;
 			}
 			if (update_REG) update_inertial_REG();
 		}
@@ -345,38 +405,52 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 		if (config["gravity"]){
 			gravity.resize(3);
 			YAML::Node gravity_node = config["gravity"];
-			std::vector<double> gravity_vect = gravity_node["value"].as<std::vector<double>>();
-			for (int i=0; i<3; i++){
-				gravity(i) = gravity_vect[i];
+			if (gravity_node["symb"]){
+				gravity_symb = gravity_node["symb"].as<std::vector<int>>();
+			} else {
+				// no parameters here
 			}
+			// int sz = 0;
+			// for (int v : gravity_symb) if (v) sz++;
+			std::vector<double> grav = gravity_node["value"].as<std::vector<double>>();
+			// Eigen::VectorXd gravity_new(sz);
+			int sz1 = 0;
+			for (int i=0; i<3; i++){
+				if (gravity_symb[i]){
+					gravity(sz1) = grav[i];
+					sz1++;
+				}
+			}
+			gravity.conservativeResize(sz1);
+			// gravity = gravity_new;
 		}
 
 		// --- Parse elastic --- //
 		if (config["elastic"]){
 			YAML::Node elastic = config["elastic"];
-			i = 0;
+			index = 0;
 			for (const auto& node : elastic["joints"]) {
-				if (i==numElasticJoints) break;
+				if (index==numElasticJoints) break;
 				std::string jointName = node.first.as<std::string>();
 				// stiffness
 				for (int j=0; j<K_order; j++){
 					std::vector<double> K = node.second["K"].as<std::vector<double>>();
-					par_K(K_order*i+j) = K[j];
+					par_K(K_order*index+j) = K[j];
 					std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
 				}
 				// coupling friction
 				for (int j=0; j<D_order; j++){
 					std::vector<double> D = node.second["D"].as<std::vector<double>>();
-					par_D(D_order*i + j) = D[j];
+					par_D(D_order*index + j) = D[j];
 					std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
 				}
 				// motor friction
 				for (int j=0; j<Dm_order; j++){
 					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
-					par_Dm(Dm_order*i + j) = Dm[j];
+					par_Dm(Dm_order*index + j) = Dm[j];
 					std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
 				}
-				i++;
+				index++;
 			}
 		}
 	} catch (const YAML::Exception& e) {
@@ -533,11 +607,9 @@ void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std:
 		linkNode["inertial"] = linkInertia;
 		linkNode["friction"] = linkFric;
 		dynamicsNode[nodeName] = linkNode;
-
-		yamlFile["dynamics"] = dynamicsNode;
-		emitter_ << yamlFile << YAML::Newline;
-
 	}
+	yamlFile["dynamics"] = dynamicsNode;
+	emitter_ << yamlFile << YAML::Newline;
 }
 
 Eigen::Matrix3d thunder_robot::hat(const Eigen::Vector3d v){

@@ -115,6 +115,16 @@ int main(){
 	// robot.load_par_DYN(saved_inertial_file);
 	// robot.save_par_DYN(saved_inertial_file);
 
+	// - conf loading test - //
+	cout << "world2L0: " << robot.get_world2L0() << endl;
+	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
+
+	// - set par test - //
+	Eigen::Vector3d par_ee({3, 3, 3});
+	robot.set_Ln2EE(par_ee);
+	cout << "world2L0: " << robot.get_world2L0() << endl;
+	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
+
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){
 	// 	int NEJ = robot.numElasticJoints;
