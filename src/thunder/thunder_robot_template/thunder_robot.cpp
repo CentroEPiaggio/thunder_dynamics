@@ -13,6 +13,7 @@ void thunder_robot::resizeVariables(){
 	x = Eigen::VectorXd::Zero(numElasticJoints);
 	dx = Eigen::VectorXd::Zero(numElasticJoints);
 	ddxr = Eigen::VectorXd::Zero(numElasticJoints);
+	w = Eigen::VectorXd::Zero(6);
 	par_REG = Eigen::VectorXd::Zero(STD_PAR_LINK*n_joints);
 	par_DYN = Eigen::VectorXd::Zero(STD_PAR_LINK*n_joints);
 	par_Dl = Eigen::VectorXd::Zero(Dl_order*n_joints);
@@ -93,6 +94,14 @@ void thunder_robot::set_dx(const Eigen::VectorXd& dx_){
 void thunder_robot::set_ddxr(const Eigen::VectorXd& ddxr_){
 	if(ddxr_.size() == numElasticJoints){
 		ddxr = ddxr_;
+	} else{
+		std::cout<<"in set_ddxr: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_w(const Eigen::VectorXd& w_){
+	if(w_.size() == 6){
+		w = w_;
 	} else{
 		std::cout<<"in set_ddxr: invalid dimensions of arguments\n";
 	}

@@ -20,6 +20,7 @@ class thunder_robot{
 		/* Joints' variables */
 		Eigen::VectorXd q, dq, dqr, ddqr, par_DYN, par_REG, par_Dl;
 		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
+		Eigen::VectorXd w;
 		Eigen::MatrixXd DHtable;
 		Eigen::VectorXd gravity, world2L0, Ln2EE;
 		std::vector<int> gravity_symb, world2L0_symb, Ln2EE_symb;
@@ -83,6 +84,7 @@ class thunder_robot{
 		void set_x(const Eigen::VectorXd& x_);
 		void set_dx(const Eigen::VectorXd& dx_);
 		void set_ddxr(const Eigen::VectorXd& ddxr_);
+		void set_w(const Eigen::VectorXd& w_);
 		void set_par_REG(const Eigen::VectorXd& par_, bool update_DYN = true);
 		void set_par_DYN(const Eigen::VectorXd& par_, bool update_REG = true);
 		void set_par_K(const Eigen::VectorXd& par_);
