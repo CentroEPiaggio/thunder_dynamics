@@ -31,6 +31,7 @@ improvings:
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	Symbolic selectivity:
 		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
+		☐ pay attention to resize symb vector flags before using it, from load_conf or load_par
 		☐ load symbolics selectivity from conf in thunder_robot, now only on world_frame, ee_frame and gravity
 		☐ check number of elements in symbolic flags and values are equal in conf_file when load from thunder and thunder_robot
 		☐ parameters in thunder_robot depending on the symbolic choose

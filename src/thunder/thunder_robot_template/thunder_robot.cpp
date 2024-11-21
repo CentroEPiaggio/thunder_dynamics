@@ -24,6 +24,14 @@ void thunder_robot::resizeVariables(){
 	world2L0 = Eigen::VectorXd::Zero(6);
 	Ln2EE = Eigen::VectorXd::Zero(6);
 	gravity = Eigen::VectorXd::Zero(3);
+	gravity_symb.resize(3);
+	for (int i=0; i<3; i++) gravity_symb[i] = 0;
+	world2L0_symb.resize(6);
+	Ln2EE_symb.resize(6);
+	for (int i=0; i<6; i++){
+		world2L0_symb[i] = 0;
+		Ln2EE_symb[i] = 0;
+	}
 }
 
 int thunder_robot::get_numJoints() {return n_joints;};

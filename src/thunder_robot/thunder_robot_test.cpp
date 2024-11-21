@@ -11,14 +11,15 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-#include "thunder_RRR.h"
+// #include "thunder_RRR.h"
+#include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
 
 // #define NJ 3
 // #define N_PARAM_DYN 30
 // const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string conf_file = "../robots/RRR_conf.yaml";
+const std::string conf_file = "../robots/franka_conf.yaml";
 // const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
@@ -37,7 +38,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_RRR robot;
+	thunder_franka robot;
 
 	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
