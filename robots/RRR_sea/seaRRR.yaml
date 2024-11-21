@@ -1,6 +1,7 @@
 # -------------------------- #
 ## ----- Robot Config ----- ##
 # -------------------------- #
+version: 0.2
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
@@ -17,20 +18,26 @@ Dl_order: 2             # link friction order, 0 to not use link friction
 type_joints: ['R_SEA', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
-DH: [0,  0,      1, 0,
-     0,  *PI_2,  0, 0,
-     1,  0,      0, 0]
+kinematics:
+  symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
+  DH: [0,  0,      1, 0,
+       0,  *PI_2,  0, 0,
+       1,  0,      0, 0]
 
 # gravity vector
-gravity: [0, 0, -9.81]
+gravity:
+  symb: [0,0,0]
+  value: [0, 0, -9.81]
 
 # world to link_0
 Base_to_L0:
+  symb: [0,0,0, 0,0,0]
   tr: [0, 0, 0]
   ypr: [0, 0, 0]
 
 # Link_n to EE
 Ln_to_EE:
+  symb: [0,0,0, 0,0,0]
   tr: [1, 0, 0]
   ypr: [0, 0, *PI_2_neg]
 
@@ -40,45 +47,57 @@ Ln_to_EE:
 # --------------------------------- #
 
 # inertial parameters expressed w.r.t. DH frames
-inertial:
+dynamics:
   link1:
-    mass: 1.0
-    CoM_x: 1.0
-    CoM_y: 1.0
-    CoM_z: 1.0
-    Ixx: 1.0
-    Ixy: 1.0
-    Ixz: 1.0
-    Iyy: 1.0
-    Iyz: 1.0
-    Izz: 1.0
-    Dl: [0.1, 0.01]
+    inertial:
+      symb: [0,0,0,0,0,0,0,0,0,0]
+      mass: 1.0
+      CoM_x: 1.0
+      CoM_y: 1.0
+      CoM_z: 1.0
+      Ixx: 1.0
+      Ixy: 1.0
+      Ixz: 1.0
+      Iyy: 1.0
+      Iyz: 1.0
+      Izz: 1.0
+    friction:
+      symb: [0,0]
+      Dl: [0.1, 0.01]
 
   link2:
-    mass: 1.0
-    CoM_x: 1.0
-    CoM_y: 1.0
-    CoM_z: 1.0
-    Ixx: 1.0
-    Ixy: 1.0
-    Ixz: 1.0
-    Iyy: 1.0
-    Iyz: 1.0
-    Izz: 1.0
-    Dl: [0.1, 0.01]
+    inertial:
+      symb: [0,0,0,0,0,0,0,0,0,0]
+      mass: 1.0
+      CoM_x: 1.0
+      CoM_y: 1.0
+      CoM_z: 1.0
+      Ixx: 1.0
+      Ixy: 1.0
+      Ixz: 1.0
+      Iyy: 1.0
+      Iyz: 1.0
+      Izz: 1.0
+    friction:
+      symb: [0,0]
+      Dl: [0.1, 0.01]
 
   link3:
-    mass: 1.0
-    CoM_x: 1.0
-    CoM_y: 1.0
-    CoM_z: 1.0
-    Ixx: 1.0
-    Ixy: 1.0
-    Ixz: 1.0
-    Iyy: 1.0
-    Iyz: 1.0
-    Izz: 1.0
-    Dl: [0.1, 0.01]
+    inertial:
+      symb: [0,0,0,0,0,0,0,0,0,0]
+      mass: 1.0
+      CoM_x: 1.0
+      CoM_y: 1.0
+      CoM_z: 1.0
+      Ixx: 1.0
+      Ixy: 1.0
+      Ixz: 1.0
+      Iyy: 1.0
+      Iyz: 1.0
+      Izz: 1.0
+    friction:
+      symb: [0,0]
+      Dl: [0.1, 0.01]
 
 
 # -------------------------------- #
@@ -95,13 +114,22 @@ elastic:
       K: [1.0]
       D: []
       Dm: [0.1]
+      K_symb: [0]
+      D_symb: [0]
+      Dm_symb: [0]
     joint2:
       # index: 1
       K: [1.0, 0.0, 0.0]
       D: [0.1, 0.0]
       Dm: [0.1, 0.01]
+      K_symb: [0, 0, 0]
+      D_symb: [0, 0]
+      Dm_symb: [0, 0]
     joint3:
       # index: 2
       K: [1.0, 0.0, 0.0]
       D: [0.1, 0.0]
       Dm: [0.1, 0.01]
+      K_symb: [0, 0, 0]
+      D_symb: [0, 0]
+      Dm_symb: [0, 0]
