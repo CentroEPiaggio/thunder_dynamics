@@ -193,7 +193,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		// auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i <= nj; i++) {
 			int i_mod = (i<nj)?i:(nj-1);
@@ -261,9 +261,9 @@ namespace thunder_ns{
 			} 
 			
 			// Add offset from world-frame transformation
-			Ji_pos = mtimes(world_rot,Ji_pos);
+			// Ji_pos = mtimes(world_rot,Ji_pos);
 			// std::cout << "Ji_pos: " << Ji_pos << std::endl;
-			Ji_or = mtimes(world_rot,Ji_or);
+			// Ji_or = mtimes(world_rot,Ji_or);
 			// std::cout << "Ji_or: " << Ji_or << std::endl;
 			
 			Ji_v[i] = Ji_pos;

@@ -17,9 +17,9 @@ type_joints: ['R', 'R', 'R']
 # DH convention: a -> alpha -> d -> theta
 kinematics:
   symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
-  DH: [0,  0,      1, 0,
-       0,  *PI_2,  0, 0,
-       1,  0,      0, 0]
+  DH: [0,  *PI_2_neg, 1, 0,
+       0,  *PI_2,     0, 0,
+       1,   0,        0, 0]
 
 # gravity vector
 gravity:
@@ -30,11 +30,11 @@ gravity:
 Base_to_L0:
   symb: [0,0,0, 0,0,0]
   tr: [0, 0, 0]
-  ypr: [0, 0, 0]
+  ypr: [0, 0, *PI_2]
 
 # Link_n to EE
 Ln_to_EE:
-  symb: [1,1,1, 0,0,0]
+  symb: [0,0,0, 0,0,0]
   tr: [1, 0, 0]
   ypr: [0, 0, *PI_2_neg]
 

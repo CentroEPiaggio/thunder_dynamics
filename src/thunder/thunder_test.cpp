@@ -92,13 +92,13 @@ int main(){
 	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
 
 	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	q.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dq.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dqr.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddqr.setZero();// = Eigen::Vector<double,NJ>::Random();
+	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);

@@ -120,9 +120,9 @@ namespace thunder_ns{
 		// auto _DHtable_ = robot.get_DHTable();
 		// auto world2L0 = robot.get_world2L0();
 		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto q = robot.model["q"];
-		auto world2L0 = robot.model["world2L0"];
-		auto par_DYN = robot.model["par_DYN"];
+		const auto& q = robot.model["q"];
+		const auto& world2L0 = robot.model["world2L0"];
+		const auto& par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -140,7 +140,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		// auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < numJoints; i++) {
 			casadi::SX k0(3,1);             // versor of joint i
@@ -193,8 +193,8 @@ namespace thunder_ns{
 			// Add offset from world-frame transformation
 			// Jci_pos = mtimes(world2L0.get_rotation(),Jci_pos);
 			// Ji_or = mtimes(world2L0.get_rotation(),Ji_or);
-			Jci_pos = mtimes(world_rot,Jci_pos);
-			Ji_or = mtimes(world_rot,Ji_or);
+			// Jci_pos = mtimes(world_rot,Jci_pos);
+			// Ji_or = mtimes(world_rot,Ji_or);
 			
 			Ji_v[i] = Jci_pos;
 			Ji_w[i] = Ji_or;

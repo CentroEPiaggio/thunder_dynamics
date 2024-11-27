@@ -62,13 +62,13 @@ namespace thunder_ns{
 		// auto _DHtable_ = robot.get_DHTable();
 		// auto _world2L0_ = robot.get_world2L0();
 		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto q = robot.model["q"];
-		auto dq = robot.model["dq"];
-		auto dqr = robot.model["dqr"];
-		auto ddqr = robot.model["ddqr"];
+		const auto& q = robot.model["q"];
+		const auto& dq = robot.model["dq"];
+		const auto& dqr = robot.model["dqr"];
+		const auto& ddqr = robot.model["ddqr"];
 		// auto par_DYN = robot.model["par_DYN"];
 		// auto world2L0 = robot.model["world2L0"];
-		auto gravity = robot.model["gravity"];
+		const auto& gravity = robot.model["gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
