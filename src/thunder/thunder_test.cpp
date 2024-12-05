@@ -24,7 +24,8 @@ using std::endl;
 
 int main(){
 
-	std::string config_file = "../robots/RRR/RRR.yaml";
+	// std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
@@ -90,15 +91,19 @@ int main(){
 	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
 	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
 	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
+	// // test change par
+	// robot.set_par_REG(par_REG);
+	// par_DYN = robot.get_par_DYN();
+	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dq.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dqr.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddqr.setZero();// = Eigen::Vector<double,NJ>::Random();
-	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
+	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
