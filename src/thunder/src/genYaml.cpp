@@ -115,7 +115,7 @@ namespace thunder_ns{
 				double m = tmp_link.mass;
 				Eigen::Vector3d dOG = {tmp_link.xyz[0], tmp_link.xyz[1], tmp_link.xyz[2]};
 				Eigen::Matrix3d IG = createI(tmp_link.parI);
-				Eigen::Matrix3d I0 = IG + m * hat(dOG) * hat(dOG).transpose();
+				Eigen::Matrix3d I0 = IG + m * (hat(dOG).transpose() * hat(dOG));
 				dOG = m*dOG;
 
 				links_prop_REG[i].name = tmp_link.name;

@@ -1,4 +1,5 @@
 ✔ test kinematic regressors on thunder_robot @done (11/28/2024, 5:23:41 PM)
+☐ possibile problema nella conversione dei parametri, genYaml e update_inertial..
 ☐ la parte del regressore è tutta diversa dalla dinamica delle matrici
 ☐ l'errore è in regressors, testato su franka_control in gazebo, G preciso, M,C uguali fino al terzo decimale, massa più precisa, ci stanno errori di simulazione
 ☐ variables used as const and references, every .model[]

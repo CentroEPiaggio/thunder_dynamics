@@ -175,7 +175,7 @@ namespace thunder_ns{
 				casadi::SX O_j_1Ci(3,1);           // distance of joint i from joint j-1
 				casadi::SX T_0j_1(4,4);           // matrix tranformation of joint i from joint j-1
 
-				// T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1];
+				// T_0j_1 = robot.model["T_0_"+std::to_string(j-1)];	// modified from T0i[j-1];
 				T_0j_1 = robot.model["T_0_"+std::to_string(j)];
 				kj_1 = T_0j_1(r_rot_idx, 2);
 				O_j_1Ci = O_Ci - T_0j_1(r_tra_idx, 3);

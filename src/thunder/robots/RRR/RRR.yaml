@@ -19,7 +19,7 @@ kinematics:
   symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
   DH: [0,  *PI_2_neg, 1, 0,
        0,  *PI_2,     0, 0,
-       1,   0,        0, 0]
+       1,   *PI_2,    0, 0]
 
 # gravity vector
 gravity:
@@ -48,16 +48,16 @@ dynamics:
   link1:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 5.0
+      CoM_x: 2.0
+      CoM_y: 2.0
+      CoM_z: 2.0
+      Ixx: 2.0
+      Ixy: 2.0
+      Ixz: 2.0
+      Iyy: 2.0
+      Iyz: 2.0
+      Izz: 2.0
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]
@@ -65,16 +65,16 @@ dynamics:
   link2:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 3.0
+      CoM_x: 2.0
+      CoM_y: 2.0
+      CoM_z: 2.0
+      Ixx: 2.0
+      Ixy: 2.0
+      Ixz: 2.0
+      Iyy: 2.0
+      Iyz: 2.0
+      Izz: 2.0
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]
@@ -83,15 +83,15 @@ dynamics:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      CoM_x: 2.0
+      CoM_y: 0.3
+      CoM_z: 2.0
+      Ixx: 2.0
+      Ixy: 2.0
+      Ixz: 2.0
+      Iyy: 2.0
+      Iyz: 2.0
+      Izz: 2.0
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]

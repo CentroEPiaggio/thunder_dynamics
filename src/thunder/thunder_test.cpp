@@ -24,8 +24,8 @@ using std::endl;
 
 int main(){
 
-	// std::string config_file = "../robots/RRR/RRR.yaml";
-	std::string config_file = "../robots/franka/franka.yaml";
+	std::string config_file = "../robots/RRR/RRR.yaml";
+	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
@@ -182,7 +182,9 @@ int main(){
 
 	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+	auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
+	cout<<"par_error: \n" << par_error << endl<<endl;
+	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
 
 	// - symbolic quantities - //
 	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
