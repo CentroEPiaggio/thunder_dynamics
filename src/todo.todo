@@ -42,6 +42,7 @@ improvings:
 		☐ check other parameters other than ee poaitions
 		☐ generalize to other kinematics, like urdf...
 	General:
+		☐ only one folder for robots!
 		☐ variables used as const and references, every .model[]
 		☐ SX to MX?
 		☐ thunder_robot_test does not have to change with the robot, use macro to test elasticity (the problem is thet the methods does not exists)
