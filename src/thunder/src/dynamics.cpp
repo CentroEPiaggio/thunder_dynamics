@@ -150,33 +150,33 @@ namespace thunder_ns{
 			casadi::SX O_Ci(3,1);
 			casadi::SX R0i;
 			
-			k0 = world_rot(r_rot_idx, 2);
-			T_0i = robot.model["T_0_"+std::to_string(i)];
-			// k0 = T_0i(r_rot_idx, 2);
+			T_0i = robot.model["T_0_"+std::to_string(i+1)];
+			// k0 = world_rot(r_rot_idx, 2);
+			k0 = T_0i(r_rot_idx, 2);
 			O_0i = T_0i(r_tra_idx, 3);
 			
 			R0i = T_0i(r_rot_idx,r_rot_idx);
 			O_Ci = O_0i + mtimes(R0i,_distCM_[i]);
 			
-			// First column of jacobian
-			if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
-				Jci_pos(allRows,0) = k0;
-			} else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
-				Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
-				Ji_or(allRows,0) = k0;
-			} else {
-				throw std::runtime_error("DHJac: Error joint type");
-			}
+			// // First column of jacobian
+			// if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
+			// 	Jci_pos(allRows,0) = k0;
+			// } else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
+			// 	Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
+			// 	Ji_or(allRows,0) = k0;
+			// } else {
+			// 	throw std::runtime_error("DHJac: Error joint type");
+			// }
 
 			// Rest of columns of jacobian
-			for (int j = 1; j <= i; j++) {
+			for (int j = 0; j <= i; j++) {
 				// Init variables of column j-th of jacobian each cycle
 				casadi::SX kj(3,1);             // versor of joint j-1
 				casadi::SX O_jCi(3,1);          // distance of joint i from joint j-1
 				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 
 				// T_0j_1 = robot.model["T_0_"+std::to_string(j-1)];	// modified from T0i[j-1];
-				T_0j = robot.model["T_0_"+std::to_string(j)];
+				T_0j = robot.model["T_0_"+std::to_string(j+1)];
 				kj = T_0j(r_rot_idx, 2);
 				O_jCi = O_Ci - T_0j(r_tra_idx, 3);
 
@@ -202,7 +202,7 @@ namespace thunder_ns{
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
 			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
-			robot.add_function("J_cm_"+std::to_string(i), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i));
+			robot.add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
 		}
 
 		return std::make_tuple(Ji_v, Ji_w);
@@ -263,7 +263,7 @@ namespace thunder_ns{
 		Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
-			T0i = robot.model["T_0_"+std::to_string(i)];
+			T0i = robot.model["T_0_"+std::to_string(i+1)];
 			// std::cout<<"T0i: "<<T0i<<std::endl;
 			casadi::SX R0i = T0i(selR,selR);
 			// std::cout<<"R0i: "<<R0i<<std::endl;

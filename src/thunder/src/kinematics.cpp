@@ -11,20 +11,54 @@ namespace thunder_ns{
 
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
+
+	// - Rotations - //
+	casadi::SX R_x(const casadi::SX& angle) {
+		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
+
+		// Define the rotation matrix components for rotation around the x-axis
+		R(0, 0) = 1;        R(0, 1) = 0;                R(0, 2) = 0;
+		R(1, 0) = 0;        R(1, 1) = cos(angle);       R(1, 2) = -sin(angle);
+		R(2, 0) = 0;        R(2, 1) = sin(angle);       R(2, 2) = cos(angle);
+
+		return R;
+	}
+	casadi::SX R_y(const casadi::SX& angle) {
+		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
+
+		// Define the rotation matrix components for rotation around the y-axis
+		R(0, 0) = cos(angle);       R(0, 1) = 0;        R(0, 2) = sin(angle);
+		R(1, 0) = 0;                R(1, 1) = 1;        R(1, 2) = 0;
+		R(2, 0) = -sin(angle);      R(2, 1) = 0;        R(2, 2) = cos(angle);
+
+		return R;
+	}
+
+	// Function to create a rotation matrix for a given angle about the z-axis
+	casadi::SX R_z(const casadi::SX& angle) {
+		// Ensure the input is of type casadi::SX
+		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
+
+		// Define the rotation matrix components for rotation around the z-axis
+		R(0, 0) = cos(angle);       R(0, 1) = -sin(angle);      R(0, 2) = 0;
+		R(1, 0) = sin(angle);       R(1, 1) = cos(angle);       R(1, 2) = 0;
+		R(2, 0) = 0;                R(2, 1) = 0;                R(2, 2) = 1;
+
+		return R;
+	}
   
 	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX& qi, std::string jointType) {
 		
-		casadi::SX a;
-		casadi::SX alpha;
+		// Transformation:  T_a * T_alpha * T_d * T_theta
+		casadi::SX Ti(4,4); // output
+		casadi::SX p_a(3,1);
+		casadi::SX p_d(3,1);
+		casadi::Slice idx(0, 3);      // [0,1,2] indexes
+
+		casadi::SX a = rowDHTable(0);
+		casadi::SX alpha = rowDHTable(1);;
 		casadi::SX d;
 		casadi::SX theta;
-		
-		casadi::SX ct;      // cos(theta)
-		casadi::SX st;      // sin(theta)
-		casadi::SX ca;      // cos(alpha)
-		casadi::SX sa;      // sin(alpha)
-		
-		casadi::SX Ti(4,4); // output
 		
 		// Check
 		if ((jointType == "P")||(jointType == "P_SEA")) {
@@ -39,80 +73,36 @@ namespace thunder_ns{
 			throw std::runtime_error("DHTemplate: Error joint type");
 		}
 
-		a = rowDHTable(0);
-		alpha = rowDHTable(1);
-		
-		ca = cos(alpha);
-		sa = sin(alpha);
-		ct = cos(theta);
-		st = sin(theta);
+		p_a(0) = a;
+		p_d(2) = d;
+		casadi::SX Rx = R_x(alpha);
+		casadi::SX Rz = R_z(theta);
 
-		// if (abs(ca) < EPSILON) ca = 0;
-		// if (abs(sa) < EPSILON) sa = 0;
-		// if (abs(ct) < EPSILON) ct = 0;
-		// if (abs(st) < EPSILON) st = 0;
-		
-		// original: T_theta*T_d*T_alpha*T_a
-		// Ti(0,0) = ct;
-		// Ti(0,1) = -ca*st;
-		// Ti(0,2) = sa*st;
-		// Ti(0,3) = a*ct;
-		// Ti(1,0) = st;
-		// Ti(1,1) = ca*ct;
-		// Ti(1,2) = -sa*ct;
-		// Ti(1,3) = a*st;
-		// Ti(2,1) = sa;
-		// Ti(2,2) = ca;
-		// Ti(2,3) = d;
-		// Ti(3,3) = 1;
-
-		// modified: T_a*T_alpha*T_d*T_theta
-		Ti(0,0) = ct;
-		Ti(0,1) = -st;
-		Ti(0,2) = 0;
-		Ti(0,3) = a;
-		Ti(1,0) = ca*st;
-		Ti(1,1) = ca*ct;
-		Ti(1,2) = -sa;
-		Ti(1,3) = -d*sa;
-		Ti(2,0) = sa*st;
-		Ti(2,1) = sa*ct;
-		Ti(2,2) = ca;
-		Ti(2,3) = d*ca;
+		Ti(idx,idx) = casadi::SX::mtimes(Rx, Rz);
+		Ti(idx,3) = casadi::SX::mtimes(Rx, p_d) + p_a;
 		Ti(3,3) = 1;
 
 		return Ti;
 	}
 
 	casadi::SX get_transform(casadi::SX frame){
-		// frame is traslation and orientation in yaw-pitch-roll
-		casadi::SX rotTr = casadi::SX::eye(4);
-		
-		casadi::SX dx = frame(0);
-		casadi::SX dy = frame(1);
-		casadi::SX dz = frame(2);
-		casadi::SX cy = cos(frame(3));
-		casadi::SX sy = sin(frame(3));
-		casadi::SX cp = cos(frame(4));
-		casadi::SX sp = sin(frame(4));
-		casadi::SX cr = cos(frame(5));
-		casadi::SX sr = sin(frame(5));
+		// traslation -> xyz, rotation -> yow-pitch-roll
+		casadi::SX T(4,4); // output
+		casadi::SX R(3,3);
+		casadi::SX p(3,1);
+		casadi::Slice idx(0, 3);      // [0,1,2] indexes
 
-		//template R yaw-pitch-roll
-		rotTr(0,0)=cy*cp;
-		rotTr(0,1)=cy*sp*sr-sy*cr;
-		rotTr(0,2)=cy*sp*cr-sy*sr;
-		rotTr(1,0)=sy*cp;
-		rotTr(1,1)=sy*sp*sr+cy*cr;
-		rotTr(1,2)=sy*sp*cr-cy*sr;
-		rotTr(2,0)=-sp;
-		rotTr(2,1)=cp*sr;
-		rotTr(2,2)=cp*cr;
-		rotTr(0,3) = dx;
-		rotTr(1,3) = dy;
-		rotTr(2,3) = dz;
+		p = frame(idx);
+		casadi::SX psi = frame(3);
+		casadi::SX theta = frame(4);
+		casadi::SX phi = frame(5);
+		R = casadi::SX::mtimes(casadi::SX::mtimes(R_z(psi), R_y(theta)), R_x(phi));
 
-		return rotTr;
+		T(idx,idx) = R;
+		T(idx,3) = p;
+		T(3,3) = 1;
+
+		return T;
 	}
 	
 	int compute_chain(Robot& robot) {
@@ -130,36 +120,36 @@ namespace thunder_ns{
 		// auto gravity = robot.model["gravity"];
 
 		// computing chain
-		casadi::SXVector Ti(numJoints);    // Output
-		casadi::SXVector T0i(numJoints+1);   // Output
+		casadi::SXVector Ti(numJoints+1);    // Output
+		casadi::SXVector T0i(numJoints+2);   // Output
 		casadi::Slice allCols(0,4);   
 	   
 		// Ti is transformation from link i-1 to link i
-		Ti[0] = DHTemplate(DHtable(0,allCols), q(0), jointsType[0]);
+		Ti[0] = get_transform(world2L0);
 		// T0i is transformation from link 0 to link i
-		T0i[0] = casadi::SX::mtimes({get_transform(world2L0), Ti[0]});
+		T0i[0] = Ti[0];
 
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable"});
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
 		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
+		arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
-		for (int i = 1; i < numJoints; i++) {
-			Ti[i] = DHTemplate(DHtable(i,allCols), q(i), jointsType[i]);
-			T0i[i] = casadi::SX::mtimes({T0i[i-1], Ti[i]});
+		for (int i = 0; i < numJoints; i++) {
+			Ti[i+1] = DHTemplate(DHtable(i,allCols), q(i), jointsType[i]);
+			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
 			
 			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable"});
-			if (!robot.add_function("T_"+std::to_string(i), Ti[i], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
+			if (!robot.add_function("T_"+std::to_string(i+1), Ti[i+1], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
 			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
-			if (!robot.add_function("T_0_"+std::to_string(i), T0i[i], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
+			if (!robot.add_function("T_0_"+std::to_string(i+1), T0i[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
 		}
 
 		// end-effector transform
-		T0i[numJoints] = casadi::SX::mtimes({T0i[numJoints-1], get_transform(Ln2EE)});
+		T0i[numJoints+1] = casadi::SX::mtimes({T0i[numJoints], get_transform(Ln2EE)});
 
 		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "Ln2EE"});
-		if (!robot.add_function("T_0_"+std::to_string(numJoints), T0i[numJoints], arg_list, "absolute transformation from frame base to end_effector")) return 0;
-		if (!robot.add_function("T_0_ee", T0i[numJoints], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
+		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
+		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
 		// std::cout<<"functions created"<<std::endl;
 
 		return 1;
@@ -195,7 +185,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		// auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i <= nj; i++) {
 			int i_mod = (i<nj)?i:(nj-1);
@@ -204,31 +194,29 @@ namespace thunder_ns{
 			casadi::SX O_0i(3,1);           // distance of joint i from joint 0
 			casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
 
-			// k0(2,0) = 1;
-			k0 = world_rot(r_rot_idx, 2);
-			T_0i = robot.model["T_0_"+std::to_string(i)];
-			// k0 = T_0i(r_rot_idx, 2);
-			// std::cout << "k0: " << k0 << std::endl;
-			T_0i = robot.model["T_0_"+std::to_string(i_mod)];
+			T_0i = robot.model["T_0_"+std::to_string(i_mod+1)];
 			// std::cout << "T_0i: " << T_0i << std::endl;
+			k0 = T_0i(r_rot_idx, 2);
+			// k0(2,0) = 1;
+			// std::cout << "k0: " << k0 << std::endl;
 			O_0i = T_0i(r_tra_idx, 3);
 			// std::cout << "O_0i: " << O_0i << std::endl;
 
-			// First column of jacobian
-			if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
-				Ji_pos(allRows,0) = k0;
-			} else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
-				Ji_pos(allRows,0) = mtimes(hat(k0),O_0i);
-				// std::cout << "Ji_pos: " << Ji_pos << std::endl;
-				Ji_or(allRows,0) = k0;
-				// std::cout << "Ji_or: " << Ji_or << std::endl;
-			} else {
-				throw std::runtime_error("DHJac: Error joint type");
-				return 0;
-			}
+			// // First column of jacobian
+			// if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
+			// 	Ji_pos(allRows,0) = k0;
+			// } else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
+			// 	Ji_pos(allRows,0) = mtimes(hat(k0),O_0i);
+			// 	// std::cout << "Ji_pos: " << Ji_pos << std::endl;
+			// 	Ji_or(allRows,0) = k0;
+			// 	// std::cout << "Ji_or: " << Ji_or << std::endl;
+			// } else {
+			// 	throw std::runtime_error("DHJac: Error joint type");
+			// 	return 0;
+			// }
 
 			// Rest of columns of jacobian
-			for (int j = 1; j <= i_mod; j++) {
+			for (int j = 0; j <= i_mod; j++) {
 
 				// Init variables of column j-th of jacobian each cycle
 				casadi::SX kj(3,1);             // versor of joint j-1
@@ -236,7 +224,7 @@ namespace thunder_ns{
 				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 		
 				// T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1];
-				T_0j = robot.model["T_0_"+std::to_string(j)];
+				T_0j = robot.model["T_0_"+std::to_string(j+1)];
 				kj = T_0j(r_rot_idx, 2);
 				O_ji = O_0i - T_0j(r_tra_idx, 3);
 				// std::cout << "kj: " << kj << std::endl;
@@ -280,7 +268,7 @@ namespace thunder_ns{
 			} else {
 				arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "Ln2EE"});
 			}
-			if (!robot.add_function("J_"+std::to_string(i), Ji[i], arg_list, "Jacobian of frame "+std::to_string(i))) return 0;
+			if (!robot.add_function("J_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of frame "+std::to_string(i+1))) return 0;
 		}
 
 		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "Ln2EE"});
@@ -289,7 +277,7 @@ namespace thunder_ns{
 	}
 
 	int compute_kin_adv(Robot& robot){
-		if (robot.model.count("T_0_ee") == 0){
+		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
 		if (robot.model.count("J_ee") == 0){

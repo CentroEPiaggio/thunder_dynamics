@@ -72,7 +72,7 @@ namespace thunder_ns{
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
-		if (robot.model.count("J_0") == 0){
+		if (robot.model.count("J_1") == 0){
 			compute_jacobians(robot);
 		}
 		// auto par_inertial = createInertialParameters(numJoints, par_DYN);
@@ -119,8 +119,8 @@ namespace thunder_ns{
 		
 		for (int i=0; i<nj; i++) {
 			
-			T0i = robot.model["T_0_"+std::to_string(i)];
-			Ji = robot.model["J_"+std::to_string(i)];
+			T0i = robot.model["T_0_"+std::to_string(i+1)];
+			Ji = robot.model["J_"+std::to_string(i+1)];
 			casadi::SX R0i = T0i(selR,selR);
 			Jvi = Ji(sel_v, allCols);
 			Jwi = Ji(sel_w, allCols);
@@ -284,7 +284,7 @@ namespace thunder_ns{
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
-		if (robot.model.count("J_0") == 0){
+		if (robot.model.count("J_ee") == 0){
 			compute_jacobians(robot);
 		}
 
