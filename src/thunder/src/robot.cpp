@@ -1196,7 +1196,7 @@ namespace thunder_ns{
 			// for(int j=0; j<Dl_order; j++){
 			// 	Dl(j) = param_DYN(STD_PAR_LINK*i + STD_PAR_LINK + j);
 			// }
-			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I+I_tmp_v;
+			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, m_CoM, I+I_tmp_v;
 		}
 		set_par_REG(param_REG);
 		return 1;

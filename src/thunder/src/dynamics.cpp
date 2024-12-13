@@ -140,7 +140,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		// auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < numJoints; i++) {
 			casadi::SX k0(3,1);             // versor of joint i
@@ -150,9 +150,9 @@ namespace thunder_ns{
 			casadi::SX O_Ci(3,1);
 			casadi::SX R0i;
 			
-			k0(2,0) = 1;
-			// T_0i = T0i_vec[i];
+			k0 = world_rot(r_rot_idx, 2);
 			T_0i = robot.model["T_0_"+std::to_string(i)];
+			// k0 = T_0i(r_rot_idx, 2);
 			O_0i = T_0i(r_tra_idx, 3);
 			
 			R0i = T_0i(r_rot_idx,r_rot_idx);
@@ -171,20 +171,20 @@ namespace thunder_ns{
 			// Rest of columns of jacobian
 			for (int j = 1; j <= i; j++) {
 				// Init variables of column j-th of jacobian each cycle
-				casadi::SX kj_1(3,1);             // versor of joint j-1
-				casadi::SX O_j_1Ci(3,1);           // distance of joint i from joint j-1
-				casadi::SX T_0j_1(4,4);           // matrix tranformation of joint i from joint j-1
+				casadi::SX kj(3,1);             // versor of joint j-1
+				casadi::SX O_jCi(3,1);          // distance of joint i from joint j-1
+				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 
 				// T_0j_1 = robot.model["T_0_"+std::to_string(j-1)];	// modified from T0i[j-1];
-				T_0j_1 = robot.model["T_0_"+std::to_string(j)];
-				kj_1 = T_0j_1(r_rot_idx, 2);
-				O_j_1Ci = O_Ci - T_0j_1(r_tra_idx, 3);
+				T_0j = robot.model["T_0_"+std::to_string(j)];
+				kj = T_0j(r_rot_idx, 2);
+				O_jCi = O_Ci - T_0j(r_tra_idx, 3);
 
 				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
-					Jci_pos(allRows, j) = kj_1;
+					Jci_pos(allRows, j) = kj;
 				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
-					Jci_pos(allRows, j) = mtimes(hat(kj_1),O_j_1Ci);
-					Ji_or(allRows, j) = kj_1;
+					Jci_pos(allRows, j) = mtimes(hat(kj),O_jCi);
+					Ji_or(allRows, j) = kj;
 				} else {
 					throw std::runtime_error("DHJac: Error joint type");
 				}

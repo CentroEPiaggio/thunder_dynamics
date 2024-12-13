@@ -1,9 +1,3 @@
-✔ test kinematic regressors on thunder_robot @done (11/28/2024, 5:23:41 PM)
-☐ possibile problema nella conversione dei parametri, genYaml e update_inertial..
-☐ la parte del regressore è tutta diversa dalla dinamica delle matrici
-☐ l'errore è in regressors, testato su franka_control in gazebo, G preciso, M,C uguali fino al terzo decimale, massa più precisa, ci stanno errori di simulazione
-☐ variables used as const and references, every .model[]
-
 improvings:
 	Paramaters:
 		☐ DHtable as a vector instead a matrix
@@ -33,6 +27,10 @@ improvings:
 	elasticity:
 		☐ selection matrix for elastic joints
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
+	kinematics:
+		☐ index are wrong, T_0_0 is instead T_0_1, but everything use it, pay attention!
+		☐ check consistency with parametrization, write down parametrization, urdf differences?
+		☐ make a general kinematic parametrization
 	Symbolic selectivity:
 		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
 		☐ pay attention to resize symb vector flags before using it, from load_conf or load_par
@@ -44,6 +42,7 @@ improvings:
 		☐ check other parameters other than ee poaitions
 		☐ generalize to other kinematics, like urdf...
 	General:
+		☐ variables used as const and references, every .model[]
 		☐ SX to MX?
 		☐ thunder_robot_test does not have to change with the robot, use macro to test elasticity (the problem is thet the methods does not exists)
 		☐ add_function does nothing if the function already exists

@@ -97,10 +97,10 @@ int main(){
 	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	q.setRandom();
+	dq.setRandom();
+	dqr.setRandom();
+	ddqr.setRandom();
 	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
 	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
 	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
@@ -178,10 +178,10 @@ int main(){
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
 	tau_cmd_reg = Yr*par_REG + reg_Dl*par_Dl;
-	tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
+	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
-	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
+	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
+
 	auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
 	cout<<"par_error: \n" << par_error << endl<<endl;
 	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;

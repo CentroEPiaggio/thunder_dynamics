@@ -138,17 +138,19 @@ namespace thunder_ns{
 		Ti[0] = DHTemplate(DHtable(0,allCols), q(0), jointsType[0]);
 		// T0i is transformation from link 0 to link i
 		T0i[0] = casadi::SX::mtimes({get_transform(world2L0), Ti[0]});
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
-		// arg_list.push_back({"q"});
+
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable"});
 		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
+		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
 		for (int i = 1; i < numJoints; i++) {
 			Ti[i] = DHTemplate(DHtable(i,allCols), q(i), jointsType[i]);
 			T0i[i] = casadi::SX::mtimes({T0i[i-1], Ti[i]});
 			
-			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
+			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable"});
 			if (!robot.add_function("T_"+std::to_string(i), Ti[i], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
+			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
 			if (!robot.add_function("T_0_"+std::to_string(i), T0i[i], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
 		}
 
@@ -193,7 +195,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		// auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i <= nj; i++) {
 			int i_mod = (i<nj)?i:(nj-1);
@@ -202,9 +204,11 @@ namespace thunder_ns{
 			casadi::SX O_0i(3,1);           // distance of joint i from joint 0
 			casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
 
-			k0(2,0) = 1;
+			// k0(2,0) = 1;
+			k0 = world_rot(r_rot_idx, 2);
+			T_0i = robot.model["T_0_"+std::to_string(i)];
+			// k0 = T_0i(r_rot_idx, 2);
 			// std::cout << "k0: " << k0 << std::endl;
-			// T_0i = T0i_vec[i_mod];
 			T_0i = robot.model["T_0_"+std::to_string(i_mod)];
 			// std::cout << "T_0i: " << T_0i << std::endl;
 			O_0i = T_0i(r_tra_idx, 3);
@@ -227,24 +231,24 @@ namespace thunder_ns{
 			for (int j = 1; j <= i_mod; j++) {
 
 				// Init variables of column j-th of jacobian each cycle
-				casadi::SX kj_1(3,1);             // versor of joint j-1
-				casadi::SX O_j_1i(3,1);           // distance of joint i from joint j-1
-				casadi::SX T_0j_1(4,4);           // matrix tranformation of joint i from joint j-1
+				casadi::SX kj(3,1);             // versor of joint j-1
+				casadi::SX O_ji(3,1);           // distance of joint i from joint j-1
+				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 		
 				// T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1];
-				T_0j_1 = robot.model["T_0_"+std::to_string(j)];
-				kj_1 = T_0j_1(r_rot_idx, 2);
-				O_j_1i = O_0i - T_0j_1(r_tra_idx, 3);
-				// std::cout << "kj_1: " << kj_1 << std::endl;
-				// std::cout << "T_0j_1: " << T_0j_1 << std::endl;
-				// std::cout << "O_j_1i: " << O_j_1i << std::endl;
+				T_0j = robot.model["T_0_"+std::to_string(j)];
+				kj = T_0j(r_rot_idx, 2);
+				O_ji = O_0i - T_0j(r_tra_idx, 3);
+				// std::cout << "kj: " << kj << std::endl;
+				// std::cout << "T_0j: " << T_0j << std::endl;
+				// std::cout << "O_ji: " << O_ji << std::endl;
 
 				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
-					Ji_pos(allRows, j) = kj_1;
+					Ji_pos(allRows, j) = kj;
 				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
-					Ji_pos(allRows, j) = mtimes(hat(kj_1),O_j_1i);
+					Ji_pos(allRows, j) = mtimes(hat(kj),O_ji);
 					// std::cout << "Ji_pos: " << Ji_pos << std::endl;
-					Ji_or(allRows, j) = kj_1;
+					Ji_or(allRows, j) = kj;
 					// std::cout << "Ji_or: " << Ji_or << std::endl;
 				} else {
 					throw std::runtime_error("DHJac: Error joint type");
