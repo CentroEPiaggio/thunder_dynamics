@@ -3,17 +3,7 @@
 #include "robot.h"
 #include "kinematics.h"
 
-/* Function name used to generate code */
-// #define Ti_STRING "T_i"
-// #define T0i_STRING "T_0_i"
-// #define JAC_DOT_STRING "J_ee_dot"
-// #define JAC_PINV_STRING "J_ee_pinv"
-
 namespace thunder_ns{
-
-	// constexpr double MU = 0.02; //pseudo-inverse damping coeff
-	// constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
-	// extern constexpr int nParLink = 10;
 
 	std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
 		
@@ -101,12 +91,7 @@ namespace thunder_ns{
 			}
 		}
 
-		// casadi::SXVector C(3);
-		// C[0] = C123;
-		// C[1] = C132;
-		// C[2] = C132.T();
 		casadi::SX C(n,n);
-    
 		C = C123 + C132 - C132.T();
 
 		return C;
@@ -117,12 +102,9 @@ namespace thunder_ns{
 		auto numJoints = robot.get_numJoints();
 		auto _nParLink_ = robot.STD_PAR_LINK;
 		auto jointsType = robot.get_jointsType();
-		// auto _DHtable_ = robot.get_DHTable();
-		// auto world2L0 = robot.get_world2L0();
-		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto q = robot.model["q"];
-		auto world2L0 = robot.model["world2L0"];
-		auto par_DYN = robot.model["par_DYN"];
+		const auto& q = robot.model["q"];
+		const auto& world2L0 = robot.model["world2L0"];
+		const auto& par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -150,41 +132,39 @@ namespace thunder_ns{
 			casadi::SX O_Ci(3,1);
 			casadi::SX R0i;
 			
-			k0(2,0) = 1;
-			// T_0i = T0i_vec[i];
-			T_0i = robot.model["T_0_"+std::to_string(i)];
+			T_0i = robot.model["T_0_"+std::to_string(i+1)];
+			k0 = T_0i(r_rot_idx, 2);
 			O_0i = T_0i(r_tra_idx, 3);
 			
 			R0i = T_0i(r_rot_idx,r_rot_idx);
 			O_Ci = O_0i + mtimes(R0i,_distCM_[i]);
 			
-			// First column of jacobian
-			if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
-				Jci_pos(allRows,0) = k0;
-			} else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
-				Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
-				Ji_or(allRows,0) = k0;
-			} else {
-				throw std::runtime_error("DHJac: Error joint type");
-			}
+			// // First column of jacobian
+			// if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
+			// 	Jci_pos(allRows,0) = k0;
+			// } else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
+			// 	Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
+			// 	Ji_or(allRows,0) = k0;
+			// } else {
+			// 	throw std::runtime_error("DHJac: Error joint type");
+			// }
 
 			// Rest of columns of jacobian
-			for (int j = 1; j <= i; j++) {
+			for (int j = 0; j <= i; j++) {
 				// Init variables of column j-th of jacobian each cycle
-				casadi::SX kj_1(3,1);             // versor of joint j-1
-				casadi::SX O_j_1Ci(3,1);           // distance of joint i from joint j-1
-				casadi::SX T_0j_1(4,4);           // matrix tranformation of joint i from joint j-1
+				casadi::SX kj(3,1);             // versor of joint j-1
+				casadi::SX O_jCi(3,1);          // distance of joint i from joint j-1
+				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 
-				// T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1];
-				T_0j_1 = robot.model["T_0_"+std::to_string(j)];
-				kj_1 = T_0j_1(r_rot_idx, 2);
-				O_j_1Ci = O_Ci - T_0j_1(r_tra_idx, 3);
+				T_0j = robot.model["T_0_"+std::to_string(j+1)];
+				kj = T_0j(r_rot_idx, 2);
+				O_jCi = O_Ci - T_0j(r_tra_idx, 3);
 
 				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
-					Jci_pos(allRows, j) = kj_1;
+					Jci_pos(allRows, j) = kj;
 				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
-					Jci_pos(allRows, j) = mtimes(hat(kj_1),O_j_1Ci);
-					Ji_or(allRows, j) = kj_1;
+					Jci_pos(allRows, j) = mtimes(hat(kj),O_jCi);
+					Ji_or(allRows, j) = kj;
 				} else {
 					throw std::runtime_error("DHJac: Error joint type");
 				}
@@ -193,8 +173,8 @@ namespace thunder_ns{
 			// Add offset from world-frame transformation
 			// Jci_pos = mtimes(world2L0.get_rotation(),Jci_pos);
 			// Ji_or = mtimes(world2L0.get_rotation(),Ji_or);
-			Jci_pos = mtimes(world_rot,Jci_pos);
-			Ji_or = mtimes(world_rot,Ji_or);
+			// Jci_pos = mtimes(world_rot,Jci_pos);
+			// Ji_or = mtimes(world_rot,Ji_or);
 			
 			Ji_v[i] = Jci_pos;
 			Ji_w[i] = Ji_or;
@@ -202,7 +182,7 @@ namespace thunder_ns{
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
 			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
-			robot.add_function("J_cm_"+std::to_string(i), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i));
+			robot.add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
 		}
 
 		return std::make_tuple(Ji_v, Ji_w);
@@ -212,15 +192,10 @@ namespace thunder_ns{
 		// parameters from robot
 		auto nj = robot.get_numJoints();
 		auto nParLink = robot.STD_PAR_LINK;
-		// auto jointsType_ = robot.get_jointsType();
-		// auto _DHtable_ = robot.get_DHTable();
-		// auto world2L0 = robot.get_world2L0();
-		// FrameOffset& base_frame = world2L0;
-		// auto _Ln2EE_ = robot.get_Ln2EE();
-		auto q = robot.model["q"];
-		auto dq = robot.model["dq"];
-		auto par_DYN = robot.model["par_DYN"];
-		auto gravity = robot.model["gravity"];
+		const auto& q = robot.model["q"];
+		const auto& dq = robot.model["dq"];
+		const auto& par_DYN = robot.model["par_DYN"];
+		const auto& gravity = robot.model["gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -230,10 +205,6 @@ namespace thunder_ns{
 		casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 		
 		casadi::SX dq_sel_ = dq_select(dq);
-
-		// const int nj = q.size1();
-		
-		// casadi::SXVector Ti(nj);
 		casadi::SX T0i;
 		std::tuple<casadi::SXVector, casadi::SXVector> T_tuple;
 
@@ -241,7 +212,7 @@ namespace thunder_ns{
 		casadi::SXVector Jwi(nj);
 		std::tuple<casadi::SXVector, casadi::SXVector> J_tuple;
 
-		casadi::SX g = gravity; //base_frame.get_gravity();
+		casadi::SX g = gravity;
 
 		casadi::SX M(nj,nj);
 		casadi::SX C(nj,nj);
@@ -254,16 +225,12 @@ namespace thunder_ns{
 		casadi::SX Ii(3,3);
 		casadi::Slice selR(0,3);
 
-		// T_tuple = DHFwKinJoints();
-		// T0i = std::get<0>(T_tuple);
-		//Ti  = std::get<1>(T_tuple);
-
 		J_tuple = DHJacCM(robot);
 		Jci = std::get<0>(J_tuple);
 		Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
-			T0i = robot.model["T_0_"+std::to_string(i)];
+			T0i = robot.model["T_0_"+std::to_string(i+1)];
 			// std::cout<<"T0i: "<<T0i<<std::endl;
 			casadi::SX R0i = T0i(selR,selR);
 			// std::cout<<"R0i: "<<R0i<<std::endl;
@@ -308,13 +275,13 @@ namespace thunder_ns{
 			int K_order = robot.get_K_order();
 			int D_order = robot.get_D_order();
 			int Dm_order = robot.get_Dm_order();
-			auto q = robot.model["q"];
-			auto x = robot.model["x"];
-			auto dq = robot.model["dq"];
-			auto dx = robot.model["dx"];
-			auto par_K = robot.model["par_K"];
-			auto par_D = robot.model["par_D"];
-			auto par_Dm = robot.model["par_Dm"];
+			const auto& q = robot.model["q"];
+			const auto& x = robot.model["x"];
+			const auto& dq = robot.model["dq"];
+			const auto& dx = robot.model["dx"];
+			const auto& par_K = robot.model["par_K"];
+			const auto& par_D = robot.model["par_D"];
+			const auto& par_Dm = robot.model["par_Dm"];
 
 			casadi::SX K(numElasticJoints,1);
 			casadi::SX D(numElasticJoints,1);
@@ -353,8 +320,8 @@ namespace thunder_ns{
 
 		if (Dl_order > 0){
 			int nj = robot.get_numJoints();
-			auto dq = robot.model["dq"];
-			auto par_Dl = robot.model["par_Dl"];
+			const auto& dq = robot.model["dq"];
+			const auto& par_Dl = robot.model["par_Dl"];
 
 			casadi::SX Dl(nj,1);
 			for (int i=0; i<nj; i++){

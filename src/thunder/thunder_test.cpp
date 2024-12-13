@@ -24,7 +24,8 @@ using std::endl;
 
 int main(){
 
-	std::string config_file = "../robots/RRR/RRR.yaml";
+	// std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
@@ -90,15 +91,19 @@ int main(){
 	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
 	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
 	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
+	// // test change par
+	// robot.set_par_REG(par_REG);
+	// par_DYN = robot.get_par_DYN();
+	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	q.setZero();
+	dq.setOnes();
+	dqr.setZero();
+	ddqr.setZero();
+	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
@@ -173,28 +178,30 @@ int main(){
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
 	tau_cmd_reg = Yr*par_REG + reg_Dl*par_Dl;
-	tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
+	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
-	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
+
+	// auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
+	// cout<<"par_error: \n" << par_error << endl<<endl;
+	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
 
 	// - symbolic quantities - //
 	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
 	// cout << "M_symb: " << robot.model["M"] << endl;
-	cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
-	cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
+	// cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
+	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
-	Eigen::VectorXd wrench(6);
-	wrench << 1, 1, 1, 1, 1, 1;
-	robot.set_arg("w", wrench);
-	auto reg_omega = robot.get("reg_Jdq");
-	auto reg_tau = robot.get("reg_JTw");
-	// auto reg_omega = robot.model["reg_Jdq"];
-	// auto reg_tau = robot.model["reg_JTw"];
-	cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+	// Eigen::VectorXd wrench(6);
+	// wrench << 1, 1, 1, 1, 1, 1;
+	// robot.set_arg("w", wrench);
+	// auto reg_omega = robot.get("reg_Jdq");
+	// auto reg_tau = robot.get("reg_JTw");
+	// // auto reg_omega = robot.model["reg_Jdq"];
+	// // auto reg_tau = robot.model["reg_JTw"];
+	// cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	// cout << "reg_tau: " << endl << reg_tau << endl<<endl;
 
 	// - save parameters - //
 	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});

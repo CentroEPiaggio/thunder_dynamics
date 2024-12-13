@@ -1153,7 +1153,7 @@ namespace thunder_ns{
 			Eigen::VectorXd p_reg = param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
 			double mass = p_reg(0);
 			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
-			Eigen::Matrix3d I_tmp = mass * hat(CoM) * hat(CoM).transpose();
+			Eigen::Matrix3d I_tmp = mass * (hat(CoM).transpose() * hat(CoM));
 			Eigen::Matrix<double, 6, 1> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 			Eigen::Matrix<double, 6, 1> I;
@@ -1182,7 +1182,7 @@ namespace thunder_ns{
 			// cout<<"CoM:"<<endl<<CoM<<endl<<endl;
 			Eigen::Vector3d m_CoM = mass * CoM;
 			// cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
-			Eigen::Matrix3d I_tmp = mass * (hat(CoM) * hat(CoM).transpose());
+			Eigen::Matrix3d I_tmp = mass * (hat(CoM).transpose() * hat(CoM));
 			// cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
 			Eigen::Matrix<double, 6, 1> I_tmp_v;
 			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
@@ -1196,7 +1196,7 @@ namespace thunder_ns{
 			// for(int j=0; j<Dl_order; j++){
 			// 	Dl(j) = param_DYN(STD_PAR_LINK*i + STD_PAR_LINK + j);
 			// }
-			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I+I_tmp_v;
+			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, m_CoM, I+I_tmp_v;
 		}
 		set_par_REG(param_REG);
 		return 1;
