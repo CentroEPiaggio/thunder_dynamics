@@ -140,7 +140,7 @@ void thunder_robot::update_inertial_REG(){
 		I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
 		Eigen::Matrix<double, 6, 1> I;
 		I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
-		par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I+I_tmp_v;
+		par_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, m_CoM, I+I_tmp_v;
 	}
 }
 
