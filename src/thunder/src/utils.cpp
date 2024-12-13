@@ -220,11 +220,15 @@ namespace thunder_ns{
 				functions_string.append("\tlong long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
 				functions_string.append("\tdouble p4[" + fun_name_gen + "_fun_SZ_W];\n");
 				// inputs
-				functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
-				for (int j=1; j<fun_args.size(); j++){
-					functions_string.append(", " + fun_args[j]+".data()");
+				if (fun_args.size() == 0){
+					functions_string.append("\tconst double* input_[] = {};\n");
+				} else {
+					functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
+					for (int j=1; j<fun_args.size(); j++){
+						functions_string.append(", " + fun_args[j]+".data()");
+					}
+					functions_string.append("};\n");
 				}
-				functions_string.append("};\n");
 				// output
 				functions_string.append("\tdouble* output_[] = {out.data()};\n");
 				functions_string.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
