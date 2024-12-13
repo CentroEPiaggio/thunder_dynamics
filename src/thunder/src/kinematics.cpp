@@ -110,14 +110,10 @@ namespace thunder_ns{
 		// parameters from robot
 		auto numJoints = robot.get_numJoints();
 		auto jointsType = robot.get_jointsType();
-		// auto DHtable = robot.get_DHTable();
-		// auto world2L0 = robot.get_world2L0();
-		// auto Ln2EE = robot.get_Ln2EE();
-		auto& q = robot.model["q"];
-		auto& DHtable = robot.model["DHtable"];
-		auto& world2L0 = robot.model["world2L0"];
-		auto& Ln2EE = robot.model["Ln2EE"];
-		// auto gravity = robot.model["gravity"];
+		const auto& q = robot.model["q"];
+		const auto& DHtable = robot.model["DHtable"];
+		const auto& world2L0 = robot.model["world2L0"];
+		const auto& Ln2EE = robot.model["Ln2EE"];
 
 		// computing chain
 		casadi::SXVector Ti(numJoints+1);    // Output
@@ -160,21 +156,13 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get_numJoints();
 		auto jointsType = robot.get_jointsType();
-		// auto world2L0 = robot.get_world2L0();
-		// auto Ln2EE = robot.get_Ln2EE();
-		// auto DHtable = robot.get_DHTable();
-		auto& q = robot.model["q"];
-		auto& DHtable = robot.model["DHtable"];
-		auto& world2L0 = robot.model["world2L0"];
-		auto& Ln2EE = robot.model["Ln2EE"];
-		// auto gravity = robot.model["gravity"];
+		const auto& q = robot.model["q"];
+		const auto& DHtable = robot.model["DHtable"];
+		const auto& world2L0 = robot.model["world2L0"];
+		const auto& Ln2EE = robot.model["Ln2EE"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
-		// casadi::SXVector T0i_vec(nj+1);
-		// for (int i=0; i<nj; i++) {
-		// 	T0i_vec[i] = robot.model["T_0_"+std::to_string(i)];
-		// }
 		
 		// computing jacobians
 		casadi::SX Ji_pos(3, nj);    // matrix of velocity jacobian

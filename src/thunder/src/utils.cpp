@@ -114,9 +114,6 @@ namespace thunder_ns{
 		int D_order = robot.get_D_order();
 		int Dl_order = robot.get_Dl_order();
 		int Dm_order = robot.get_Dm_order();
-		// int numParDYN = robot.get_numParDYN();
-		// int numParREG = robot.get_numParREG();
-		// int numParELA = robot.get_numParELA();
 		std::vector<int> isElasticJoint = robot.get_isElasticJoint();
 		
 		// int STD_PAR_LINK = robot.STD_PAR_LINK;
@@ -153,9 +150,7 @@ namespace thunder_ns{
 			replace_all(file_content_h, "/*#-D_order-#*/", to_string(D_order));
 			replace_all(file_content_h, "/*#-Dl_order-#*/", to_string(Dl_order));
 			replace_all(file_content_h, "/*#-Dm_order-#*/", to_string(Dm_order));
-			// replace_all(file_content_h, "/*#-numParDYN-#*/", to_string(numParDYN));
-			// replace_all(file_content_h, "/*#-numParREG-#*/", to_string(numParREG));
-			// replace_all(file_content_h, "/*#-numParELA-#*/", to_string(numParELA));
+
 			// elastic joints
 			std::string eJ_str = "{" + to_string(isElasticJoint[0]);
 			for (int i=1; i<n_joints; i++){
@@ -189,13 +184,6 @@ namespace thunder_ns{
 			string file_content_cpp = buffer_cpp.str(); // file_cpp as string
 
 			file_cpp.close(); // close the file_cpp
-
-			// - change num_joints - //
-			// size_t index_joints = file_content_cpp.find("N_JOINTS");
-			// size_t index_semicolon = file_content_cpp.find(';', index_joints);
-			// file_content_cpp.replace(index_joints, index_semicolon - index_joints, "N_JOINTS = " + to_string(n_joints));
-			// replace_all(file_content_cpp, "/*#-N_JOINTS-#*/", to_string(n_joints));
-			// replace_all(file_content_cpp, "/*#-N_PAR_LINK-#*/", to_string(STD_PAR_LINK));
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
 			replace_all(file_content_cpp, from_robot, to_robot);
@@ -245,50 +233,6 @@ namespace thunder_ns{
 
 		return 1;
 	}
-
-	// string file_content_cpp = (string str, string from_str, string to_str){
-	// 	// const int ROBOT_LEN = from_str.length();
-	// 	// size_t index = str.find(from_str);
-	// 	// cout<<"robot_len: "<<ROBOT_LEN<<endl;
-	// 	// cout<<"initial index: "<<index<<endl;
-		
-	// 	// while ((index+ROBOT_LEN+1 <str.length()) && (index != -1)){
-	// 	// 	str.replace(index, ROBOT_LEN, to_str);
-	// 	// 	index += ROBOT_LEN;
-	// 	// 	index = str.find(from_str, index);
-	// 	// 	cout<<"index: "<<index<<endl;
-	// 	// }
-	// 	size_t start_pos;
-	// 	while((start_pos = str.find(from_str, start_pos)) != string::npos) {
-	// 		str.replace(start_pos, from_str.length(), to_str);
-	// 		start_pos += to_str.length(); // Handles case where 'to_str' is a substring of 'from_str'
-	// 	}
-	// 	return str;
-	// }
-
-	// void file_content_cpp = (string &str, const string& from_str, const string& to_str){
-	// 	size_t start_pos = 0;
-	// 	start_pos = str.find(from_str, start_pos);
-	// 	// cout<<"content_h: "<< str <<endl;
-	// 	while((start_pos = str.find(from_str, start_pos)) != -1) {
-	// 		cout<<"start_pos: "<<start_pos<<endl;
-	// 		cout<<"from_str: "<<from_str<<", length: "<<from_str.length()<<endl;
-	// 		cout<<"string: "<<str.substr(start_pos, from_str.length())<<endl;
-	// 		str.replace(start_pos, from_str.length(), to_str);
-
-	// 		start_pos += to_str.length();
-	// 	}
-	// 	// cout<<"content_h: "<< str <<endl;
-	// }
-
-	// string file_content_cpp = (string str, const string from_str, const string to_str){
-	// 	size_t start_pos = 0;
-	// 	while((start_pos = str.find(from_str, start_pos)) != string::npos) {
-	// 		str.replace(start_pos, from_str.length(), to_str);
-	// 		start_pos += to_str.length();
-	// 	}
-	// 	return str;
-	// }
 
 	// do not call replace often
 	void replace_all(std::string& source, const std::string& from_str, const std::string& to_str){

@@ -28,7 +28,7 @@ improvings:
 		☐ selection matrix for elastic joints
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	kinematics:
-		☐ index are wrong, T_0_0 is instead T_0_1, but everything use it, pay attention!
+		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, pay attention! @done (12/13/2024, 10:45:04 PM)
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization
 	Symbolic selectivity:
