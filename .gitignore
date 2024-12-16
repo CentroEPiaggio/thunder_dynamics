@@ -4,4 +4,15 @@ bin/
 **generatedFiles/
 *_gen.h
 *_gen.cpp
-src/thunder_robot/robots/robot/saved_robot_inertial_REG.yaml
+src/thunder_robot/robots/**
+src/thunder_robot/library/**
+src/thunder_robot/src/**
+src/thunder_robot_chrono/robots/**
+src/thunder_robot_chrono/library/**
+src/thunder_robot_chrono/src/**
+!src/thunder_robot/robots/.gitkeep
+!src/thunder_robot/library/.gitkeep
+!src/thunder_robot/src/.gitkeep
+!src/thunder_robot_chrono/robots/.gitkeep
+!src/thunder_robot_chrono/library/.gitkeep
+!src/thunder_robot_chrono/src/.gitkeep

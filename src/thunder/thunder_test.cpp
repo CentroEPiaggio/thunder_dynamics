@@ -19,13 +19,15 @@ using namespace thunder_ns;
 using std::cout;
 using std::endl;
 
-Eigen::Matrix3d hat(const Eigen::Vector3d v);
+// Eigen::Matrix3d hat(const Eigen::Vector3d v);
 // extern int compute_kinematics(Robot robot);
 
 int main(){
 
-	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	Robot robot = robot_from_file(config_file, 1); 	// create robot and compute quantities
+	// std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/franka/franka.yaml";
+	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
 	// ------------------------------TEST CLASSES---------------------------------------//
@@ -54,9 +56,9 @@ int main(){
 	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
 	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
-	Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
-	Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
-	Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
+	Eigen::MatrixXd reg_K(NEJ, N_PARAM_K);
+	Eigen::MatrixXd reg_D(NEJ, N_PARAM_D);
+	Eigen::MatrixXd reg_Dm(NEJ, N_PARAM_DM);
 	Eigen::MatrixXd M(NJ, NJ);
 	Eigen::MatrixXd C(NJ, NJ);
 	Eigen::MatrixXd C_std(NJ, NJ);
@@ -89,15 +91,19 @@ int main(){
 	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
 	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
 	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
+	// // test change par
+	// robot.set_par_REG(par_REG);
+	// par_DYN = robot.get_par_DYN();
+	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dq.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddqr.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	x = 2*x.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setOnes();// = Eigen::Vector<double,NJ>::Random();
-	ddxr = 2*ddxr.setOnes();// = Eigen::Vector<double,NJ>::Random();
+	q.setZero();
+	dq.setOnes();
+	dqr.setZero();
+	ddqr.setZero();
+	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
@@ -144,53 +150,64 @@ int main(){
 	cout<<endl<<"C_std\n"<<C_std<<endl;
 	G = robot.get("G");
 	cout<<endl<<"G\n"<<G<<endl;
-	Dl = robot.get("Dl");
-	cout<<endl<<"D_link\n"<<Dl<<endl;
-	K = robot.get("K");
-	cout<<endl<<"K\n"<<K<<endl;
-	D = robot.get("D");
-	cout<<endl<<"D_coupling\n"<<D<<endl;
-	Dm = robot.get("Dm");
-	cout<<endl<<"D_motor\n"<<Dm<<endl;
+	if (robot.get_Dl_order()){
+		Dl = robot.get("Dl");
+		cout<<endl<<"D_link\n"<<Dl<<endl;
+		reg_Dl = robot.get("reg_Dl");
+	} else {
+		Dl.setZero();
+	}
+	if (robot.get_ELASTIC()){
+		K = robot.get("K");
+		cout<<endl<<"K\n"<<K<<endl;
+		D = robot.get("D");
+		cout<<endl<<"D_coupling\n"<<D<<endl;
+		Dm = robot.get("Dm");
+		cout<<endl<<"D_motor\n"<<Dm<<endl;
+		reg_K = robot.get("reg_K");
+		reg_D = robot.get("reg_D");
+		reg_Dm = robot.get("reg_Dm");
+	}
 
 	Yr = robot.get("Yr");
 	reg_M = robot.get("reg_M");
 	reg_C = robot.get("reg_C");
 	reg_G = robot.get("reg_G");
-	reg_Dl = robot.get("reg_Dl");
-	reg_K = robot.get("reg_K");
-	reg_D = robot.get("reg_D");
-	reg_Dm = robot.get("reg_Dm");
+
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
 	tau_cmd_reg = Yr*par_REG + reg_Dl*par_Dl;
-	tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
+	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
-	cout<<endl<<"tau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<endl<<"tau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl;
+	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
+
+	// auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
+	// cout<<"par_error: \n" << par_error << endl<<endl;
+	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+
+	// - symbolic quantities - //
+	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
+	// cout << "M_symb: " << robot.model["M"] << endl;
+	// cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
+	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
+
+	// - kinematic regressors - //
+	// Eigen::VectorXd wrench(6);
+	// wrench << 1, 1, 1, 1, 1, 1;
+	// robot.set_arg("w", wrench);
+	// auto reg_omega = robot.get("reg_Jdq");
+	// auto reg_tau = robot.get("reg_JTw");
+	// // auto reg_omega = robot.model["reg_Jdq"];
+	// // auto reg_tau = robot.model["reg_JTw"];
+	// cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	// cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+
+	// - save parameters - //
+	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
+	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
+	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
+	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
 
 	return 0;
-}
-
-Eigen::Matrix3d hat(const Eigen::Vector3d v){
-	Eigen::Matrix3d vhat;
-			
-	// chech
-	if(v.size() != 3 ){
-		std::cout<<"in function hat of class FrameOffset invalid dimension of input"<<std::endl;
-	}
-	
-	vhat(0,0) = 0;
-	vhat(0,1) = -v[2];
-	vhat(0,2) = v[1];
-	vhat(1,0) = v[2];
-	vhat(1,1) = 0;
-	vhat(1,2) = -v[0];
-	vhat(2,0) = -v[1];
-	vhat(2,1) = v[0];
-	vhat(2,2) = 0;
-
-	return vhat;
 }
