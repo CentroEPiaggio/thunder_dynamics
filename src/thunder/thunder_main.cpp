@@ -178,6 +178,7 @@ int main(int argc, char* argv[]){
 			cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
 			return 0;
 		}
+		cout<<"Python binding generated!"<<endl;
 	}
 
 	// --- change the necessary into thunder_robot --- //
@@ -198,20 +199,6 @@ int main(int argc, char* argv[]){
 
 	std::cout<<"Library generated!"<<std::endl;
 
-	if (GEN_PYTHON_FLAG){
-		std::cout<<"Starting build process fo python bindings"<<std::endl;
-
-		// --- Build python binding --- //
-		std::string build_dir = absolutePath + "build";
-		std::filesystem::create_directory(build_dir);
-		std::string build_command = "cd " + build_dir + " && cmake .. && make";
-		int build_result = system(build_command.c_str());
-		if (build_result != 0) {
-			cout << "Failed to build python binding." << endl;
-			return 0;
-		}
-		std::cout << "Python 3.10 bindings ready!" << std::endl;
-	}
 	
 	// --- copy generated files in thunder_robot project --- //
 	if(COPY_GEN_FLAG){
@@ -286,5 +273,21 @@ int main(int argc, char* argv[]){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<microseconds>(time_stop - time_start);
 	std::cout<<"done in "<<((double)duration.count())/1000<<" ms!"<<endl; 
+
+	if(GEN_PYTHON_FLAG){ /* PRINT A SIMPLE README */
+		std::cout << "\nTo build the python bindings:\n";
+		std::cout << "\033[1;37m" << "sudo apt-get install libeigen3-dev pybind11-dev" << "\033[0m\n"; // Green bold color for command
+		std::cout << "\033[1;37m" << "cd path/to/robot_generatedfiles && mkdir -p build && cd build" << "\033[0m\n"; 
+		std::cout << "\033[1;37m" << "cmake .. && make" << "\033[0m\n"; 
+		std::cout << "\nIn Python, you can test your generated library:\n";
+		std::cout << "----------------------------------------" << std::endl;
+		std::cout << "\033[0m" << std::endl; // Reset formatting
+		std::cout << "import sys"<<std::endl;
+		std::cout << "sys.path.append(\"path/to/thunder_robot/generatedFiles/build\")"<<std::endl;
+		std::cout << "from thunder_robot_py import thunderRobot\n";
+		std::cout << "robot = thunderRobot()" << std::endl;
+		std::cout << "robot.load_conf(\"path/to/robot_conf.yaml\")" << std::endl;
+		std::cout << "----------------------------------------\n";
+	}
 	return 1;
 }
