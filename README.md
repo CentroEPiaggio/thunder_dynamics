@@ -79,6 +79,56 @@ If you need to modify something in the library, you can compile it from source f
 If you recompile the docker image the binary will be builded and updated in the thunder_dynamics/bin directory.
 The library requires casadi and yaml-cpp that are already included in the docker image.
 
+## Usage in python: 
+This branch of Thunder can generate python bindings for the generated library. Simply add the `python` flag to the `thunder gen` command:
+
+	cd bin
+	./thunder gen <path>/<robot>.yaml <robot_name> python
+
+This will generate a python wrapper for the generated library. To use it you need to build the module. Make sure to have installed pybind11
+
+	pip install pybind11
+
+To build the module:
+
+	cd <robot>_generatedFiles
+	mkdir -p build && cd build
+	cmake .. 
+	make
+
+This will create a .so file that can be imported in python. Make it executable:
+
+	chmod +x thuder_<robot>_py.<pyversion>.so
+
+and use it in python:
+
+```python
+import numpy as np
+import sys
+sys.path.append("path/to/thunder_robot/generatedFiles/build") # Where the .so file is located. 
+# Note: This is not needed if the .so file is in the same directory as the python script
+
+from thunder_<robot>_py import thunder_<robot>
+
+robot = thunder_<robot>()
+robot.load_conf("path/to/robot_conf.yaml")
+
+robot.set_q(np.zeros(robot.get_njoints))
+robot.set_dq(np.random.rand(robot.get_njoints))
+
+T = robot.get_T_0_ee()
+J = robot.get_J_ee()
+M = robot.get_M()
+C = robot.get_C()
+G = robot.get_G()
+Yr = robot.get_Yr()
+```
+
+> [!NOTE]
+> The generated bindings can be built on any sistem, simply install the runtime dependencies:
+
+	sudo apt install libeigen3-dev pybind11-dev
+
 
 ## Code generation with casadi
 Here you can find different classes implemented with casadi library to generalize serial manipulator control.
