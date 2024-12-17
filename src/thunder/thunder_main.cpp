@@ -274,20 +274,5 @@ int main(int argc, char* argv[]){
 	auto duration = duration_cast<microseconds>(time_stop - time_start);
 	std::cout<<"done in "<<((double)duration.count())/1000<<" ms!"<<endl; 
 
-	if(GEN_PYTHON_FLAG){ /* PRINT A SIMPLE README */
-		std::cout << "\nTo build the python bindings:\n";
-		std::cout << "\033[1;37m" << "sudo apt-get install libeigen3-dev pybind11-dev" << "\033[0m\n"; // Green bold color for command
-		std::cout << "\033[1;37m" << "cd path/to/robot_generatedfiles && mkdir -p build && cd build" << "\033[0m\n"; 
-		std::cout << "\033[1;37m" << "cmake .. && make" << "\033[0m\n"; 
-		std::cout << "\nIn Python, you can test your generated library:\n";
-		std::cout << "----------------------------------------" << std::endl;
-		std::cout << "\033[0m" << std::endl; // Reset formatting
-		std::cout << "import sys"<<std::endl;
-		std::cout << "sys.path.append(\"path/to/thunder_robot/generatedFiles/build\")"<<std::endl;
-		std::cout << "from thunder_robot_py import thunderRobot\n";
-		std::cout << "robot = thunderRobot()" << std::endl;
-		std::cout << "robot.load_conf(\"path/to/robot_conf.yaml\")" << std::endl;
-		std::cout << "----------------------------------------\n";
-	}
 	return 1;
 }
