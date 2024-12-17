@@ -700,7 +700,7 @@ Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
 namespace py = pybind11;
 
 PYBIND11_MODULE(thunder_robot_py, m) {
-	py::class_<thunder_robot>(m, "Thunderrobot")
+	py::class_<thunder_robot>(m, "thunder_robot")
 		.def(py::init<>())
 		.def("resizeVariables", &thunder_robot::resizeVariables)
 		.def("setArguments", &thunder_robot::setArguments, "Set q, dq, dqr, ddqr", py::arg("q"), py::arg("dq"), py::arg("dqr"), py::arg("ddqr"))
