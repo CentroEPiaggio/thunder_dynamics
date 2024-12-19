@@ -103,7 +103,7 @@ namespace thunder_ns{
 		return I;
 	}
 
-	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp){
+	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp, const bool gen_python){
 		
 		// - get parameters from robot - //
 		std::string robotName = robot.robotName;
@@ -174,6 +174,11 @@ namespace thunder_ns{
 		}
 
 		// --- file .cpp --- //
+		if(gen_python){
+			// - add bindings template - //
+			add_bindings_template(file_path_cpp);
+		}
+
 		ifstream file_cpp(file_path_cpp); // open in reading mode
 		if (!file_cpp.is_open()) {
 			cerr << "error in file_cpp opening:" << file_path_h << endl;
@@ -226,13 +231,17 @@ namespace thunder_ns{
 				functions_string.append("}\n\n");
 
 				// pybindings
-				functions_pybindings.append("\t\t.def(\"" + fun_name + "\", &thunder_" + to_robot + "::" + fun_name + ", \""+ functions[i].description +"\")\n");
+				if(gen_python)
+					functions_pybindings.append("\t\t.def(\"" + fun_name + "\", &thunder_" + to_robot + "::" + fun_name + ", \""+ functions[i].description +"\")\n");
 			}
-			//replace the last \n with a ;
-			functions_pybindings.pop_back();
-			functions_pybindings.append(";\n");
 			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
-			replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
+
+			if(gen_python){
+				//replace the last \n with a ;
+				functions_pybindings.pop_back();
+				functions_pybindings.append(";\n");
+				replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
+			}
 			
 			// - overwrite file_cpp - //
 			ofstream out_cpp(file_path_cpp);
@@ -266,6 +275,61 @@ namespace thunder_ns{
 		return 1;
 	}
 
+	int add_bindings_template(const string file_path_cpp){
+		
+		string bindings_template = R"(
+// ----- Python bindings ----- //
+namespace py = pybind11;
+
+PYBIND11_MODULE(thunder_robot_py, m) {
+	py::class_<thunder_robot>(m, "thunder_robot")
+		.def(py::init<>())
+		.def("resizeVariables", &thunder_robot::resizeVariables)
+		.def("setArguments", &thunder_robot::setArguments, "Set q, dq, dqr, ddqr", py::arg("q"), py::arg("dq"), py::arg("dqr"), py::arg("ddqr"))
+		.def("set_q", &thunder_robot::set_q, "Set q", py::arg("q"))
+		.def("set_dq", &thunder_robot::set_dq, "Set dq", py::arg("dq"))
+		.def("set_dqr", &thunder_robot::set_dqr, "Set dqr", py::arg("dqr"))
+		.def("set_ddqr", &thunder_robot::set_ddqr, "Set ddqr", py::arg("ddqr"))
+		.def("set_par_REG", &thunder_robot::set_par_REG, "Set inertial parameters REG", py::arg("par"), py::arg("update_DYN") = true)
+		.def("set_par_DYN", &thunder_robot::set_par_DYN, "Set inertial parameters DYN", py::arg("par"), py::arg("update_REG") = true)
+		.def("get_par_REG", &thunder_robot::get_par_REG, "Get par parameters REG")
+		.def("get_par_DYN", &thunder_robot::get_par_DYN, "Get inertial parameters DYN")
+		.def("load_par_REG", &thunder_robot::load_par_REG, "Load par parameters REG from YAML file", py::arg("file_path"), py::arg("update_DYN") = true)
+		.def("load_conf", &thunder_robot::load_conf, "Load configuration from YAML file", py::arg("file_path"), py::arg("update_REG") = true)
+		.def("save_par_REG", &thunder_robot::save_par_REG, "Save par parameters REG to YAML file", py::arg("file_path"))
+		.def("save_par_DYN", &thunder_robot::save_par_DYN, "Save inertial parameters DYN to YAML file", py::arg("file_path"))
+		.def("get_numJoints", &thunder_robot::get_numJoints, "Get number of joints")
+		.def("get_numParDYN", &thunder_robot::get_numParDYN, "Get number of parameters per link")
+		.def("get_numParREG", &thunder_robot::get_numParREG, "Get number of parameters")
+/*#-GENERATED_PYTHON_BINDINGS-#*/
+}
+)";
+
+
+		string bindings_import = "#include <pybind11/pybind11.h>\n#include <pybind11/eigen.h>\n";
+
+		ifstream file_cpp(file_path_cpp); // open in reading mode
+		if (!file_cpp.is_open()) {
+			cerr << "error in file_cpp opening:" << file_path_cpp << endl;
+			return 0;
+		} else {
+			stringstream buffer_cpp;
+			buffer_cpp << file_cpp.rdbuf(); // read file_cpp on buffer_cpp
+			string file_content_cpp = buffer_cpp.str(); // file_cpp as string
+
+			file_cpp.close(); // close the file_cpp
+
+			// - insert bindings_template - //
+			replace_all(file_content_cpp, "/*#-OPTIONAL SPACE FOR PYTHON BINDINGS-#*/", bindings_template);
+			replace_all(file_content_cpp, "/*OPTIONAL PYBIND11 INCLUDE POINT*/", bindings_import);
+
+			// - overwrite file_cpp - //
+			ofstream out_cpp(file_path_cpp);
+			out_cpp << file_content_cpp;
+			out_cpp.close();
+		}
+		return 1;
+	}
 	// string file_content_cpp = (string str, string from_str, string to_str){
 	// 	// const int ROBOT_LEN = from_str.length();
 	// 	// size_t index = str.find(from_str);

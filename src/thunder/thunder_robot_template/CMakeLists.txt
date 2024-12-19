@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG <tag_name> # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
+  GIT_TAG master # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
 )
 FetchContent_MakeAvailable(yaml-cpp)
 project(thunder_robot_py)

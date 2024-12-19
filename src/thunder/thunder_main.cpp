@@ -182,7 +182,7 @@ int main(int argc, char* argv[]){
 	}
 
 	// --- change the necessary into thunder_robot --- //
-	int changed = change_to_robot("robot", robot_name, robot, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
+	int changed = change_to_robot("robot", robot_name, robot, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp", GEN_PYTHON_FLAG);
 	if (!changed) {
 		cout<<"problem on changing robot name:"<<endl;
 		return 0;

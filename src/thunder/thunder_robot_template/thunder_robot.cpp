@@ -1,8 +1,9 @@
 #include "thunder_robot.h"
 #include "robot_gen.h"
 
-#include <pybind11/pybind11.h>
-#include <pybind11/eigen.h>
+
+/*OPTIONAL PYBIND11 INCLUDE POINT*/
+
 
 thunder_robot::thunder_robot(){
 	resizeVariables();
@@ -696,28 +697,5 @@ Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
 /*#-FUNCTIONS_CPP-#*/
 
 
-// ----- Python bindings ----- //
-namespace py = pybind11;
+/*#-OPTIONAL SPACE FOR PYTHON BINDINGS-#*/
 
-PYBIND11_MODULE(thunder_robot_py, m) {
-	py::class_<thunder_robot>(m, "thunder_robot")
-		.def(py::init<>())
-		.def("resizeVariables", &thunder_robot::resizeVariables)
-		.def("setArguments", &thunder_robot::setArguments, "Set q, dq, dqr, ddqr", py::arg("q"), py::arg("dq"), py::arg("dqr"), py::arg("ddqr"))
-		.def("set_q", &thunder_robot::set_q, "Set q", py::arg("q"))
-		.def("set_dq", &thunder_robot::set_dq, "Set dq", py::arg("dq"))
-		.def("set_dqr", &thunder_robot::set_dqr, "Set dqr", py::arg("dqr"))
-		.def("set_ddqr", &thunder_robot::set_ddqr, "Set ddqr", py::arg("ddqr"))
-		.def("set_par_REG", &thunder_robot::set_par_REG, "Set inertial parameters REG", py::arg("par"), py::arg("update_DYN") = true)
-		.def("set_par_DYN", &thunder_robot::set_par_DYN, "Set inertial parameters DYN", py::arg("par"), py::arg("update_REG") = true)
-		.def("get_par_REG", &thunder_robot::get_par_REG, "Get par parameters REG")
-		.def("get_par_DYN", &thunder_robot::get_par_DYN, "Get inertial parameters DYN")
-		.def("load_par_REG", &thunder_robot::load_par_REG, "Load par parameters REG from YAML file", py::arg("file_path"), py::arg("update_DYN") = true)
-		.def("load_conf", &thunder_robot::load_conf, "Load configuration from YAML file", py::arg("file_path"), py::arg("update_REG") = true)
-		.def("save_par_REG", &thunder_robot::save_par_REG, "Save par parameters REG to YAML file", py::arg("file_path"))
-		.def("save_par_DYN", &thunder_robot::save_par_DYN, "Save inertial parameters DYN to YAML file", py::arg("file_path"))
-		.def("get_numJoints", &thunder_robot::get_numJoints, "Get number of joints")
-		.def("get_numParDYN", &thunder_robot::get_numParDYN, "Get number of parameters per link")
-		.def("get_numParREG", &thunder_robot::get_numParREG, "Get number of parameters")
-/*#-GENERATED_PYTHON_BINDINGS-#*/
-}
