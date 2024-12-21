@@ -1,12 +1,6 @@
 #include "kinematics.h"
 #include "utils.h"
 
-/* Function name used to generate code */
-#define Ti_STRING "T_i"
-#define T0i_STRING "T_0_i"
-#define JAC_DOT_STRING "J_ee_dot"
-#define JAC_PINV_STRING "J_ee_pinv"
-
 namespace thunder_ns{
 
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff

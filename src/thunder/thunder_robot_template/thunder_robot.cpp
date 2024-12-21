@@ -1,6 +1,10 @@
 #include "thunder_robot.h"
 #include "robot_gen.h"
 
+
+/*OPTIONAL PYBIND11 INCLUDE POINT*/
+
+
 thunder_robot::thunder_robot(){
 	resizeVariables();
 }
@@ -691,3 +695,7 @@ Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
 
 // ----- generated functions ----- //
 /*#-FUNCTIONS_CPP-#*/
+
+
+/*#-OPTIONAL SPACE FOR PYTHON BINDINGS-#*/
+

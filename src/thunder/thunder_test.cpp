@@ -182,6 +182,8 @@ int main(){
 
 	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
 
+	// cout << "q0_dist: " << robot.get("q0_dist") << endl<<endl;
+
 	// auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
 	// cout<<"par_error: \n" << par_error << endl<<endl;
 	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;

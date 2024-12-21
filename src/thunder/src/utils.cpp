@@ -103,7 +103,7 @@ namespace thunder_ns{
 		return I;
 	}
 
-	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp){
+	int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp, const bool gen_python){
 		
 		// - get parameters from robot - //
 		std::string robotName = robot.robotName;
@@ -174,6 +174,11 @@ namespace thunder_ns{
 		}
 
 		// --- file .cpp --- //
+		if(gen_python){
+			// - add bindings template - //
+			add_bindings_template(file_path_cpp);
+		}
+
 		ifstream file_cpp(file_path_cpp); // open in reading mode
 		if (!file_cpp.is_open()) {
 			cerr << "error in file_cpp opening:" << file_path_h << endl;
@@ -190,6 +195,8 @@ namespace thunder_ns{
 
 			// - insert functions - //
 			string functions_string = "\n";
+			string functions_pybindings = "";
+
 			for (int i=0; i<functions.size(); i++){
 				std::string fun_name = "get_" + functions[i].name;
 				std::string fun_name_gen = robotName + "_" + functions[i].name;
@@ -222,9 +229,20 @@ namespace thunder_ns{
 				functions_string.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
 				functions_string.append("\treturn out;\n");
 				functions_string.append("}\n\n");
+
+				// pybindings
+				if(gen_python)
+					functions_pybindings.append("\t\t.def(\"" + fun_name + "\", &thunder_" + to_robot + "::" + fun_name + ", \""+ functions[i].description +"\")\n");
 			}
 			replace_all(file_content_cpp, "/*#-FUNCTIONS_CPP-#*/", functions_string);
 
+			if(gen_python){
+				//replace the last \n with a ;
+				functions_pybindings.pop_back();
+				functions_pybindings.append(";\n");
+				replace_all(file_content_cpp, "/*#-GENERATED_PYTHON_BINDINGS-#*/", functions_pybindings);
+			}
+			
 			// - overwrite file_cpp - //
 			ofstream out_cpp(file_path_cpp);
 			out_cpp << file_content_cpp;
@@ -233,6 +251,128 @@ namespace thunder_ns{
 
 		return 1;
 	}
+
+	int update_cmake(const string from_robot, const string to_robot, const string file_path){
+		ifstream file_cmake(file_path); // open in reading mode
+		if (!file_cmake.is_open()) {
+			cerr << "error in CMakeLists.txt template opening:" << file_path << endl;
+			return 0;
+		} else {
+			stringstream buffer_cmake;
+			buffer_cmake << file_cmake.rdbuf(); // read file_cmake on buffer_cmake
+			string file_content_cmake = buffer_cmake.str(); // file_cmake as string
+
+			file_cmake.close(); // close the file_cmake
+
+			// - substitute 'from_robot' wiht 'to_robot' - //
+			replace_all(file_content_cmake, from_robot, to_robot);
+
+			// - overwrite file_cmake - //
+			ofstream out_cmake(file_path);
+			out_cmake << file_content_cmake;
+			out_cmake.close();
+		}
+		return 1;
+	}
+
+	int add_bindings_template(const string file_path_cpp){
+		
+		string bindings_template = R"(
+// ----- Python bindings ----- //
+namespace py = pybind11;
+
+PYBIND11_MODULE(thunder_robot_py, m) {
+	py::class_<thunder_robot>(m, "thunder_robot")
+		.def(py::init<>())
+		.def("resizeVariables", &thunder_robot::resizeVariables)
+		.def("setArguments", &thunder_robot::setArguments, "Set q, dq, dqr, ddqr", py::arg("q"), py::arg("dq"), py::arg("dqr"), py::arg("ddqr"))
+		.def("set_q", &thunder_robot::set_q, "Set q", py::arg("q"))
+		.def("set_dq", &thunder_robot::set_dq, "Set dq", py::arg("dq"))
+		.def("set_dqr", &thunder_robot::set_dqr, "Set dqr", py::arg("dqr"))
+		.def("set_ddqr", &thunder_robot::set_ddqr, "Set ddqr", py::arg("ddqr"))
+		.def("set_par_REG", &thunder_robot::set_par_REG, "Set inertial parameters REG", py::arg("par"), py::arg("update_DYN") = true)
+		.def("set_par_DYN", &thunder_robot::set_par_DYN, "Set inertial parameters DYN", py::arg("par"), py::arg("update_REG") = true)
+		.def("get_par_REG", &thunder_robot::get_par_REG, "Get par parameters REG")
+		.def("get_par_DYN", &thunder_robot::get_par_DYN, "Get inertial parameters DYN")
+		.def("load_par_REG", &thunder_robot::load_par_REG, "Load par parameters REG from YAML file", py::arg("file_path"), py::arg("update_DYN") = true)
+		.def("load_conf", &thunder_robot::load_conf, "Load configuration from YAML file", py::arg("file_path"), py::arg("update_REG") = true)
+		.def("save_par_REG", &thunder_robot::save_par_REG, "Save par parameters REG to YAML file", py::arg("file_path"))
+		.def("save_par_DYN", &thunder_robot::save_par_DYN, "Save inertial parameters DYN to YAML file", py::arg("file_path"))
+		.def("get_numJoints", &thunder_robot::get_numJoints, "Get number of joints")
+		.def("get_numParDYN", &thunder_robot::get_numParDYN, "Get number of parameters per link")
+		.def("get_numParREG", &thunder_robot::get_numParREG, "Get number of parameters")
+/*#-GENERATED_PYTHON_BINDINGS-#*/
+}
+)";
+
+
+		string bindings_import = "#include <pybind11/pybind11.h>\n#include <pybind11/eigen.h>\n";
+
+		ifstream file_cpp(file_path_cpp); // open in reading mode
+		if (!file_cpp.is_open()) {
+			cerr << "error in file_cpp opening:" << file_path_cpp << endl;
+			return 0;
+		} else {
+			stringstream buffer_cpp;
+			buffer_cpp << file_cpp.rdbuf(); // read file_cpp on buffer_cpp
+			string file_content_cpp = buffer_cpp.str(); // file_cpp as string
+
+			file_cpp.close(); // close the file_cpp
+
+			// - insert bindings_template - //
+			replace_all(file_content_cpp, "/*#-OPTIONAL SPACE FOR PYTHON BINDINGS-#*/", bindings_template);
+			replace_all(file_content_cpp, "/*OPTIONAL PYBIND11 INCLUDE POINT*/", bindings_import);
+
+			// - overwrite file_cpp - //
+			ofstream out_cpp(file_path_cpp);
+			out_cpp << file_content_cpp;
+			out_cpp.close();
+		}
+		return 1;
+	}
+	// string file_content_cpp = (string str, string from_str, string to_str){
+	// 	// const int ROBOT_LEN = from_str.length();
+	// 	// size_t index = str.find(from_str);
+	// 	// cout<<"robot_len: "<<ROBOT_LEN<<endl;
+	// 	// cout<<"initial index: "<<index<<endl;
+		
+	// 	// while ((index+ROBOT_LEN+1 <str.length()) && (index != -1)){
+	// 	// 	str.replace(index, ROBOT_LEN, to_str);
+	// 	// 	index += ROBOT_LEN;
+	// 	// 	index = str.find(from_str, index);
+	// 	// 	cout<<"index: "<<index<<endl;
+	// 	// }
+	// 	size_t start_pos;
+	// 	while((start_pos = str.find(from_str, start_pos)) != string::npos) {
+	// 		str.replace(start_pos, from_str.length(), to_str);
+	// 		start_pos += to_str.length(); // Handles case where 'to_str' is a substring of 'from_str'
+	// 	}
+	// 	return str;
+	// }
+
+	// void file_content_cpp = (string &str, const string& from_str, const string& to_str){
+	// 	size_t start_pos = 0;
+	// 	start_pos = str.find(from_str, start_pos);
+	// 	// cout<<"content_h: "<< str <<endl;
+	// 	while((start_pos = str.find(from_str, start_pos)) != -1) {
+	// 		cout<<"start_pos: "<<start_pos<<endl;
+	// 		cout<<"from_str: "<<from_str<<", length: "<<from_str.length()<<endl;
+	// 		cout<<"string: "<<str.substr(start_pos, from_str.length())<<endl;
+	// 		str.replace(start_pos, from_str.length(), to_str);
+
+	// 		start_pos += to_str.length();
+	// 	}
+	// 	// cout<<"content_h: "<< str <<endl;
+	// }
+
+	// string file_content_cpp = (string str, const string from_str, const string to_str){
+	// 	size_t start_pos = 0;
+	// 	while((start_pos = str.find(from_str, start_pos)) != string::npos) {
+	// 		str.replace(start_pos, from_str.length(), to_str);
+	// 		start_pos += to_str.length();
+	// 	}
+	// 	return str;
+	// }
 
 	// do not call replace often
 	void replace_all(std::string& source, const std::string& from_str, const std::string& to_str){
