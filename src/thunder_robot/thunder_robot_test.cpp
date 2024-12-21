@@ -112,7 +112,7 @@ int main(){
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
 
 	// - save par test - //
-	robot.save_par_DYN(saved_inertial_file);
+	// robot.save_par_DYN(saved_inertial_file);
 	// robot.load_par_DYN(saved_inertial_file);
 	// robot.save_par_DYN(saved_inertial_file);
 
@@ -126,11 +126,12 @@ int main(){
 	cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
 	cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
 
-	// - kinematic regressors - //
-	Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
-	robot.set_w(wrench);
-	cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl<<endl;
-	cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
+	// // - kinematic regressors - //
+	// Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
+	// robot.set_w(wrench);
+	// cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl<<endl;
+	// cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
+	// cout << "par_kin: " << robot.get_DHtable().transpose() << endl<<endl;
 
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){

@@ -133,8 +133,6 @@ int main(){
 
 	Jac = robot.get("J_ee");
 	cout<<endl<<"Jac\n"<<Jac<<endl;
-	Jac = robot.get("J_0");
-	cout<<endl<<"Jac0\n"<<Jac<<endl;
 	Jac = robot.get("J_1");
 	cout<<endl<<"Jac1\n"<<Jac<<endl;
 	Jac = robot.get("J_2");

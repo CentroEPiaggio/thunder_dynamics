@@ -160,11 +160,10 @@ namespace thunder_ns{
 			YAML::Node kinematics = config_file["kinematics"];
 			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
 			// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-			casadi::SX DHtable_tmp(nj,4);
-			for (int i=0; i<nj; i++){
-				for (int j=0; j<4; j++){
-					DHtable_tmp(i,j) = dh_vect[4*i + j];
-				}
+			int sz = dh_vect.size();
+			casadi::SX DHtable_tmp(sz,1);
+			for (int i=0; i<sz; i++){
+				DHtable_tmp(i) = dh_vect[i];
 			}
 			conf.DHtable = DHtable_tmp;
 			// cout<<"dhtable: "<<DHtable_tmp<<endl;
@@ -301,8 +300,9 @@ namespace thunder_ns{
 			if (config_file["kinematics"]["symb"]){
 				conf.DHtable_symb = config_file["kinematics"]["symb"].as<std::vector<int>>();
 			} else {
-				conf.DHtable_symb.resize(4*nj);
-				for (int i=0; i<4*nj; i++) conf.DHtable_symb[i] = 0;
+				sz = conf.DHtable.size1();
+				conf.DHtable_symb.resize(sz);
+				for (int i=0; i<sz; i++) conf.DHtable_symb[i] = 0;
 			}
 			conf.par_DYN_symb = par_DYN_symb;
 			conf.par_Dl_symb = par_Dl_symb;
@@ -387,7 +387,7 @@ namespace thunder_ns{
 			symb["gravity"] = conf.gravity_symb;
 
 			// - parameters - //
-			casadi::SX DHtable = casadi::SX::sym("DHtable", numJoints,4);
+			casadi::SX DHtable = casadi::SX::sym("DHtable", numJoints*4);
 			casadi::SX world2L0 = casadi::SX::sym("world2L0", 6,1);
 			casadi::SX Ln2EE = casadi::SX::sym("Ln2EE", 6,1);
 			casadi::SX gravity = casadi::SX::sym("gravity", 3,1);
@@ -1213,6 +1213,7 @@ namespace thunder_ns{
 			for (const auto& arg : f_args) {
 				// - resize parameters - //
 				// int sz_original = args[arg].size();
+				// std::cout << "fun: " << f_name << std::endl;
 				// std::cout << "arg: " << arg << std::endl;
 				std::vector<int>& symb_flag = symb[arg];
 				std::vector<casadi::SX> par_symb;
@@ -1305,10 +1306,10 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	std::vector<std::string> Robot::obtain_symb_parameters(std::vector<std::string> par, std::vector<std::string> possible_par){
+	std::vector<std::string> Robot::obtain_symb_parameters(std::vector<std::string> par_sure, std::vector<std::string> par_possible){
 		// - obtain parameters that have symbolic values inside - //
-		std::vector<std::string> arg_list = par;
-		for (auto& par : possible_par){
+		std::vector<std::string> arg_list = par_sure;
+		for (auto& par : par_possible){
 			bool is_symb = false;
 			for (int v : symb[par]){
 				if (v) is_symb = true;

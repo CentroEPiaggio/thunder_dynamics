@@ -16,7 +16,8 @@ type_joints: ['R', 'R', 'R', 'R', 'R', 'R', 'R']
 
 # # DH convention: a -> alpha -> d -> theta
 kinematics:
-  DH: [0,         0,          0.3330,   0,
+  symb: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+  DH: [0,         0,         0.3330,   0,
       0,         *PI_2_neg,  0,        0,
       0,         *PI_2,      0.3160,   0,
       0.0825,    *PI_2,      0,        0,
@@ -26,16 +27,18 @@ kinematics:
 
 # gravity vector
 gravity:
+  symb: [0,0,0]
   value: [0, 0, -9.81]
 
 # world to link_0
 Base_to_L0:
+  symb: [0,0,0, 0,0,0]
   tr: [0, 0, 0]
   ypr: [0, 0, 0]
 
 # Link_n to EE
 Ln_to_EE:
-  symb: [1,1,1, 0,0,0]
+  symb: [0,0,0, 0,0,0]
   tr: [0, 0, 0]
   ypr: [0, 0, 0]
 
@@ -48,7 +51,7 @@ Ln_to_EE:
 dynamics:
   link1:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 4.970684
       CoM_x: 3.875e-3
       CoM_y: 2.081e-3
@@ -62,7 +65,7 @@ dynamics:
 
   link2:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 0.646926
       CoM_x: -3.141e-3
       CoM_y: -2.872e-2
@@ -76,7 +79,7 @@ dynamics:
 
   link3:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 3.228604
       CoM_x: 2.7518e-02
       CoM_y: 3.9252e-02
@@ -90,7 +93,7 @@ dynamics:
 
   link4:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 3.587895
       CoM_x: -5.317e-02
       CoM_y: 1.04419e-01
@@ -104,7 +107,7 @@ dynamics:
 
   link5:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 1.225946
       CoM_x: -1.1953e-02
       CoM_y: 4.1065e-02
@@ -118,7 +121,7 @@ dynamics:
 
   link6:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 1.666555
       CoM_x: 6.0149e-02
       CoM_y: -1.4117e-02
@@ -132,7 +135,7 @@ dynamics:
 
   link7:
     inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0,0,0,0,0]
       mass: 0.735522
       CoM_x: 1.0517e-02
       CoM_y: -4.252e-03
