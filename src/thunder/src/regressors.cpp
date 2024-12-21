@@ -262,20 +262,20 @@ namespace thunder_ns{
 			compute_jacobians(robot);
 		}
 
-		auto dims = DHtable.size();
-		casadi::SX DH_vect = casadi::SX::reshape(DHtable, dims.first*dims.second, 1);
+		// auto dims = DHtable.size();
+		// casadi::SX DH_vect = casadi::SX::reshape(DHtable, dims.first*dims.second, 1);
 
 		casadi::SX J = robot.model["J_ee"];
 		// std::cout <<"J: " << J << std::endl;
 
-		// - symbolic par construction of par- //
+		// - symbolic par construction of par - //
 		std::vector<casadi::SX> par_symb;
 		// casadi::SX par = casadi::SX::vertcat({DH_vect, world2L0, Ln2EE});
 		// int sz = 0;
 		// parse DH
-		for (int i=0; i<DH_vect.size1(); i++){
-			if (DHtable_symb[i/4,i%4]){
-				par_symb.push_back(DHtable(i/4,i%4));
+		for (int i=0; i<DHtable.size1(); i++){
+			if (DHtable_symb[i]){
+				par_symb.push_back(DHtable(i));
 			}
 		}
 		// parse world2L0

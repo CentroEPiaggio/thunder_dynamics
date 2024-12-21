@@ -125,7 +125,8 @@ namespace thunder_ns{
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
 		for (int i = 0; i < numJoints; i++) {
-			Ti[i+1] = DHTemplate(DHtable(i,allCols), q(i), jointsType[i]);
+			casadi::Slice row_i(i*4, i*4+4);
+			Ti[i+1] = DHTemplate(DHtable(row_i), q(i), jointsType[i]);
 			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
 			
 			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable"});
