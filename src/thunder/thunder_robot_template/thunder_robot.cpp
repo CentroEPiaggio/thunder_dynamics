@@ -1,6 +1,10 @@
 #include "thunder_robot.h"
 #include "robot_gen.h"
 
+
+/*OPTIONAL PYBIND11 INCLUDE POINT*/
+
+
 thunder_robot::thunder_robot(){
 	resizeVariables();
 }
@@ -20,10 +24,12 @@ void thunder_robot::resizeVariables(){
 	par_K = Eigen::VectorXd::Zero(K_order*numElasticJoints);
 	par_D = Eigen::VectorXd::Zero(D_order*numElasticJoints);
 	par_Dm = Eigen::VectorXd::Zero(Dm_order*numElasticJoints);
-	DHtable = Eigen::MatrixXd::Zero(n_joints,4);
+	DHtable = Eigen::VectorXd::Zero(n_joints*4);
 	world2L0 = Eigen::VectorXd::Zero(6);
 	Ln2EE = Eigen::VectorXd::Zero(6);
 	gravity = Eigen::VectorXd::Zero(3);
+	DHtable_symb.resize(n_joints*4);
+	for (int i=0; i<n_joints*4; i++) DHtable_symb[i] = 0;
 	gravity_symb.resize(3);
 	for (int i=0; i<3; i++) gravity_symb[i] = 0;
 	world2L0_symb.resize(6);
@@ -310,16 +316,31 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 		int index;
 		// --- Parse kinematics --- //
 		if (config["kinematics"]){
+			DHtable.resize(n_joints*4);
 			// Denavit-Hartenberg
 			YAML::Node kinematics = config["kinematics"];
 			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
 			// DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-			DHtable.resize(n_joints,4);
-			for (int i=0; i<n_joints; i++){
-				for (int j=0; j<4; j++){
-					DHtable(i,j) = dh_vect[4*i + j];
+			if (kinematics["symb"]){
+				DHtable_symb = kinematics["symb"].as<std::vector<int>>();
+			} else {
+				// no parameters here
+			}
+			int sz = dh_vect.size();
+			// DHtable.resize(sz);
+			// for (int i=0; i<sz; i++){
+			// 		DHtable(i) = dh_vect[i];
+			// 	}
+			// }
+			// Eigen::VectorXd gravity_new(sz);
+			int sz1 = 0;
+			for (int i=0; i<sz; i++){
+				if (DHtable_symb[i]){
+					DHtable(sz1) = dh_vect[i];
+					sz1++;
 				}
 			}
+			DHtable.conservativeResize(sz1);
 		}
 		// - Frame Offsets - //
 		if (config["Base_to_L0"]){
@@ -691,3 +712,7 @@ Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
 
 // ----- generated functions ----- //
 /*#-FUNCTIONS_CPP-#*/
+
+
+/*#-OPTIONAL SPACE FOR PYTHON BINDINGS-#*/
+

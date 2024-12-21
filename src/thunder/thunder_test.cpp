@@ -133,8 +133,6 @@ int main(){
 
 	Jac = robot.get("J_ee");
 	cout<<endl<<"Jac\n"<<Jac<<endl;
-	Jac = robot.get("J_0");
-	cout<<endl<<"Jac0\n"<<Jac<<endl;
 	Jac = robot.get("J_1");
 	cout<<endl<<"Jac1\n"<<Jac<<endl;
 	Jac = robot.get("J_2");
@@ -181,6 +179,8 @@ int main(){
 	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
 	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
+
+	// cout << "q0_dist: " << robot.get("q0_dist") << endl<<endl;
 
 	// auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
 	// cout<<"par_error: \n" << par_error << endl<<endl;

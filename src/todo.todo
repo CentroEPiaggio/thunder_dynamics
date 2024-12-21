@@ -1,6 +1,6 @@
 improvings:
 	Paramaters:
-		☐ DHtable as a vector instead a matrix
+		✔ DHtable as a vector instead a matrix @done (12/21/2024, 2:17:12 PM)
 		☐ load_par and save_par that load/save all parameters in thunder_robot
 		☐ save_conf and load_conf not ready (works but not update parameters, use update_conf() for that), for now there are save_par, load_par in thunder
 		☐ parameters as enum in thunder_robot? need something to generalize and use string to call?
