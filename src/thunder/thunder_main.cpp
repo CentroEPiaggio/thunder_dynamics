@@ -25,6 +25,7 @@ In particular generate code to compute for franka emika panda robot:
 #include "kinematics.h"
 #include "dynamics.h"
 #include "regressors.h"
+#include "userDefined.h"
 
 #include <yaml-cpp/yaml.h>
 // #include "urdf2dh_inertial.h"

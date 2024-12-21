@@ -3,14 +3,7 @@
 #include "../library/dynamics.h"
 #include "../library/regressors.h"
 #include "../library/utils.h"
-
-/* File name of generated code */
-#define GENERATED_FILE "robot_gen.cpp"
-
-/* Define number of function generable */
-// #define NUMBER_FUNCTIONS 10
-// #define MU 0.02
-// #define N_PAR_LINK = 10
+#include "../library/userDefined.h"
 
 using std::cout;
 using std::endl;
@@ -1588,6 +1581,7 @@ namespace thunder_ns{
 			// - symbolic selectivity - //
 			robot.init_symb_parameters();
 			cout<<"symbolic parameters ok!"<<endl;
+
 			// - compute functions - //
 			compute_kinematics(robot);
 			cout<<"Kinematics ok!"<<endl;
@@ -1595,6 +1589,9 @@ namespace thunder_ns{
 			cout<<"Dynamics ok!"<<endl;
 			compute_regressors(robot);
 			cout<<"Regressors ok!"<<endl;
+			compute_userDefined(robot);
+			cout<<"User defined functions ok!"<<endl;
+
 			// - update parameters - //
 			robot.update_symb_parameters();
 			cout<<"symbolic parameters ready!"<<endl;
