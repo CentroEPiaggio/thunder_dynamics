@@ -1,14 +1,3 @@
-/* 
-Generate two yaml files of inertial parameters to use standard equation of dynamic and regressor.
-
-	The inertial parameters are referred to joints' frame(!) of denavit parametrization.
-
-	For standard equation of dynamic the format of link's parameters are [m, CoM_x, CoMy, CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
-	For regressor the format of link's parameters are [m, m*CoM_x, m*CoMy, m*CoM_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz].
-
-	Parameters manipulated can be obtained with transformation of URDF file
-*/
-
 #include <iostream>
 #include <cmath>
 #include <filesystem>
@@ -16,10 +5,7 @@ Generate two yaml files of inertial parameters to use standard equation of dynam
 #include <random>
 
 #include <yaml-cpp/yaml.h>
-// #include "urdf2dh_inertial.h"
 #include "genYaml.h"
-
-// #define num_joints 7 // 7 links + hand
 
 // using namespace thunder_ns;
 

@@ -3,7 +3,6 @@
 #include "utils.h"
 #include <yaml-cpp/yaml.h>
 
-
 namespace thunder_ns{
 
 	int compute_userDefined(Robot& robot) {

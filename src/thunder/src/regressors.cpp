@@ -4,7 +4,6 @@
 #include "kinematics.h"
 #include "dynamics.h"
 
-
 namespace thunder_ns{
 
 	// extern constexpr int nParLink = 10;
