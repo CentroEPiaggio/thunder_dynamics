@@ -1271,10 +1271,10 @@ namespace thunder_ns{
 
 	int Robot::subs_symb_par(std::string par){
 		std::vector<int> symbolic = symb[par];
-		cout << "par: " << par << endl;
-		cout << "symbolic: " << symbolic << endl;
-		cout << "model: " << model[par] << endl;
-		cout << "args: " << args[par] << endl;
+		// cout << "par: " << par << endl;
+		// cout << "symbolic: " << symbolic << endl;
+		// cout << "model: " << model[par] << endl;
+		// cout << "args: " << args[par] << endl;
 		
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){

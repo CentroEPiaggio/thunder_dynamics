@@ -10,6 +10,7 @@ PI_4_neg: &PI_4_neg  -0.7853981633974483
 
 # --- Hyperparameters --- #
 num_joints: 7
+Dl_order: 2             # link friction order, 0 to not use link friction
 
 # joint types: 'R': rotoidal, 'P': prismatic
 type_joints: ['R', 'R', 'R', 'R', 'R', 'R', 'R']
@@ -38,7 +39,7 @@ Base_to_L0:
 
 # Link_n to EE
 Ln_to_EE:
-  symb: [0,0,0, 0,0,0]
+  symb: [1,1,1, 0,0,0]
   tr: [0, 0, 0]
   ypr: [0, 0, 0]
 
@@ -51,7 +52,7 @@ Ln_to_EE:
 dynamics:
   link1:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 4.970684
       CoM_x: 3.875e-3
       CoM_y: 2.081e-3
@@ -62,10 +63,13 @@ dynamics:
       Ixy: -1.3900e-4
       Ixz: 6.7720e-3
       Iyz: 1.9169e-2
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link2:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 0.646926
       CoM_x: -3.141e-3
       CoM_y: -2.872e-2
@@ -76,10 +80,13 @@ dynamics:
       Ixy: -3.9250e-3
       Ixz: 1.0254e-02
       Iyz: 7.0400e-04
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link3:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 3.228604
       CoM_x: 2.7518e-02
       CoM_y: 3.9252e-02
@@ -90,10 +97,13 @@ dynamics:
       Ixy: -4.7610e-03
       Ixz: -1.1396e-02
       Iyz: -1.2805e-02
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link4:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 3.587895
       CoM_x: -5.317e-02
       CoM_y: 1.04419e-01
@@ -104,10 +114,13 @@ dynamics:
       Ixy: 7.7960e-03
       Ixz: -1.3320e-03
       Iyz: 8.6410e-03
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link5:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.225946
       CoM_x: -1.1953e-02
       CoM_y: 4.1065e-02
@@ -118,10 +131,13 @@ dynamics:
       Ixy: -2.1170e-03
       Ixz: -4.0370e-03
       Iyz: 2.2900e-04
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link6:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.666555
       CoM_x: 6.0149e-02
       CoM_y: -1.4117e-02
@@ -132,17 +148,23 @@ dynamics:
       Ixy: 1.0900e-04
       Ixz: -1.1580e-03
       Iyz: 3.4100e-04
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
 
   link7:
     inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
+      symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 0.735522
       CoM_x: 1.0517e-02
       CoM_y: -4.252e-03
-      CoM_z: 6.1597e-02
+      CoM_z: -4.5403e-02
       Ixx: 1.2516e-02
+      Ixy: -4.28e-04
+      Ixz: -1.196e-03
       Iyy: 1.0027e-02
-      Izz: 4.8150e-03
-      Ixy: -4.2800e-04
-      Ixz: -1.1960e-03
-      Iyz: -7.4100e-04
+      Iyz: -7.41e-04
+      Izz: 4.815e-03
+    friction:
+      symb: [1,1]
+      Dl: [0.1, 0.01]
