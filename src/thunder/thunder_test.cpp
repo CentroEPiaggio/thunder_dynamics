@@ -81,10 +81,12 @@ int main(){
 	// get quantities
 	par_REG = robot.get_par_REG();
 	par_DYN = robot.get_par_DYN();
-	par_Dl = robot.get_par_Dl();
-	par_K = robot.get_par_K();
-	par_D = robot.get_par_D();
-	par_Dm = robot.get_par_Dm();
+	par_Dl = robot.get_arg("par_Dl");
+	par_K = robot.get_arg("par_K");
+	par_D = robot.get_arg("par_D");
+	par_Dm = robot.get_arg("par_Dm");
+	Eigen::MatrixXd DHtable = robot.get("DHtable");
+	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
 	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
@@ -152,6 +154,7 @@ int main(){
 		Dl = robot.get("Dl");
 		cout<<endl<<"D_link\n"<<Dl<<endl;
 		reg_Dl = robot.get("reg_Dl");
+		cout<<endl<<"reg_Dl\n"<<reg_Dl<<endl;
 	} else {
 		Dl.setZero();
 	}
@@ -174,8 +177,8 @@ int main(){
 
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
-	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
-	tau_cmd_reg = Yr*par_REG + reg_Dl*par_Dl;
+	tau_cmd_dyn = M*ddqr + C*dqr + G;
+	tau_cmd_reg = Yr*par_REG;
 	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
 	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;

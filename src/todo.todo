@@ -32,6 +32,7 @@ improvings:
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization
 	Symbolic selectivity:
+		☐ obtain_symb_parameters() with one only argument?
 		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
 		☐ pay attention to resize symb vector flags before using it, from load_conf or load_par
 		☐ load symbolics selectivity from conf in thunder_robot, now only on world_frame, ee_frame and gravity

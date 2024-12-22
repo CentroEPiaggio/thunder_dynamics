@@ -138,7 +138,7 @@ namespace thunder_ns{
 			// Number of joints
 			nj = config_file["num_joints"].as<int>();
 			conf.numJoints = nj;
-			int Dl_order = 0;
+			Dl_order = 0;
 
 			// joints_type
 			// YAML::Node type_joints = config_file["type_joints"];
@@ -673,61 +673,61 @@ namespace thunder_ns{
 		update_inertial_DYN();
 	}
 
-	int Robot::set_par_K(Eigen::VectorXd value){
-		casadi::SX& par_K = args["par_K"];
-		int numPar = K_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_K(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_K(Eigen::VectorXd value){
+	// 	casadi::SX& par_K = args["par_K"];
+	// 	int numPar = K_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_K(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_D(Eigen::VectorXd value){
-		casadi::SX& par_D = args["par_D"];
-		int numPar = D_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_D(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_D(Eigen::VectorXd value){
+	// 	casadi::SX& par_D = args["par_D"];
+	// 	int numPar = D_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_D(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_Dm(Eigen::VectorXd value){
-		casadi::SX& par_Dm = args["par_Dm"];
-		int numPar = Dm_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_Dm(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_Dm(Eigen::VectorXd value){
+	// 	casadi::SX& par_Dm = args["par_Dm"];
+	// 	int numPar = Dm_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_Dm(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_Dl(Eigen::VectorXd value){
-		casadi::SX& par_Dl = args["par_Dl"];
-		int numPar = Dl_order*numJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_Dl(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_Dl(Eigen::VectorXd value){
+	// 	casadi::SX& par_Dl = args["par_Dl"];
+	// 	int numPar = Dl_order*numJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_Dl(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
 	Eigen::VectorXd Robot::get_arg(std::string par){
 		const casadi::SX& par_casadi = args[par];
@@ -756,41 +756,41 @@ namespace thunder_ns{
 		return param_REG;
 	}
 
-	Eigen::VectorXd Robot::get_par_K(){
-		const casadi::SX& par_K_casadi = args["par_K"];
-		int numPar = K_order*numElasticJoints;
-		Eigen::VectorXd param_K(numPar);
-		std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
-		return param_K;
-	}
+	// Eigen::VectorXd Robot::get_par_K(){
+	// 	const casadi::SX& par_K_casadi = args["par_K"];
+	// 	int numPar = K_order*numElasticJoints;
+	// 	Eigen::VectorXd param_K(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
+	// 	return param_K;
+	// }
 
-	Eigen::VectorXd Robot::get_par_D(){
-		const casadi::SX& par_D_casadi = args["par_D"];
-		int numPar = D_order*numElasticJoints;
-		Eigen::VectorXd param_D(numPar);
-		std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
-		return param_D;
-	}
+	// Eigen::VectorXd Robot::get_par_D(){
+	// 	const casadi::SX& par_D_casadi = args["par_D"];
+	// 	int numPar = D_order*numElasticJoints;
+	// 	Eigen::VectorXd param_D(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
+	// 	return param_D;
+	// }
 
-	Eigen::VectorXd Robot::get_par_Dm(){
-		const casadi::SX& par_Dm_casadi = args["par_Dm"];
-		int numPar = Dm_order*numElasticJoints;
-		Eigen::VectorXd param_Dm(numPar);
-		std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
-		return param_Dm;
-	}
+	// Eigen::VectorXd Robot::get_par_Dm(){
+	// 	const casadi::SX& par_Dm_casadi = args["par_Dm"];
+	// 	int numPar = Dm_order*numElasticJoints;
+	// 	Eigen::VectorXd param_Dm(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
+	// 	return param_Dm;
+	// }
 
-	Eigen::VectorXd Robot::get_par_Dl(){
-		const casadi::SX& par_Dl_casadi = args["par_Dl"];
-		int numPar = Dl_order*numJoints;
-		Eigen::VectorXd param_Dl(numPar);
-		std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
-		return param_Dl;
-	}
+	// Eigen::VectorXd Robot::get_par_Dl(){
+	// 	const casadi::SX& par_Dl_casadi = args["par_Dl"];
+	// 	int numPar = Dl_order*numJoints;
+	// 	Eigen::VectorXd param_Dl(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
+	// 	return param_Dl;
+	// }
 
 	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
 		std::vector<fun_obj> functions;
@@ -1271,6 +1271,10 @@ namespace thunder_ns{
 
 	int Robot::subs_symb_par(std::string par){
 		std::vector<int> symbolic = symb[par];
+		cout << "par: " << par << endl;
+		cout << "symbolic: " << symbolic << endl;
+		cout << "model: " << model[par] << endl;
+		cout << "args: " << args[par] << endl;
 		
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){

@@ -153,10 +153,10 @@ namespace thunder_ns{
 			Eigen::VectorXd get_arg(std::string par);
 			Eigen::VectorXd get_par_DYN();
 			Eigen::VectorXd get_par_REG();
-			Eigen::VectorXd get_par_K();
-			Eigen::VectorXd get_par_D();
-			Eigen::VectorXd get_par_Dm();
-			Eigen::VectorXd get_par_Dl();
+			// Eigen::VectorXd get_par_K();
+			// Eigen::VectorXd get_par_D();
+			// Eigen::VectorXd get_par_Dm();
+			// Eigen::VectorXd get_par_Dl();
 			// Eigen::VectorXd get_par_ELA();
 			int get_numParDYN();
 			int get_numParREG();
@@ -174,10 +174,10 @@ namespace thunder_ns{
 			int set_ddxr(Eigen::VectorXd);
 			int set_par_DYN(Eigen::VectorXd);
 			int set_par_REG(Eigen::VectorXd);
-			int set_par_K(Eigen::VectorXd);
-			int set_par_D(Eigen::VectorXd);
-			int set_par_Dm(Eigen::VectorXd);
-			int set_par_Dl(Eigen::VectorXd);
+			// int set_par_K(Eigen::VectorXd);
+			// int set_par_D(Eigen::VectorXd);
+			// int set_par_Dm(Eigen::VectorXd);
+			// int set_par_Dl(Eigen::VectorXd);
 			// int set_par_ELA(Eigen::VectorXd);
 			// load functions
 			int load_conf_par(std::string config_file, bool update_REG = 1);
