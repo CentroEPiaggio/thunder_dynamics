@@ -31,6 +31,16 @@ set_target_properties(library PROPERTIES OUTPUT_NAME "library")
 target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
 
 find_package(casadi REQUIRED)
+
+include(FetchContent)
+
+FetchContent_Declare(
+  yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+  GIT_TAG master 
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 find_package(yaml-cpp REQUIRED)
 target_link_libraries(library casadi yaml-cpp::yaml-cpp)
 
@@ -59,3 +69,12 @@ target_link_libraries(thunder_test_chrono library)
 
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
+
+
+# fetch latest argparse
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+target_link_libraries(thunder argparse)
