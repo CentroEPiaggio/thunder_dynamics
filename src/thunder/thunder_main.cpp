@@ -30,6 +30,8 @@ In particular generate code to compute for franka emika panda robot:
 // #include "urdf2dh_inertial.h"
 #include "genYaml.h"
 
+#include <argparse/argparse.hpp>
+
 using namespace thunder_ns;
 using namespace std::chrono;
 
@@ -62,52 +64,36 @@ int main(int argc, char* argv[]){
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
 	// ----------------------------- //
-	// Arguments
-	if (argc > 1) {
-		// The first argument (argv[0]) is the program name (thunder)
-		std::string arg1 = argv[1];
-		if (arg1 == "gen"){
-			if (argc > 2){ // take argument <robot>.yaml
-				config_file = argv[2];
-				int index_yaml = config_file.find_last_of(".yaml");
-				if (index_yaml > 0){
-					int index_path = config_file.find_last_of("/");
-					if (index_path == std::string::npos){ // no occurrence
-						path_robot = "./";
-						robot_name = config_file.substr(0, index_yaml);
-					}else{
-						path_robot = config_file.substr(0, index_path+1);
-						robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
-					}
-				}else{
-					std::cout << "Invalid config file." << std::endl;
-					return 0;
-				}
-				if (argc > 3){ // take the robot name
-					robot_name = argv[3];
-					// robot_name is a valid name?
 
-					if (argc > 4){ // flag for python binding
-						std::string flag = argv[4];
-						if (flag == "python"){
-							GEN_PYTHON_FLAG = true;
-							std::cout << "Python binding will be generated." << std::endl;
-						}
-						else{
-							std::cout << "Flag not recognised." << std::endl;
-							return 0;
-						}
-					}
-				}
-			}
-		} else {
-			std::cout << arg1 << "not recognised as command." << std::endl;
-			return 0;
-		}
-	} else {
-		std::cout << "No arguments to process." << std::endl;
+
+	argparse::ArgumentParser thunder_cli("thunder");
+	thunder_cli.add_argument("robot")
+		.help("Robot configuration file");
+	thunder_cli.add_argument("robot_name")
+		.help("Robot name");
+	thunder_cli.add_argument("-p", "--python")
+		.default_value(false)
+		.implicit_value(true)
+		.help("Generate python binding");
+	thunder_cli.add_argument("-c", "--casadifunc")
+		.default_value(false)
+		.implicit_value(true)
+		.help("Save casadi functions");
+
+	try {
+		thunder_cli.parse_args(argc, argv);
+	} catch (const std::runtime_error &err) {
+		std::cout << err.what() << std::endl;
+		std::cout << thunder_cli;
 		return 0;
 	}
+
+	// Get arguments
+	config_file = thunder_cli.get<std::string>("robot");
+	robot_name = thunder_cli.get<std::string>("robot_name");
+	GEN_PYTHON_FLAG = thunder_cli.get<bool>("python");
+	
+
 	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
 	auto time_start = high_resolution_clock::now();

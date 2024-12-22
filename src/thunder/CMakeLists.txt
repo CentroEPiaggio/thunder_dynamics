@@ -59,3 +59,13 @@ target_link_libraries(thunder_test_chrono library)
 
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
+
+
+# fetch latest argparse
+include(FetchContent)
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+target_link_libraries(thunder argparse)
