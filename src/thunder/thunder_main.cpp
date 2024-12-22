@@ -68,18 +68,22 @@ int main(int argc, char* argv[]){
 
 
 	argparse::ArgumentParser thunder_cli("thunder");
-	thunder_cli.add_argument("robot")
+	argparse::ArgumentParser gen_command("gen");
+	gen_command.add_description("Generate library from yaml configuration file");
+	gen_command.add_argument("robot")
 		.help("Robot configuration file");
-	thunder_cli.add_argument("robot_name")
+	gen_command.add_argument("robot_name")
 		.help("Robot name");
-	thunder_cli.add_argument("-p", "--python")
+	gen_command.add_argument("-p", "--python")
 		.default_value(false)
 		.implicit_value(true)
 		.help("Generate python binding");
-	thunder_cli.add_argument("-c", "--casadifunc")
+	gen_command.add_argument("-c", "--casadifunc")
 		.default_value(false)
 		.implicit_value(true)
 		.help("Save casadi functions");
+
+	thunder_cli.add_subparser(gen_command);
 
 	try {
 		thunder_cli.parse_args(argc, argv);
@@ -89,10 +93,11 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 
+	
 	// Get arguments
-	config_file = thunder_cli.get<std::string>("robot");
-	robot_name = thunder_cli.get<std::string>("robot_name");
-	GEN_PYTHON_FLAG = thunder_cli.get<bool>("python");
+	config_file = gen_command.get<std::string>("robot");
+	robot_name = gen_command.get<std::string>("robot_name");
+	GEN_PYTHON_FLAG = gen_command.get<bool>("python");
 	
 
 	// Set name and paths
