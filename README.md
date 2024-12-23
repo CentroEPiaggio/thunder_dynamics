@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.6.10
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.6.11
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -21,11 +21,11 @@ The straightforward installation require the use of docker and dev-container ext
 * In order to generate and manage yaml files you have to install [yaml-cpp](https://github.com/jbeder/yaml-cpp.git) (see [installation](#yaml-cpp---from-zip)).
 
 
-## Usage
+## Basic usage
 After the docker building, the software can be used with:
 
 	cd bin
-	./thunder gen <path>/<robot>.yaml <robot_name>
+	./thunder gen [-n <robot_name>] <path>/<robot>.yaml
 
 where `<path>` is the relative path from the `thunder` binary and the folder containing the .yaml configuration file, `<robot>` is the default robot name and `<robot_name>` is the optional name of the robot. The name will be used to create library files.
 
@@ -81,7 +81,7 @@ The library requires casadi and yaml-cpp that are already included in the docker
 This branch of Thunder can generate python bindings for the generated library. Simply add `--python` or `-p` to the `thunder gen` command:
 
 	cd bin
-	./thunder gen <path>/<robot>.yaml <robot_name> --python
+	./thunder gen [--python] <path>/<robot>.yaml
 
 This will generate a python wrapper for the generated library. To use it you need to build the module. Make sure to have installed pybind11
 
