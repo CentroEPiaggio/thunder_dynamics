@@ -37,7 +37,7 @@
 			"type": "cppdbg", 
 			"request": "launch",
 			"program": "/home/thunder_dev/thunder_dynamics/src/thunder/build/thunder",
-			"args": ["gen", "../robots/RRR/RRR.yaml", "testRRR"],
+			"args": ["gen", "--name", "testRRR", "../robots/RRR/RRR.yaml"],
 			"stopAtEntry": false,
 			"cwd": "/home/thunder_dev/thunder_dynamics/src/thunder/build",
 			"environment": [],
