@@ -78,10 +78,10 @@ If you recompile the docker image the binary will be builded and updated in the 
 The library requires casadi and yaml-cpp that are already included in the docker image.
 
 ## Usage in python: 
-This branch of Thunder can generate python bindings for the generated library. Simply add the `python` flag to the `thunder gen` command:
+This branch of Thunder can generate python bindings for the generated library. Simply add `--python` or `-p` to the `thunder gen` command:
 
 	cd bin
-	./thunder gen <path>/<robot>.yaml <robot_name> python
+	./thunder gen <path>/<robot>.yaml <robot_name> --python
 
 This will generate a python wrapper for the generated library. To use it you need to build the module. Make sure to have installed pybind11
 
