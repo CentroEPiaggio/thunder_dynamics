@@ -1,4 +1,7 @@
 improvings:
+	console parser:
+		☐ version not set
+		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
 		✔ DHtable as a vector instead a matrix @done (12/21/2024, 2:17:12 PM)
 		☐ load_par and save_par that load/save all parameters in thunder_robot

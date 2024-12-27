@@ -66,24 +66,26 @@ int main(int argc, char* argv[]){
 	// ---------- CONSOLE ---------- //
 	// ----------------------------- //
 
+	// - defining cli - //
 	argparse::ArgumentParser thunder_cli("thunder");
 	argparse::ArgumentParser gen_command("gen");
 	gen_command.add_description("Generate library from yaml configuration file");
-	gen_command.add_argument("robot")
-		.help("Robot configuration file");
-	gen_command.add_argument("robot_name")
+	gen_command.add_argument("config_file")
+		.help("Robot configuration file (.yaml)");
+	gen_command.add_argument("-n", "--name")
 		.help("Robot name");
 	gen_command.add_argument("-p", "--python")
 		.default_value(false)
 		.implicit_value(true)
 		.help("Generate python binding");
-	gen_command.add_argument("-c", "--casadifunc")
+	gen_command.add_argument("-c", "--casadifunc") // -f ?
 		.default_value(false)
 		.implicit_value(true)
 		.help("Save casadi functions");
 
 	thunder_cli.add_subparser(gen_command);
 
+	// - parsing - //
 	try {
 		thunder_cli.parse_args(argc, argv);
 	} catch (const std::runtime_error &err) {
@@ -92,15 +94,33 @@ int main(int argc, char* argv[]){
 		return 0;
 	}
 
-	
-	// Get arguments
-	config_file = gen_command.get<std::string>("robot");
-	robot_name = gen_command.get<std::string>("robot_name");
-	GEN_PYTHON_FLAG = gen_command.get<bool>("python");
-	
+	// - Get arguments - //
+	config_file = gen_command.get<std::string>("config_file");
+	GEN_PYTHON_FLAG = gen_command.get<bool>("--python");
+
+	// - check config_file and name - //
+	int index_yaml = config_file.find_last_of(".yaml");
+	if (index_yaml > 0){
+		int index_path = config_file.find_last_of("/");
+		if (index_path == std::string::npos){ // no occurrence
+			path_robot = "./";
+			robot_name = config_file.substr(0, index_yaml);
+		}else{
+			path_robot = config_file.substr(0, index_path+1);
+			robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
+		}
+	}else{
+		std::cout << "Invalid config file." << std::endl;
+		return 0;
+	}
+	// if --name is used, robot_name is overwritten
+	if (gen_command.is_used("--name")){
+		robot_name = gen_command.get<std::string>("--name");
+	}
 
 	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
+	cout<<"robot_path: "<<path_robot<<endl;
 	auto time_start = high_resolution_clock::now();
 	robot_name_gen = robot_name + "_gen";
 
