@@ -127,7 +127,9 @@ int main(int argc, char* argv[]){
 
 	// Generate library
 	// regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
-	robot.generate_library(absolutePath, robot_name_gen);
+	if( gen_command.get<bool>("casadi"))
+		std::cout<<"Saving Casadi functions!"<<std::endl;
+	robot.generate_library(absolutePath, robot_name_gen, gen_command.get<bool>("casadi"));
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;

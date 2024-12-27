@@ -1251,7 +1251,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	void Robot::generate_library(const std::string& savePath, const std::string& name_file){
+	void Robot::generate_library(const std::string& savePath, const std::string& name_file, const bool SAVE_CASADI){
 		// Options for c-code auto generation
 		casadi::Dict opts = casadi::Dict();
 		opts["cpp"] = true;
@@ -1267,6 +1267,16 @@ namespace thunder_ns{
 			// cout<<"fun: "<<f.second<<endl<<endl;
 		}
 		myCodeGen.generate(savePath);
+
+		if(SAVE_CASADI){
+			// Save CasADi functions
+			for (const auto& f : casadi_fun) {
+				std::string function_file = savePath + "/" + f.first + ".casadi";
+				// std::ofstream file(function_file, std::ios::binary);
+				f.second.save(function_file);
+				// file.close();
+			}
+		}
 	}
 
 	int Robot::subs_symb_par(std::string par){
