@@ -39,9 +39,10 @@ using namespace std::chrono;
 using std::cout;
 using std::endl;
 
-bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
-bool COPY_GEN_CHRONO_FLAG = true; // used to copy generated files into thunder_robot_chrono project
-bool GEN_PYTHON_FLAG = false; // used to generate python binding
+bool COPY_GEN_FLAG = true; 			// used to copy generated files into thunder_robot project
+bool COPY_GEN_CHRONO_FLAG = true; 	// used to copy generated files into thunder_robot_chrono project
+bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
+bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
 
 // --- paths and files (default) --- //
@@ -97,6 +98,7 @@ int main(int argc, char* argv[]){
 	// - Get arguments - //
 	config_file = gen_command.get<std::string>("config_file");
 	GEN_PYTHON_FLAG = gen_command.get<bool>("--python");
+	GEN_CASADI = gen_command.get<bool>("--casadifunc");
 
 	// - check config_file and name - //
 	int index_yaml = config_file.find_last_of(".yaml");
@@ -146,10 +148,9 @@ int main(int argc, char* argv[]){
 	}
 
 	// Generate library
-	// regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
-	if( gen_command.get<bool>("casadi"))
-		std::cout<<"Saving Casadi functions!"<<std::endl;
-	robot.generate_library(absolutePath, robot_name_gen, gen_command.get<bool>("casadi"));
+	// if( gen_command.get<bool>("casadi"))
+	// 	std::cout<<"Saving Casadi functions!"<<std::endl;
+	robot.generate_library(absolutePath, robot_name_gen, GEN_CASADI);
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
