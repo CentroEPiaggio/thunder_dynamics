@@ -11,16 +11,12 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-// #include "thunder_RRR.h"
-#include "thunder_franka.h"
+#include "thunder_RRR.h"
+// #include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
 
-// #define NJ 3
-// #define N_PARAM_DYN 30
-// const std::string inertial_file = "../robots/seaRRR_inertial_DYN.yaml";
-// const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
-const std::string conf_file = "../robots/franka_conf.yaml";
-// const std::string elastic_file = "../../thunder/robots/RRR_sea/seaRRR.yaml";
+const std::string conf_file = "../robots/RRR_conf.yaml";
+// const std::string conf_file = "../robots/franka_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
@@ -38,7 +34,8 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_franka robot;
+	// thunder_franka robot;
+	thunder_RRR robot;
 
 	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
@@ -109,7 +106,7 @@ int main(){
 
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl;
+	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl<<endl;
 
 	// - save par test - //
 	// robot.save_par_DYN(saved_inertial_file);
@@ -120,11 +117,11 @@ int main(){
 	cout << "world2L0: " << robot.get_world2L0() << endl;
 	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
 
-	// - set par test - //
-	Eigen::Vector3d par_ee({3, 3, 3});
-	robot.set_Ln2EE(par_ee);
-	cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
-	cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
+	// // - set par test - //
+	// Eigen::Vector3d par_ee({3, 3, 3});
+	// robot.set_Ln2EE(par_ee);
+	// cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
+	// cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
 
 	// // - kinematic regressors - //
 	// Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});

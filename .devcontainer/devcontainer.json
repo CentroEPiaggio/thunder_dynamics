@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo chmod 777 -R . && cd .devcontainer && touch .bash_history && ./setup_init.sh",
+	"postCreateCommand": "sudo chmod 777 -R . && cd .devcontainer && touch .bash_history",
 
 	// Configure tool-specific properties.
 	"customizations": {

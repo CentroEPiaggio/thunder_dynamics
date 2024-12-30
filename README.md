@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.6.11
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.7.11
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -24,8 +24,7 @@ The straightforward installation require the use of docker and dev-container ext
 ## Basic usage
 After the docker building, the software can be used with:
 
-	cd bin
-	./thunder gen [-n <robot_name>] <path>/<robot>.yaml
+	thunder gen [-n <robot_name>] <path>/<robot>.yaml
 
 where `<path>` is the relative path from the `thunder` binary and the folder containing the .yaml configuration file, `<robot>` is the default robot name and `<robot_name>` is the optional name of the robot. The name will be used to create library files.
 
@@ -38,7 +37,7 @@ An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emi
 The framework will create a `<robot>_generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
 - `thunder_<robot>.h`, `thunder_<robot>.cpp` is the wrapper class for the generated files.
-- `<robot>_par` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
+- `<robot>_conf` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
 - `<robot>_inertial_REG` is another parameter's file that have the classical parameters in which the system is linear to.
 
 In order to use the framework you can write on your own C++ program:
@@ -80,8 +79,7 @@ The library requires casadi and yaml-cpp that are already included in the docker
 ## Usage in python: 
 This branch of Thunder can generate python bindings for the generated library. Simply add `--python` or `-p` to the `thunder gen` command:
 
-	cd bin
-	./thunder gen [--python] <path>/<robot>.yaml
+	thunder gen [--python] <path>/<robot>.yaml
 
 This will generate a python wrapper for the generated library. To use it you need to build the module. Make sure to have installed pybind11
 
@@ -253,6 +251,7 @@ In the thunder folder exec:
 mkdir -p build && cd build
 cmake ..
 make
+sudo make install
 ```
 
-then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`.
+<!-- then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`. -->

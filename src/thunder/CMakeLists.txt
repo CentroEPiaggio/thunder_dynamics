@@ -5,33 +5,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
 project(thunder_dynamics VERSION 0.2)
-# project(library)
 
-# Specifica la cartella di output per i file compilati
-# set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
+# Set the output directories for compiled binaries and libraries
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
-# Aggiungi la cartella "library" per cercare gli header
+# Include the "library" directory for header file search
 include_directories(${CMAKE_SOURCE_DIR}/library)
 
-# Aggiungi tutti i file di origine nella cartella "src"
+# Add all source files in the "src" directory to the SOURCES variable
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
-# Definisci la tua libreria
+# Define the library target with the collected source files
 add_library(library ${SOURCES})
 
-# Specifica il nome dell'output della libreria
+# Set the output name for the library
 set_target_properties(library PROPERTIES OUTPUT_NAME "library")
 
-# Indica che altri progetti possono trovare questa libreria
+# Make the library's headers available to other projects
 target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
 
+# Find and link the CasADi library
 find_package(casadi REQUIRED)
 
+# Include FetchContent module for fetching external dependencies
 include(FetchContent)
 
 FetchContent_Declare(
@@ -44,23 +44,7 @@ FetchContent_MakeAvailable(yaml-cpp)
 find_package(yaml-cpp REQUIRED)
 target_link_libraries(library casadi yaml-cpp::yaml-cpp)
 
-# Puoi aggiungere altre impostazioni di compilazione qui, se necessario
-
-# Esempio di aggiunta di dipendenze esterne:
-# find_package(OpenGL REQUIRED)
-# target_link_libraries(library ${OPENGL_LIBRARIES})
-
-# Esempio di aggiunta di altre librerie personalizzate:
-# target_link_libraries(library my_custom_library)
-
-# Esempio di specifica di file di origine aggiuntivi:
-# file(GLOB MORE_SOURCES ${CMAKE_SOURCE_DIR}/src/more/*.cpp)
-# target_sources(library PRIVATE ${MORE_SOURCES})
-
-# Esempio di definizione di variabili di definizione del preprocessore:
-# target_compile_definitions(library PRIVATE -DSOME_DEFINE)
-
-# Esempio di creazione di un eseguibile che utilizza la tua libreria
+# Add executables and link them with the library
 add_executable(thunder_test ${CMAKE_SOURCE_DIR}/thunder_test.cpp)
 target_link_libraries(thunder_test library)
 
@@ -78,3 +62,33 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 target_link_libraries(thunder argparse)
+
+# Retrieve the CasADi library path
+find_library(CASADI_LIB_PATH libcasadi.so HINTS ${casadi_DIR} PATH_SUFFIXES lib)
+if (CASADI_LIB_PATH)
+  message(STATUS "CasADi library found at ${CASADI_LIB_PATH}")
+  
+  # Extract the directory from the library path
+  get_filename_component(CASADI_LIB_DIR ${CASADI_LIB_PATH} DIRECTORY)
+  message(STATUS "CasADi library directory: ${CASADI_LIB_DIR}")
+
+  # Set rpath to include the CasADi library directory
+  set(CMAKE_INSTALL_RPATH "${CASADI_LIB_DIR}")
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+else()
+  message(FATAL_ERROR "CasADi library not found!")
+endif()
+
+set_target_properties(thunder PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+# Set default install prefix if not specified
+# if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+# 	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path" FORCE)
+# endif()
+# set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path")
+set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
+# Install the executable and the template directory
+install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/thunder_robot_template DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)

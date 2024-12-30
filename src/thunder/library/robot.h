@@ -199,7 +199,7 @@ namespace thunder_ns{
 			std::vector<fun_obj> get_functions(bool onlyNames = 1);
 			// std::vector<casadi::Function> getCasadiFunctions();
 			int add_function(std::string name, casadi::SX expr, std::vector<std::string> f_args, std::string descr = "");
-			void generate_library(const std::string& savePath, const std::string& name_file);
+			void generate_library(const std::string& savePath, const std::string& name_file, const bool SAVE_CASADI);
 
 	};
 

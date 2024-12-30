@@ -76,7 +76,8 @@ RUN rm -r -f build && \
 	mkdir -p build && \
 	cd build && \
 	cmake .. && \
-	make 
+	make && \
+	make install
 
 # # copy thunder binary and auxiliary files on the root folder, not possible here, made by postCreateCommand in devcontainer.json
 # WORKDIR ${HOME}/thunder_dev/thunder_dynamics
