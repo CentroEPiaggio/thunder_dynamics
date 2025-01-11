@@ -268,13 +268,16 @@ namespace thunder_ns{
 		}
 		casadi::SX& q = robot.model["q"];
 		casadi::SX& dq = robot.model["dq"];
+		casadi::SX& ddq = robot.model["ddq"];
 		casadi::SX& Jn = robot.model["J_ee"];
 
 		// jacobian derivatives
 		casadi::SX dJn = casadi::SX::jtimes(Jn,q,dq);
-		// casadi::SX ddJn = casadi::SX::jtimes(dJn,q,dq) + casadi::SX::jtimes(dJn,dq,_ddq_);
+		casadi::SX ddJn = casadi::SX::jtimes(dJn,q,dq) + casadi::SX::jtimes(dJn,dq,ddq);
 		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "Ln2EE"});
 		robot.add_function("J_ee_dot", dJn, arg_list, "Time derivative of jacobian matrix");
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "Ln2EE"});
+		robot.add_function("J_ee_ddot", ddJn, arg_list, "Time second derivative of jacobian matrix");
 
 		// jacobian inverse
 		casadi::SX invJn_dumped = casadi::SX::inv(casadi::SX::mtimes({Jn,Jn.T()}) + casadi::SX::eye(6)*MU);

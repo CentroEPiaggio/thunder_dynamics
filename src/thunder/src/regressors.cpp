@@ -346,6 +346,7 @@ namespace thunder_ns{
 
 		std::vector<std::string> arg_list;
 		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "Ln2EE"});
+		// std::cout << "par_list: " << par_symb << std::endl;
 		if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
 		arg_list = robot.obtain_symb_parameters({"q", "w"}, {"DHtable", "world2L0", "Ln2EE"});

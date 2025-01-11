@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.7.11
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.11
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -140,19 +140,22 @@ The main classes contained in `thunder` are:
    - T_0_i: return the transformation 0->Li
    - J_i: jacobian of the frame i
    - J_ee_dot: jacobian derivative
+   - J_ee_ddot: jacobian second derivative
    - J_ee_pinv: jacobian pseudoinverse
 * `dynamics`: contain standard dynamic functions:
    - M: mass matrix
    - C: coriolis matrix
    - G: gravity matrix
    - Dl: link friction
+   - M_dot, C_dot, G_dot: dynamic time derivatives
+   - M_ddot, C_ddot, G_ddot: second order dynamic time derivatives 
    - K: elastic actuator stiffness torque
    - D: elastic actuator coupling damping
    - Dm: elastic actuator motor friction
 * `regressors`: contain the regressor formulation:
    - Yr: regressor matrix 
-   - reg_M: regressor of $M\ddot{q}$
-   - reg_C: regressor of $C\dot{q}$
+   - reg_M: regressor of $M\ddot{q}_r$
+   - reg_C: regressor of $C\dot{q}_r$
    - reg_G: regressor of $G$
    - reg_K, reg_D, reg_Dl, reg_Dm: regressors of other dynamics
    - reg_Jdq: regressor of $\omega = J\dot{q}$

@@ -11,12 +11,12 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-#include "thunder_RRR.h"
-// #include "thunder_franka.h"
+// #include "thunder_RRR.h"
+#include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
 
-const std::string conf_file = "../robots/RRR_conf.yaml";
-// const std::string conf_file = "../robots/franka_conf.yaml";
+// const std::string conf_file = "../robots/RRR_conf.yaml";
+const std::string conf_file = "../robots/franka_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
@@ -34,8 +34,8 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	// thunder_franka robot;
-	thunder_RRR robot;
+	thunder_franka robot;
+	// thunder_RRR robot;
 
 	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
@@ -123,12 +123,16 @@ int main(){
 	// cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
 	// cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
 
-	// // - kinematic regressors - //
-	// Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
-	// robot.set_w(wrench);
-	// cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl<<endl;
-	// cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
-	// cout << "par_kin: " << robot.get_DHtable().transpose() << endl<<endl;
+	// - kinematic regressors - //
+	Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
+	robot.set_w(wrench);
+	cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl << "size: " << robot.get_reg_Jdq().size() << endl;
+	cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
+	Eigen::VectorXd dhtable = robot.get_DHtable();
+	cout << "par_kin: " << dhtable.transpose() << endl<<endl;
+	robot.set_DHtable(dhtable);
+	cout << "size_dh: " << dhtable.size() << endl;
+
 
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){
