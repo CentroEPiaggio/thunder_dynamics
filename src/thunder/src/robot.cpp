@@ -424,6 +424,9 @@ namespace thunder_ns{
 
 		casadi::SX q = casadi::SX::sym("q", numJoints,1);
 		casadi::SX dq = casadi::SX::sym("dq", numJoints,1);
+		casadi::SX ddq = casadi::SX::sym("ddq", numJoints,1);
+		casadi::SX d3q = casadi::SX::sym("d3q", numJoints,1);
+		casadi::SX d4q = casadi::SX::sym("d4q", numJoints,1);
 		casadi::SX dqr = casadi::SX::sym("dqr", numJoints,1);
 		casadi::SX ddqr = casadi::SX::sym("ddqr", numJoints,1);
 		casadi::SX x = casadi::SX::sym("x", numElasticJoints,1);
@@ -441,6 +444,9 @@ namespace thunder_ns{
 		// model update
 		model.insert({"q", q});
 		model.insert({"dq", dq});
+		model.insert({"ddq", ddq});
+		model.insert({"d3q", d3q});
+		model.insert({"d4q", d4q});
 		model.insert({"dqr", dqr});
 		model.insert({"ddqr", ddqr});
 		model.insert({"w", w});
@@ -461,6 +467,9 @@ namespace thunder_ns{
 
 		args.insert({"q", casadi::SX::zeros(numJoints,1)});
 		args.insert({"dq", casadi::SX::zeros(numJoints,1)});
+		args.insert({"ddq", casadi::SX::zeros(numJoints,1)});
+		args.insert({"d3q", casadi::SX::zeros(numJoints,1)});
+		args.insert({"d4q", casadi::SX::zeros(numJoints,1)});
 		args.insert({"dqr", casadi::SX::zeros(numJoints,1)});
 		args.insert({"ddqr", casadi::SX::zeros(numJoints,1)});
 		args.insert({"w", casadi::SX::zeros(6)});
@@ -484,11 +493,17 @@ namespace thunder_ns{
 		// symb.insert({"q", casadi::SX::zeros(numElasticJoints)})
 		std::vector<int> q_symb(numJoints, 1);
 		std::vector<int> dq_symb(numJoints, 1);
+		std::vector<int> ddq_symb(numJoints, 1);
+		std::vector<int> d3q_symb(numJoints, 1);
+		std::vector<int> d4q_symb(numJoints, 1);
 		std::vector<int> dqr_symb(numJoints, 1);
 		std::vector<int> ddqr_symb(numJoints, 1);
 		std::vector<int> w_symb(6, 1);
 		symb.insert({"q", q_symb});
 		symb.insert({"dq", dq_symb});
+		symb.insert({"ddq", ddq_symb});
+		symb.insert({"d3q", d3q_symb});
+		symb.insert({"d4q", d4q_symb});
 		symb.insert({"dqr", dqr_symb});
 		symb.insert({"ddqr", ddqr_symb});
 		symb.insert({"w", w_symb});
@@ -1587,6 +1602,7 @@ namespace thunder_ns{
 		// create config
 		// Config conf = load_config(file);
 		// cout<<"Configuration loaded!"<<endl;
+		bool advanced = true;
 		Robot robot(file);
 		robot.robotName = robot_name;
 		// --- load parameters --- //
@@ -1598,9 +1614,9 @@ namespace thunder_ns{
 			cout<<"symbolic parameters ok!"<<endl;
 
 			// - compute functions - //
-			compute_kinematics(robot);
+			compute_kinematics(robot, advanced);
 			cout<<"Kinematics ok!"<<endl;
-			compute_dynamics(robot);
+			compute_dynamics(robot, advanced);
 			cout<<"Dynamics ok!"<<endl;
 			compute_regressors(robot);
 			cout<<"Regressors ok!"<<endl;

@@ -99,10 +99,10 @@ int main(){
 	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setZero();
-	dq.setOnes();
-	dqr.setZero();
-	ddqr.setZero();
+	q.setRandom();
+	dq.setRandom();
+	dqr.setRandom();
+	ddqr.setRandom();
 	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
 	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
 	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
@@ -196,15 +196,31 @@ int main(){
 	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
-	// Eigen::VectorXd wrench(6);
-	// wrench << 1, 1, 1, 1, 1, 1;
-	// robot.set_arg("w", wrench);
+	// // Eigen::VectorXd wrench(6);
+	// // wrench << 1, 1, 1, 1, 1, 1;
+	// // robot.set_arg("w", wrench);
 	// auto reg_omega = robot.get("reg_Jdq");
-	// auto reg_tau = robot.get("reg_JTw");
-	// // auto reg_omega = robot.model["reg_Jdq"];
-	// // auto reg_tau = robot.model["reg_JTw"];
-	// cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+	// // auto reg_tau = robot.get("reg_JTw");
+	// // // auto reg_omega = robot.model["reg_Jdq"];
+	// // // auto reg_tau = robot.model["reg_JTw"];
+	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	// auto par_dh = robot.get_arg("DHtable");
+	// auto par_base = robot.get_arg("world2L0");
+	// auto par_ee = robot.get_arg("Ln2EE");
+	// Eigen::VectorXd par(20,1);
+	// par << par_dh, par_base, par_ee;
+	// Eigen::VectorXd omega_reg = reg_omega * par;
+	// Eigen::VectorXd omega_kin = robot.get("J_ee")*dq;
+	// cout << "omega_reg: " << omega_reg.transpose() << endl;
+	// cout << "omega_kin: " << omega_kin.transpose() << endl;
+	// cout << "diff: " << omega_reg - omega_kin << endl;
+	// // cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+
+	// // - Dynamic derivatives - //
+	// auto M_dot = robot.get("M_dot");
+	// auto M_ddot = robot.get("M_ddot");
+	// cout << "M_dot: " << endl << M_dot << endl<<endl;
+	// cout << "M_ddot: " << endl << M_ddot << endl<<endl;
 
 	// - save parameters - //
 	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
