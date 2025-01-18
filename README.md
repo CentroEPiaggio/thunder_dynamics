@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.6.9
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.11
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -21,11 +21,10 @@ The straightforward installation require the use of docker and dev-container ext
 * In order to generate and manage yaml files you have to install [yaml-cpp](https://github.com/jbeder/yaml-cpp.git) (see [installation](#yaml-cpp---from-zip)).
 
 
-## Usage
+## Basic usage
 After the docker building, the software can be used with:
 
-	cd bin
-	./thunder gen <path>/<robot>.yaml <robot_name>
+	thunder gen [-n <robot_name>] <path>/<robot>.yaml
 
 where `<path>` is the relative path from the `thunder` binary and the folder containing the .yaml configuration file, `<robot>` is the default robot name and `<robot_name>` is the optional name of the robot. The name will be used to create library files.
 
@@ -38,7 +37,7 @@ An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emi
 The framework will create a `<robot>_generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
 - `thunder_<robot>.h`, `thunder_<robot>.cpp` is the wrapper class for the generated files.
-- `<robot>_par` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
+- `<robot>_conf` is the parameters' file that can be used to load parameters from the class `thunder_<robot>`.
 - `<robot>_inertial_REG` is another parameter's file that have the classical parameters in which the system is linear to.
 
 In order to use the framework you can write on your own C++ program:
@@ -78,10 +77,9 @@ If you recompile the docker image the binary will be builded and updated in the 
 The library requires casadi and yaml-cpp that are already included in the docker image.
 
 ## Usage in python: 
-This branch of Thunder can generate python bindings for the generated library. Simply add the `python` flag to the `thunder gen` command:
+This branch of Thunder can generate python bindings for the generated library. Simply add `--python` or `-p` to the `thunder gen` command:
 
-	cd bin
-	./thunder gen <path>/<robot>.yaml <robot_name> python
+	thunder gen [--python] <path>/<robot>.yaml
 
 This will generate a python wrapper for the generated library. To use it you need to build the module. Make sure to have installed pybind11
 
@@ -142,19 +140,22 @@ The main classes contained in `thunder` are:
    - T_0_i: return the transformation 0->Li
    - J_i: jacobian of the frame i
    - J_ee_dot: jacobian derivative
+   - J_ee_ddot: jacobian second derivative
    - J_ee_pinv: jacobian pseudoinverse
 * `dynamics`: contain standard dynamic functions:
    - M: mass matrix
    - C: coriolis matrix
    - G: gravity matrix
    - Dl: link friction
+   - M_dot, C_dot, G_dot: dynamic time derivatives
+   - M_ddot, C_ddot, G_ddot: second order dynamic time derivatives 
    - K: elastic actuator stiffness torque
    - D: elastic actuator coupling damping
    - Dm: elastic actuator motor friction
 * `regressors`: contain the regressor formulation:
    - Yr: regressor matrix 
-   - reg_M: regressor of $M\ddot{q}$
-   - reg_C: regressor of $C\dot{q}$
+   - reg_M: regressor of $M\ddot{q}_r$
+   - reg_C: regressor of $C\dot{q}_r$
    - reg_G: regressor of $G$
    - reg_K, reg_D, reg_Dl, reg_Dm: regressors of other dynamics
    - reg_Jdq: regressor of $\omega = J\dot{q}$
@@ -253,6 +254,7 @@ In the thunder folder exec:
 mkdir -p build && cd build
 cmake ..
 make
+sudo make install
 ```
 
-then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`.
+<!-- then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`. -->

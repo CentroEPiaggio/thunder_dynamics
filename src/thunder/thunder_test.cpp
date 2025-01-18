@@ -81,10 +81,12 @@ int main(){
 	// get quantities
 	par_REG = robot.get_par_REG();
 	par_DYN = robot.get_par_DYN();
-	par_Dl = robot.get_par_Dl();
-	par_K = robot.get_par_K();
-	par_D = robot.get_par_D();
-	par_Dm = robot.get_par_Dm();
+	par_Dl = robot.get_arg("par_Dl");
+	par_K = robot.get_arg("par_K");
+	par_D = robot.get_arg("par_D");
+	par_Dm = robot.get_arg("par_Dm");
+	Eigen::MatrixXd DHtable = robot.get("DHtable");
+	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
 	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
@@ -97,10 +99,10 @@ int main(){
 	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setZero();
-	dq.setOnes();
-	dqr.setZero();
-	ddqr.setZero();
+	q.setRandom();
+	dq.setRandom();
+	dqr.setRandom();
+	ddqr.setRandom();
 	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
 	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
 	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
@@ -152,6 +154,7 @@ int main(){
 		Dl = robot.get("Dl");
 		cout<<endl<<"D_link\n"<<Dl<<endl;
 		reg_Dl = robot.get("reg_Dl");
+		cout<<endl<<"reg_Dl\n"<<reg_Dl<<endl;
 	} else {
 		Dl.setZero();
 	}
@@ -174,8 +177,8 @@ int main(){
 
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
-	tau_cmd_dyn = M*ddqr + C*dqr + G + Dl;
-	tau_cmd_reg = Yr*par_REG + reg_Dl*par_Dl;
+	tau_cmd_dyn = M*ddqr + C*dqr + G;
+	tau_cmd_reg = Yr*par_REG;
 	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
 	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
@@ -193,15 +196,31 @@ int main(){
 	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
-	// Eigen::VectorXd wrench(6);
-	// wrench << 1, 1, 1, 1, 1, 1;
-	// robot.set_arg("w", wrench);
+	// // Eigen::VectorXd wrench(6);
+	// // wrench << 1, 1, 1, 1, 1, 1;
+	// // robot.set_arg("w", wrench);
 	// auto reg_omega = robot.get("reg_Jdq");
-	// auto reg_tau = robot.get("reg_JTw");
-	// // auto reg_omega = robot.model["reg_Jdq"];
-	// // auto reg_tau = robot.model["reg_JTw"];
-	// cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+	// // auto reg_tau = robot.get("reg_JTw");
+	// // // auto reg_omega = robot.model["reg_Jdq"];
+	// // // auto reg_tau = robot.model["reg_JTw"];
+	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	// auto par_dh = robot.get_arg("DHtable");
+	// auto par_base = robot.get_arg("world2L0");
+	// auto par_ee = robot.get_arg("Ln2EE");
+	// Eigen::VectorXd par(20,1);
+	// par << par_dh, par_base, par_ee;
+	// Eigen::VectorXd omega_reg = reg_omega * par;
+	// Eigen::VectorXd omega_kin = robot.get("J_ee")*dq;
+	// cout << "omega_reg: " << omega_reg.transpose() << endl;
+	// cout << "omega_kin: " << omega_kin.transpose() << endl;
+	// cout << "diff: " << omega_reg - omega_kin << endl;
+	// // cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+
+	// // - Dynamic derivatives - //
+	// auto M_dot = robot.get("M_dot");
+	// auto M_ddot = robot.get("M_ddot");
+	// cout << "M_dot: " << endl << M_dot << endl<<endl;
+	// cout << "M_ddot: " << endl << M_ddot << endl<<endl;
 
 	// - save parameters - //
 	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});

@@ -336,17 +336,58 @@ namespace thunder_ns{
 		} else return 0;
 	}
 
-	// compute everything
-	int compute_dynamics(Robot& robot, bool advanced){
-		if (!compute_MCG(robot)) return 0;
-		if (!compute_Dl(robot)) return 0;
-		if (!compute_elastic(robot)) return 0;
-		
-		if (advanced){
-			// matrix derivatives and so on
+	int compute_dyn_derivatives(Robot& robot){
+		if (robot.model.count("M") == 0){
+			compute_MCG(robot);
 		}
+		casadi::SX& q = robot.model["q"];
+		casadi::SX& dq = robot.model["dq"];
+		casadi::SX& ddq = robot.model["ddq"];
+		casadi::SX& d3q = robot.model["d3q"];
+		casadi::SX& d4q = robot.model["d4q"];
+		casadi::SX& M = robot.model["M"];
+		casadi::SX& C = robot.model["C"];
+		casadi::SX& G = robot.model["G"];
+
+		// - Mass derivatives - //
+		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
+		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
+
+		// - Coriolis derivatives - //
+		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
+		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq", "d3q"}, {"DHtable", "world2L0", "par_DYN"});
+		robot.add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
+
+		// - Gravity derivatives - //
+		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
+		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		robot.add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		robot.add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
 
 		return 1;
+	}
+
+	// compute everything
+	int compute_dynamics(Robot& robot, bool advanced){
+		bool ret = true;
+		if (!compute_MCG(robot)) ret=false;
+		if (!compute_Dl(robot)) ret=false;
+		if (!compute_elastic(robot)) ret=false;
+		
+		if (advanced){
+			if (!compute_dyn_derivatives(robot)) ret=false;
+		}
+
+		return ret;
 	}
 
 }

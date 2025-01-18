@@ -138,7 +138,7 @@ namespace thunder_ns{
 			// Number of joints
 			nj = config_file["num_joints"].as<int>();
 			conf.numJoints = nj;
-			int Dl_order = 0;
+			Dl_order = 0;
 
 			// joints_type
 			// YAML::Node type_joints = config_file["type_joints"];
@@ -424,6 +424,9 @@ namespace thunder_ns{
 
 		casadi::SX q = casadi::SX::sym("q", numJoints,1);
 		casadi::SX dq = casadi::SX::sym("dq", numJoints,1);
+		casadi::SX ddq = casadi::SX::sym("ddq", numJoints,1);
+		casadi::SX d3q = casadi::SX::sym("d3q", numJoints,1);
+		casadi::SX d4q = casadi::SX::sym("d4q", numJoints,1);
 		casadi::SX dqr = casadi::SX::sym("dqr", numJoints,1);
 		casadi::SX ddqr = casadi::SX::sym("ddqr", numJoints,1);
 		casadi::SX x = casadi::SX::sym("x", numElasticJoints,1);
@@ -441,6 +444,9 @@ namespace thunder_ns{
 		// model update
 		model.insert({"q", q});
 		model.insert({"dq", dq});
+		model.insert({"ddq", ddq});
+		model.insert({"d3q", d3q});
+		model.insert({"d4q", d4q});
 		model.insert({"dqr", dqr});
 		model.insert({"ddqr", ddqr});
 		model.insert({"w", w});
@@ -461,6 +467,9 @@ namespace thunder_ns{
 
 		args.insert({"q", casadi::SX::zeros(numJoints,1)});
 		args.insert({"dq", casadi::SX::zeros(numJoints,1)});
+		args.insert({"ddq", casadi::SX::zeros(numJoints,1)});
+		args.insert({"d3q", casadi::SX::zeros(numJoints,1)});
+		args.insert({"d4q", casadi::SX::zeros(numJoints,1)});
 		args.insert({"dqr", casadi::SX::zeros(numJoints,1)});
 		args.insert({"ddqr", casadi::SX::zeros(numJoints,1)});
 		args.insert({"w", casadi::SX::zeros(6)});
@@ -484,11 +493,17 @@ namespace thunder_ns{
 		// symb.insert({"q", casadi::SX::zeros(numElasticJoints)})
 		std::vector<int> q_symb(numJoints, 1);
 		std::vector<int> dq_symb(numJoints, 1);
+		std::vector<int> ddq_symb(numJoints, 1);
+		std::vector<int> d3q_symb(numJoints, 1);
+		std::vector<int> d4q_symb(numJoints, 1);
 		std::vector<int> dqr_symb(numJoints, 1);
 		std::vector<int> ddqr_symb(numJoints, 1);
 		std::vector<int> w_symb(6, 1);
 		symb.insert({"q", q_symb});
 		symb.insert({"dq", dq_symb});
+		symb.insert({"ddq", ddq_symb});
+		symb.insert({"d3q", d3q_symb});
+		symb.insert({"d4q", d4q_symb});
 		symb.insert({"dqr", dqr_symb});
 		symb.insert({"ddqr", ddqr_symb});
 		symb.insert({"w", w_symb});
@@ -673,61 +688,61 @@ namespace thunder_ns{
 		update_inertial_DYN();
 	}
 
-	int Robot::set_par_K(Eigen::VectorXd value){
-		casadi::SX& par_K = args["par_K"];
-		int numPar = K_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_K(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_K(Eigen::VectorXd value){
+	// 	casadi::SX& par_K = args["par_K"];
+	// 	int numPar = K_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_K(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_D(Eigen::VectorXd value){
-		casadi::SX& par_D = args["par_D"];
-		int numPar = D_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_D(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_D(Eigen::VectorXd value){
+	// 	casadi::SX& par_D = args["par_D"];
+	// 	int numPar = D_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_D(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_Dm(Eigen::VectorXd value){
-		casadi::SX& par_Dm = args["par_Dm"];
-		int numPar = Dm_order*numElasticJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_Dm(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_Dm(Eigen::VectorXd value){
+	// 	casadi::SX& par_Dm = args["par_Dm"];
+	// 	int numPar = Dm_order*numElasticJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_Dm(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
-	int Robot::set_par_Dl(Eigen::VectorXd value){
-		casadi::SX& par_Dl = args["par_Dl"];
-		int numPar = Dl_order*numJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_Dl(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
+	// int Robot::set_par_Dl(Eigen::VectorXd value){
+	// 	casadi::SX& par_Dl = args["par_Dl"];
+	// 	int numPar = Dl_order*numJoints;
+	// 	if (value.size() == numPar){
+	// 		for (int i=0; i<numPar; i++){
+	// 			par_Dl(i) = value(i);
+	// 		}
+	// 		return 1;
+	// 	} else {
+	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	// 		return 0;
+	// 	}
+	// }
 
 	Eigen::VectorXd Robot::get_arg(std::string par){
 		const casadi::SX& par_casadi = args[par];
@@ -756,41 +771,41 @@ namespace thunder_ns{
 		return param_REG;
 	}
 
-	Eigen::VectorXd Robot::get_par_K(){
-		const casadi::SX& par_K_casadi = args["par_K"];
-		int numPar = K_order*numElasticJoints;
-		Eigen::VectorXd param_K(numPar);
-		std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
-		return param_K;
-	}
+	// Eigen::VectorXd Robot::get_par_K(){
+	// 	const casadi::SX& par_K_casadi = args["par_K"];
+	// 	int numPar = K_order*numElasticJoints;
+	// 	Eigen::VectorXd param_K(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
+	// 	return param_K;
+	// }
 
-	Eigen::VectorXd Robot::get_par_D(){
-		const casadi::SX& par_D_casadi = args["par_D"];
-		int numPar = D_order*numElasticJoints;
-		Eigen::VectorXd param_D(numPar);
-		std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
-		return param_D;
-	}
+	// Eigen::VectorXd Robot::get_par_D(){
+	// 	const casadi::SX& par_D_casadi = args["par_D"];
+	// 	int numPar = D_order*numElasticJoints;
+	// 	Eigen::VectorXd param_D(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
+	// 	return param_D;
+	// }
 
-	Eigen::VectorXd Robot::get_par_Dm(){
-		const casadi::SX& par_Dm_casadi = args["par_Dm"];
-		int numPar = Dm_order*numElasticJoints;
-		Eigen::VectorXd param_Dm(numPar);
-		std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
-		return param_Dm;
-	}
+	// Eigen::VectorXd Robot::get_par_Dm(){
+	// 	const casadi::SX& par_Dm_casadi = args["par_Dm"];
+	// 	int numPar = Dm_order*numElasticJoints;
+	// 	Eigen::VectorXd param_Dm(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
+	// 	return param_Dm;
+	// }
 
-	Eigen::VectorXd Robot::get_par_Dl(){
-		const casadi::SX& par_Dl_casadi = args["par_Dl"];
-		int numPar = Dl_order*numJoints;
-		Eigen::VectorXd param_Dl(numPar);
-		std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
-		return param_Dl;
-	}
+	// Eigen::VectorXd Robot::get_par_Dl(){
+	// 	const casadi::SX& par_Dl_casadi = args["par_Dl"];
+	// 	int numPar = Dl_order*numJoints;
+	// 	Eigen::VectorXd param_Dl(numPar);
+	// 	std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
+	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
+	// 	return param_Dl;
+	// }
 
 	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
 		std::vector<fun_obj> functions;
@@ -1251,7 +1266,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	void Robot::generate_library(const std::string& savePath, const std::string& name_file){
+	void Robot::generate_library(const std::string& savePath, const std::string& name_file, const bool SAVE_CASADI){
 		// Options for c-code auto generation
 		casadi::Dict opts = casadi::Dict();
 		opts["cpp"] = true;
@@ -1267,10 +1282,24 @@ namespace thunder_ns{
 			// cout<<"fun: "<<f.second<<endl<<endl;
 		}
 		myCodeGen.generate(savePath);
+
+		if(SAVE_CASADI){
+			// Save CasADi functions
+			for (const auto& f : casadi_fun) {
+				std::string function_file = savePath + "/" + f.first + ".casadi";
+				// std::ofstream file(function_file, std::ios::binary);
+				f.second.save(function_file);
+				// file.close();
+			}
+		}
 	}
 
 	int Robot::subs_symb_par(std::string par){
 		std::vector<int> symbolic = symb[par];
+		// cout << "par: " << par << endl;
+		// cout << "symbolic: " << symbolic << endl;
+		// cout << "model: " << model[par] << endl;
+		// cout << "args: " << args[par] << endl;
 		
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
@@ -1573,6 +1602,7 @@ namespace thunder_ns{
 		// create config
 		// Config conf = load_config(file);
 		// cout<<"Configuration loaded!"<<endl;
+		bool advanced = true;
 		Robot robot(file);
 		robot.robotName = robot_name;
 		// --- load parameters --- //
@@ -1584,9 +1614,9 @@ namespace thunder_ns{
 			cout<<"symbolic parameters ok!"<<endl;
 
 			// - compute functions - //
-			compute_kinematics(robot);
+			compute_kinematics(robot, advanced);
 			cout<<"Kinematics ok!"<<endl;
-			compute_dynamics(robot);
+			compute_dynamics(robot, advanced);
 			cout<<"Dynamics ok!"<<endl;
 			compute_regressors(robot);
 			cout<<"Regressors ok!"<<endl;

@@ -12,6 +12,7 @@ namespace thunder_ns{
     int compute_MCG(Robot& robot);
     int compute_elastic(Robot& robot);
     int compute_Dl(Robot& robot);
+	int compute_dyn_derivatives(Robot& robot);
 	
 	// int compute_Mass(Robot& robot);
 	// int compute_Coriolis(Robot& robot);
