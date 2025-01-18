@@ -117,7 +117,7 @@ void thunder_robot::set_w(const Eigen::VectorXd& w_){
 	if(w_.size() == 6){
 		w = w_;
 	} else{
-		std::cout<<"in set_ddxr: invalid dimensions of arguments\n";
+		std::cout<<"in set_w: invalid dimensions of arguments\n";
 	}
 }
 

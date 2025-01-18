@@ -44,6 +44,7 @@ bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder
 bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
+#define VERSION "0.8.11"
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";
@@ -64,8 +65,8 @@ int main(int argc, char* argv[]){
 	// ----------------------------- //
 
 	// - defining cli - //
-	argparse::ArgumentParser thunder_cli("thunder");
-	argparse::ArgumentParser gen_command("gen");
+	argparse::ArgumentParser thunder_cli("thunder", VERSION);
+	argparse::ArgumentParser gen_command("gen", VERSION);
 	gen_command.add_description("Generate library from yaml configuration file");
 	gen_command.add_argument("config_file")
 		.help("Robot configuration file (.yaml)");
