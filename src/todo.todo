@@ -38,6 +38,7 @@ improvings:
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization
 	Symbolic selectivity:
+		☐ problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
 		☐ obtain_symb_parameters() with one only argument?
 		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
 		☐ pay attention to resize symb vector flags before using it, from load_conf or load_par
@@ -49,6 +50,8 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
+		☐ have to work also if there is not .yaml in the name of file (thunder gen /../a.yaml)
+		☐ yaml file have not to cause faults, robustify
 		☐ think of a better structure for computing functions
 		☐ only one folder for robots!
 		☐ variables used as const and references, every .model[]

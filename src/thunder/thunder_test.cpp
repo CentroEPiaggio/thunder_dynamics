@@ -25,8 +25,9 @@ using std::endl;
 int main(){
 
 	// std::string config_file = "../robots/RRR/RRR.yaml";
-	std::string config_file = "../robots/franka/franka.yaml";
+	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	std::string config_file = "../robots/ego/ego_arm.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
@@ -168,6 +169,9 @@ int main(){
 		reg_K = robot.get("reg_K");
 		reg_D = robot.get("reg_D");
 		reg_Dm = robot.get("reg_Dm");
+		cout<<endl<<"reg_K\n"<<reg_K<<endl;
+		cout<<endl<<"reg_Dm\n"<<reg_Dm<<endl;
+		cout<<endl<<"reg_D\n"<<reg_D<<endl;
 	}
 
 	Yr = robot.get("Yr");
