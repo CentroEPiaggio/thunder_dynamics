@@ -31,6 +31,8 @@ improvings:
 		☐ FrameOffset not so general, use T as internal transformation and provide conversions
 		☐ insert args or model only if order>0
 	elasticity:
+		☐ derivative of k, d, dl, dm
+		☐ check everything, k, d, dl, dm are vectors, K, D, Dl, Dm are matrices
 		☐ selection matrix for elastic joints
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	kinematics:
@@ -106,6 +108,7 @@ will be in Thunder_dynamics:
 	☐ config file should be used by both robot and thunder_robot, save and load have to be the same!
 	
 INFO:
+	- thunder needs to be reinstalled if thunder_robot_template is modified
 	- load_conf read and parse the configuration file, load_par read the file that has the same structure as the internal args map, same for save
 	- thunder take the file <robot>.yaml that contains the configuration of the robot
 	- thunder creates <robot>_gen.h, <robot>_gen.cpp

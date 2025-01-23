@@ -282,34 +282,81 @@ namespace thunder_ns{
 			const auto& par_K = robot.model["par_K"];
 			const auto& par_D = robot.model["par_D"];
 			const auto& par_Dm = robot.model["par_Dm"];
+			const auto& par_Mm = robot.model["par_Mm"];
 
-			casadi::SX K(numElasticJoints,1);
-			casadi::SX D(numElasticJoints,1);
-			casadi::SX Dm(numElasticJoints,1);
+			// casadi::SX K(numElasticJoints,1);
+			// casadi::SX D(numElasticJoints,1);
+			// casadi::SX Dm(numElasticJoints,1);
+			// casadi::SX Mm(numElasticJoints,1);
+			// for (int i=0; i<numElasticJoints; i++){
+			// 	for (int ord=0; ord<K_order; ord++){
+			// 		K(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
+			// 	}
+			// 	for (int ord=0; ord<D_order; ord++){
+			// 		D(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
+			// 	}
+			// 	for (int ord=0; ord<Dm_order; ord++){
+			// 		Dm(i) += pow(dx(i), ord+1) * par_Dm(i*Dm_order+ord);
+			// 	}
+			// }
+			// function vectors
+			casadi::SX k(numElasticJoints,1);
+			casadi::SX d(numElasticJoints,1);
+			casadi::SX dm(numElasticJoints,1);
+			// matrixes
+			std::vector<casadi::SX> K_vec(K_order);
+			std::vector<casadi::SX> D_vec(D_order);
+			std::vector<casadi::SX> Dm_vec(Dm_order);
+			// casadi::SX K(numElasticJoints,numElasticJoints);
+			// casadi::SX D(numElasticJoints,numElasticJoints);
+			// casadi::SX Dm(numElasticJoints,numElasticJoints);
+			casadi::SX Mm(numElasticJoints,numElasticJoints);
 			for (int i=0; i<numElasticJoints; i++){
 				for (int ord=0; ord<K_order; ord++){
-					K(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
+					k(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
+					K_vec[ord].resize(numElasticJoints,numElasticJoints);
+					K_vec[ord](i,i) = par_K(i*K_order + ord);
 				}
 				for (int ord=0; ord<D_order; ord++){
-					D(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
+					d(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
+					D_vec[ord].resize(numElasticJoints,numElasticJoints);
+					D_vec[ord](i,i) = par_D(i*D_order + ord);
 				}
 				for (int ord=0; ord<Dm_order; ord++){
-					Dm(i) += pow(dx(i), ord+1) * par_Dm(i*Dm_order+ord);
+					dm(i) += pow(dx(i), ord+1) * par_Dm(i*Dm_order+ord);
+					Dm_vec[ord].resize(numElasticJoints,numElasticJoints);
+					Dm_vec[ord](i,i) = par_Dm(i*Dm_order + ord);
 				}
+				Mm(i,i) = par_Mm(i);
 			}
 			std::vector<std::string> arg_list;
 			if (K_order > 0) {
 				arg_list = robot.obtain_symb_parameters({"q", "x"}, {"par_K"});
-				robot.add_function("K", K, arg_list, "SEA manipulator elastic coupling");
+				robot.add_function("k", k, arg_list, "SEA manipulator elastic coupling");
+				arg_list = robot.obtain_symb_parameters({}, {"par_K"});
+				for (int ord=0; ord<K_order; ord++){ 
+					robot.add_function("K"+std::to_string(ord), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(ord));
+				}
 			}
 			if (D_order > 0) {
 				arg_list = robot.obtain_symb_parameters({"dq", "dx"}, {"par_D"});
-				robot.add_function("D", D, arg_list, "SEA manipulator dampind coupling");
+				robot.add_function("d", d, arg_list, "SEA manipulator dampind coupling");
+				arg_list = robot.obtain_symb_parameters({}, {"par_D"});
+				for (int ord=0; ord<D_order; ord++){ 
+					robot.add_function("D"+std::to_string(ord), D_vec[ord], arg_list, "SEA manipulator damping coupling, order "+std::to_string(ord));
+				}
 			}
 			if (Dm_order > 0) {
 				arg_list = robot.obtain_symb_parameters({"dx"}, {"par_Dm"});
-				robot.add_function("Dm", Dm, arg_list, "SEA manipulator motor damping");
+				robot.add_function("dm", dm, arg_list, "SEA manipulator motor damping");
+				arg_list = robot.obtain_symb_parameters({}, {"par_Dm"});
+				for (int ord=0; ord<Dm_order; ord++){ 
+					robot.add_function("Dm"+std::to_string(ord), Dm_vec[ord], arg_list, "SEA manipulator motor damping, order "+std::to_string(ord));
+				}
 			}
+			arg_list = robot.obtain_symb_parameters({}, {"par_Mm"});
+			robot.add_function("Mm", Mm, arg_list, "SEA manipulator motor inertia");
+
 			return 1;
 		} else return 0;
 	}
@@ -323,15 +370,22 @@ namespace thunder_ns{
 			const auto& dq = robot.model["dq"];
 			const auto& par_Dl = robot.model["par_Dl"];
 
-			casadi::SX Dl(nj,1);
+			casadi::SX dl(nj,1);
+			std::vector<casadi::SX> Dl_vec(Dl_order);
 			for (int i=0; i<nj; i++){
 				for (int ord=0; ord<Dl_order; ord++){
-					Dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
+					dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
+					Dl_vec[ord].resize(nj,nj);
+					Dl_vec[ord](i,i) = par_Dl(i*Dl_order + ord);
 				}
 			}
 			std::vector<std::string> arg_list;
 			arg_list = robot.obtain_symb_parameters({"dq"}, {"par_Dl"});
-			robot.add_function("Dl", Dl, arg_list, "Manipulator link friction");
+			robot.add_function("dl", dl, arg_list, "Manipulator link friction");
+			arg_list = robot.obtain_symb_parameters({}, {"par_Dl"});
+			for (int ord=0; ord<Dl_order; ord++){ 
+				robot.add_function("Dl"+std::to_string(ord), Dl_vec[ord], arg_list, "SEA manipulator link damping, order "+std::to_string(ord));
+			}
 			return 1;
 		} else return 0;
 	}

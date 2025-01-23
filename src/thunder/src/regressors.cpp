@@ -203,7 +203,7 @@ namespace thunder_ns{
 		if (robot.model.count("Dl") == 0){
 			compute_Dl(robot);
 		}
-		const auto& Dl = robot.model["Dl"];
+		const auto& Dl = robot.model["dl"];
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb;
@@ -216,7 +216,7 @@ namespace thunder_ns{
 		casadi::SX par = casadi::SX::vertcat(par_symb);
 
 		casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par);
-		if (!robot.add_function("reg_Dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
+		if (!robot.add_function("reg_dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
 
 		return 1;
 	}
@@ -230,24 +230,29 @@ namespace thunder_ns{
 		int Dm_order = robot.get_Dm_order();
 		const auto& dq = robot.model["dq"];
 		const auto& dx = robot.model["dx"];
+		const auto& ddx = robot.model["ddx"];
 		const auto& par_K = robot.model["par_K"];
 		const auto& par_D = robot.model["par_D"];
 		const auto& par_Dm = robot.model["par_Dm"];
+		const auto& par_Mm = robot.model["par_Mm"];
 		const auto& par_K_symb = robot.symb["par_K"];
 		const auto& par_D_symb = robot.symb["par_D"];
 		const auto& par_Dm_symb = robot.symb["par_Dm"];
+		const auto& par_Mm_symb = robot.symb["par_Mm"];
 
-		if (robot.model.count("K") == 0){
+		if (robot.model.count("k") == 0){
 			compute_elastic(robot);
 		}
-		const auto& K = robot.model["K"];
-		const auto& D = robot.model["D"];
-		const auto& Dm = robot.model["Dm"];
+		const auto& K = robot.model["k"];
+		const auto& D = robot.model["d"];
+		const auto& Dm = robot.model["dm"];
+		const auto& Mm = robot.model["Mm"];
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb_K;
 		std::vector<casadi::SX> par_symb_D;
 		std::vector<casadi::SX> par_symb_Dm;
+		std::vector<casadi::SX> par_symb_Mm;
 		// parse par_K
 		for (int i=0; i<par_K.size1(); i++){
 			if (par_K_symb[i]){
@@ -266,17 +271,26 @@ namespace thunder_ns{
 				par_symb_Dm.push_back(par_Dm(i));
 			}
 		}
+		// parse par_Mm
+		for (int i=0; i<par_Mm.size1(); i++){
+			if (par_Mm_symb[i]){
+				par_symb_Mm.push_back(par_Mm(i));
+			}
+		}
 		casadi::SX par_K_tmp = casadi::SX::vertcat(par_symb_K);
 		casadi::SX par_D_tmp = casadi::SX::vertcat(par_symb_D);
 		casadi::SX par_Dm_tmp = casadi::SX::vertcat(par_symb_Dm);
+		casadi::SX par_Mm_tmp = casadi::SX::vertcat(par_symb_Mm);
 
 		casadi::SX reg_K = casadi::SX::jacobian(K, par_K_tmp);
 		casadi::SX reg_D = casadi::SX::jacobian(D, par_D_tmp);
 		casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm_tmp);
+		casadi::SX reg_Mm = casadi::SX::jacobian(mtimes(Mm,ddx), par_Mm_tmp);
 
-		if (!robot.add_function("reg_K", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
-		if (!robot.add_function("reg_D", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
-		if (!robot.add_function("reg_Dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
+		if (!robot.add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
+		if (!robot.add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
+		if (!robot.add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
+		if (!robot.add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
 
 		return 1;
 	}
