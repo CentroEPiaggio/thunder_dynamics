@@ -18,7 +18,7 @@ class thunder_robot{
 		// standard number of parameters
 		const int STD_PAR_LINK = 10;
 		/* Joints' variables */
-		Eigen::VectorXd q, dq, dqr, ddqr, par_DYN, par_REG, par_Dl;
+		Eigen::VectorXd q, dq, ddq, d3q, d4q, dqr, ddqr, par_DYN, par_REG, par_Dl;
 		Eigen::VectorXd x, dx, ddxr, par_K, par_D, par_Dm;
 		Eigen::VectorXd w;
 		Eigen::VectorXd DHtable, gravity, world2L0, Ln2EE;
@@ -78,6 +78,9 @@ class thunder_robot{
 		void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
 		void set_q(const Eigen::VectorXd& q_);
 		void set_dq(const Eigen::VectorXd& dq_);
+		void set_ddq(const Eigen::VectorXd& ddq_);
+		void set_d3q(const Eigen::VectorXd& d3q_);
+		void set_d4q(const Eigen::VectorXd& d4q_);
 		void set_dqr(const Eigen::VectorXd& dqr_);
 		void set_ddqr(const Eigen::VectorXd& ddqr_);
 		void set_x(const Eigen::VectorXd& x_);

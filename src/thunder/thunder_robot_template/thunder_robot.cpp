@@ -12,6 +12,9 @@ thunder_robot::thunder_robot(){
 void thunder_robot::resizeVariables(){
 	q = Eigen::VectorXd::Zero(n_joints);
 	dq = Eigen::VectorXd::Zero(n_joints);
+	ddq = Eigen::VectorXd::Zero(n_joints);
+	d3q = Eigen::VectorXd::Zero(n_joints);
+	d4q = Eigen::VectorXd::Zero(n_joints);
 	dqr = Eigen::VectorXd::Zero(n_joints);
 	ddqr = Eigen::VectorXd::Zero(n_joints);
 	x = Eigen::VectorXd::Zero(numElasticJoints);
@@ -70,6 +73,30 @@ void thunder_robot::set_dq(const Eigen::VectorXd& dq_){
 		dq = dq_;
 	} else{
 		std::cout<<"in set_dq: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_ddq(const Eigen::VectorXd& ddq_){
+	if(ddq_.size() == n_joints){
+		ddq = ddq_;
+	} else{
+		std::cout<<"in set_ddq: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_d3q(const Eigen::VectorXd& d3q_){
+	if(d3q_.size() == n_joints){
+		d3q = d3q_;
+	} else{
+		std::cout<<"in set_d3q: invalid dimensions of arguments\n";
+	}
+}
+
+void thunder_robot::set_d4q(const Eigen::VectorXd& d4q_){
+	if(d4q_.size() == n_joints){
+		d4q = d4q_;
+	} else{
+		std::cout<<"in set_d4q: invalid dimensions of arguments\n";
 	}
 }
 
