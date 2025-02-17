@@ -661,6 +661,70 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	}
 }
 
+int thunder_egoArm::save_par(std::string par_file){
+	try {
+		YAML::Emitter emitter;
+		emitter.SetIndent(2);
+		emitter.SetSeqFormat(YAML::Flow);
+
+		YAML::Node yamlFile;
+
+		// - save DHtable - //
+		std::vector<double> DHtable_vect(DHtable.data(), DHtable.data() + DHtable.rows() * DHtable.cols());
+		yamlFile["DHtable"] = DHtable_vect;
+
+		// - save world2L0 - //
+		std::vector<double> world2L0_vect(world2L0.data(), world2L0.data() + world2L0.rows() * world2L0.cols());
+		yamlFile["world2L0"] = world2L0_vect;
+
+		// - save Ln2EE - //
+		std::vector<double> Ln2EE_vect(Ln2EE.data(), Ln2EE.data() + Ln2EE.rows() * Ln2EE.cols());
+		yamlFile["Ln2EE"] = Ln2EE_vect;
+
+		// - save gravity - //
+		std::vector<double> gravity_vect(gravity.data(), gravity.data() + gravity.rows() * gravity.cols());
+		yamlFile["gravity"] = gravity_vect;
+
+		// - save par_DYN - //
+		std::vector<double> par_DYN_vect(par_DYN.data(), par_DYN.data() + par_DYN.rows() * par_DYN.cols());
+		yamlFile["par_DYN"] = par_DYN_vect;
+
+		// - save par_REG - //
+		std::vector<double> par_REG_vect(par_REG.data(), par_REG.data() + par_REG.rows() * par_REG.cols());
+		yamlFile["par_REG"] = par_REG_vect;
+
+		// - save par_K - //
+		std::vector<double> par_K_vect(par_K.data(), par_K.data() + par_K.rows() * par_K.cols());
+		yamlFile["par_K"] = par_K_vect;
+
+		// - save par_Dl - //
+		std::vector<double> par_Dl_vect(par_Dl.data(), par_Dl.data() + par_Dl.rows() * par_Dl.cols());
+		yamlFile["par_Dl"] = par_Dl_vect;
+
+		// - save par_D - //
+		std::vector<double> par_D_vect(par_D.data(), par_D.data() + par_D.rows() * par_D.cols());
+		yamlFile["par_D"] = par_D_vect;
+
+		// - save par_Dm - //
+		std::vector<double> par_Dm_vect(par_Dm.data(), par_Dm.data() + par_Dm.rows() * par_Dm.cols());
+		yamlFile["par_Dm"] = par_Dm_vect;
+
+		// - save par_Mm - //
+		std::vector<double> par_Mm_vect(par_Mm.data(), par_Mm.data() + par_Mm.rows() * par_Mm.cols());
+		yamlFile["par_Mm"] = par_Mm_vect;
+
+		emitter << yamlFile << YAML::Newline;
+
+		std::ofstream fout(par_file);
+		fout << emitter.c_str();
+		fout.close();
+	} catch (const YAML::Exception& e) {
+		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+		return 0;
+	}
+	return 1;
+}
+
 // Other functions
 void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
 	YAML::Node yamlFile;

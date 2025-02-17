@@ -117,6 +117,7 @@ class thunder_robot{
 		void save_par_REG(std::string);
 		void load_conf(std::string, bool update_REG = true);
 		void save_par_DYN(std::string);
+		int save_par(std::string par_file);
 		// void load_par_DYN(std::string);
 		// void save_par_DYN(std::string);
 		// void load_par_elastic(std::string);
