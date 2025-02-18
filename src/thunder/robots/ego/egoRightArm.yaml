@@ -36,7 +36,7 @@ gravity:
 Base_to_L0:
   symb: [1,1,1, 0,0,0]
   tr: [0, 0, 0]
-  ypr: [-0.1047197530, 0, 0.174532922]
+  ypr: [0.174532922, 0.0, -0.1047197530]
 
 # Link_n to EE
 Ln_to_EE:
@@ -58,12 +58,12 @@ dynamics:
       CoM_x: 0.0
       CoM_y: 0.0
       CoM_z: -0.085
-      Ixx: 0.0
+      Ixx: 0.01
       Ixy: 0.0
       Ixz: 0.0
-      Iyy: 0.0
+      Iyy: 0.01
       Iyz: 0.0
-      Izz: 0.0
+      Izz: 0.01
     friction:
       symb: [1]
       Dl: [0.1]
@@ -75,12 +75,12 @@ dynamics:
       CoM_x: 0.0
       CoM_y: 0.0
       CoM_z: 0.0
-      Ixx: 0.0
+      Ixx: 0.01
       Ixy: 0.0
       Ixz: 0.0
-      Iyy: 0.0
+      Iyy: 0.01
       Iyz: 0.0
-      Izz: 0.0
+      Izz: 0.01
     friction:
       symb: [1]
       Dl: [0.1]
@@ -92,12 +92,12 @@ dynamics:
       CoM_x: 0.0
       CoM_y: 0.0
       CoM_z: -0.1
-      Ixx: 0.0
+      Ixx: 0.01
       Ixy: 0.0
       Ixz: 0.0
-      Iyy: 0.0
+      Iyy: 0.01
       Iyz: 0.0
-      Izz: 0.0
+      Izz: 0.01
     friction:
       symb: [1]
       Dl: [0.1]
@@ -109,12 +109,12 @@ dynamics:
       CoM_x: 0.0
       CoM_y: 0.0
       CoM_z: 0.0
-      Ixx: 0.0
+      Ixx: 0.01
       Ixy: 0.0
       Ixz: 0.0
-      Iyy: 0.0
+      Iyy: 0.01
       Iyz: 0.0
-      Izz: 0.0
+      Izz: 0.01
     friction:
       symb: [1]
       Dl: [0.1]
@@ -126,12 +126,12 @@ dynamics:
       CoM_x: 0.0
       CoM_y: 0.0
       CoM_z: 0.15
-      Ixx: 0.0
+      Ixx: 0.01
       Ixy: 0.0
       Ixz: 0.0
-      Iyy: 0.0
+      Iyy: 0.01
       Iyz: 0.0
-      Izz: 0.0
+      Izz: 0.01
     friction:
       symb: [1]
       Dl: [0.1]
