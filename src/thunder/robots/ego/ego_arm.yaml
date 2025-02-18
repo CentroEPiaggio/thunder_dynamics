@@ -34,13 +34,13 @@ gravity:
 
 # world to link_0
 Base_to_L0:
-  symb: [0,0,0, 0,0,0]
+  symb: [1,1,1, 0,0,0]
   tr: [0, 0, 0]
-  ypr: [-0.1, 0, 0.1]
+  ypr: [-0.1047197530, 0, 0.174532922]
 
 # Link_n to EE
 Ln_to_EE:
-  symb: [0,0,0, 0,0,0]
+  symb: [1,1,1, 0,0,0]
   tr: [0, 0, 0.1]
   ypr: [*PI, *PI_2, 0]
 
@@ -54,16 +54,16 @@ dynamics:
   link1:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 0.5
+      CoM_x: 0.0
+      CoM_y: 0.0
+      CoM_z: -0.085
+      Ixx: 0.0
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.0
+      Iyz: 0.0
+      Izz: 0.0
     friction:
       symb: [1]
       Dl: [0.1]
@@ -71,16 +71,16 @@ dynamics:
   link2:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 0.6
+      CoM_x: 0.0
+      CoM_y: 0.0
+      CoM_z: 0.0
+      Ixx: 0.0
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.0
+      Iyz: 0.0
+      Izz: 0.0
     friction:
       symb: [1]
       Dl: [0.1]
@@ -88,16 +88,16 @@ dynamics:
   link3:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 0.6
+      CoM_x: 0.0
+      CoM_y: 0.0
+      CoM_z: -0.1
+      Ixx: 0.0
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.0
+      Iyz: 0.0
+      Izz: 0.0
     friction:
       symb: [1]
       Dl: [0.1]
@@ -105,16 +105,16 @@ dynamics:
   link4:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      mass: 0.6
+      CoM_x: 0.0
+      CoM_y: 0.0
+      CoM_z: 0.0
+      Ixx: 0.0
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.0
+      Iyz: 0.0
+      Izz: 0.0
     friction:
       symb: [1]
       Dl: [0.1]
@@ -123,15 +123,15 @@ dynamics:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
+      CoM_x: 0.0
+      CoM_y: 0.0
+      CoM_z: 0.15
+      Ixx: 0.0
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.0
+      Iyz: 0.0
+      Izz: 0.0
     friction:
       symb: [1]
       Dl: [0.1]
@@ -150,34 +150,44 @@ elastic:
       K: [2.5, 0.0, 0.0]
       D: []
       Dm: [0.1]
+      Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
       Dm_symb: [1]
+      Mm_symb: 1
     joint2:
       K: [2.5, 0.0, 0.0]
       D: []
       Dm: [0.1]
+      Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
       Dm_symb: [1]
+      Mm_symb: 1
     joint3:
       K: [2.5, 0.0, 0.0]
       D: []
       Dm: [0.1]
+      Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
       Dm_symb: [1]
+      Mm_symb: 1
     joint4:
       K: [2.5, 0.0, 0.0]
       D: []
       Dm: [0.1]
+      Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
       Dm_symb: [1]
+      Mm_symb: 1
     joint5:
       K: [2.5, 0.0, 0.0]
       D: []
       Dm: [0.1]
+      Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
       Dm_symb: [1]
+      Mm_symb: 1

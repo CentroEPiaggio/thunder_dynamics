@@ -12,11 +12,13 @@
 
 // #include "thunder_robot.h"
 // #include "thunder_RRR.h"
-#include "thunder_franka.h"
+// #include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
+#include "thunder_egoArm.h"
 
 // const std::string conf_file = "../robots/RRR_conf.yaml";
-const std::string conf_file = "../robots/franka_conf.yaml";
+// const std::string conf_file = "../robots/franka_conf.yaml";
+const std::string conf_file = "../robots/egoArm_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
@@ -34,7 +36,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_franka robot;
+	thunder_egoArm robot;
 	// thunder_RRR robot;
 
 	robot.load_conf(conf_file);

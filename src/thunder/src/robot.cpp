@@ -250,6 +250,7 @@ namespace thunder_ns{
 			std::vector<int> par_K_symb;
 			std::vector<int> par_D_symb;
 			std::vector<int> par_Dm_symb;
+			std::vector<int> par_Mm_symb;
 			if (conf.ELASTIC){
 				YAML::Node elastic = config_file["elastic"];
 				int index = 0;
@@ -291,6 +292,14 @@ namespace thunder_ns{
 					for (int v : Dm_symb){
 						par_Dm_symb.push_back(v);
 					}
+					// motor Inertia
+					int Mm_symb;
+					if (node.second["Mm_symb"]){
+						Mm_symb = node.second["Mm_symb"].as<int>();
+					} else {
+						Mm_symb = 0;
+					}
+					par_Mm_symb.push_back(Mm_symb);
 
 					index++;
 				}
@@ -309,6 +318,7 @@ namespace thunder_ns{
 			conf.par_K_symb = par_K_symb;
 			conf.par_D_symb = par_D_symb;
 			conf.par_Dm_symb = par_Dm_symb;
+			conf.par_Mm_symb = par_Mm_symb;
 			if (config_file["Base_to_L0"]["symb"]){
 				conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
 			} else {
@@ -382,6 +392,7 @@ namespace thunder_ns{
 			symb["par_K"] = conf.par_K_symb;
 			symb["par_D"] = conf.par_D_symb;
 			symb["par_Dm"] = conf.par_Dm_symb;
+			symb["par_Mm"] = conf.par_Mm_symb;
 			symb["world2L0"] = conf.world2L0_symb;
 			symb["Ln2EE"] = conf.Ln2EE_symb;
 			symb["gravity"] = conf.gravity_symb;
@@ -431,6 +442,7 @@ namespace thunder_ns{
 		casadi::SX ddqr = casadi::SX::sym("ddqr", numJoints,1);
 		casadi::SX x = casadi::SX::sym("x", numElasticJoints,1);
 		casadi::SX dx = casadi::SX::sym("dx", numElasticJoints,1);
+		casadi::SX ddx = casadi::SX::sym("ddx", numElasticJoints,1);
 		casadi::SX ddxr = casadi::SX::sym("ddxr", numElasticJoints,1);
 		// _par_KIN_ = casadi::SX::sym("par_DYN", N_PAR_KIN,1);
 		casadi::SX par_DYN = casadi::SX::sym("par_DYN", STD_PAR_LINK*numJoints,1);
@@ -439,6 +451,7 @@ namespace thunder_ns{
 		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
 		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
 		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
+		casadi::SX par_Mm = casadi::SX::sym("par_Mm", numElasticJoints,1);
 		casadi::SX w = casadi::SX::sym("w", 6,1);
 		
 		// model update
@@ -459,10 +472,12 @@ namespace thunder_ns{
 		if (ELASTIC){
 			model.insert({"x", x});
 			model.insert({"dx", dx});
+			model.insert({"ddx", ddx});
 			model.insert({"ddxr", ddxr});
 			model.insert({"par_K", par_K});
 			model.insert({"par_D", par_D});
 			model.insert({"par_Dm", par_Dm});
+			model.insert({"par_Mm", par_Mm});
 		}
 
 		args.insert({"q", casadi::SX::zeros(numJoints,1)});
@@ -482,10 +497,12 @@ namespace thunder_ns{
 		if (ELASTIC){
 			args.insert({"x", casadi::SX::zeros(numElasticJoints,1)});
 			args.insert({"dx", casadi::SX::zeros(numElasticJoints,1)});
+			args.insert({"ddx", casadi::SX::zeros(numElasticJoints,1)});
 			args.insert({"ddxr", casadi::SX::zeros(numElasticJoints,1)});
 			args.insert({"par_K", casadi::SX::zeros(K_order*numElasticJoints,1)});
 			args.insert({"par_D", casadi::SX::zeros(D_order*numElasticJoints,1)});
 			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints,1)});
+			args.insert({"par_Mm", casadi::SX::zeros(numElasticJoints,1)});
 		}
 		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
 
@@ -510,9 +527,11 @@ namespace thunder_ns{
 		if (ELASTIC){
 			std::vector<int> x_symb(numElasticJoints, 1);
 			std::vector<int> dx_symb(numElasticJoints, 1);
+			std::vector<int> ddx_symb(numElasticJoints, 1);
 			std::vector<int> ddxr_symb(numElasticJoints, 1);
 			symb.insert({"x", x_symb});
 			symb.insert({"dx", dx_symb});
+			symb.insert({"ddx", ddx_symb});
 			symb.insert({"ddxr", ddxr_symb});
 		}
 
@@ -636,6 +655,19 @@ namespace thunder_ns{
 		if (value.size() == numElasticJoints){
 			for (int i=0; i<numElasticJoints; i++){
 				dx(i) = value(i);
+			}
+			return 1;
+		} else {
+			std::cout<<"in setArguments: invalid dimensions of arguments\n";
+			return 0;
+		}
+	}
+
+	int Robot::set_ddx(Eigen::VectorXd value){
+		casadi::SX& ddx = args["ddx"];
+		if (value.size() == numElasticJoints){
+			for (int i=0; i<numElasticJoints; i++){
+				ddx(i) = value(i);
 			}
 			return 1;
 		} else {
@@ -884,6 +916,7 @@ namespace thunder_ns{
 		casadi::SX param_K(numElasticJoints*K_order,1);
 		casadi::SX param_D(numElasticJoints*D_order,1);
 		casadi::SX param_Dm(numElasticJoints*Dm_order,1);
+		casadi::SX param_Mm(numElasticJoints,1);
 		// ----- parsing yaml inertial ----- //
 		try {
 			// load yaml
@@ -943,6 +976,9 @@ namespace thunder_ns{
 						std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
 						param_Dm(Dm_order*i + j) = Dm[j];
 					}
+					// motor inertia
+					param_Mm(i) = node.second["Mm"].as<double>();
+
 					i++;
 				}
 				// std::cout<<"YAML_DH letto"<<std::endl;
@@ -956,6 +992,7 @@ namespace thunder_ns{
 		if (K_order>0) args["par_K"] = param_K;
 		if (D_order>0) args["par_D"] = param_D;
 		if (Dm_order>0) args["par_Dm"] = param_Dm;
+		if (ELASTIC) args["par_Mm"] = param_Mm;
 		if (update_REG) update_inertial_REG();
 		return 1;
 	}

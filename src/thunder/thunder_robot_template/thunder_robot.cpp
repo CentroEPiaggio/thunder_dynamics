@@ -19,6 +19,7 @@ void thunder_robot::resizeVariables(){
 	ddqr = Eigen::VectorXd::Zero(n_joints);
 	x = Eigen::VectorXd::Zero(numElasticJoints);
 	dx = Eigen::VectorXd::Zero(numElasticJoints);
+	ddx = Eigen::VectorXd::Zero(numElasticJoints);
 	ddxr = Eigen::VectorXd::Zero(numElasticJoints);
 	w = Eigen::VectorXd::Zero(6);
 	par_REG = Eigen::VectorXd::Zero(STD_PAR_LINK*n_joints);
@@ -27,6 +28,7 @@ void thunder_robot::resizeVariables(){
 	par_K = Eigen::VectorXd::Zero(K_order*numElasticJoints);
 	par_D = Eigen::VectorXd::Zero(D_order*numElasticJoints);
 	par_Dm = Eigen::VectorXd::Zero(Dm_order*numElasticJoints);
+	par_Mm = Eigen::VectorXd::Zero(numElasticJoints);
 	DHtable = Eigen::VectorXd::Zero(n_joints*4);
 	world2L0 = Eigen::VectorXd::Zero(6);
 	Ln2EE = Eigen::VectorXd::Zero(6);
@@ -132,6 +134,14 @@ void thunder_robot::set_dx(const Eigen::VectorXd& dx_){
 	}
 }
 
+void thunder_robot::set_ddx(const Eigen::VectorXd& ddx_){
+	if(ddx_.size() == numElasticJoints){
+		ddx = ddx_;
+	} else{
+		std::cout<<"in set_dx: invalid dimensions of arguments\n";
+	}
+}
+
 void thunder_robot::set_ddxr(const Eigen::VectorXd& ddxr_){
 	if(ddxr_.size() == numElasticJoints){
 		ddxr = ddxr_;
@@ -221,6 +231,14 @@ void thunder_robot::set_par_Dm(const Eigen::VectorXd& par_){
 	}
 }
 
+void thunder_robot::set_par_Mm(const Eigen::VectorXd& par_){
+	if(par_.size() == par_Mm.size()){
+		par_Mm = par_;
+	} else{
+		std::cout<<"in setArguments: invalid dimensions of arguments\n";
+	}
+}
+
 void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
 	if(par_.size() == par_Dl.size()){
 		par_Dl = par_;
@@ -279,6 +297,10 @@ Eigen::VectorXd thunder_robot::get_par_D(){
 
 Eigen::VectorXd thunder_robot::get_par_Dm(){
 	return par_Dm;
+}
+
+Eigen::VectorXd thunder_robot::get_par_Mm(){
+	return par_Mm;
 }
 
 Eigen::VectorXd thunder_robot::get_par_Dl(){
@@ -501,20 +523,23 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 				for (int j=0; j<K_order; j++){
 					std::vector<double> K = node.second["K"].as<std::vector<double>>();
 					par_K(K_order*index+j) = K[j];
-					std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
+					// std::cout<<"K_"<<j<<": "<<K[j] << std::endl;
 				}
 				// coupling friction
 				for (int j=0; j<D_order; j++){
 					std::vector<double> D = node.second["D"].as<std::vector<double>>();
 					par_D(D_order*index + j) = D[j];
-					std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
+					// std::cout<<"D_"<<j<<": "<<D[j] << std::endl;
 				}
 				// motor friction
 				for (int j=0; j<Dm_order; j++){
 					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
 					par_Dm(Dm_order*index + j) = Dm[j];
-					std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
+					// std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
 				}
+				// motor Inertia
+				par_Mm(index) = node.second["Mm"].as<double>();
+				// std::cout<<"Dm_"<<j<<": "<<Dm[j] << std::endl;
 				index++;
 			}
 		}
@@ -634,6 +659,70 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	} catch (const YAML::Exception& e) {
 		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
 	}
+}
+
+int thunder_egoArm::save_par(std::string par_file){
+	try {
+		YAML::Emitter emitter;
+		emitter.SetIndent(2);
+		emitter.SetSeqFormat(YAML::Flow);
+
+		YAML::Node yamlFile;
+
+		// - save DHtable - //
+		std::vector<double> DHtable_vect(DHtable.data(), DHtable.data() + DHtable.rows() * DHtable.cols());
+		yamlFile["DHtable"] = DHtable_vect;
+
+		// - save world2L0 - //
+		std::vector<double> world2L0_vect(world2L0.data(), world2L0.data() + world2L0.rows() * world2L0.cols());
+		yamlFile["world2L0"] = world2L0_vect;
+
+		// - save Ln2EE - //
+		std::vector<double> Ln2EE_vect(Ln2EE.data(), Ln2EE.data() + Ln2EE.rows() * Ln2EE.cols());
+		yamlFile["Ln2EE"] = Ln2EE_vect;
+
+		// - save gravity - //
+		std::vector<double> gravity_vect(gravity.data(), gravity.data() + gravity.rows() * gravity.cols());
+		yamlFile["gravity"] = gravity_vect;
+
+		// - save par_DYN - //
+		std::vector<double> par_DYN_vect(par_DYN.data(), par_DYN.data() + par_DYN.rows() * par_DYN.cols());
+		yamlFile["par_DYN"] = par_DYN_vect;
+
+		// - save par_REG - //
+		std::vector<double> par_REG_vect(par_REG.data(), par_REG.data() + par_REG.rows() * par_REG.cols());
+		yamlFile["par_REG"] = par_REG_vect;
+
+		// - save par_K - //
+		std::vector<double> par_K_vect(par_K.data(), par_K.data() + par_K.rows() * par_K.cols());
+		yamlFile["par_K"] = par_K_vect;
+
+		// - save par_Dl - //
+		std::vector<double> par_Dl_vect(par_Dl.data(), par_Dl.data() + par_Dl.rows() * par_Dl.cols());
+		yamlFile["par_Dl"] = par_Dl_vect;
+
+		// - save par_D - //
+		std::vector<double> par_D_vect(par_D.data(), par_D.data() + par_D.rows() * par_D.cols());
+		yamlFile["par_D"] = par_D_vect;
+
+		// - save par_Dm - //
+		std::vector<double> par_Dm_vect(par_Dm.data(), par_Dm.data() + par_Dm.rows() * par_Dm.cols());
+		yamlFile["par_Dm"] = par_Dm_vect;
+
+		// - save par_Mm - //
+		std::vector<double> par_Mm_vect(par_Mm.data(), par_Mm.data() + par_Mm.rows() * par_Mm.cols());
+		yamlFile["par_Mm"] = par_Mm_vect;
+
+		emitter << yamlFile << YAML::Newline;
+
+		std::ofstream fout(par_file);
+		fout << emitter.c_str();
+		fout.close();
+	} catch (const YAML::Exception& e) {
+		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+		return 0;
+	}
+	return 1;
 }
 
 // Other functions

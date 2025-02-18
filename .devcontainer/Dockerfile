@@ -91,4 +91,16 @@ RUN rm -r -f build && \
 USER ${USERNAME}
 WORKDIR ${HOME}
 
+# Change entrypoint to source ~/.bashrc and start in ~
+COPY ./.devcontainer/entrypoint.sh /entrypoint.sh
+RUN sudo chmod +x /entrypoint.sh ; sudo chown ${USERNAME} /entrypoint.sh \
+    && echo "cd "${HOME} >> /entrypoint.sh \
+    && echo 'exec bash -i -c $@' >> /entrypoint.sh \
+    && cat /entrypoint.sh
+
+# Clean image
+RUN sudo apt clean && sudo rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]
 

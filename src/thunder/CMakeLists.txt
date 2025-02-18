@@ -83,6 +83,15 @@ set_target_properties(thunder PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
     BUILD_WITH_INSTALL_RPATH TRUE
 )
+set_target_properties(thunder_test PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+set_target_properties(thunder_test_chrono PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+
 # Set default install prefix if not specified
 # if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 # 	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path" FORCE)

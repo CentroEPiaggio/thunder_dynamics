@@ -40,6 +40,7 @@ namespace thunder_ns{
 		std::vector<int> par_K_symb;
 		std::vector<int> par_D_symb;
 		std::vector<int> par_Dm_symb;
+		std::vector<int> par_Mm_symb;
 		std::vector<int> world2L0_symb;
 		std::vector<int> Ln2EE_symb;
 		std::vector<int> gravity_symb;

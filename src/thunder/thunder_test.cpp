@@ -77,7 +77,7 @@ int main(){
 
 	// arguments
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
-	Eigen::VectorXd x(NEJ), dx(NEJ), ddxr(NEJ);
+	Eigen::VectorXd x(NEJ), dx(NEJ), ddx(NEJ);
 
 	// get quantities
 	par_REG = robot.get_par_REG();
@@ -86,6 +86,7 @@ int main(){
 	par_K = robot.get_arg("par_K");
 	par_D = robot.get_arg("par_D");
 	par_Dm = robot.get_arg("par_Dm");
+	Eigen::VectorXd par_Mm = robot.get_arg("par_Mm");
 	Eigen::MatrixXd DHtable = robot.get("DHtable");
 	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
@@ -94,6 +95,7 @@ int main(){
 	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
 	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
 	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
+	cout<<"par_Mm:"<<endl<<par_Mm.transpose()<<endl<<endl;
 	// // test change par
 	// robot.set_par_REG(par_REG);
 	// par_DYN = robot.get_par_DYN();
@@ -106,7 +108,7 @@ int main(){
 	ddqr.setRandom();
 	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
 	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddxr = 2*ddxr.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddx = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
@@ -114,7 +116,7 @@ int main(){
 	robot.set_ddqr(ddqr);
 	robot.set_x(x);
 	robot.set_dx(dx);
-	robot.set_ddxr(ddxr);
+	robot.set_ddx(ddx);
 	// cout<<"ddqr set"<<endl;
 	// robot.set_par_DYN(par_DYN);
 	// cout<<"par_DYN set"<<endl<<robot.get_par_DYN()<<endl<<endl;
@@ -160,18 +162,22 @@ int main(){
 		Dl.setZero();
 	}
 	if (robot.get_ELASTIC()){
-		K = robot.get("K");
+		K = robot.get("k");
 		cout<<endl<<"K\n"<<K<<endl;
-		D = robot.get("D");
+		D = robot.get("d");
 		cout<<endl<<"D_coupling\n"<<D<<endl;
-		Dm = robot.get("Dm");
+		Dm = robot.get("dm");
 		cout<<endl<<"D_motor\n"<<Dm<<endl;
-		reg_K = robot.get("reg_K");
-		reg_D = robot.get("reg_D");
-		reg_Dm = robot.get("reg_Dm");
+		Eigen::MatrixXd Mm = robot.get("Mm");
+		cout<<endl<<"M_motor\n"<<Mm<<endl;
+		reg_K = robot.get("reg_k");
+		reg_D = robot.get("reg_d");
+		reg_Dm = robot.get("reg_dm");
+		Eigen::MatrixXd reg_Mm = robot.get("reg_Mm");
 		cout<<endl<<"reg_K\n"<<reg_K<<endl;
 		cout<<endl<<"reg_Dm\n"<<reg_Dm<<endl;
 		cout<<endl<<"reg_D\n"<<reg_D<<endl;
+		cout<<endl<<"reg_Mm\n"<<reg_Mm<<endl;
 	}
 
 	Yr = robot.get("Yr");

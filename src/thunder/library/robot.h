@@ -171,6 +171,7 @@ namespace thunder_ns{
 			int set_ddqr(Eigen::VectorXd);
 			int set_x(Eigen::VectorXd);
 			int set_dx(Eigen::VectorXd);
+			int set_ddx(Eigen::VectorXd);
 			int set_ddxr(Eigen::VectorXd);
 			int set_par_DYN(Eigen::VectorXd);
 			int set_par_REG(Eigen::VectorXd);
