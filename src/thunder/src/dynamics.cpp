@@ -318,7 +318,11 @@ namespace thunder_ns{
 					K_vec[ord](i,i) = par_K(i*K_order + ord);
 				}
 				for (int ord=0; ord<D_order; ord++){
-					d(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
+					if (ord%2 == 0){
+						d(i) += pow(dx(i)-dq(i), ord+1) * par_D(i*D_order+ord);
+					} else {
+						d(i) += sqrt(pow(dx(i)-dq(i), 2)) * pow(dx(i)-dq(i), ord) * par_D(i*D_order+ord);
+					}
 					D_vec[ord].resize(numElasticJoints,numElasticJoints);
 					D_vec[ord](i,i) = par_D(i*D_order + ord);
 				}

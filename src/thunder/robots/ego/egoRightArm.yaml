@@ -144,50 +144,50 @@ dynamics:
 elastic:
   K_order: 3
   D_order: 0
-  Dm_order: 1
+  Dm_order: 2
   joints:
     joint1:
-      K: [2.5, 0.0, 0.0]
+      K: [2.5, 0.0, 50.0]
       D: []
-      Dm: [0.1]
+      Dm: [10, 0.1]
       Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
-      Dm_symb: [1]
+      Dm_symb: [1,1]
       Mm_symb: 1
     joint2:
-      K: [2.5, 0.0, 0.0]
+      K: [2.5, 0.0, 50.0]
       D: []
-      Dm: [0.1]
+      Dm: [10, 0.1]
       Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
-      Dm_symb: [1]
+      Dm_symb: [1,1]
       Mm_symb: 1
     joint3:
-      K: [2.5, 0.0, 0.0]
+      K: [2.5, 0.0, 50.0]
       D: []
-      Dm: [0.1]
+      Dm: [10, 0.1]
       Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
-      Dm_symb: [1]
+      Dm_symb: [1,1]
       Mm_symb: 1
     joint4:
-      K: [2.5, 0.0, 0.0]
+      K: [2.5, 0.0, 50.0]
       D: []
-      Dm: [0.1]
+      Dm: [10, 0.1]
       Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
-      Dm_symb: [1]
+      Dm_symb: [1,1]
       Mm_symb: 1
     joint5:
-      K: [2.5, 0.0, 0.0]
+      K: [2.5, 0.0, 50.0]
       D: []
-      Dm: [0.1]
+      Dm: [10, 0.1]
       Mm: 0.1
       K_symb: [1,1,1]
       D_symb: []
-      Dm_symb: [1]
+      Dm_symb: [1,1]
       Mm_symb: 1
