@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.12
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.12 + 0.0.1
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
