@@ -7,7 +7,7 @@ improvings:
 	Paramaters:
 		✔ add save_par(file) to thunder_robot @done (2/17/2025, 8:26:34 PM)
 		☐ improve save_par(), with a list of parameters!
-		☐ problem on save_conf() two times the elastic configuration, try
+		✔ problem on save_conf() two times the elastic configuration, try @done (2/18/2025, 9:40:22 PM)
 		☐ set_arg_<model>() function that sets only the arguments used by <model>
 		✔ DHtable as a vector instead a matrix @done (12/21/2024, 2:17:12 PM)
 		☐ load_par and save_par that load/save all parameters in thunder_robot

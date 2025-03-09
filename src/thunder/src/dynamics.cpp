@@ -313,7 +313,7 @@ namespace thunder_ns{
 			casadi::SX Mm(numElasticJoints,numElasticJoints);
 			for (int i=0; i<numElasticJoints; i++){
 				for (int ord=0; ord<K_order; ord++){
-					k(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
+					k(i) += pow(x(i)-q(i), 2*ord+1) * par_K(i*K_order+ord);	// ^1,3,5...
 					K_vec[ord].resize(numElasticJoints,numElasticJoints);
 					K_vec[ord](i,i) = par_K(i*K_order + ord);
 				}
@@ -335,7 +335,7 @@ namespace thunder_ns{
 				robot.add_function("k", k, arg_list, "SEA manipulator elastic coupling");
 				arg_list = robot.obtain_symb_parameters({}, {"par_K"});
 				for (int ord=0; ord<K_order; ord++){ 
-					robot.add_function("K"+std::to_string(ord), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(ord));
+					robot.add_function("K"+std::to_string(2*ord+1), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(ord));
 				}
 			}
 			if (D_order > 0) {
