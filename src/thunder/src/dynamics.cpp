@@ -343,7 +343,7 @@ namespace thunder_ns{
 				robot.add_function("k", k, arg_list, "SEA manipulator elastic coupling");
 				arg_list = robot.obtain_symb_parameters({}, {"par_K"});
 				for (int ord=0; ord<K_order; ord++){ 
-					robot.add_function("K"+std::to_string(2*ord+1), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(ord));
+					robot.add_function("K"+std::to_string(2*ord+1), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(2*ord+1));
 				}
 			}
 			if (D_order > 0) {
@@ -351,7 +351,7 @@ namespace thunder_ns{
 				robot.add_function("d", d, arg_list, "SEA manipulator dampind coupling");
 				arg_list = robot.obtain_symb_parameters({}, {"par_D"});
 				for (int ord=0; ord<D_order; ord++){ 
-					robot.add_function("D"+std::to_string(ord+1), D_vec[ord], arg_list, "SEA manipulator damping coupling, order "+std::to_string(ord));
+					robot.add_function("D"+std::to_string(ord+1), D_vec[ord], arg_list, "SEA manipulator damping coupling, order "+std::to_string(ord+1));
 				}
 			}
 			if (Dm_order > 0) {
@@ -359,7 +359,7 @@ namespace thunder_ns{
 				robot.add_function("dm", dm, arg_list, "SEA manipulator motor damping");
 				arg_list = robot.obtain_symb_parameters({}, {"par_Dm"});
 				for (int ord=0; ord<Dm_order; ord++){ 
-					robot.add_function("Dm"+std::to_string(ord+1), Dm_vec[ord], arg_list, "SEA manipulator motor damping, order "+std::to_string(ord));
+					robot.add_function("Dm"+std::to_string(ord+1), Dm_vec[ord], arg_list, "SEA manipulator motor damping, order "+std::to_string(ord+1));
 				}
 			}
 			arg_list = robot.obtain_symb_parameters({}, {"par_Mm"});
@@ -382,7 +382,11 @@ namespace thunder_ns{
 			std::vector<casadi::SX> Dl_vec(Dl_order);
 			for (int i=0; i<nj; i++){
 				for (int ord=0; ord<Dl_order; ord++){
-					dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
+					if (ord%2 == 0){
+						dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
+					} else {
+						dl(i) += sqrt(pow(dq(i), 2)) * pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
+					}
 					Dl_vec[ord].resize(nj,nj);
 					Dl_vec[ord](i,i) = par_Dl(i*Dl_order + ord);
 				}
@@ -392,7 +396,7 @@ namespace thunder_ns{
 			robot.add_function("dl", dl, arg_list, "Manipulator link friction");
 			arg_list = robot.obtain_symb_parameters({}, {"par_Dl"});
 			for (int ord=0; ord<Dl_order; ord++){ 
-				robot.add_function("Dl"+std::to_string(ord), Dl_vec[ord], arg_list, "SEA manipulator link damping, order "+std::to_string(ord));
+				robot.add_function("Dl"+std::to_string(ord+1), Dl_vec[ord], arg_list, "SEA manipulator link damping, order "+std::to_string(ord+1));
 			}
 			return 1;
 		} else return 0;
