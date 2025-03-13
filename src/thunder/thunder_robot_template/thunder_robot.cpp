@@ -661,7 +661,7 @@ void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
 	}
 }
 
-int thunder_egoArm::save_par(std::string par_file){
+int thunder_robot::save_par(std::string par_file){
 	try {
 		YAML::Emitter emitter;
 		emitter.SetIndent(2);
