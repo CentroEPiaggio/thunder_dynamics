@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.12
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.13
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -168,12 +168,12 @@ The main classes contained in `thunder` are:
 the content of the classes is then integrated in the C++ library `<robot>_gen.h/cpp` and the `thunder_<robot>` class provide a wrapper for the automatically generated code.
 
 ## Make your functions
-If you want to add functions to the framework and have it directly on the `thunder_\<robot>` class, it is very simple.
+If you want to add functions to the framework and have it directly on the `thunder_<robot>` class, it is very simple.
 You just need to create what you want in `casadi::SX`, and to edit these files:
 -  `src/thunder/library/userDefined.h` with your declaration, remember that the function have one only argument that is of type `Robot`.
 - `src/thunder/src/userDefined.cpp` with the definition, using `Robot::addFunction()` to add the casadi expression in the model.
 
-Then you will have it on the class `thunder_\<robot>` when you create the library.
+Then you will have it on the class `thunder_<robot>` when you create the library.
 You can also extract values from the yaml config file that is stored in `Robot::config_yaml`.
 
 For a complete example, look for the files `userDefined.h/cpp`.

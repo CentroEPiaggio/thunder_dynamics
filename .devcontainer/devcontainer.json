@@ -43,5 +43,9 @@
 	"containerUser": "thunder_dev",
 	"updateRemoteUserUID": true,
 
+	"containerEnv": {
+		"SHELL": "/bin/bash"
+	},
+
 	"runArgs": ["--name","thunder_ws", "--user=thunder_dev", "--network=host"]
 }

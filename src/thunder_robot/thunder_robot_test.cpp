@@ -11,14 +11,16 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-// #include "thunder_RRR.h"
+#include "thunder_RRR.h"
 // #include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
-#include "thunder_egoArm.h"
+// #include "thunder_egoArm.h"
+// #include "thunder_frankaWrist.h"
 
-// const std::string conf_file = "../robots/RRR_conf.yaml";
+const std::string conf_file = "../robots/RRR_conf.yaml";
 // const std::string conf_file = "../robots/franka_conf.yaml";
-const std::string conf_file = "../robots/egoArm_conf.yaml";
+// const std::string conf_file = "../robots/egoArm_conf.yaml";
+// const std::string conf_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
@@ -36,8 +38,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_egoArm robot;
-	// thunder_RRR robot;
+	thunder_RRR robot;
 
 	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
@@ -67,10 +68,10 @@ int main(){
 	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q = q.setOnes();
-	dq = dq.setOnes();
-	dqr = dqr.setOnes();
-	ddqr = ddqr.setOnes();
+	q.setOnes();
+	dq.setZero();
+	dqr.setZero();
+	ddqr.setZero();
 
 	robot.setArguments(q, dq, dqr, ddqr);
 
@@ -140,12 +141,12 @@ int main(){
 	// if (robot.ELASTIC){
 	// 	int NEJ = robot.numElasticJoints;
 	// 	cout<<endl<<"num elastic joints: "<< NEJ<<endl;
-	// 	robot.load_par_elastic(elastic_file);
+	// 	// robot.load_par_(elastic_file);
 
 	// 	Eigen::VectorXd x(NEJ), dx(NEJ), ddxr(NEJ);
-	// 	x = 2*x.setOnes();
-	// 	dx = 2*dx.setOnes();
-	// 	ddxr = 2*ddxr.setOnes();
+	// 	x = 1.57*x.setOnes();
+	// 	dx.setZero();
+	// 	ddxr.setZero();
 	// 	robot.set_x(x);
 	// 	robot.set_dx(dx);
 	// 	robot.set_ddxr(ddxr);
@@ -170,11 +171,11 @@ int main(){
 	// 	cout<<endl<<"par_D:"<<endl<<par_D.transpose()<<endl;
 	// 	cout<<endl<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl;
 
-	// 	K = robot.get_K();
+	// 	K = robot.get_K1();
 	// 	cout<<endl<<"K\n"<<K<<endl;
 	// 	// D = robot.get_D();
 	// 	// cout<<endl<<"D_coupling\n"<<D<<endl;
-	// 	Dm = robot.get_Dm();
+	// 	Dm = robot.get_Dm1();
 	// 	cout<<endl<<"D_motor\n"<<Dm<<endl;
 	// }
 	// --- end --- //
