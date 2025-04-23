@@ -26,8 +26,9 @@ int main(){
 
 	// std::string config_file = "../robots/RRR/RRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
-	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	std::string config_file = "../robots/ego/ego_arm.yaml";
+	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string config_file = "../robots/ego/egoRightArm.yaml";
+	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
@@ -102,17 +103,18 @@ int main(){
 	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setRandom();
-	dq.setRandom();
-	dqr.setRandom();
-	ddqr.setRandom();
-	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddx = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	q.setOnes(); // setRandom();
+	dq.setZero(); // setRandom();
+	dqr.setZero(); // setRandom();
+	ddqr.setZero(); // setRandom();
+	x.setZero(); // = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dx.setZero(); // = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddx.setZero(); // = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
 	robot.set_dqr(dqr);
+	// robot.set_ddq(ddqr);
 	robot.set_ddqr(ddqr);
 	robot.set_x(x);
 	robot.set_dx(dx);
@@ -154,9 +156,9 @@ int main(){
 	G = robot.get("G");
 	cout<<endl<<"G\n"<<G<<endl;
 	if (robot.get_Dl_order()){
-		Dl = robot.get("Dl");
+		Dl = robot.get("dl");
 		cout<<endl<<"D_link\n"<<Dl<<endl;
-		reg_Dl = robot.get("reg_Dl");
+		reg_Dl = robot.get("reg_dl");
 		cout<<endl<<"reg_Dl\n"<<reg_Dl<<endl;
 	} else {
 		Dl.setZero();

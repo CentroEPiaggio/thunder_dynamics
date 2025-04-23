@@ -36,6 +36,7 @@ improvings:
 	elasticity:
 		- stiffness order adds even exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
+		☐ add inertia coupling S and for complete elastic model
 		☐ if order==1 K0, D0, Dl0, Dm0 => K, D, Dl, Dm.. It is more intuitive
 		☐ derivative of k, d, dl, dm
 		☐ check everything, k, d, dl, dm are vectors, K, D, Dl, Dm are matrices
@@ -58,6 +59,9 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
+		☐ explain better stiffness and friction in readme (maybe create sections for it)
+		☐ example and robot cleaning
+		☐ better test system for thunder_robot. Have to handle non-existing functions!
 		☐ have to work also if there is not .yaml in the name of file (thunder gen /../a.yaml)
 		☐ yaml file have not to cause faults, robustify
 		☐ think of a better structure for computing functions
