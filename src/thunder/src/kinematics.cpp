@@ -6,14 +6,23 @@ namespace thunder_ns{
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
 
+	// - set to zero small values (Zero If Small) - //
+	casadi::SX ZIS(const casadi::SX& x, double tol = EPSILON) {
+		// Check if x is numeric and its absolute value is smaller than tolerance
+		if (x.is_constant() && std::abs(static_cast<double>(x)) < tol)
+			return casadi::SX(0);
+		else
+			return x;
+	}
+
 	// - Rotations - //
 	casadi::SX R_x(const casadi::SX& angle) {
 		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
 
 		// Define the rotation matrix components for rotation around the x-axis
-		R(0, 0) = 1;        R(0, 1) = 0;                R(0, 2) = 0;
-		R(1, 0) = 0;        R(1, 1) = cos(angle);       R(1, 2) = -sin(angle);
-		R(2, 0) = 0;        R(2, 1) = sin(angle);       R(2, 2) = cos(angle);
+		R(0, 0) = 1;        R(0, 1) = 0;                	R(0, 2) = 0;
+		R(1, 0) = 0;        R(1, 1) = ZIS(cos(angle));      R(1, 2) = ZIS(-sin(angle));
+		R(2, 0) = 0;        R(2, 1) = ZIS(sin(angle));      R(2, 2) = ZIS(cos(angle));
 
 		return R;
 	}
@@ -21,9 +30,9 @@ namespace thunder_ns{
 		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
 
 		// Define the rotation matrix components for rotation around the y-axis
-		R(0, 0) = cos(angle);       R(0, 1) = 0;        R(0, 2) = sin(angle);
-		R(1, 0) = 0;                R(1, 1) = 1;        R(1, 2) = 0;
-		R(2, 0) = -sin(angle);      R(2, 1) = 0;        R(2, 2) = cos(angle);
+		R(0, 0) = ZIS(cos(angle));      R(0, 1) = 0;		R(0, 2) = ZIS(sin(angle));
+		R(1, 0) = 0;                	R(1, 1) = 1;    	R(1, 2) = 0;
+		R(2, 0) = ZIS(-sin(angle));     R(2, 1) = 0;    	R(2, 2) = ZIS(cos(angle));
 
 		return R;
 	}
@@ -34,9 +43,9 @@ namespace thunder_ns{
 		casadi::SX R = casadi::SX::zeros(3, 3); // Create a 3x3 zero matrix
 
 		// Define the rotation matrix components for rotation around the z-axis
-		R(0, 0) = cos(angle);       R(0, 1) = -sin(angle);      R(0, 2) = 0;
-		R(1, 0) = sin(angle);       R(1, 1) = cos(angle);       R(1, 2) = 0;
-		R(2, 0) = 0;                R(2, 1) = 0;                R(2, 2) = 1;
+		R(0, 0) = ZIS(cos(angle));      R(0, 1) = ZIS(-sin(angle));     R(0, 2) = 0;
+		R(1, 0) = ZIS(sin(angle));      R(1, 1) = ZIS(cos(angle));      R(1, 2) = 0;
+		R(2, 0) = 0;                	R(2, 1) = 0;                	R(2, 2) = 1;
 
 		return R;
 	}
