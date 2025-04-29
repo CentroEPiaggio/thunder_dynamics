@@ -44,7 +44,7 @@ bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder
 bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
-#define VERSION "0.8.14"
+#define VERSION "0.8.15"
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";

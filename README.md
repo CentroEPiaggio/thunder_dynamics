@@ -1,4 +1,4 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.14
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.15
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -109,8 +109,8 @@ from thunder_<robot>_py import thunder_<robot>
 robot = thunder_<robot>()
 robot.load_conf("path/to/robot_conf.yaml")
 
-robot.set_q(np.zeros(robot.get_njoints))
-robot.set_dq(np.random.rand(robot.get_njoints))
+robot.set_q(np.zeros(robot.get_numJoints()))
+robot.set_dq(np.random.rand(robot.get_numJoints()))
 
 T = robot.get_T_0_ee()
 J = robot.get_J_ee()

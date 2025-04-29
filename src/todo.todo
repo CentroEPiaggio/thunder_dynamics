@@ -97,7 +97,7 @@ improvings:
 
 will be in Thunder_dynamics:
 	thunder:
-		☐ dynamic matrix derivatives
+		✔ dynamic matrix derivatives @done (4/29/2025, 1:19:51 PM)
 		☐ linearized system
 		✔ friction @done (9/6/2024, 6:06:31 AM)
 		☐ filtered regressor
