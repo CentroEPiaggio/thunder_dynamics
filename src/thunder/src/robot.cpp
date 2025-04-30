@@ -542,27 +542,27 @@ namespace thunder_ns{
 		// Eigen::MatrixXd result_num;
 		if (fun_args.count(name)){
     		// key exists
-			// cout<<"ok1, name: "<<name<<endl;
+			// cout<<"name: "<<name<<endl;
 			Eigen::MatrixXd result_num(model[name].rows(), model[name].columns());
-			// cout<<"ok1.5, output_size: "<<result_num.size()<<endl;
+			// cout<<"output_size: "<<result_num.size()<<endl;
 			auto f_args = fun_args[name];
 			int sz = f_args.size();
-			// cout<<"ok2, f_args:"<<f_args<<", size: "<<sz<<endl;
+			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::SXVector inputs(sz);
 			int i=0;
 			for (const auto& arg : f_args) {
 				inputs[i] = args[arg];
 				i++;
 			}
-			// cout<<"ok3, args: "<<inputs<<endl;
+			// cout<<"args: "<<inputs<<endl;
 			// casadi::Function fun = casadi_fun[name];
-			// cout<<"ok3.5, fun: "<<fun<<endl;
+			// cout<<"fun: "<<fun<<endl;
 			casadi_fun[name].call(inputs, result);
-			// cout<<"ok4, result: "<<result<<endl;
+			// cout<<"result: "<<result<<endl;
 			std::vector<casadi::SXElem> res_elements = result[0].get_elements();
-			// cout<<"ok5, elements: "<<res_elements<<endl;
+			// cout<<"elements: "<<res_elements<<endl;
 			std::transform(res_elements.begin(), res_elements.end(), result_num.data(), mapFunction);
-			// cout<<"ok6, result: "<<result_num<<endl;
+			// cout<<"result: "<<result_num<<endl;
 			return result_num;
 		} else {
 			cout<<name + " not recognised"<<endl;
@@ -1638,12 +1638,12 @@ namespace thunder_ns{
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute){
 		// create config
 		// Config conf = load_config(file);
-		// cout<<"Configuration loaded!"<<endl;
 		bool advanced = true;
 		Robot robot(file);
 		robot.robotName = robot_name;
 		// --- load parameters --- //
 		robot.load_conf_par(file);
+		cout<<"Configuration loaded!"<<endl;
 		// --- compute functions --- //
 		if (compute){
 			// - symbolic selectivity - //

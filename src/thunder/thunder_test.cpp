@@ -29,6 +29,7 @@ int main(){
 	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
 	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
+	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
