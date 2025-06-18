@@ -262,3 +262,7 @@ sudo make install
 ```
 
 <!-- then you can substitute the binary file with `setup_bin` in `.devcontainer/` folder and use the binary where you want. Remember that `neededFiles/` have to be in the same folder of `thunder`. -->
+
+### Sponsors
+![image info](darko_logo.png)
+[DARKO Project](https://darko-project.eu/)
