@@ -15,11 +15,14 @@ Usable only for generated code from casadi library! */
 class thunder_robot{
 
 	private:
-		/* Number of joints */
-		int n_joints;
-		int n_par_link;
+		// standard number of parameters
+		const int STD_PAR_LINK = 10;
 		/* Joints' variables */
-		Eigen::VectorXd q, dq, dqr, ddqr, par_REG, par_DYN;
+		Eigen::VectorXd q, dq, ddq, d3q, d4q, dqr, ddqr, par_DYN, par_REG, par_Dl;
+		Eigen::VectorXd x, dx, ddx, ddxr, par_K, par_D, par_Dm, par_Mm;
+		Eigen::VectorXd w;
+		Eigen::VectorXd DHtable, gravity, world2L0, Ln2EE;
+		std::vector<int> DHtable_symb, gravity_symb, world2L0_symb, Ln2EE_symb;
 
 		void update_inertial_DYN();
 		void update_inertial_REG();
@@ -29,6 +32,7 @@ class thunder_robot{
 			std::vector<double> parI = std::vector<double>(6); // Inertia in the order xx, xy, xz, yy, yz, zz
 			std::vector<double> xyz = std::vector<double>(3); // Origin xyz as std::vector
 			std::vector<double> rpy = std::vector<double>(3);
+			std::vector<double> Dl = std::vector<double>(1);
 			std::string name;
 		};
 
@@ -46,6 +50,19 @@ class thunder_robot{
 		Eigen::Matrix3d hat(const Eigen::Vector3d v);
 		
 	public:
+		const std::string robotName = "/*#-ROBOT_NAME-#*/";
+		const int n_joints = /*#-n_joints-#*/;
+		const bool ELASTIC = /*#-ELASTIC-#*/;
+		const int numElasticJoints = /*#-numElasticJoints-#*/;
+		const int K_order = /*#-K_order-#*/;
+		const int D_order = /*#-D_order-#*/;
+		const int Dl_order = /*#-Dl_order-#*/;
+		const int Dm_order = /*#-Dm_order-#*/;
+		const int numParDYN = STD_PAR_LINK*n_joints;
+		const int numParREG = STD_PAR_LINK*n_joints;
+		// const int numParELA = /*#-numParELA-#*/;
+		const int isElasticJoint[/*#-n_joints-#*/] = /*#-isElasticJoint-#*/;
+
 		/* Empty constructor, initialization inside */
 		thunder_robot();
 		/* Constructor to init variables*/
@@ -61,21 +78,57 @@ class thunder_robot{
 		void setArguments(const Eigen::VectorXd& q_, const Eigen::VectorXd& dq_, const Eigen::VectorXd& dqr_, const Eigen::VectorXd& ddqr_);
 		void set_q(const Eigen::VectorXd& q_);
 		void set_dq(const Eigen::VectorXd& dq_);
+		void set_ddq(const Eigen::VectorXd& ddq_);
+		void set_d3q(const Eigen::VectorXd& d3q_);
+		void set_d4q(const Eigen::VectorXd& d4q_);
 		void set_dqr(const Eigen::VectorXd& dqr_);
 		void set_ddqr(const Eigen::VectorXd& ddqr_);
-		void set_inertial_REG(const Eigen::VectorXd& par_);
-		void set_inertial_DYN(const Eigen::VectorXd& par_);
-		Eigen::VectorXd get_inertial_REG();
-		Eigen::VectorXd get_inertial_DYN();
+		void set_x(const Eigen::VectorXd& x_);
+		void set_dx(const Eigen::VectorXd& dx_);
+		void set_ddx(const Eigen::VectorXd& ddx_);
+		void set_ddxr(const Eigen::VectorXd& ddxr_);
+		void set_w(const Eigen::VectorXd& w_);
+		void set_par_REG(const Eigen::VectorXd& par_, bool update_DYN = true);
+		void set_par_DYN(const Eigen::VectorXd& par_, bool update_REG = true);
+		void set_par_K(const Eigen::VectorXd& par_);
+		void set_par_D(const Eigen::VectorXd& par_);
+		void set_par_Dm(const Eigen::VectorXd& par_);
+		void set_par_Mm(const Eigen::VectorXd& par_);
+		void set_par_Dl(const Eigen::VectorXd& par_);
+		void set_DHtable(const Eigen::MatrixXd& par_);
+		void set_gravity(const Eigen::VectorXd& par_);
+		void set_world2L0(const Eigen::VectorXd& par_);
+		void set_Ln2EE(const Eigen::VectorXd& par_);
+		// void set_par_ELA(const Eigen::VectorXd& par_);
+		Eigen::VectorXd get_par_REG();
+		Eigen::VectorXd get_par_DYN();
+		Eigen::VectorXd get_par_K();
+		Eigen::VectorXd get_par_D();
+		Eigen::VectorXd get_par_Dm();
+		Eigen::VectorXd get_par_Mm();
+		Eigen::VectorXd get_par_Dl();
+		Eigen::MatrixXd get_DHtable();
+		Eigen::VectorXd get_gravity();
+		Eigen::VectorXd get_world2L0();
+		Eigen::VectorXd get_Ln2EE();
+		// Eigen::VectorXd get_par_ELA();
 
-		void load_inertial_REG(std::string);
-		void save_inertial_REG(std::string);
-		void load_inertial_DYN(std::string);
-		void save_inertial_DYN(std::string);
+		Eigen::VectorXd load_par_REG(std::string, bool update_DYN = true);
+		void save_par_REG(std::string);
+		void load_conf(std::string, bool update_REG = true);
+		void save_par_DYN(std::string);
+		int save_par(std::string par_file);
+		// void load_par_DYN(std::string);
+		// void save_par_DYN(std::string);
+		// void load_par_elastic(std::string);
+		// void load_par_ELA(std::string);
+		// void save_par_ELA(std::string);
 
 		int get_numJoints();
-		int get_numParLink();
-		int get_numParams();
+		// int get_numParLink();
+		int get_numParDYN();
+		int get_numParREG();
+		// int get_numParELA();
 
 		// ----- generated functions ----- //
 		/*#-FUNCTIONS_H-#*/

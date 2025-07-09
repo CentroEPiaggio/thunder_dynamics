@@ -25,10 +25,13 @@ In particular generate code to compute for franka emika panda robot:
 #include "kinematics.h"
 #include "dynamics.h"
 #include "regressors.h"
+#include "userDefined.h"
 
 #include <yaml-cpp/yaml.h>
-#include "urdf2dh_inertial.h"
+// #include "urdf2dh_inertial.h"
 #include "genYaml.h"
+
+#include <argparse/argparse.hpp>
 
 using namespace thunder_ns;
 using namespace std::chrono;
@@ -36,140 +39,108 @@ using namespace std::chrono;
 using std::cout;
 using std::endl;
 
-bool COPY_GEN_FLAG = true; // used to copy generated files into thunder_robot project
-bool GEN_PYTHON_FLAG = false; // used to generate python binding
+bool COPY_GEN_FLAG = false; 		// used to copy generated files into thunder_robot project
+bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder_robot_chrono project
+bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
+bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
+#define VERSION "0.8.15"
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";
 std::string path_robot = "../robots/";
 std::string config_file = path_robot + robot_name + "/robot.yaml";
 std::string robot_name_gen = robot_name + "_gen";
-std::string path_gen = path_robot + robot_name + "/generatedFiles/";
-const std::string PATH_THUNDER_ROBOT = "../thunder_robot_template/";
-const std::string PATH_COPY_H = "../../thunder_robot/library/";
-const std::string PATH_COPY_CPP = "../../thunder_robot/src/";
-const std::string PATH_COPY_YAML = "../../thunder_robot/robots/";
+// std::string path_gen = path_robot + robot_name + "/generatedFiles/";
+// const std::string PATH_THUNDER_ROBOT = "../thunder_robot_template/";
+
+int copy_to(std::string robot_name, std::string path_from, std::string path_conf, std::string path_par, std::string path_h, std::string path_cpp);
 
 int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
-	std::string jType;
-	Eigen::MatrixXd DH_table;
-	FrameOffset Base_to_L0;
-	FrameOffset Ln_to_EE;
 
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
 	// ----------------------------- //
-	// Arguments
-	if (argc > 1) {
-		// The first argument (argv[0]) is the program name (thunder)
-		std::string arg1 = argv[1];
-		if (arg1 == "gen"){
-			if (argc > 2){ // take argument <robot>.yaml
-				config_file = argv[2];
-				int index_yaml = config_file.find_last_of(".yaml");
-				if (index_yaml > 0){
-					int index_path = config_file.find_last_of("/");
-					if (index_path == std::string::npos){ // no occurrence
-						path_robot = "./";
-						robot_name = config_file.substr(0, index_yaml);
-					}else{
-						path_robot = config_file.substr(0, index_path+1);
-						robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
-					}
-				}else{
-					std::cout << "Invalid config file." << std::endl;
-					return 0;
-				}
-				if (argc > 3){ // take the robot name
-					robot_name = argv[3];
-					// robot_name is a valid name?
 
-					if (argc > 4){ // flag for python binding
-						std::string flag = argv[4];
-						if (flag == "python"){
-							GEN_PYTHON_FLAG = true;
-							std::cout << "Python binding will be generated." << std::endl;
-						}
-						else{
-							std::cout << "Flag not recognised." << std::endl;
-							return 0;
-						}
-					}
-				}
-			}
-		} else {
-			std::cout << arg1 << "not recognised as command." << std::endl;
-			return 0;
-		}
-	} else {
-		std::cout << "No arguments to process." << std::endl;
+	// - defining cli - //
+	argparse::ArgumentParser thunder_cli("thunder", VERSION);
+	argparse::ArgumentParser gen_command("gen", VERSION);
+	gen_command.add_description("Generate library from yaml configuration file");
+	gen_command.add_argument("config_file")
+		.help("Robot configuration file (.yaml)");
+	gen_command.add_argument("-n", "--name")
+		.help("Robot name");
+	gen_command.add_argument("-p", "--python")
+		.default_value(false)
+		.implicit_value(true)
+		.help("Generate python binding");
+	gen_command.add_argument("-f", "--casadifunc")
+		.default_value(false)
+		.implicit_value(true)
+		.help("Save casadi functions");
+	gen_command.add_argument("-c", "--copy")
+		.default_value(false)
+		.implicit_value(true)
+		.help("Copy generated files into thunder_robot and thunder_robot_chrono folders for testing (thunder should be used inside container or from build folder)");
+
+	thunder_cli.add_subparser(gen_command);
+
+	// - parsing - //
+	try {
+		thunder_cli.parse_args(argc, argv);
+	} catch (const std::runtime_error &err) {
+		std::cout << err.what() << std::endl;
+		std::cout << thunder_cli;
 		return 0;
 	}
+
+	// - Get arguments - //
+	config_file = gen_command.get<std::string>("config_file");
+	GEN_PYTHON_FLAG = gen_command.get<bool>("--python");
+	GEN_CASADI = gen_command.get<bool>("--casadifunc");
+	COPY_GEN_FLAG = gen_command.get<bool>("--copy");
+	COPY_GEN_CHRONO_FLAG = COPY_GEN_FLAG;
+
+	// - check config_file and name - //
+	int index_yaml = config_file.find_last_of(".yaml");
+	// std::cout << "config_file: " << config_file << std::endl;
+	if (index_yaml > 0){
+		int index_path = config_file.find_last_of("/");
+		// std::cout << "index_path: " << index_path << std::endl;
+		if (index_path == std::string::npos){ // no occurrence
+			path_robot = "./";
+			robot_name = config_file.substr(0, index_yaml+1-5); // 5 stands for ".yaml"
+		}else{
+			path_robot = config_file.substr(0, index_path+1);
+			robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
+		}
+	}else{
+		std::cout << "Invalid config file." << std::endl;
+		return 0;
+	}
+	// if --name is used, robot_name is overwritten
+	if (gen_command.is_used("--name")){
+		robot_name = gen_command.get<std::string>("--name");
+	}
+
 	// Set name and paths
 	cout<<"Robot name: "<<robot_name<<endl;
+	// cout<<"robot_path: "<<path_robot<<endl;
 	auto time_start = high_resolution_clock::now();
 	robot_name_gen = robot_name + "_gen";
-	path_gen = path_robot + robot_name + "_generatedFiles/";
 
-	// ---------------------------------- //
-	// ---------- YAML PARSING ---------- //
-	// ---------------------------------- //
-	// try {
-	// 	// --- load yaml --- //
-	// 	YAML::Node config = YAML::LoadFile(config_file);
+	// --- Robot creation --- //
+	Robot robot = robot_from_file(robot_name, config_file, 1);
 
-	// 	// Number of joints
-	// 	YAML::Node num_joints = config["num_joints"];
-	// 	nj = num_joints.as<double>();
-
-	// 	// joints_type
-	// 	// YAML::Node type_joints = config["type_joints"];
-	// 	// jType = type_joints.as<std::string>();
-	// 	std::vector<std::string> jType = config["type_joints"].as<std::vector<std::string>>();
-
-	// 	// Denavit-Hartenberg
-	// 	std::vector<double> dh_vect = config["DH"].as<std::vector<double>>();
-	// 	DH_table = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-
-	// 	// gravity
-	// 	std::vector<double> gravity = config["gravity"].as<std::vector<double>>();
-
-	// 	// frames offsets
-	// 	YAML::Node frame_base = config["Base_to_L0"];
-	// 	YAML::Node frame_ee = config["Ln_to_EE"];
-
-	// 	std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
-	// 	std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
-	// 	Base_to_L0.set_translation(tr);
-	// 	Base_to_L0.set_ypr(ypr);
-	// 	Base_to_L0.set_gravity(gravity);
-
-	// 	tr = frame_ee["tr"].as<std::vector<double>>();
-	// 	ypr = frame_ee["ypr"].as<std::vector<double>>();
-	// 	Ln_to_EE.set_translation(tr);
-	// 	Ln_to_EE.set_ypr(ypr);
-
-	// } catch (const YAML::Exception& e) {
-	// 	std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-	// 	return 0;
-	// }
-	// // ---------- end parsing ---------- //
-
-	// Robot robot(nj,jType,DH_table,Base_to_L0,Ln_to_EE);
-	Robot robot = robot_from_file(config_file, 0);
-	compute_kinematics(robot);
-	compute_dynamics(robot);
-	compute_regressors(robot);
+	nj = robot.get_numJoints();
 
 	// --- Generate merge code --- //
-	std::string relativePath = path_gen;
+	std::string relativePath = robot_name + "_generatedFiles/";
 
 	std::filesystem::path currentPath = std::filesystem::current_path();
 	std::string absolutePath = currentPath / relativePath;
-	// std::string absolutePath = path_gen; // not absolute but relative to thunder
 
 	// Create directory
 	try {
@@ -180,8 +151,9 @@ int main(int argc, char* argv[]){
 	}
 
 	// Generate library
-	// regrobot.generate_mergeCode(all_vec, absolutePath, robot_name_gen);
-	robot.generate_library(absolutePath, robot_name_gen);
+	// if( gen_command.get<bool>("casadi"))
+	// 	std::cout<<"Saving Casadi functions!"<<std::endl;
+	robot.generate_library(absolutePath, robot_name_gen, GEN_CASADI);
 
 	// --- Write thunder_robot into generatedFiles --- //
 	std::filesystem::path sourcePath;
@@ -190,18 +162,17 @@ int main(int argc, char* argv[]){
 	std::string thunder_robot_h_path;
 	std::string python_cmake_file;
 
-	if (std::filesystem::is_directory(currentPath/"neededFiles")){
-		thunder_robot_cpp_path = "neededFiles/thunder_robot_template.cpp";
-		thunder_robot_h_path = "neededFiles/thunder_robot_template.h";
-		python_cmake_file = "neededFiles/CMakeLists.txt";
-		COPY_GEN_FLAG = false;
+	// Get home/.local/share directory
+	std::string home = std::getenv("HOME");
+	// std::string template_path = home + "/.local/share/thunder_dynamics/thunder_robot_template/";
+	std::string template_path = "/usr/local/share/thunder_dynamics/thunder_robot_template/";
+
+	if (std::filesystem::is_directory(template_path)){
+		thunder_robot_cpp_path = template_path + "thunder_robot.cpp";
+		thunder_robot_h_path = template_path + "thunder_robot.h";
+		python_cmake_file = template_path + "CMakeLists.txt";
 	}else{
-		std::cout<<"No neededFiles found, ok if you are using thunder from build!"<<std::endl;
-		// thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "src/thunder_robot.cpp";
-		// thunder_robot_h_path = PATH_THUNDER_ROBOT + "library/thunder_robot.h";
-		thunder_robot_cpp_path = PATH_THUNDER_ROBOT + "thunder_robot.cpp";
-		thunder_robot_h_path = PATH_THUNDER_ROBOT + "thunder_robot.h";
-		python_cmake_file = PATH_THUNDER_ROBOT + "CMakeLists.txt";
+		std::cerr<<"Template path not found: "<<template_path<<std::endl;
 	}
 
 	sourceDestPath = absolutePath + "thunder_" + robot_name + ".h";
@@ -220,77 +191,101 @@ int main(int argc, char* argv[]){
 			cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
 			return 0;
 		}
+		cout<<"Python binding generated!"<<endl;
 	}
 
 	// --- change the necessary into thunder_robot --- //
-	int changed = change_to_robot("robot", robot_name, robot, path_gen+"thunder_"+robot_name+".h", path_gen+"thunder_"+robot_name+".cpp");
+	int changed = change_to_robot("robot", robot_name, robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON_FLAG);
 	if (!changed) {
 		cout<<"problem on changing robot name:"<<endl;
 		return 0;
 	}
 
-	// --- generate inertial_REG --- //
-	std::string inertial_DYN_file = path_gen + robot_name + "_inertial_DYN.yaml";
-	std::string inertial_REG_file = path_gen + robot_name + "_inertial_REG.yaml";
-	if (!genInertial_files(robot_name, nj, config_file, inertial_DYN_file, inertial_REG_file)){
-		return 0;
-	}
+	// --- generate parameters files --- //
+	std::string par_file = absolutePath + robot_name + "_conf.yaml";
+	std::string par_REG_file = absolutePath + robot_name + "_par_REG.yaml";
+	robot.save_conf(par_file);
+	robot.save_par_REG(par_REG_file);
+	// if (!genInertial_files(robot_name, nj, config_file, par_file, par_REG_file)){
+	// 	return 0;
+	// }
 
 	std::cout<<"Library generated!"<<std::endl;
 
-	if (GEN_PYTHON_FLAG){
-		std::cout<<"Starting build process fo python bindings"<<std::endl;
-
-		// --- Build python binding --- //
-		std::string build_dir = absolutePath + "build";
-		std::filesystem::create_directory(build_dir);
-		std::string build_command = "cd " + build_dir + " && cmake .. && make";
-		int build_result = system(build_command.c_str());
-		if (build_result != 0) {
-			cout << "Failed to build python binding." << endl;
-			return 0;
-		}
-		std::cout << "Python 3.10 bindings ready!" << std::endl;
+	// thunder_robot path
+	std::string COPY_PREFIX;
+	if (currentPath.filename() == "build") { // last directory name
+		COPY_PREFIX = currentPath/"../../../";
+	} else {
+		COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
 	}
+	std::string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot/library/";
+	std::string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot/src/";
+	std::string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot/robots/";
+	std::string PATH_COPY_CHRONO_H = COPY_PREFIX + "src/thunder_robot_chrono/library/";
+	std::string PATH_COPY_CHRONO_CPP = COPY_PREFIX + "src/thunder_robot_chrono/src/";
+	std::string PATH_COPY_CHRONO_YAML = COPY_PREFIX + "src/thunder_robot_chrono/robots/";
 	
 	// --- copy generated files in thunder_robot project --- //
 	if(COPY_GEN_FLAG){
-		// Problem here, on inertial_reg for sure!
-		std::filesystem::path sourcePath;
-		std::filesystem::path sourceDestPath;
+		copy_to(robot_name, absolutePath, PATH_COPY_YAML, PATH_COPY_YAML, PATH_COPY_H, PATH_COPY_CPP);
+		std::cout << "Copied to thunder_robot!" << std::endl;
+	}
 
-		// copy .h generated files
-		sourcePath = absolutePath + robot_name_gen + ".h";
-		sourceDestPath = PATH_COPY_H + robot_name_gen + ".h";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-		// copy .cpp generated files
-		sourcePath = absolutePath + robot_name_gen + ".cpp";
-		sourceDestPath = PATH_COPY_CPP + robot_name_gen + ".cpp";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-		
-		// copy inertial files
-		sourcePath = absolutePath + robot_name + "_inertial_REG.yaml";
-		sourceDestPath = PATH_COPY_YAML + robot_name + "_inertial_REG.yaml";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-		sourcePath = absolutePath + robot_name + "_inertial_DYN.yaml";
-		sourceDestPath = PATH_COPY_YAML + robot_name + "_inertial_DYN.yaml";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-		// copy thunder_robot
-		sourcePath = path_gen + "thunder_" + robot_name + ".h";
-		sourceDestPath = PATH_COPY_H + "thunder_" + robot_name + ".h";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-		sourcePath = path_gen + "thunder_" + robot_name + ".cpp";
-		sourceDestPath = PATH_COPY_CPP + "thunder_" + robot_name + ".cpp";
-		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-		std::cout<<"Copied to thunder_robot!"<<std::endl;
+	// --- copy generated files in thunder_robot project --- //
+	if(COPY_GEN_CHRONO_FLAG){
+		copy_to(robot_name, absolutePath, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_H, PATH_COPY_CHRONO_CPP);
+		std::cout << "Copied to thunder_robot_chrono!" << std::endl;
 	}
 
 	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();
-	auto duration = duration_cast<microseconds>(time_stop - time_start);
-	std::cout<<"done in "<<((double)duration.count())/1000<<" ms!"<<endl; 
+	auto duration = duration_cast<milliseconds>(time_stop - time_start);
+	std::cout<<"done in "<<((double)duration.count())<<" ms!"<<endl; 
+
+	return 1;
+}
+
+
+// --------------------- //
+// ----- FUNCTIONS ----- //
+// --------------------- //
+
+int copy_to(std::string robot_name, std::string path_from, std::string path_conf, std::string path_par, std::string path_h, std::string path_cpp){
+	// --- copy generated files --- //
+	try{
+		std::filesystem::path sourcePath;
+		std::filesystem::path sourceDestPath;
+
+		// copy .h generated files
+		sourcePath = path_from + robot_name + "_gen" + ".h";
+		sourceDestPath = path_h + robot_name + "_gen" + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy .cpp generated files
+		sourcePath = path_from + robot_name + "_gen" + ".cpp";
+		sourceDestPath = path_cpp + robot_name + "_gen" + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		
+		// copy conf and parameters files
+		sourcePath = path_from + robot_name + "_par_REG.yaml";
+		sourceDestPath = path_par + robot_name + "_par_REG.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = path_from + robot_name + "_conf.yaml";
+		sourceDestPath = path_conf + robot_name + "_conf.yaml";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+
+		// copy thunder_robot
+		sourcePath = path_from + "thunder_" + robot_name + ".h";
+		sourceDestPath = path_h + "thunder_" + robot_name + ".h";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+		sourcePath = path_from + "thunder_" + robot_name + ".cpp";
+		sourceDestPath = path_cpp + "thunder_" + robot_name + ".cpp";
+		std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
+	} catch (const std::runtime_error &err) {
+		std::cout << err.what() << std::endl;
+		return 0;
+	}
+
 	return 1;
 }

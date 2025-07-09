@@ -1,6 +1,7 @@
 # -------------------------- #
 ## ----- Robot Config ----- ##
 # -------------------------- #
+version: 0.1
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
@@ -11,7 +12,7 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 num_joints: 30
 
 # joint types: 'R' or 'P'
-type_joints: 'RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR'
+type_joints: ['R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
 DH: [0,  0,         1, 0,

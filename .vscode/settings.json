@@ -60,6 +60,13 @@
 		"thread": "cpp",
 		"typeinfo": "cpp",
 		"valarray": "cpp",
-		"dense": "cpp"
+		"dense": "cpp",
+		"condition_variable": "cpp",
+		"forward_list": "cpp",
+		"unordered_set": "cpp",
+		"optional": "cpp",
+		"mutex": "cpp",
+		"cinttypes": "cpp",
+		"typeindex": "cpp"
 	}
 }
