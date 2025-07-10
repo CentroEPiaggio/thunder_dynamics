@@ -20,7 +20,6 @@ namespace thunder_ns{
 
 	// configuration struct
 	
-	typedef struct Config Config;
 	typedef struct fun_obj fun_obj;
 	// Config load_config(std::string file);
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute = 1);
