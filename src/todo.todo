@@ -1,4 +1,13 @@
 improvings:
+	URDF:
+		☐ add urdf_path and chain specifications to Robot config
+		☐ implement parallel execution path depending on the yaml content 
+		Kinematics:
+			✔ use urdf_parser to extrac chain @done (7/10/2025, 9:27:31 AM)
+			✔ add support for multi-chain urdfs (more than one child) @done (7/10/2025, 9:27:42 AM)
+			☐ support for fixed joints
+			☐ test consistency with DH
+
 	Console parser:
 		☐ automatically set version?
 		☐ problem if robot_name contains special characters

@@ -1,5 +1,7 @@
 #include "kinematics.h"
 #include "utils.h"
+#include <urdf/model.h>
+#include <urdf/link.h>         	
 
 namespace thunder_ns{
 
@@ -108,6 +110,149 @@ namespace thunder_ns{
 		return T;
 	}
 	
+	// New function in kinematics.cpp
+	int compute_chain_from_urdf(Robot& robot) {
+		auto numJoints = robot.get_numJoints();
+		const auto& world2L0 = robot.model["world2L0"];
+		const auto& Ln2EE = robot.model["Ln2EE"];	
+		using namespace urdf;
+
+		// get urdf path from model
+		std::string urdf_path = "test"; //robot.model["urdf_path"];
+		
+		// get base and ee names
+		std::string base_link_name = "test"; // robot.model["base_name"];
+		std::string ee_link_name = "test"; // robot.model["ee_name"];
+
+		// Load URDF
+		std::shared_ptr<UrdfModel> urdfmodel;
+		try {
+			urdfmodel = UrdfModel::fromUrdfFile(urdf_path.c_str());  // [src/model.cpp](src/model.cpp)
+		} catch (...) {
+			std::cerr << "Failed to load URDF\n";
+			return 1;
+		}
+
+		// Get end-effector link
+		auto ee_link = urdfmodel->getLink(ee_link_name);
+		if (!ee_link) {
+			std::cerr << "EE link not found\n";
+			return 1;
+		}
+
+		// Build chain from EE back to base
+		std::vector<std::shared_ptr<Link>> chain;
+		accumulateChainTransforms(ee_link, base_link_name, chain);
+
+		// Reverse the chain to go from base to end-effector
+		std::reverse(chain.begin(), chain.end());
+		
+		
+		// Initialize cumulative transform (identity transform)
+		Transform base_to_current = Eigen::Isometry3d::Identity();
+		Transform previous_to_current = Eigen::Isometry3d::Identity();
+		
+
+		casadi::SXVector Ti(numJoints+1);    // Output
+		casadi::SXVector T0i(numJoints+2);   // Output
+		// Initialize the first transform
+		// Ti is transformation from link i-1 to link i
+		Ti[0] = get_transform(world2L0);
+		// T0i is transformation from link 0 to link i
+		T0i[0] = Ti[0];
+
+
+		for (size_t i = 0; i < chain.size(); ++i) {
+			auto& link = chain[i];
+			std::cout << "Link " << (i+1) << "/" << chain.size() << ": " << link->name << "\n";
+			
+			// Print cumulative transform from base to current link
+			// std::cout << "  Cumulative transform from " << base_link_name << " to " << link->name << ":\n";
+			// std::cout << "    Position (xyz): "
+			// 		  << base_to_current.position().x()<< " "
+			// 		  << base_to_current.position().y()<< " "
+			// 		  << base_to_current.position().z()<< "\n";
+			double roll, pitch, yaw;
+			base_to_current.rotation().getRpy(roll, pitch, yaw);
+			std::cout << "    Rotation (rpy): " << roll << " " << pitch << " " << yaw << "\n";
+			
+			// Store the cumulative transform by converting Eigen::Isometry3d → casadi::SX
+			{
+				casadi::SX C = casadi::SX::zeros(4,4);
+				Eigen::Matrix4d M = base_to_current.matrix();
+				for (int r = 0; r < 4; r++) {
+					for (int c = 0; c < 4; c++) {
+						C(r,c) = M(r,c);
+					}
+				}
+				T0i[i] = C;
+			}
+
+			// If not in the first link, update the relative transform
+			if (i > 0) {
+				// Store the relative transform by converting Eigen::Isometry3d → casadi::SX
+				{
+					casadi::SX R = casadi::SX::zeros(4,4);
+					Eigen::Matrix4d M = previous_to_current.matrix();
+					for (int r = 0; r < 4; r++) {
+						for (int c = 0; c < 4; c++) {
+							R(r,c) = M(r,c);
+						}
+					}
+				}
+			}
+
+			
+			// Update cumulative transform for next link
+			if (!link->child_joints.empty()) {
+				// Find the joint whose child link matches the next link in the chain
+				std::shared_ptr<urdf::Joint> joint;
+				if (i + 1 < chain.size()) {
+					auto next_link = chain[i + 1];
+					for (auto& j : link->child_joints) {
+						if (j->child_link_name == next_link->name) {
+							joint = j;
+							break;
+							
+						}
+					}
+				}
+				if (!joint) {
+					std::cerr << "Failed to find joint connecting " 
+							  << link->name << " to " 
+							  << (i + 1 < chain.size() ? chain[i + 1]->name : "end") 
+							  << "\n";
+					return 1;
+				}
+				std::cout << "  Outgoing joint: " << joint->name << "\n";
+				
+				// Store the joint transform as the relative transform for the next iteration
+				previous_to_current = joint->parent_to_joint_transform;
+				
+				// Accumulate the joint transform
+				base_to_current = base_to_current * joint->parent_to_joint_transform;
+
+			} else {
+				std::cout << "  (End-effector - no outgoing joints)\n";
+			}
+			std::cout << "\n";
+		}
+	}
+
+
+	void accumulateChainTransforms(std::shared_ptr<urdf::Link> link,
+								const std::string& base,
+								std::vector<std::shared_ptr<urdf::Link>>& chain) {
+		while (link && link->name != base) {
+			chain.push_back(link);
+			link = link->getParent();
+		}
+		if (link && link->name == base) {
+			chain.push_back(link);
+		}
+	}
+
+
 	int compute_chain(Robot& robot) {
 
 		// parameters from robot

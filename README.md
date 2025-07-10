@@ -1,3 +1,9 @@
+# ⚠️ Disclaimer: Experimental URDF Branch ⚠️
+
+This branch of `thunder_dynamics` is experimental and may contain features that are under development, broken or not fully tested. 
+
+---
+
 # Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.15
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
