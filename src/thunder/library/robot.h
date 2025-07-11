@@ -60,7 +60,7 @@ namespace thunder_ns{
 			// FrameOffset _Ln2EE_;
 			// elastic parameters
 			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
-			// casadi::SX gravity;
+			// casadi::SX par_gravity;
 			// symbolic selectivity
 			// std::vector<int> DHtable_symb;
 			// std::vector<int> par_DYN_symb;
@@ -104,7 +104,7 @@ namespace thunder_ns{
 			static const int STD_PAR_LINK = 10;
 			/* Init variables
 			numJoints: number of joints
-			DHtable: Denavit-Hartenberg table format [a alpha d theta]
+			par_DHtable: Denavit-Hartenberg table format [a alpha d theta]
 			jtsType: is string of "R" and "P"
 			base_frame: is used to set transformation between link0 and world_frame */
 			Robot(const std::string config_file);

@@ -168,17 +168,17 @@ namespace thunder_ns{
 			this->symb["par_Dm"] = par_Dm_symb;
 			this->symb["par_Mm"] = par_Mm_symb;
 
-			if (kinematics["symb"]) this->symb["DHtable"] = kinematics["symb"].as<std::vector<int>>();
-			else this->symb["DHtable"].assign(dh_size, 0);
+			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
+			else this->symb["par_DHtable"].assign(dh_size, 0);
 
-			if (frame_base["symb"]) this->symb["world2L0"] = frame_base["symb"].as<std::vector<int>>();
-			else this->symb["world2L0"].assign(6, 0);
+			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<std::vector<int>>();
+			else this->symb["par_world2L0"].assign(6, 0);
 			
-			if (frame_ee["symb"]) this->symb["Ln2EE"] = frame_ee["symb"].as<std::vector<int>>();
-			else this->symb["Ln2EE"].assign(6, 0);
+			if (frame_ee["symb"]) this->symb["par_Ln2EE"] = frame_ee["symb"].as<std::vector<int>>();
+			else this->symb["par_Ln2EE"].assign(6, 0);
 
-			if (config_file["gravity"]["symb"]) this->symb["gravity"] = config_file["gravity"]["symb"].as<std::vector<int>>();
-			else this->symb["gravity"].assign(3, 0);
+			if (config_file["gravity"]["symb"]) this->symb["par_gravity"] = config_file["gravity"]["symb"].as<std::vector<int>>();
+			else this->symb["par_gravity"].assign(3, 0);
 
 
 			// ---- Finalize Robot State and CasADi Model ---- //
@@ -199,10 +199,10 @@ namespace thunder_ns{
 			
 			// Define symbolic variables for the model
 			this->model = {
-				{"DHtable", casadi::SX::sym("DHtable", this->numJoints * 4)},
-				{"world2L0", casadi::SX::sym("world2L0", 6, 1)},
-				{"Ln2EE", casadi::SX::sym("Ln2EE", 6, 1)},
-				{"gravity", casadi::SX::sym("gravity", 3, 1)}
+				{"par_DHtable", casadi::SX::sym("DHtable", this->numJoints * 4)},
+				{"par_world2L0", casadi::SX::sym("world2L0", 6, 1)},
+				{"par_Ln2EE", casadi::SX::sym("Ln2EE", 6, 1)},
+				{"par_gravity", casadi::SX::sym("gravity", 3, 1)}
 			};
 
 			// Create CasADi numerical vectors from parsed data
@@ -219,10 +219,10 @@ namespace thunder_ns{
 
 			// Populate the 'args' map with numerical values
 			this->args = {
-				{"DHtable", DHtable_numerical},
-				{"world2L0", world2L0_numerical},
-				{"Ln2EE", Ln2EE_numerical},
-				{"gravity", gravity_numerical}
+				{"par_DHtable", DHtable_numerical},
+				{"par_world2L0", world2L0_numerical},
+				{"par_Ln2EE", Ln2EE_numerical},
+				{"par_gravity", gravity_numerical}
 			};
 
 		} catch (const YAML::Exception& e) {
