@@ -41,7 +41,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-find_package(yaml-cpp REQUIRED)
 target_link_libraries(library casadi yaml-cpp::yaml-cpp)
 
 # Add executables and link them with the library
