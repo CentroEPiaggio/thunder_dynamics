@@ -118,12 +118,17 @@ namespace thunder_ns{
 		using namespace urdf;
 
 		// get urdf path from model
-		std::string urdf_path = "test"; //robot.model["urdf_path"];
+		std::string urdf_path = robot.urdf_path; 
 		
 		// get base and ee names
-		std::string base_link_name = "test"; // robot.model["base_name"];
-		std::string ee_link_name = "test"; // robot.model["ee_name"];
+		std::string base_link_name = robot.base_link;
+		std::string ee_link_name = robot.ee_link;
 
+		std::cout << "Computing kinematic chain from:\n";
+		std::cout << "  Base link: " << base_link_name << "\n";
+		std::cout << "  End-effector link: " << ee_link_name << "\n";
+		std::cout << "  URDF path: " << urdf_path << "\n";
+		
 		// Load URDF
 		std::shared_ptr<UrdfModel> urdfmodel;
 		try {
@@ -254,7 +259,9 @@ namespace thunder_ns{
 
 
 	int compute_chain(Robot& robot) {
-
+		if (robot.kin_type == "URDF") {
+			return compute_chain_from_urdf(robot);
+		}
 		// parameters from robot
 		auto numJoints = robot.get_numJoints();
 		auto jointsType = robot.get_jointsType();

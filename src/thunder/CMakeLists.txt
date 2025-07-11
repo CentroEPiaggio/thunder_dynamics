@@ -47,6 +47,7 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/tolomeis/URDF_Parser.git
     GIT_TAG dev/eigen
 )
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
 
 FetchContent_MakeAvailable(urdfparser)
 
