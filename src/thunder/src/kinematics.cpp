@@ -132,7 +132,7 @@ namespace thunder_ns{
 		// Load URDF
 		std::shared_ptr<UrdfModel> urdfmodel;
 		try {
-			urdfmodel = UrdfModel::fromUrdfFile(urdf_path.c_str());  // [src/model.cpp](src/model.cpp)
+			urdfmodel = UrdfModel::fromUrdfFile(urdf_path.c_str());
 		} catch (...) {
 			std::cerr << "Failed to load URDF\n";
 			return 1;
@@ -152,13 +152,8 @@ namespace thunder_ns{
 		// Reverse the chain to go from base to end-effector
 		std::reverse(chain.begin(), chain.end());
 		
-		
-		// Initialize cumulative transform (identity transform)
-		Transform base_to_current = Eigen::Isometry3d::Identity();
-		Transform previous_to_current = Eigen::Isometry3d::Identity();
-		
 
-		casadi::SXVector Ti(numJoints+1);    // Output
+		casadi::SXVector Ti(numJoints+1);    // We aggregate Ln->EE in the same transform
 		casadi::SXVector T0i(numJoints+2);   // Output
 		// Initialize the first transform
 		// Ti is transformation from link i-1 to link i
@@ -167,81 +162,66 @@ namespace thunder_ns{
 		T0i[0] = Ti[0];
 
 
-		for (size_t i = 0; i < chain.size(); ++i) {
-			auto& link = chain[i];
-			std::cout << "Link " << (i+1) << "/" << chain.size() << ": " << link->name << "\n";
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
+		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
+		arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
+		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
+
+
+		for (size_t i = 0; i < chain.size() - 1; ++i) {
+			auto& parent_link = chain[i];
+			auto& child_link = chain[i+1];
 			
-			// Print cumulative transform from base to current link
-			// std::cout << "  Cumulative transform from " << base_link_name << " to " << link->name << ":\n";
-			// std::cout << "    Position (xyz): "
-			// 		  << base_to_current.position().x()<< " "
-			// 		  << base_to_current.position().y()<< " "
-			// 		  << base_to_current.position().z()<< "\n";
-			double roll, pitch, yaw;
-			base_to_current.rotation().getRpy(roll, pitch, yaw);
-			std::cout << "    Rotation (rpy): " << roll << " " << pitch << " " << yaw << "\n";
+			// Find the joint whose child link matches the next link in the chain
+			std::shared_ptr<urdf::Joint> joint;
+			for (auto& j : parent_link->child_joints) { // FIX: Search on parent link's children
+				if (j->child_link_name == child_link->name) {
+					joint = j;
+					break;
+				}
+			}
+
+			if (!joint) {
+				std::cerr << "Failed to find joint connecting " 
+							<< parent_link->name << " to " << child_link->name << "\n";
+				return 1;
+			}
 			
-			// Store the cumulative transform by converting Eigen::Isometry3d → casadi::SX
+			// This is the relative transform T_i_to_(i+1)
+			Transform T_parent_to_child = joint->parent_to_joint_transform;
+
+			// Store the relative transform by converting Eigen::Isometry3d -> casadi::SX
 			{
-				casadi::SX C = casadi::SX::zeros(4,4);
-				Eigen::Matrix4d M = base_to_current.matrix();
+				casadi::SX R = casadi::SX::zeros(4,4);
+				Eigen::Matrix4d M = T_parent_to_child.matrix();
 				for (int r = 0; r < 4; r++) {
 					for (int c = 0; c < 4; c++) {
-						C(r,c) = M(r,c);
+						R(r,c) = M(r,c);
 					}
 				}
-				T0i[i] = C;
+				Ti[i+1] = R; // FIX: Store relative transform in Ti
 			}
 
-			// If not in the first link, update the relative transform
-			if (i > 0) {
-				// Store the relative transform by converting Eigen::Isometry3d → casadi::SX
-				{
-					casadi::SX R = casadi::SX::zeros(4,4);
-					Eigen::Matrix4d M = previous_to_current.matrix();
-					for (int r = 0; r < 4; r++) {
-						for (int c = 0; c < 4; c++) {
-							R(r,c) = M(r,c);
-						}
-					}
-				}
-			}
+			// Update and store the cumulative transform T_world_to_(i+1)
+			// T0i[i+1] = T0i[i] * Ti[i+1]
+			T0i[i+1] = casadi::SX::mtimes(T0i[i], Ti[i+1]); 
 
-			
-			// Update cumulative transform for next link
-			if (!link->child_joints.empty()) {
-				// Find the joint whose child link matches the next link in the chain
-				std::shared_ptr<urdf::Joint> joint;
-				if (i + 1 < chain.size()) {
-					auto next_link = chain[i + 1];
-					for (auto& j : link->child_joints) {
-						if (j->child_link_name == next_link->name) {
-							joint = j;
-							break;
-							
-						}
-					}
-				}
-				if (!joint) {
-					std::cerr << "Failed to find joint connecting " 
-							  << link->name << " to " 
-							  << (i + 1 < chain.size() ? chain[i + 1]->name : "end") 
-							  << "\n";
-					return 1;
-				}
-				std::cout << "  Outgoing joint: " << joint->name << "\n";
-				
-				// Store the joint transform as the relative transform for the next iteration
-				previous_to_current = joint->parent_to_joint_transform;
-				
-				// Accumulate the joint transform
-				base_to_current = base_to_current * joint->parent_to_joint_transform;
-
-			} else {
-				std::cout << "  (End-effector - no outgoing joints)\n";
-			}
-			std::cout << "\n";
+			arg_list = robot.obtain_symb_parameters({"q"}, {});	
+			if (!robot.add_function("T_"+std::to_string(i+1), Ti[i+1], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
+			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
+			if (!robot.add_function("T_0_"+std::to_string(i+1), T0i[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
 		}
+
+		// Add the transform from the last link (Ln) to the End-Effector (EE)
+		T0i[numJoints+1] = casadi::SX::mtimes({T0i[numJoints], get_transform(Ln2EE)});
+		
+		std::cout << "\nSuccessfully computed kinematic chain transforms.\n";
+
+		arg_list = robot.obtain_symb_parameters({"q"}, {"world2L0", "Ln2EE"});
+		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
+		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
+		// The rest of your function
+		return 0; // Success
 	}
 
 
