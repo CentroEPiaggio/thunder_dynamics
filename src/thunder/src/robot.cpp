@@ -85,7 +85,7 @@ namespace thunder_ns{
 				for (int i = 0; i < dh_size; i++) {
 					DHtable_numerical(i) = dh_vect[i];
 				}
-				this->model.insert({"DHtable", DHtable_numerical});
+				this->args.insert({"DHtable", DHtable_numerical});
 				// populate symbolic selectivity flag
 				if (kinematics["symb"]) this->symb["DHtable"] = kinematics["symb"].as<std::vector<int>>();
 				else this->symb["DHtable"].assign(dh_size, 0);
@@ -236,11 +236,9 @@ namespace thunder_ns{
 			}
 
 			// Populate the 'args' map with numerical values
-			this->args = {
-				{"world2L0", world2L0_numerical},
-				{"Ln2EE", Ln2EE_numerical},
-				{"gravity", gravity_numerical}
-			};
+			this->args.insert({"world2L0", world2L0_numerical});
+			this->args.insert({"Ln2EE", Ln2EE_numerical});
+			this->args.insert({"gravity", gravity_numerical});
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;

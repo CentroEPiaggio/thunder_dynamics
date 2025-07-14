@@ -110,9 +110,21 @@ namespace thunder_ns{
 		return T;
 	}
 	
+	casadi::SX to_casadi_sx(const urdf::Transform& T) {
+		casadi::SX R = casadi::SX::zeros(4, 4);
+		Eigen::Matrix4d M = T.matrix();
+		for (int r = 0; r < 4; ++r) {
+			for (int c = 0; c < 4; ++c) {
+				R(r, c) = M(r, c);
+			}
+		}
+		return R;
+	}
+
 	// New function in kinematics.cpp
 	int compute_chain_from_urdf(Robot& robot) {
 		auto numJoints = robot.get_numJoints();
+		const auto& q = robot.model["q"];
 		const auto& world2L0 = robot.model["world2L0"];
 		const auto& Ln2EE = robot.model["Ln2EE"];	
 		using namespace urdf;
@@ -151,10 +163,10 @@ namespace thunder_ns{
 
 		// Reverse the chain to go from base to end-effector
 		std::reverse(chain.begin(), chain.end());
-		
 
 		casadi::SXVector Ti(numJoints+1);    // We aggregate Ln->EE in the same transform
 		casadi::SXVector T0i(numJoints+2);   // Output
+
 		// Initialize the first transform
 		// Ti is transformation from link i-1 to link i
 		Ti[0] = get_transform(world2L0);
@@ -174,7 +186,7 @@ namespace thunder_ns{
 			
 			// Find the joint whose child link matches the next link in the chain
 			std::shared_ptr<urdf::Joint> joint;
-			for (auto& j : parent_link->child_joints) { // FIX: Search on parent link's children
+			for (auto& j : parent_link->child_joints) { 
 				if (j->child_link_name == child_link->name) {
 					joint = j;
 					break;
@@ -187,20 +199,43 @@ namespace thunder_ns{
 				return 1;
 			}
 			
-			// This is the relative transform T_i_to_(i+1)
-			Transform T_parent_to_child = joint->parent_to_joint_transform;
+            // The total relative transform is T_relative = T_static * T_motion(q)            
+            // static transform (parent link to joint frame)
+			casadi::SX T_static = to_casadi_sx(joint->parent_to_joint_transform);
+            
+            //  symbolic motion transform based on joint type
+            casadi::SX T_motion = casadi::SX::eye(4);
+            casadi::SX qi = q(i); 
+            const auto& axis = joint->axis;
+			
+            if (joint->type == urdf::JointType::REVOLUTE || joint->type == urdf::JointType::CONTINUOUS) {
+                // For the sake of sanity we assume axis is either x, y, or z
+                casadi::SX R_motion;
+                if (axis.x() != 0) R_motion = R_x(qi * axis.x());
+                else if (axis.y() != 0) R_motion = R_y(qi * axis.y());
+                else if (axis.z() != 0) R_motion = R_z(qi * axis.z());
+                else {
+                    // (0,0,0) is probably an error in URDF syntax bu we handle it without panic
+                    R_motion = casadi::SX::eye(3);
+                }
+                T_motion(casadi::Slice(0,3), casadi::Slice(0,3)) = R_motion;
 
-			// Store the relative transform by converting Eigen::Isometry3d -> casadi::SX
-			{
-				casadi::SX R = casadi::SX::zeros(4,4);
-				Eigen::Matrix4d M = T_parent_to_child.matrix();
-				for (int r = 0; r < 4; r++) {
-					for (int c = 0; c < 4; c++) {
-						R(r,c) = M(r,c);
-					}
-				}
-				Ti[i+1] = R; // FIX: Store relative transform in Ti
+            } else if (joint->type == urdf::JointType::PRISMATIC) {
+                T_motion(0, 3) = axis.x() * qi;
+                T_motion(1, 3) = axis.y() * qi;
+                T_motion(2, 3) = axis.z() * qi;
+            } else if (joint->type == urdf::JointType::FIXED) {
+				// should be easy to handle but for now it's panic
+				std::cerr << "Fixed joint found\n";
+				return 1;
+			} else {
+				// in this case we properly go panic
+				std::cerr << "Unsupported joint type: " << static_cast<int>(joint->type) << "\n";
+				return 1;
 			}
+            
+            // Full relative transform
+            Ti[i+1] = casadi::SX::mtimes(T_static, T_motion);
 
 			// Update and store the cumulative transform T_world_to_(i+1)
 			// T0i[i+1] = T0i[i] * Ti[i+1]
@@ -220,8 +255,8 @@ namespace thunder_ns{
 		arg_list = robot.obtain_symb_parameters({"q"}, {"world2L0", "Ln2EE"});
 		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
 		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
-		// The rest of your function
-		return 0; // Success
+		
+		return 0;
 	}
 
 
