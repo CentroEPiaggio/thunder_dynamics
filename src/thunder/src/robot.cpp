@@ -1011,8 +1011,7 @@ namespace thunder_ns{
 				arg_index++;
 			}
 
-			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
-			// cout<<"fun: "<<fun<<endl;
+			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)}, f_args, {f_name});
 			casadi_fun[f_name] = fun;
 		}
 
