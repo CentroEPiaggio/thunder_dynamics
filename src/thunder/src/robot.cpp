@@ -5,6 +5,8 @@
 #include "../library/utils.h"
 #include "../library/userDefined.h"
 
+#include <filesystem>
+
 using std::cout;
 using std::endl;
 
@@ -974,40 +976,23 @@ namespace thunder_ns{
 			fun_descr[f_name] = descr;
 
 			casadi::SXVector inputs(f_args.size());
-			// for (const auto& arg : f_args) {
-			// 	inputs.push_back(model[arg]);
-			// }
 			int arg_index=0;
 			for (const auto& arg : f_args) {
 				// - resize parameters - //
-				// int sz_original = args[arg].size();
-				// std::cout << "fun: " << f_name << std::endl;
-				// std::cout << "arg: " << arg << std::endl;
 				std::vector<int>& symb_flag = symb[arg];
 				std::vector<casadi::SX> par_symb;
 				casadi::SX& par_model = model[arg];
-				// cout << "model[arg]: " << par_model << endl;
-				// cout << "symb_flag: " << symb_flag << endl;
 				int sz_original = par_model.size().first;
-				// casadi::SX par_model_new = casadi::SX::zeros(sz_original);
-				// casadi::SX new_par(sz_original,1);
 				int sz = 0;
 				for (int i=0; i<sz_original; i++){
 					if (symb_flag[i]){
 						par_symb.push_back(par_model(i));
-						// par_model_new(sz) = par_model(i);
 						sz++;
 					}
 				}
 				casadi::SX par_symb_new = casadi::SX::vertcat(par_symb);
-				// casadi::Slice newsize(0,sz);
-				// par_model = par_model(newsize,1);
-				// par_arg = par_arg(newsize,1);
-				// par_model_new.resize(sz,1);
-				// cout << "par_model_new: " << par_symb_new << endl;
 
 				inputs[arg_index] = par_symb_new;
-				// inputs[arg_index] = model[arg](newsize, 0);
 				arg_index++;
 			}
 
@@ -1036,12 +1021,16 @@ namespace thunder_ns{
 		myCodeGen.generate(savePath);
 
 		if(SAVE_CASADI){
+			// Create directory
+			try {
+				std::filesystem::create_directory(savePath + "/casadi_functions");
+			} catch(std::exception & e){
+				std::cout<<"Problem creating directory generatedFiles/"<<std::endl;
+			}
 			// Save CasADi functions
 			for (const auto& f : casadi_fun) {
-				std::string function_file = savePath + "/" + f.first + ".casadi";
-				// std::ofstream file(function_file, std::ios::binary);
+				std::string function_file = savePath + "/casadi_functions/" + f.first + ".casadi";
 				f.second.save(function_file);
-				// file.close();
 			}
 		}
 	}
