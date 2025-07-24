@@ -1,3 +1,7 @@
+# ⚠️ Experimental Batched PyTorch Branch ⚠️
+
+This branch is experimental and under development. It aims to provide a PyTorch-based batched operations. Details in the [road_to_pytorch.md](road_to_pytorch.md) file.
+
 # Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.15
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
