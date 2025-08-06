@@ -1148,10 +1148,10 @@ namespace thunder_ns{
 			cout<<"Kinematics ok!"<<endl;
 			compute_dynamics(robot, advanced);
 			cout<<"Dynamics ok!"<<endl;
-			compute_regressors(robot);
-			cout<<"Regressors ok!"<<endl;
-			compute_userDefined(robot);
-			cout<<"User defined functions ok!"<<endl;
+			// compute_regressors(robot);
+			// cout<<"Regressors ok!"<<endl;
+			// compute_userDefined(robot);
+			// cout<<"User defined functions ok!"<<endl;
 
 			// - update parameters - //
 			robot.update_symb_parameters();
