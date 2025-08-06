@@ -121,7 +121,6 @@ namespace thunder_ns{
 		return R;
 	}
 
-	// New function in kinematics.cpp
 	int compute_chain_from_urdf(Robot& robot) {
 		auto numJoints = robot.get_numJoints();
 		const auto& q = robot.model["q"];
@@ -179,9 +178,12 @@ namespace thunder_ns{
 		arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
+		// for fixed joints
+		casadi::SX T_accum_static = casadi::SX::eye(4);
+		int q_idx = 0;
 
 		for (size_t i = 0; i < chain.size() - 1; ++i) {
-			auto& parent_link = chain[i];
+			auto& parent_link = chain[i]; // we use i here to walk the entire chain
 			auto& child_link = chain[i+1];
 			
 			// Find the joint whose child link matches the next link in the chain
@@ -202,10 +204,19 @@ namespace thunder_ns{
             // The total relative transform is T_relative = T_static * T_motion(q)            
             // static transform (parent link to joint frame)
 			casadi::SX T_static = to_casadi_sx(joint->parent_to_joint_transform);
+            T_accum_static = casadi::SX::mtimes(T_accum_static, T_static);
+
+			// If the joint is fixed, we do not need to add a motion transform and we can skip
+			if (joint->type == urdf::JointType::FIXED){
+				// T_accum_static will take into account the current joint transform
+				continue; // Skip to the next joint
+			}
+
+
             
-            //  symbolic motion transform based on joint type
+			//  symbolic motion transform based on joint type
             casadi::SX T_motion = casadi::SX::eye(4);
-            casadi::SX qi = q(i); 
+            casadi::SX qi = q(q_idx); 
             const auto& axis = joint->axis;
 			
             if (joint->type == urdf::JointType::REVOLUTE || joint->type == urdf::JointType::CONTINUOUS) {
@@ -224,10 +235,6 @@ namespace thunder_ns{
                 T_motion(0, 3) = axis.x() * qi;
                 T_motion(1, 3) = axis.y() * qi;
                 T_motion(2, 3) = axis.z() * qi;
-            } else if (joint->type == urdf::JointType::FIXED) {
-				// should be easy to handle but for now it's panic
-				std::cerr << "Fixed joint found\n";
-				return 1;
 			} else {
 				// in this case we properly go panic
 				std::cerr << "Unsupported joint type: " << static_cast<int>(joint->type) << "\n";
@@ -235,16 +242,22 @@ namespace thunder_ns{
 			}
             
             // Full relative transform
-            Ti[i+1] = casadi::SX::mtimes(T_static, T_motion);
+            Ti[q_idx+1] = casadi::SX::mtimes(T_accum_static, T_motion);
 
+			
 			// Update and store the cumulative transform T_world_to_(i+1)
 			// T0i[i+1] = T0i[i] * Ti[i+1]
-			T0i[i+1] = casadi::SX::mtimes(T0i[i], Ti[i+1]); 
-
+			T0i[q_idx+1] = casadi::SX::mtimes(T0i[q_idx], Ti[q_idx+1]); 
+			
 			arg_list = robot.obtain_symb_parameters({"q"}, {});	
-			if (!robot.add_function("T_"+std::to_string(i+1), Ti[i+1], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
+			if (!robot.add_function("T_"+std::to_string(q_idx+1), Ti[q_idx+1], arg_list, "relative transformation from frame"+ std::to_string(q_idx) +"to frame "+std::to_string(q_idx+1))) return 0;
 			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
-			if (!robot.add_function("T_0_"+std::to_string(i+1), T0i[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
+			if (!robot.add_function("T_0_"+std::to_string(q_idx+1), T0i[q_idx+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(q_idx+1))) return 0;
+			
+			q_idx++; // Increment the joint index for the next iteration
+
+			// reset T accum static 
+			T_accum_static = casadi::SX::eye(4);
 		}
 
 		// Add the transform from the last link (Ln) to the End-Effector (EE)
