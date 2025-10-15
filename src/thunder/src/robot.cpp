@@ -72,6 +72,17 @@ namespace thunder_ns{
 				this->D_order = elastic_node["D_order"].as<int>();
 				this->Dm_order = elastic_node["Dm_order"].as<int>();
 			}
+			// identify elastic joints
+			this->numElasticJoints = 0;
+			this->isElasticJoint.resize(this->numJoints);
+			for (int i = 0; i < this->numJoints; i++) {
+				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
+					this->isElasticJoint[i] = 1;
+					this->numElasticJoints++;
+				} else {
+					this->isElasticJoint[i] = 0;
+				}
+			}
 
 			// Denavit-Hartenberg
 			YAML::Node kinematics = config_file["kinematics"];
@@ -83,7 +94,10 @@ namespace thunder_ns{
 			}
 
 			// Gravity
-			std::vector<double> gravity_vect = config_file["gravity"]["value"].as<std::vector<double>>();
+			std::vector<double> gravity_vect = {0.0, 0.0, 0.0}; // default no gravity
+			if (config_file["gravity"]){
+				std::vector<double> gravity_vect = config_file["gravity"]["value"].as<std::vector<double>>();
+			}
 
 			// Frame Offsets
 			YAML::Node frame_base = config_file["Base_to_L0"];
@@ -137,26 +151,32 @@ namespace thunder_ns{
 			std::vector<int> par_K_symb, par_D_symb, par_Dm_symb, par_Mm_symb;
 			if (this->ELASTIC) {
 				YAML::Node elastic_joints = config_file["elastic"]["joints"];
+				int i = 0;
 				for (const auto& node : elastic_joints) {
+					if (i==numElasticJoints) break; // break if nore joints defined
 					// Helper lambda to parse a symbolic vector
 					auto parse_symb_vector = [&](const std::string& key, int order) {
 						std::vector<int> vec;
-						if (node.second[key]) vec = node.second[key].as<std::vector<int>>();
-						else vec.assign(order, 0);
+						if (node.second[key]){
+							vec = node.second[key].as<std::vector<int>>();
+							vec.resize(order);
+						} else vec.assign(order, 0);
 						return vec;
 					};
 
 					std::vector<int> K_symb = parse_symb_vector("K_symb", this->K_order);
-					par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
+					if (K_order > 0) par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
 
 					std::vector<int> D_symb = parse_symb_vector("D_symb", this->D_order);
-					par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
+					if (D_order > 0) par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
 
 					std::vector<int> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
-					par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
+					if (Dm_order > 0) par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
 
 					int Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
 					par_Mm_symb.push_back(Mm_symb);
+
+					i++;
 				}
 			}
 
@@ -184,17 +204,6 @@ namespace thunder_ns{
 			// ---- Finalize Robot State and CasADi Model ---- //
 			if (this->jointsType.size() != this->numJoints) {
 				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
-			}
-
-			this->numElasticJoints = 0;
-			this->isElasticJoint.resize(this->numJoints);
-			for (int i = 0; i < this->numJoints; i++) {
-				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
-					this->isElasticJoint[i] = 1;
-					this->numElasticJoints++;
-				} else {
-					this->isElasticJoint[i] = 0;
-				}
 			}
 			
 			// Define symbolic variables for the model
@@ -678,19 +687,19 @@ namespace thunder_ns{
 					if (i==numElasticJoints) break;
 					std::string jointName = node.first.as<std::string>();
 					// stiffness
-					for (int j=0; j<K_order; j++){
+					if (K_order > 0){
 						std::vector<double> K = node.second["K"].as<std::vector<double>>();
-						param_K(K_order*i+j) = K[j];
+						for (int j=0; j<K_order; j++) param_K(K_order*i+j) = K[j];
 					}
 					// coupling friction
-					for (int j=0; j<D_order; j++){
+					if (D_order > 0){
 						std::vector<double> D = node.second["D"].as<std::vector<double>>();
-						param_D(D_order*i + j) = D[j];
+						for (int j=0; j<D_order; j++) param_D(D_order*i + j) = D[j];
 					}
 					// motor friction
-					for (int j=0; j<Dm_order; j++){
+					if (Dm_order > 0){
 						std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
-						param_Dm(Dm_order*i + j) = Dm[j];
+						for (int j=0; j<Dm_order; j++) param_Dm(Dm_order*i + j) = Dm[j];
 					}
 					// motor inertia
 					param_Mm(i) = node.second["Mm"].as<double>();
@@ -1053,7 +1062,8 @@ namespace thunder_ns{
 		// cout << "symbolic: " << symbolic << endl;
 		// cout << "model: " << model[par] << endl;
 		// cout << "args: " << args[par] << endl;
-		
+		// cout << "size: " << symbolic.size() << endl;
+
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
 				model[par](i) = (double)args[par](i);
