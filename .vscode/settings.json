@@ -67,6 +67,11 @@
 		"optional": "cpp",
 		"mutex": "cpp",
 		"cinttypes": "cpp",
-		"typeindex": "cpp"
+		"typeindex": "cpp",
+		"any": "cpp",
+		"charconv": "cpp",
+		"csignal": "cpp",
+		"ranges": "cpp",
+		"variant": "cpp"
 	}
 }

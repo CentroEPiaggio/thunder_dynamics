@@ -5,6 +5,9 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ if parameter is not symbolic, also regressor have to be resized!
+		☐ parse in the same section variables and symbolic flags to avoid confusion!
+		☐ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..)
 		☐ integrate load_conf_par() into parse_config()
 		☐ robustify configuration, avoid incoherent dimension (delete orders, take from arrays)
 		✔ add save_par(file) to thunder_robot @done (2/17/2025, 8:26:34 PM)
@@ -35,7 +38,7 @@ improvings:
 		☐ FrameOffset not so general, use T as internal transformation and provide conversions
 		☐ insert args or model only if order>0
 	Elasticity:
-		- stiffness order adds even exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
+		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
 		☐ add inertia coupling S and for complete elastic model
 		☐ if order==1 K0, D0, Dl0, Dm0 => K, D, Dl, Dm.. It is more intuitive
