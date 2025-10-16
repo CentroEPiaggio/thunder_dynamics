@@ -89,8 +89,8 @@ int main(){
 	par_D = robot.get_arg("par_D");
 	par_Dm = robot.get_arg("par_Dm");
 	Eigen::VectorXd par_Mm = robot.get_arg("par_Mm");
-	Eigen::MatrixXd DHtable = robot.get("DHtable");
-	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
+	Eigen::MatrixXd par_DHtable = robot.get("par_DHtable");
+	cout<<"par_DHtable:"<<endl<<par_DHtable.transpose()<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
 	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
@@ -205,8 +205,8 @@ int main(){
 	// - symbolic quantities - //
 	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
 	// cout << "M_symb: " << robot.model["M"] << endl;
-	// cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
-	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
+	// cout << "par_world2L0: " << robot.model["par_world2L0"] << endl<<endl;
+	// cout << "par_Ln2EE: " << robot.model["par_Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
 	// // Eigen::VectorXd wrench(6);
@@ -217,9 +217,9 @@ int main(){
 	// // // auto reg_omega = robot.model["reg_Jdq"];
 	// // // auto reg_tau = robot.model["reg_JTw"];
 	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// auto par_dh = robot.get_arg("DHtable");
-	// auto par_base = robot.get_arg("world2L0");
-	// auto par_ee = robot.get_arg("Ln2EE");
+	// auto par_dh = robot.get_arg("par_DHtable");
+	// auto par_base = robot.get_arg("par_world2L0");
+	// auto par_ee = robot.get_arg("par_Ln2EE");
 	// Eigen::VectorXd par(20,1);
 	// par << par_dh, par_base, par_ee;
 	// Eigen::VectorXd omega_reg = reg_omega * par;
@@ -236,10 +236,10 @@ int main(){
 	// cout << "M_ddot: " << endl << M_ddot << endl<<endl;
 
 	// - save parameters - //
-	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
+	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"par_world2L0", "par_Ln2EE"});
 	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
-	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
-	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
+	// cout << "par_world2L0: " << robot.get_arg("par_world2L0") << endl<<endl;
+	// cout << "par_Ln2EE: " << robot.get_arg("par_Ln2EE") << endl<<endl;
 
 	return 0;
 }
