@@ -61,7 +61,7 @@ namespace thunder_ns{
 		const auto& dq = robot.model["dq"];
 		const auto& dqr = robot.model["dqr"];
 		const auto& ddqr = robot.model["ddqr"];
-		const auto& gravity = robot.model["gravity"];
+		const auto& par_gravity = robot.model["par_gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -79,7 +79,7 @@ namespace thunder_ns{
 		casadi::SX Jvi(3, nj);
 		casadi::SX Jwi(3, nj);
 
-		casadi::SX g = gravity;
+		casadi::SX g = par_gravity;
 
 		casadi::SX Yr(nj,nParLink*nj);
 		casadi::SX reg_M(nj, nParLink*nj);
@@ -179,13 +179,13 @@ namespace thunder_ns{
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr", "ddqr"}, {"DHtable", "world2L0", "gravity"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr", "ddqr"}, {"par_DHtable", "par_world2L0", "par_gravity"});
 		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "ddqr"}, {"DHtable", "world2L0"});
+		arg_list = robot.obtain_symb_parameters({"q", "ddqr"}, {"par_DHtable", "par_world2L0"});
 		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr"}, {"DHtable", "world2L0"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr"}, {"par_DHtable", "par_world2L0"});
 		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "gravity"});
+		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_gravity"});
 		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
@@ -299,12 +299,12 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get_numJoints();
 		int nParLink = robot.STD_PAR_LINK;
-		const auto& DHtable = robot.model["DHtable"];
-		const auto& world2L0 = robot.model["world2L0"];
-		const auto& Ln2EE = robot.model["Ln2EE"];
-		const auto& DHtable_symb = robot.symb["DHtable"];
-		const auto& world2L0_symb = robot.symb["world2L0"];
-		const auto& Ln2EE_symb = robot.symb["Ln2EE"];
+		const auto& par_DHtable = robot.model["par_DHtable"];
+		const auto& par_world2L0 = robot.model["par_world2L0"];
+		const auto& par_Ln2EE = robot.model["par_Ln2EE"];
+		const auto& DHtable_symb = robot.symb["par_DHtable"];
+		const auto& world2L0_symb = robot.symb["par_world2L0"];
+		const auto& Ln2EE_symb = robot.symb["par_Ln2EE"];
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
 		const auto& w = robot.model["w"];
@@ -315,32 +315,32 @@ namespace thunder_ns{
 			compute_jacobians(robot);
 		}
 
-		// auto dims = DHtable.size();
-		// casadi::SX DH_vect = casadi::SX::reshape(DHtable, dims.first*dims.second, 1);
+		// auto dims = par_DHtable.size();
+		// casadi::SX DH_vect = casadi::SX::reshape(par_DHtable, dims.first*dims.second, 1);
 
 		casadi::SX J = robot.model["J_ee"];
 		// std::cout <<"J: " << J << std::endl;
 
 		// - symbolic par construction of par - //
 		std::vector<casadi::SX> par_symb;
-		// casadi::SX par = casadi::SX::vertcat({DH_vect, world2L0, Ln2EE});
+		// casadi::SX par = casadi::SX::vertcat({DH_vect, par_world2L0, par_Ln2EE});
 		// int sz = 0;
 		// parse DH
-		for (int i=0; i<DHtable.size1(); i++){
+		for (int i=0; i<par_DHtable.size1(); i++){
 			if (DHtable_symb[i]){
-				par_symb.push_back(DHtable(i));
+				par_symb.push_back(par_DHtable(i));
 			}
 		}
 		// parse world2L0
-		for (int i=0; i<world2L0.size1(); i++){
+		for (int i=0; i<par_world2L0.size1(); i++){
 			if (world2L0_symb[i]){
-				par_symb.push_back(world2L0(i));
+				par_symb.push_back(par_world2L0(i));
 			}
 		}
 		// parse Ln2EE
-		for (int i=0; i<Ln2EE.size1(); i++){
+		for (int i=0; i<par_Ln2EE.size1(); i++){
 			if (Ln2EE_symb[i]){
-				par_symb.push_back(Ln2EE(i));
+				par_symb.push_back(par_Ln2EE(i));
 			}
 		}
 		// par.resize(sz,1);
@@ -351,19 +351,19 @@ namespace thunder_ns{
 		// std::cout <<"Jdq: " << Jdq << std::endl;
 		casadi::SX reg_Jdq = casadi::SX::jacobian(Jdq, par);
 		// std::cout <<"reg_Jdq: " << reg_Jdq << std::endl;
-		// reg_Jdq += casadi::SX::jacobian(Jdq, world2L0);
-		// reg_Jdq += casadi::SX::jacobian(Jdq, Ln2EE);
+		// reg_Jdq += casadi::SX::jacobian(Jdq, par_world2L0);
+		// reg_Jdq += casadi::SX::jacobian(Jdq, par_Ln2EE);
 		casadi::SX JTw = casadi::SX::mtimes(J.T(), w);
 		// std::cout <<"JTw: " << JTw << std::endl;
 		casadi::SX reg_JTw = casadi::SX::jacobian(JTw, par);
 		// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "Ln2EE"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
 		// std::cout << "par_list: " << par_symb << std::endl;
 		if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
-		arg_list = robot.obtain_symb_parameters({"q", "w"}, {"DHtable", "world2L0", "Ln2EE"});
+		arg_list = robot.obtain_symb_parameters({"q", "w"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
 		if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 
 		return 1;

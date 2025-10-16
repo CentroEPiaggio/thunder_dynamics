@@ -316,7 +316,7 @@ PYBIND11_MODULE(thunder_robot_py, m) {
 		.def("get_par_Dm", &thunder_robot::get_par_Dm, "Get par parameters Dm")
 		.def("get_par_Mm", &thunder_robot::get_par_Mm, "Get par parameters Mm")
 		.def("get_par_Dl", &thunder_robot::get_par_Dl, "Get par parameters Dl")
-		.def("get_par_DHtable", &thunder_robot::get_par_DHtable, "Get par parameters DHtable")
+		.def("get_par_DHtable", &thunder_robot::get_par_DHtable, "Get par parameters par_DHtable")
 		.def("get_par_gravity", &thunder_robot::get_par_gravity, "Get par parameters gravity")
 		.def("get_par_world2L0", &thunder_robot::get_par_world2L0, "Get par parameters world2L0")
 		.def("get_par_Ln2EE", &thunder_robot::get_par_Ln2EE, "Get par parameters Ln2EE")

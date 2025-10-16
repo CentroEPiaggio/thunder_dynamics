@@ -24,89 +24,6 @@ namespace thunder_ns{
 		initVarsFuns();			// initialize variables
 	}
 
-	// Robot::Robot(const Config conf){
-	// 	numJoints = conf.numJoints;
-	// 	jointsType = conf.jointsType;
-	// 	// numParLink.resize(numJoints);
-	// 	ELASTIC = conf.ELASTIC;
-	// 	K_order = conf.K_order;
-	// 	D_order = conf.D_order;
-	// 	Dl_order = conf.Dl_order;
-	// 	Dm_order = conf.Dm_order;
-	// 	// obtain number of parameters
-	// 	// PAR_DYN_LINK = STD_PAR_LINK + Dl_order;
-	// 	// PAR_REG_LINK = STD_PAR_LINK + Dl_order;
-	// 	// PAR_ELA_LINK = K_order + D_order + Dm_order;
-	// 	// numParDYN = STD_PAR_LINK*numJoints;
-	// 	// numParREG = numParDYN;
-	// 	if (jointsType.size()!=numJoints){
-	// 		// problem on number of joints or joints type !!!
-	// 		// --- To handle!!! --- //
-	// 	}
-	// 	numElasticJoints = 0;
-	// 	isElasticJoint.resize(numJoints);
-	// 	// elasticSel = casadi::SX::zeros(numJoints,numJoints);
-	// 	for (int i=0; i<numJoints; i++){
-	// 		isElasticJoint[i] = 0;
-	// 		// numParLink[i] = STD_PAR_LINK;
-	// 		if ((jointsType[i] == "R_SEA")||(jointsType[i] == "P_SEA")) {
-	// 			// numParELA += K_order + D_order + Dm_order;
-	// 			// numParLink[i] += K_order + D_order;
-	// 			isElasticJoint[i] = 1;
-	// 			numElasticJoints++;
-	// 			// elasticSel(i,i) = 1;
-	// 		}
-	// 	}
-	// 	// numParELA = numElasticJoints*(PAR_ELA_LINK);
-
-	// 	// // N_PAR_LINK = 10;
-	// 	// // jointsType = jointsType;
-	// 	// _DHtable_ = conf.DHtable;
-	// 	// _world2L0_ = conf.base_frame;
-	// 	// // N_PAR_LINK = 10;
-	// 	// // gravity = base_frame.get_gravity();
-	// 	// _Ln2EE_ = conf.ee_frame;
-	// 	valid = 1;
-	// 	// _mu_ = MU;
-
-	// 	// symbolic selectivity
-	// 	symb["DHtable"] = conf.DHtable_symb;
-	// 	symb["par_DYN"] = conf.par_DYN_symb;
-	// 	symb["par_Dl"] = conf.par_Dl_symb;
-	// 	symb["par_K"] = conf.par_K_symb;
-	// 	symb["par_D"] = conf.par_D_symb;
-	// 	symb["par_Dm"] = conf.par_Dm_symb;
-	// 	symb["world2L0"] = conf.world2L0_symb;
-	// 	symb["Ln2EE"] = conf.Ln2EE_symb;
-	// 	symb["gravity"] = conf.gravity_symb;
-
-	// 	// - parameters - //
-	// 	casadi::SX DHtable = casadi::SX::sym("DHtable", numJoints,4);
-	// 	casadi::SX world2L0 = casadi::SX::sym("world2L0", 6,1);
-	// 	casadi::SX Ln2EE = casadi::SX::sym("Ln2EE", 6,1);
-	// 	casadi::SX gravity = casadi::SX::sym("gravity", 3,1);
-	// 	model.insert({"DHtable", DHtable});
-	// 	model.insert({"world2L0", world2L0});
-	// 	model.insert({"Ln2EE", Ln2EE});
-	// 	model.insert({"gravity", gravity});
-
-	// 	for (int i=0; i<3; i++){
-	// 		world2L0(i) = casadi::SX(conf.base_frame.translation[i]);
-	// 		world2L0(i+3) = conf.base_frame.ypr[i];
-	// 		Ln2EE(i) = conf.ee_frame.translation[i];
-	// 		Ln2EE(i+3) = conf.ee_frame.ypr[i];
-	// 		gravity(i) = conf.base_frame.gravity[i];
-	// 	}
-	// 	args.insert({"DHtable", conf.DHtable});
-	// 	args.insert({"world2L0", world2L0});
-	// 	args.insert({"Ln2EE", Ln2EE});
-	// 	args.insert({"gravity", gravity});
-
-	// 	// - init all other variables - //
-	// 	initVarsFuns();
-
-	// 	// compute();
-	// }
 
 	YAML::Node Robot::load_config(std::string config_file){
 		try {
@@ -124,305 +41,204 @@ namespace thunder_ns{
 		if (parse_config()) return 1; else return 0;
 	}
 
-	int Robot::parse_config(){
+	int Robot::parse_config() {
+		// Local variables for parsing
 		int nj;
 		int STD_PAR_LINK = Robot::STD_PAR_LINK;
 		FrameOffset Base_to_L0;
 		FrameOffset Ln_to_EE;
-		Config conf;
-		// ----- parsing yaml file ----- //
+
+		// ----- Parsing YAML File ----- //
 		try {
-			// load yaml
-			YAML::Node config_file = config_yaml;
+			YAML::Node config_file = this->config_yaml;
 
-			// Number of joints
+			// ---- Basic Robot Properties ---- //
 			nj = config_file["num_joints"].as<int>();
-			conf.numJoints = nj;
-			Dl_order = 0;
+			this->numJoints = nj;
+			this->jointsType = config_file["type_joints"].as<std::vector<std::string>>();
 
-			// joints_type
-			// YAML::Node type_joints = config_file["type_joints"];
-			// jType = type_joints.as<std::string>();
-			conf.jointsType = config_file["type_joints"].as<std::vector<std::string>>();
-			std::vector<std::string> jType = conf.jointsType;
+			// Friction model order (defaults to 0)
+			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;
 
-			if (config_file["Dl_order"]) Dl_order = config_file["Dl_order"].as<int>();
-			conf.Dl_order = Dl_order;
-			if (config_file["ELASTIC_MODEL"]){
-				conf.ELASTIC = config_file["ELASTIC_MODEL"].as<bool>();
-				if (conf.ELASTIC){
-					conf.K_order = config_file["elastic"]["K_order"].as<int>();
-					conf.D_order = config_file["elastic"]["D_order"].as<int>();
-					conf.Dm_order = config_file["elastic"]["Dm_order"].as<int>();
+			// Elastic model properties (defaults to false)
+			this->ELASTIC = false;
+			this->K_order = 0;
+			this->D_order = 0;
+			this->Dm_order = 0;
+			if (config_file["ELASTIC_MODEL"] && config_file["ELASTIC_MODEL"].as<bool>()) {
+				this->ELASTIC = true;
+				YAML::Node elastic_node = config_file["elastic"];
+				this->K_order = elastic_node["K_order"].as<int>();
+				this->D_order = elastic_node["D_order"].as<int>();
+				this->Dm_order = elastic_node["Dm_order"].as<int>();
+			}
+			// identify elastic joints
+			this->numElasticJoints = 0;
+			this->isElasticJoint.resize(this->numJoints);
+			for (int i = 0; i < this->numJoints; i++) {
+				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
+					this->isElasticJoint[i] = 1;
+					this->numElasticJoints++;
+				} else {
+					this->isElasticJoint[i] = 0;
 				}
 			}
+
 			// Denavit-Hartenberg
 			YAML::Node kinematics = config_file["kinematics"];
 			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-			// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-			int sz = dh_vect.size();
-			casadi::SX DHtable_tmp(sz,1);
-			for (int i=0; i<sz; i++){
-				DHtable_tmp(i) = dh_vect[i];
+			int dh_size = dh_vect.size();
+			casadi::SX DHtable_numerical(dh_size, 1);
+			for (int i = 0; i < dh_size; i++) {
+				DHtable_numerical(i) = dh_vect[i];
 			}
-			conf.DHtable = DHtable_tmp;
-			// cout<<"dhtable: "<<DHtable_tmp<<endl;
 
-			// - Gravity - //
-			YAML::Node gravity_node = config_file["gravity"];
-			std::vector<double> gravity_vect = gravity_node["value"].as<std::vector<double>>();
+			// Gravity
+			std::vector<double> gravity_vect = {0.0, 0.0, 0.0}; // default no gravity
+			if (config_file["gravity"]){
+				std::vector<double> gravity_vect = config_file["gravity"]["value"].as<std::vector<double>>();
+			}
 
-			// frames offsets
+			// Frame Offsets
 			YAML::Node frame_base = config_file["Base_to_L0"];
-			YAML::Node frame_ee = config_file["Ln_to_EE"];
-
-			std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
-			std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
-			Base_to_L0.set_translation(tr);
-			Base_to_L0.set_ypr(ypr);
+			Base_to_L0.set_translation(frame_base["tr"].as<std::vector<double>>());
+			Base_to_L0.set_ypr(frame_base["ypr"].as<std::vector<double>>());
 			Base_to_L0.set_gravity(gravity_vect);
-			conf.base_frame = Base_to_L0;
 
-			tr = frame_ee["tr"].as<std::vector<double>>();
-			ypr = frame_ee["ypr"].as<std::vector<double>>();
-			Ln_to_EE.set_translation(tr);
-			Ln_to_EE.set_ypr(ypr);
-			conf.ee_frame = Ln_to_EE;
+			YAML::Node frame_ee = config_file["Ln_to_EE"];
+			Ln_to_EE.set_translation(frame_ee["tr"].as<std::vector<double>>());
+			Ln_to_EE.set_ypr(frame_ee["ypr"].as<std::vector<double>>());
 
-			// - Dynamics - //
+
+			// ---- Symbolic Selectivity Vectors ---- //
+			// These vectors determine which parameters are treated as symbolic variables.
+			
+			// Dynamics (Inertia)
+			std::vector<int> par_DYN_symb(STD_PAR_LINK * nj);
 			YAML::Node dynamics = config_file["dynamics"];
-			// std::vector<LinkProp> links(nj);
-			conf.links_DYN.resize(nj);
-			std::vector<int> par_DYN_symb;
-			std::vector<int> par_Dl_symb;
-			par_DYN_symb.resize(STD_PAR_LINK*nj);
-			par_Dl_symb.resize(Dl_order*nj);
 			int link_index = 0;
-			for (const auto& node : dynamics){
-				std::string linkName = node.first.as<std::string>();
-				conf.links_DYN[link_index].name = linkName;
+			for (const auto& node : dynamics) {
 				YAML::Node inertial = node.second["inertial"];
-				// inertial
-				// conf.links_DYN[link_index].mass = inertial["mass"].as<double>();
-				// conf.links_DYN[link_index].xyz[0] = inertial["CoM_x"].as<double>();
-				// conf.links_DYN[link_index].xyz[1] = inertial["CoM_y"].as<double>();
-				// conf.links_DYN[link_index].xyz[2] = inertial["CoM_z"].as<double>();
-				// conf.links_DYN[link_index].parI[0] = inertial["Ixx"].as<double>();
-				// conf.links_DYN[link_index].parI[1] = inertial["Ixy"].as<double>();
-				// conf.links_DYN[link_index].parI[2] = inertial["Ixz"].as<double>();
-				// conf.links_DYN[link_index].parI[3] = inertial["Iyy"].as<double>();
-				// conf.links_DYN[link_index].parI[4] = inertial["Iyz"].as<double>();
-				// conf.links_DYN[link_index].parI[5] = inertial["Izz"].as<double>();
-				// symbolic selectivity
 				std::vector<int> link_symb;
-				if (inertial["symb"]){
+				if (inertial["symb"]) {
 					link_symb = inertial["symb"].as<std::vector<int>>();
 				} else {
-					link_symb.resize(STD_PAR_LINK);
-					for (int i=0; i<STD_PAR_LINK; i++) link_symb[i] = 0;
+					link_symb.assign(STD_PAR_LINK, 0); // Default to non-symbolic
 				}
-				for (int j=0; j<STD_PAR_LINK; j++){
-					par_DYN_symb[link_index*STD_PAR_LINK + j] = link_symb[j];
-				}
-				// friction
-				if (Dl_order){
-					conf.links_DYN[link_index].Dl.resize(Dl_order);
-					YAML::Node friction = node.second["friction"];
-					// std::vector<double> Dl = friction["Dl"].as<std::vector<double>>();
-					// conf.links_DYN[link_index].Dl = Dl;
-					// symbolic selectivity
-					std::vector<int> fric_symb;
-					if (friction["symb"]){
-						fric_symb = friction["symb"].as<std::vector<int>>();
-					} else {
-						fric_symb.resize(Dl_order);
-						for (int i=0; i<Dl_order; i++) fric_symb[i] = 0;
-					}
-					// std::vector<int> fric_symb = friction["symb"].as<std::vector<int>>();
-					for (int j=0; j<Dl_order; j++){
-						par_Dl_symb[link_index*Dl_order + j] = fric_symb[j];
-					}
-				}
+				std::copy(link_symb.begin(), link_symb.end(), par_DYN_symb.begin() + link_index * STD_PAR_LINK);
 				link_index++;
 			}
+			
+			// Link Friction
+			std::vector<int> par_Dl_symb;
+			if (this->Dl_order > 0) {
+				par_Dl_symb.resize(this->Dl_order * nj);
+				link_index = 0;
+				for (const auto& node : dynamics) {
+					YAML::Node friction = node.second["friction"];
+					std::vector<int> fric_symb;
+					if (friction["symb"]) {
+						fric_symb = friction["symb"].as<std::vector<int>>();
+					} else {
+						fric_symb.assign(this->Dl_order, 0);
+					}
+					std::copy(fric_symb.begin(), fric_symb.end(), par_Dl_symb.begin() + link_index * this->Dl_order);
+					link_index++;
+				}
+			}
+			
+			// Elasticity (Stiffness, Damping, etc.)
+			std::vector<int> par_K_symb, par_D_symb, par_Dm_symb, par_Mm_symb;
+			if (this->ELASTIC) {
+				YAML::Node elastic_joints = config_file["elastic"]["joints"];
+				int i = 0;
+				for (const auto& node : elastic_joints) {
+					if (i==numElasticJoints) break; // break if nore joints defined
+					// Helper lambda to parse a symbolic vector
+					auto parse_symb_vector = [&](const std::string& key, int order) {
+						std::vector<int> vec;
+						if (node.second[key]){
+							vec = node.second[key].as<std::vector<int>>();
+							vec.resize(order);
+						} else vec.assign(order, 0);
+						return vec;
+					};
 
-			// parse elastic
-			std::vector<int> par_K_symb;
-			std::vector<int> par_D_symb;
-			std::vector<int> par_Dm_symb;
-			std::vector<int> par_Mm_symb;
-			if (conf.ELASTIC){
-				YAML::Node elastic = config_file["elastic"];
-				int index = 0;
-				int K_order = conf.K_order;
-				int D_order = conf.D_order;
-				int Dm_order = conf.Dm_order;
-				for (const auto& node : elastic["joints"]) {
-					std::string jointName = node.first.as<std::string>();
-					// stiffness
-					std::vector<int> K_symb;					
-					if (node.second["K_symb"]){
-						K_symb = node.second["K_symb"].as<std::vector<int>>();
-					} else {
-						K_symb.resize(K_order);
-						for (int i=0; i<K_order; i++) K_symb[i] = 0;
-					}
-					for (int v : K_symb){
-						par_K_symb.push_back(v);
-					}
-					// coupling friction
-					std::vector<int> D_symb;
-					if (node.second["D_symb"]){
-						D_symb = node.second["D_symb"].as<std::vector<int>>();
-					} else {
-						D_symb.resize(D_order);
-						for (int i=0; i<D_order; i++) D_symb[i] = 0;
-					}
-					for (int v : D_symb){
-						par_D_symb.push_back(v);
-					}
-					// motor friction
-					std::vector<int> Dm_symb;
-					if (node.second["Dm_symb"]){
-						Dm_symb = node.second["Dm_symb"].as<std::vector<int>>();
-					} else {
-						Dm_symb.resize(Dm_order);
-						for (int i=0; i<Dm_order; i++) Dm_symb[i] = 0;
-					}
-					for (int v : Dm_symb){
-						par_Dm_symb.push_back(v);
-					}
-					// motor Inertia
-					int Mm_symb;
-					if (node.second["Mm_symb"]){
-						Mm_symb = node.second["Mm_symb"].as<int>();
-					} else {
-						Mm_symb = 0;
-					}
+					std::vector<int> K_symb = parse_symb_vector("K_symb", this->K_order);
+					if (K_order > 0) par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
+
+					std::vector<int> D_symb = parse_symb_vector("D_symb", this->D_order);
+					if (D_order > 0) par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
+
+					std::vector<int> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
+					if (Dm_order > 0) par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
+
+					int Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
 					par_Mm_symb.push_back(Mm_symb);
 
-					index++;
-				}
-			}
-			
-			// symbolic selectivity
-			if (config_file["kinematics"]["symb"]){
-				conf.DHtable_symb = config_file["kinematics"]["symb"].as<std::vector<int>>();
-			} else {
-				sz = conf.DHtable.size1();
-				conf.DHtable_symb.resize(sz);
-				for (int i=0; i<sz; i++) conf.DHtable_symb[i] = 0;
-			}
-			conf.par_DYN_symb = par_DYN_symb;
-			conf.par_Dl_symb = par_Dl_symb;
-			conf.par_K_symb = par_K_symb;
-			conf.par_D_symb = par_D_symb;
-			conf.par_Dm_symb = par_Dm_symb;
-			conf.par_Mm_symb = par_Mm_symb;
-			if (config_file["Base_to_L0"]["symb"]){
-				conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
-			} else {
-				conf.world2L0_symb.resize(6);
-				for (int i=0; i<6; i++) conf.world2L0_symb[i] = 0;
-			}
-			// conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
-			if (config_file["Ln_to_EE"]["symb"]){
-				conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
-			} else {
-				conf.Ln2EE_symb.resize(6);
-				for (int i=0; i<6; i++) conf.Ln2EE_symb[i] = 0;
-			}
-			// conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
-			if (config_file["gravity"]["symb"]){
-				conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
-			} else {
-				conf.gravity_symb.resize(3);
-				for (int i=0; i<3; i++) conf.gravity_symb[i] = 0;
-			}
-			// conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
-			
-			// std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-			// // conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-			// casadi::SX DHtable_tmp(nj,4);
-			// for (int i=0; i<nj; i++){
-			// 	for (int j=0; j<4; j++){
-			// 		DHtable_tmp(i,j) = dh_vect[4*i + j];
-			// 	}
-			// }
-			// conf.DHtable = DHtable_tmp;
-
-			// ----- Apply config ----- //
-			numJoints = conf.numJoints;
-			jointsType = conf.jointsType;
-			// numParLink.resize(numJoints);
-			ELASTIC = conf.ELASTIC;
-			K_order = conf.K_order;
-			D_order = conf.D_order;
-			Dl_order = conf.Dl_order;
-			Dm_order = conf.Dm_order;
-			// obtain number of parameters
-			// PAR_DYN_LINK = STD_PAR_LINK + Dl_order;
-			// PAR_REG_LINK = STD_PAR_LINK + Dl_order;
-			// PAR_ELA_LINK = K_order + D_order + Dm_order;
-			// numParDYN = STD_PAR_LINK*numJoints;
-			// numParREG = numParDYN;
-			if (jointsType.size()!=numJoints){
-				// problem on number of joints or joints type !!!
-				// --- To handle!!! --- //
-			}
-			numElasticJoints = 0;
-			isElasticJoint.resize(numJoints);
-			// elasticSel = casadi::SX::zeros(numJoints,numJoints);
-			for (int i=0; i<numJoints; i++){
-				isElasticJoint[i] = 0;
-				// numParLink[i] = STD_PAR_LINK;
-				if ((jointsType[i] == "R_SEA")||(jointsType[i] == "P_SEA")) {
-					// numParELA += K_order + D_order + Dm_order;
-					// numParLink[i] += K_order + D_order;
-					isElasticJoint[i] = 1;
-					numElasticJoints++;
-					// elasticSel(i,i) = 1;
+					i++;
 				}
 			}
 
-			// symbolic selectivity
-			symb["DHtable"] = conf.DHtable_symb;
-			symb["par_DYN"] = conf.par_DYN_symb;
-			symb["par_Dl"] = conf.par_Dl_symb;
-			symb["par_K"] = conf.par_K_symb;
-			symb["par_D"] = conf.par_D_symb;
-			symb["par_Dm"] = conf.par_Dm_symb;
-			symb["par_Mm"] = conf.par_Mm_symb;
-			symb["world2L0"] = conf.world2L0_symb;
-			symb["Ln2EE"] = conf.Ln2EE_symb;
-			symb["gravity"] = conf.gravity_symb;
+			// ---- Populate the Symbolic Selectivity Map (`symb`) ---- //
+			this->symb["par_DYN"] = par_DYN_symb;
+			this->symb["par_Dl"] = par_Dl_symb;
+			this->symb["par_K"] = par_K_symb;
+			this->symb["par_D"] = par_D_symb;
+			this->symb["par_Dm"] = par_Dm_symb;
+			this->symb["par_Mm"] = par_Mm_symb;
 
-			// - parameters - //
-			casadi::SX DHtable = casadi::SX::sym("DHtable", numJoints*4);
-			casadi::SX world2L0 = casadi::SX::sym("world2L0", 6,1);
-			casadi::SX Ln2EE = casadi::SX::sym("Ln2EE", 6,1);
-			casadi::SX gravity = casadi::SX::sym("gravity", 3,1);
-			model.insert({"DHtable", DHtable});
-			model.insert({"world2L0", world2L0});
-			model.insert({"Ln2EE", Ln2EE});
-			model.insert({"gravity", gravity});
+			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
+			else this->symb["par_DHtable"].assign(dh_size, 0);
 
-			for (int i=0; i<3; i++){
-				world2L0(i) = casadi::SX(conf.base_frame.translation[i]);
-				world2L0(i+3) = conf.base_frame.ypr[i];
-				Ln2EE(i) = conf.ee_frame.translation[i];
-				Ln2EE(i+3) = conf.ee_frame.ypr[i];
-				gravity(i) = conf.base_frame.gravity[i];
+			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<std::vector<int>>();
+			else this->symb["par_world2L0"].assign(6, 0);
+			
+			if (frame_ee["symb"]) this->symb["par_Ln2EE"] = frame_ee["symb"].as<std::vector<int>>();
+			else this->symb["par_Ln2EE"].assign(6, 0);
+
+			if (config_file["gravity"]["symb"]) this->symb["par_gravity"] = config_file["gravity"]["symb"].as<std::vector<int>>();
+			else this->symb["par_gravity"].assign(3, 0);
+
+
+			// ---- Finalize Robot State and CasADi Model ---- //
+			if (this->jointsType.size() != this->numJoints) {
+				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
 			}
-			args.insert({"DHtable", conf.DHtable});
-			args.insert({"world2L0", world2L0});
-			args.insert({"Ln2EE", Ln2EE});
-			args.insert({"gravity", gravity});
+			
+			// Define symbolic variables for the model
+			this->model = {
+				{"par_DHtable", casadi::SX::sym("DHtable", this->numJoints * 4)},
+				{"par_world2L0", casadi::SX::sym("world2L0", 6, 1)},
+				{"par_Ln2EE", casadi::SX::sym("Ln2EE", 6, 1)},
+				{"par_gravity", casadi::SX::sym("gravity", 3, 1)}
+			};
+
+			// Create CasADi numerical vectors from parsed data
+			casadi::SX world2L0_numerical(6, 1);
+			casadi::SX Ln2EE_numerical(6, 1);
+			casadi::SX gravity_numerical(3, 1);
+			for (int i = 0; i < 3; i++) {
+				world2L0_numerical(i) = Base_to_L0.translation[i];
+				world2L0_numerical(i + 3) = Base_to_L0.ypr[i];
+				Ln2EE_numerical(i) = Ln_to_EE.translation[i];
+				Ln2EE_numerical(i + 3) = Ln_to_EE.ypr[i];
+				gravity_numerical(i) = Base_to_L0.gravity[i];
+			}
+
+			// Populate the 'args' map with numerical values
+			this->args = {
+				{"par_DHtable", DHtable_numerical},
+				{"par_world2L0", world2L0_numerical},
+				{"par_Ln2EE", Ln2EE_numerical},
+				{"par_gravity", gravity_numerical}
+			};
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
+			return 0; // Indicate failure
 		}
-		return 1;
+		return 1; // Indicate success
 	}
 
 	void Robot::initVarsFuns(){
@@ -720,61 +536,6 @@ namespace thunder_ns{
 		update_inertial_DYN();
 	}
 
-	// int Robot::set_par_K(Eigen::VectorXd value){
-	// 	casadi::SX& par_K = args["par_K"];
-	// 	int numPar = K_order*numElasticJoints;
-	// 	if (value.size() == numPar){
-	// 		for (int i=0; i<numPar; i++){
-	// 			par_K(i) = value(i);
-	// 		}
-	// 		return 1;
-	// 	} else {
-	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
-	// 		return 0;
-	// 	}
-	// }
-
-	// int Robot::set_par_D(Eigen::VectorXd value){
-	// 	casadi::SX& par_D = args["par_D"];
-	// 	int numPar = D_order*numElasticJoints;
-	// 	if (value.size() == numPar){
-	// 		for (int i=0; i<numPar; i++){
-	// 			par_D(i) = value(i);
-	// 		}
-	// 		return 1;
-	// 	} else {
-	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
-	// 		return 0;
-	// 	}
-	// }
-
-	// int Robot::set_par_Dm(Eigen::VectorXd value){
-	// 	casadi::SX& par_Dm = args["par_Dm"];
-	// 	int numPar = Dm_order*numElasticJoints;
-	// 	if (value.size() == numPar){
-	// 		for (int i=0; i<numPar; i++){
-	// 			par_Dm(i) = value(i);
-	// 		}
-	// 		return 1;
-	// 	} else {
-	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
-	// 		return 0;
-	// 	}
-	// }
-
-	// int Robot::set_par_Dl(Eigen::VectorXd value){
-	// 	casadi::SX& par_Dl = args["par_Dl"];
-	// 	int numPar = Dl_order*numJoints;
-	// 	if (value.size() == numPar){
-	// 		for (int i=0; i<numPar; i++){
-	// 			par_Dl(i) = value(i);
-	// 		}
-	// 		return 1;
-	// 	} else {
-	// 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
-	// 		return 0;
-	// 	}
-	// }
 
 	Eigen::VectorXd Robot::get_arg(std::string par){
 		const casadi::SX& par_casadi = args[par];
@@ -802,42 +563,6 @@ namespace thunder_ns{
 		std::transform(res_elements.begin(), res_elements.end(), param_REG.data(), mapFunction);
 		return param_REG;
 	}
-
-	// Eigen::VectorXd Robot::get_par_K(){
-	// 	const casadi::SX& par_K_casadi = args["par_K"];
-	// 	int numPar = K_order*numElasticJoints;
-	// 	Eigen::VectorXd param_K(numPar);
-	// 	std::vector<casadi::SXElem> res_elements = par_K_casadi.get_elements();
-	// 	std::transform(res_elements.begin(), res_elements.end(), param_K.data(), mapFunction);
-	// 	return param_K;
-	// }
-
-	// Eigen::VectorXd Robot::get_par_D(){
-	// 	const casadi::SX& par_D_casadi = args["par_D"];
-	// 	int numPar = D_order*numElasticJoints;
-	// 	Eigen::VectorXd param_D(numPar);
-	// 	std::vector<casadi::SXElem> res_elements = par_D_casadi.get_elements();
-	// 	std::transform(res_elements.begin(), res_elements.end(), param_D.data(), mapFunction);
-	// 	return param_D;
-	// }
-
-	// Eigen::VectorXd Robot::get_par_Dm(){
-	// 	const casadi::SX& par_Dm_casadi = args["par_Dm"];
-	// 	int numPar = Dm_order*numElasticJoints;
-	// 	Eigen::VectorXd param_Dm(numPar);
-	// 	std::vector<casadi::SXElem> res_elements = par_Dm_casadi.get_elements();
-	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dm.data(), mapFunction);
-	// 	return param_Dm;
-	// }
-
-	// Eigen::VectorXd Robot::get_par_Dl(){
-	// 	const casadi::SX& par_Dl_casadi = args["par_Dl"];
-	// 	int numPar = Dl_order*numJoints;
-	// 	Eigen::VectorXd param_Dl(numPar);
-	// 	std::vector<casadi::SXElem> res_elements = par_Dl_casadi.get_elements();
-	// 	std::transform(res_elements.begin(), res_elements.end(), param_Dl.data(), mapFunction);
-	// 	return param_Dl;
-	// }
 
 	std::vector<fun_obj> Robot::get_functions(bool onlyNames) {
 		std::vector<fun_obj> functions;
@@ -962,19 +687,19 @@ namespace thunder_ns{
 					if (i==numElasticJoints) break;
 					std::string jointName = node.first.as<std::string>();
 					// stiffness
-					for (int j=0; j<K_order; j++){
+					if (K_order > 0){
 						std::vector<double> K = node.second["K"].as<std::vector<double>>();
-						param_K(K_order*i+j) = K[j];
+						for (int j=0; j<K_order; j++) param_K(K_order*i+j) = K[j];
 					}
 					// coupling friction
-					for (int j=0; j<D_order; j++){
+					if (D_order > 0){
 						std::vector<double> D = node.second["D"].as<std::vector<double>>();
-						param_D(D_order*i + j) = D[j];
+						for (int j=0; j<D_order; j++) param_D(D_order*i + j) = D[j];
 					}
 					// motor friction
-					for (int j=0; j<Dm_order; j++){
+					if (Dm_order > 0){
 						std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
-						param_Dm(Dm_order*i + j) = Dm[j];
+						for (int j=0; j<Dm_order; j++) param_Dm(Dm_order*i + j) = Dm[j];
 					}
 					// motor inertia
 					param_Mm(i) = node.second["Mm"].as<double>();
@@ -1337,7 +1062,8 @@ namespace thunder_ns{
 		// cout << "symbolic: " << symbolic << endl;
 		// cout << "model: " << model[par] << endl;
 		// cout << "args: " << args[par] << endl;
-		
+		// cout << "size: " << symbolic.size() << endl;
+
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
 				model[par](i) = (double)args[par](i);
@@ -1354,21 +1080,6 @@ namespace thunder_ns{
 		for (auto par : symb){
 			subs_symb_par(par.first);
 		}
-		// std::vector<int> symbolic = symb["DHtable"];
-		// for (int i=0; i<symbolic.size(); i++){
-		// 	if (symbolic[i] == 0){
-		// 		model["DHtable"][i] = args["DHtable"][i];
-		// 	}
-		// }
-		// std::vector<int> DHtable_symb;
-		// std::vector<int> par_DYN_symb;
-		// std::vector<int> par_Dl_symb;
-		// std::vector<int> par_K_symb;
-		// std::vector<int> par_D_symb;
-		// std::vector<int> par_Dm_symb;
-		// std::vector<int> world2L0_symb;
-		// std::vector<int> Ln2EE_symb;
-		// std::vector<int> gravity_symb;
 		return 1;
 	}
 
@@ -1411,229 +1122,6 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	// Config load_config(std::string file){
-	// 	int nj;
-	// 	int STD_PAR_LINK = Robot::STD_PAR_LINK;
-	// 	FrameOffset Base_to_L0;
-	// 	FrameOffset Ln_to_EE;
-	// 	Config conf;
-	// 	// ----- parsing yaml file ----- //
-	// 	try {
-	// 		// load yaml
-	// 		YAML::Node config_file = YAML::LoadFile(file);
-
-	// 		// Number of joints
-	// 		nj = config_file["num_joints"].as<int>();
-	// 		conf.numJoints = nj;
-	// 		int Dl_order = 0;
-
-	// 		// joints_type
-	// 		// YAML::Node type_joints = config_file["type_joints"];
-	// 		// jType = type_joints.as<std::string>();
-	// 		conf.jointsType = config_file["type_joints"].as<std::vector<std::string>>();
-	// 		std::vector<std::string> jType = conf.jointsType;
-
-	// 		if (config_file["Dl_order"]) Dl_order = config_file["Dl_order"].as<int>();
-	// 		conf.Dl_order = Dl_order;
-	// 		if (config_file["ELASTIC_MODEL"]){
-	// 			conf.ELASTIC = config_file["ELASTIC_MODEL"].as<bool>();
-	// 			if (conf.ELASTIC){
-	// 				conf.K_order = config_file["elastic"]["K_order"].as<int>();
-	// 				conf.D_order = config_file["elastic"]["D_order"].as<int>();
-	// 				conf.Dm_order = config_file["elastic"]["Dm_order"].as<int>();
-	// 			}
-	// 		}
-	// 		// Denavit-Hartenberg
-	// 		YAML::Node kinematics = config_file["kinematics"];
-	// 		std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-	// 		// conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-	// 		casadi::SX DHtable_tmp(nj,4);
-	// 		for (int i=0; i<nj; i++){
-	// 			for (int j=0; j<4; j++){
-	// 				DHtable_tmp(i,j) = dh_vect[4*i + j];
-	// 			}
-	// 		}
-	// 		conf.DHtable = DHtable_tmp;
-	// 		// cout<<"dhtable: "<<DHtable_tmp<<endl;
-
-	// 		// - Gravity - //
-	// 		YAML::Node gravity = config_file["gravity"];
-	// 		std::vector<double> gravity_vect = gravity["value"].as<std::vector<double>>();
-
-	// 		// frames offsets
-	// 		YAML::Node frame_base = config_file["Base_to_L0"];
-	// 		YAML::Node frame_ee = config_file["Ln_to_EE"];
-
-	// 		std::vector<double> tr = frame_base["tr"].as<std::vector<double>>();
-	// 		std::vector<double> ypr = frame_base["ypr"].as<std::vector<double>>();
-	// 		Base_to_L0.set_translation(tr);
-	// 		Base_to_L0.set_ypr(ypr);
-	// 		Base_to_L0.set_gravity(gravity_vect);
-	// 		conf.base_frame = Base_to_L0;
-
-	// 		tr = frame_ee["tr"].as<std::vector<double>>();
-	// 		ypr = frame_ee["ypr"].as<std::vector<double>>();
-	// 		Ln_to_EE.set_translation(tr);
-	// 		Ln_to_EE.set_ypr(ypr);
-	// 		conf.ee_frame = Ln_to_EE;
-
-	// 		// - Dynamics - //
-	// 		YAML::Node dynamics = config_file["dynamics"];
-	// 		// std::vector<LinkProp> links(nj);
-	// 		conf.links_DYN.resize(nj);
-	// 		std::vector<int> par_DYN_symb;
-	// 		std::vector<int> par_Dl_symb;
-	// 		par_DYN_symb.resize(STD_PAR_LINK*nj);
-	// 		par_Dl_symb.resize(Dl_order*nj);
-	// 		int link_index = 0;
-	// 		for (const auto& node : dynamics){
-	// 			std::string linkName = node.first.as<std::string>();
-	// 			conf.links_DYN[link_index].name = linkName;
-	// 			YAML::Node inertial = node.second["inertial"];
-	// 			// inertial
-	// 			// conf.links_DYN[link_index].mass = inertial["mass"].as<double>();
-	// 			// conf.links_DYN[link_index].xyz[0] = inertial["CoM_x"].as<double>();
-	// 			// conf.links_DYN[link_index].xyz[1] = inertial["CoM_y"].as<double>();
-	// 			// conf.links_DYN[link_index].xyz[2] = inertial["CoM_z"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[0] = inertial["Ixx"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[1] = inertial["Ixy"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[2] = inertial["Ixz"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[3] = inertial["Iyy"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[4] = inertial["Iyz"].as<double>();
-	// 			// conf.links_DYN[link_index].parI[5] = inertial["Izz"].as<double>();
-	// 			// symbolic selectivity
-	// 			std::vector<int> link_symb;
-	// 			if (inertial["symb"]){
-	// 				link_symb = inertial["symb"].as<std::vector<int>>();
-	// 			} else {
-	// 				link_symb.resize(STD_PAR_LINK);
-	// 				for (int i=0; i<STD_PAR_LINK; i++) link_symb[i] = 0;
-	// 			}
-	// 			for (int j=0; j<STD_PAR_LINK; j++){
-	// 				par_DYN_symb[link_index*STD_PAR_LINK + j] = link_symb[j];
-	// 			}
-	// 			// friction
-	// 			if (Dl_order){
-	// 				conf.links_DYN[link_index].Dl.resize(Dl_order);
-	// 				YAML::Node friction = node.second["friction"];
-	// 				// std::vector<double> Dl = friction["Dl"].as<std::vector<double>>();
-	// 				// conf.links_DYN[link_index].Dl = Dl;
-	// 				// symbolic selectivity
-	// 				std::vector<int> fric_symb;
-	// 				if (friction["symb"]){
-	// 					fric_symb = friction["symb"].as<std::vector<int>>();
-	// 				} else {
-	// 					fric_symb.resize(Dl_order);
-	// 					for (int i=0; i<Dl_order; i++) fric_symb[i] = 0;
-	// 				}
-	// 				// std::vector<int> fric_symb = friction["symb"].as<std::vector<int>>();
-	// 				for (int j=0; j<Dl_order; j++){
-	// 					par_Dl_symb[link_index*Dl_order + j] = fric_symb[j];
-	// 				}
-	// 			}
-	// 			link_index++;
-	// 		}
-
-	// 		// parse elastic
-	// 		std::vector<int> par_K_symb;
-	// 		std::vector<int> par_D_symb;
-	// 		std::vector<int> par_Dm_symb;
-	// 		if (conf.ELASTIC){
-	// 			YAML::Node elastic = config_file["elastic"];
-	// 			int index = 0;
-	// 			int K_order = conf.K_order;
-	// 			int D_order = conf.D_order;
-	// 			int Dm_order = conf.Dm_order;
-	// 			for (const auto& node : elastic["joints"]) {
-	// 				std::string jointName = node.first.as<std::string>();
-	// 				// stiffness
-	// 				std::vector<int> K_symb;					
-	// 				if (node.second["K_symb"]){
-	// 					K_symb = node.second["K_symb"].as<std::vector<int>>();
-	// 				} else {
-	// 					K_symb.resize(K_order);
-	// 					for (int i=0; i<K_order; i++) K_symb[i] = 0;
-	// 				}
-	// 				for (int v : K_symb){
-	// 					par_K_symb.push_back(v);
-	// 				}
-	// 				// coupling friction
-	// 				std::vector<int> D_symb;
-	// 				if (node.second["D_symb"]){
-	// 					D_symb = node.second["D_symb"].as<std::vector<int>>();
-	// 				} else {
-	// 					D_symb.resize(D_order);
-	// 					for (int i=0; i<D_order; i++) D_symb[i] = 0;
-	// 				}
-	// 				for (int v : D_symb){
-	// 					par_D_symb.push_back(v);
-	// 				}
-	// 				// motor friction
-	// 				std::vector<int> Dm_symb;
-	// 				if (node.second["Dm_symb"]){
-	// 					Dm_symb = node.second["Dm_symb"].as<std::vector<int>>();
-	// 				} else {
-	// 					Dm_symb.resize(Dm_order);
-	// 					for (int i=0; i<Dm_order; i++) Dm_symb[i] = 0;
-	// 				}
-	// 				for (int v : Dm_symb){
-	// 					par_Dm_symb.push_back(v);
-	// 				}
-
-	// 				index++;
-	// 			}
-	// 		}
-			
-	// 		// symbolic selectivity
-	// 		if (config_file["kinematics"]["symb"]){
-	// 			conf.DHtable_symb = config_file["kinematics"]["symb"].as<std::vector<int>>();
-	// 		} else {
-	// 			conf.DHtable_symb.resize(4*nj);
-	// 			for (int i=0; i<4*nj; i++) conf.DHtable_symb[i] = 0;
-	// 		}
-	// 		conf.par_DYN_symb = par_DYN_symb;
-	// 		conf.par_Dl_symb = par_Dl_symb;
-	// 		conf.par_K_symb = par_K_symb;
-	// 		conf.par_D_symb = par_D_symb;
-	// 		conf.par_Dm_symb = par_Dm_symb;
-	// 		if (config_file["Base_to_L0"]["symb"]){
-	// 			conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
-	// 		} else {
-	// 			conf.world2L0_symb.resize(6);
-	// 			for (int i=0; i<6; i++) conf.world2L0_symb[i] = 0;
-	// 		}
-	// 		// conf.world2L0_symb = config_file["Base_to_L0"]["symb"].as<std::vector<int>>();
-	// 		if (config_file["Ln_to_EE"]["symb"]){
-	// 			conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
-	// 		} else {
-	// 			conf.Ln2EE_symb.resize(6);
-	// 			for (int i=0; i<6; i++) conf.Ln2EE_symb[i] = 0;
-	// 		}
-	// 		// conf.Ln2EE_symb = config_file["Ln_to_EE"]["symb"].as<std::vector<int>>();
-	// 		if (config_file["gravity"]["symb"]){
-	// 			conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
-	// 		} else {
-	// 			conf.gravity_symb.resize(3);
-	// 			for (int i=0; i<3; i++) conf.gravity_symb[i] = 0;
-	// 		}
-	// 		// conf.gravity_symb = config_file["gravity"]["symb"].as<std::vector<int>>();
-			
-	// 		// std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-	// 		// // conf.DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
-	// 		// casadi::SX DHtable_tmp(nj,4);
-	// 		// for (int i=0; i<nj; i++){
-	// 		// 	for (int j=0; j<4; j++){
-	// 		// 		DHtable_tmp(i,j) = dh_vect[4*i + j];
-	// 		// 	}
-	// 		// }
-	// 		// conf.DHtable = DHtable_tmp;
-
-	// 	} catch (const YAML::Exception& e) {
-	// 		std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-	// 	}
-
-	// 	return conf;
-	// }
 
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute){
 		// create config

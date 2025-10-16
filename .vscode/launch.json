@@ -17,7 +17,7 @@
 			"externalConsole": false,
 			"MIMode": "gdb",
 			"miDebuggerPath": "/usr/bin/gdb",
-			"preLaunchTask": "makeThunder",		//compila prima di eseguire
+			// "preLaunchTask": "makeThunder",		//compila prima di eseguire
 			"setupCommands": [
 				{
 					"description": "Enable pretty-printing for gdb and add better child debugging",
@@ -44,7 +44,7 @@
 			"externalConsole": false,
 			"MIMode": "gdb",
 			"miDebuggerPath": "/usr/bin/gdb",
-			"preLaunchTask": "makeThunder",		//compila prima di eseguire
+			// "preLaunchTask": "makeThunder",		//compila prima di eseguire
 			"setupCommands": [
 				{
 					"description": "Enable pretty-printing for gdb and add better child debugging",
