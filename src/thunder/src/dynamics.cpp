@@ -103,7 +103,7 @@ namespace thunder_ns{
 		auto _nParLink_ = robot.STD_PAR_LINK;
 		auto jointsType = robot.get_jointsType();
 		const auto& q = robot.model["q"];
-		const auto& world2L0 = robot.model["world2L0"];
+		const auto& par_world2L0 = robot.model["par_world2L0"];
 		const auto& par_DYN = robot.model["par_DYN"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
@@ -122,7 +122,7 @@ namespace thunder_ns{
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform(world2L0)(r_rot_idx, r_rot_idx);
+		auto world_rot = get_transform(par_world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < numJoints; i++) {
 			casadi::SX k0(3,1);             // versor of joint i
@@ -171,8 +171,8 @@ namespace thunder_ns{
 			}
 
 			// Add offset from world-frame transformation
-			// Jci_pos = mtimes(world2L0.get_rotation(),Jci_pos);
-			// Ji_or = mtimes(world2L0.get_rotation(),Ji_or);
+			// Jci_pos = mtimes(par_world2L0.get_rotation(),Jci_pos);
+			// Ji_or = mtimes(par_world2L0.get_rotation(),Ji_or);
 			// Jci_pos = mtimes(world_rot,Jci_pos);
 			// Ji_or = mtimes(world_rot,Ji_or);
 			
@@ -181,7 +181,7 @@ namespace thunder_ns{
 
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
-			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
+			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 			robot.add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
 		}
 
@@ -195,7 +195,7 @@ namespace thunder_ns{
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
 		const auto& par_DYN = robot.model["par_DYN"];
-		const auto& gravity = robot.model["gravity"];
+		const auto& par_gravity = robot.model["par_gravity"];
 		if (robot.model.count("T_0_0") == 0){
 			compute_chain(robot);
 		}
@@ -212,7 +212,7 @@ namespace thunder_ns{
 		casadi::SXVector Jwi(nj);
 		std::tuple<casadi::SXVector, casadi::SXVector> J_tuple;
 
-		casadi::SX g = gravity;
+		casadi::SX g = par_gravity;
 
 		casadi::SX M(nj,nj);
 		casadi::SX C(nj,nj);
@@ -252,13 +252,13 @@ namespace thunder_ns{
 		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("M", M, arg_list, "Manipulator mass matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("C", C, arg_list, "Manipulator Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("C_std", C_std, arg_list, "Classic formulation of the manipulator Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
 		robot.add_function("G", G, arg_list, "Manipulator gravity terms");
 
 		return 1;
@@ -418,25 +418,25 @@ namespace thunder_ns{
 		// - Mass derivatives - //
 		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
 		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "par_DYN"});
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
 
 		// - Coriolis derivatives - //
 		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
 		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq", "d3q"}, {"DHtable", "world2L0", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq", "d3q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
 		robot.add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
 
 		// - Gravity derivatives - //
 		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
 		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
 		robot.add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"DHtable", "world2L0", "gravity", "par_DYN"});
+		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
 		robot.add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
 
 		return 1;

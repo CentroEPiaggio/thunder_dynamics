@@ -11,13 +11,13 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-#include "thunder_RRR.h"
+// #include "thunder_RRR.h"
 // #include "thunder_franka.h"
-// #include "thunder_seaRRR.h"
+#include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-const std::string conf_file = "../robots/RRR_conf.yaml";
+const std::string conf_file = "../robots/seaRRR_conf.yaml";
 // const std::string conf_file = "../robots/franka_conf.yaml";
 // const std::string conf_file = "../robots/egoArm_conf.yaml";
 // const std::string conf_file = "../robots/frankaWrist_conf.yaml";
@@ -38,7 +38,7 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	thunder_RRR robot;
+	thunder_seaRRR robot;
 
 	robot.load_conf(conf_file);
 	const int NJ = robot.get_numJoints();
@@ -117,23 +117,23 @@ int main(){
 	// robot.save_par_DYN(saved_inertial_file);
 
 	// - conf loading test - //
-	cout << "world2L0: " << robot.get_world2L0() << endl;
-	cout << "Ln2EE: " << robot.get_Ln2EE() << endl;
+	cout << "world2L0: " << robot.get_par_world2L0() << endl;
+	cout << "par_Ln2EE: " << robot.get_par_Ln2EE() << endl;
 
 	// // - set par test - //
 	// Eigen::Vector3d par_ee({3, 3, 3});
-	// robot.set_Ln2EE(par_ee);
+	// robot.set_par_Ln2EE(par_ee);
 	// cout << "world2L0: \n" << robot.get_world2L0() << endl<<endl;
-	// cout << "Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
+	// cout << "par_Ln2EE: \n" << robot.get_Ln2EE() << endl<<endl;
 
 	// - kinematic regressors - //
 	Eigen::Vector<double,6> wrench({1, 1, 1, 1, 1, 1});
 	robot.set_w(wrench);
 	cout << "reg_Jdq: \n" << robot.get_reg_Jdq() << endl << "size: " << robot.get_reg_Jdq().size() << endl;
 	cout << "reg_JTw: \n" << robot.get_reg_JTw() << endl<<endl;
-	Eigen::VectorXd dhtable = robot.get_DHtable();
+	Eigen::VectorXd dhtable = robot.get_par_DHtable();
 	cout << "par_kin: " << dhtable.transpose() << endl<<endl;
-	robot.set_DHtable(dhtable);
+	robot.set_par_DHtable(dhtable);
 	cout << "size_dh: " << dhtable.size() << endl;
 
 

@@ -29,10 +29,10 @@ void thunder_robot::resizeVariables(){
 	par_D = Eigen::VectorXd::Zero(D_order*numElasticJoints);
 	par_Dm = Eigen::VectorXd::Zero(Dm_order*numElasticJoints);
 	par_Mm = Eigen::VectorXd::Zero(numElasticJoints);
-	DHtable = Eigen::VectorXd::Zero(n_joints*4);
-	world2L0 = Eigen::VectorXd::Zero(6);
-	Ln2EE = Eigen::VectorXd::Zero(6);
-	gravity = Eigen::VectorXd::Zero(3);
+	par_DHtable = Eigen::VectorXd::Zero(n_joints*4);
+	par_world2L0 = Eigen::VectorXd::Zero(6);
+	par_Ln2EE = Eigen::VectorXd::Zero(6);
+	par_gravity = Eigen::VectorXd::Zero(3);
 	DHtable_symb.resize(n_joints*4);
 	for (int i=0; i<n_joints*4; i++) DHtable_symb[i] = 0;
 	gravity_symb.resize(3);
@@ -247,33 +247,33 @@ void thunder_robot::set_par_Dl(const Eigen::VectorXd& par_){
 	}
 }
 
-void thunder_robot::set_DHtable(const Eigen::MatrixXd& par_){
-	if(par_.size() == DHtable.size()){
-		DHtable = par_;
+void thunder_robot::set_par_DHtable(const Eigen::MatrixXd& par_){
+	if(par_.size() == par_DHtable.size()){
+		par_DHtable = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
 }
 
-void thunder_robot::set_gravity(const Eigen::VectorXd& par_){
-	if(par_.size() == gravity.size()){
-		gravity = par_;
+void thunder_robot::set_par_gravity(const Eigen::VectorXd& par_){
+	if(par_.size() == par_gravity.size()){
+		par_gravity = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
 }
 
-void thunder_robot::set_world2L0(const Eigen::VectorXd& par_){
-	if(par_.size() == world2L0.size()){
-		world2L0 = par_;
+void thunder_robot::set_par_world2L0(const Eigen::VectorXd& par_){
+	if(par_.size() == par_world2L0.size()){
+		par_world2L0 = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
 }
 
-void thunder_robot::set_Ln2EE(const Eigen::VectorXd& par_){
-	if(par_.size() == Ln2EE.size()){
-		Ln2EE = par_;
+void thunder_robot::set_par_Ln2EE(const Eigen::VectorXd& par_){
+	if(par_.size() == par_Ln2EE.size()){
+		par_Ln2EE = par_;
 	} else{
 		std::cout<<"in setArguments: invalid dimensions of arguments\n";
 	}
@@ -307,20 +307,20 @@ Eigen::VectorXd thunder_robot::get_par_Dl(){
 	return par_Dl;
 }
 
-Eigen::MatrixXd thunder_robot::get_DHtable(){
-	return DHtable;
+Eigen::MatrixXd thunder_robot::get_par_DHtable(){
+	return par_DHtable;
 }
 
-Eigen::VectorXd thunder_robot::get_gravity(){
-	return gravity;
+Eigen::VectorXd thunder_robot::get_par_gravity(){
+	return par_gravity;
 }
 
-Eigen::VectorXd thunder_robot::get_world2L0(){
-	return world2L0;
+Eigen::VectorXd thunder_robot::get_par_world2L0(){
+	return par_world2L0;
 }
 
-Eigen::VectorXd thunder_robot::get_Ln2EE(){
-	return Ln2EE;
+Eigen::VectorXd thunder_robot::get_par_Ln2EE(){
+	return par_Ln2EE;
 }
 
 Eigen::VectorXd thunder_robot::load_par_REG(std::string file_path, bool update_DYN){
@@ -365,35 +365,35 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 		int index;
 		// --- Parse kinematics --- //
 		if (config["kinematics"]){
-			DHtable.resize(n_joints*4);
+			par_DHtable.resize(n_joints*4);
 			// Denavit-Hartenberg
 			YAML::Node kinematics = config["kinematics"];
 			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-			// DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
+			// par_DHtable = Eigen::Map<Eigen::VectorXd>(&dh_vect[0], nj*4).reshaped<Eigen::RowMajor>(nj, 4);
 			if (kinematics["symb"]){
 				DHtable_symb = kinematics["symb"].as<std::vector<int>>();
 			} else {
 				// no parameters here
 			}
 			int sz = dh_vect.size();
-			// DHtable.resize(sz);
+			// par_DHtable.resize(sz);
 			// for (int i=0; i<sz; i++){
-			// 		DHtable(i) = dh_vect[i];
+			// 		par_DHtable(i) = dh_vect[i];
 			// 	}
 			// }
 			// Eigen::VectorXd gravity_new(sz);
 			int sz1 = 0;
 			for (int i=0; i<sz; i++){
 				if (DHtable_symb[i]){
-					DHtable(sz1) = dh_vect[i];
+					par_DHtable(sz1) = dh_vect[i];
 					sz1++;
 				}
 			}
-			DHtable.conservativeResize(sz1);
+			par_DHtable.conservativeResize(sz1);
 		}
 		// - Frame Offsets - //
 		if (config["Base_to_L0"]){
-			world2L0.resize(6);
+			par_world2L0.resize(6);
 			YAML::Node frame_base = config["Base_to_L0"];
 			if (frame_base["symb"]){
 				world2L0_symb = frame_base["symb"].as<std::vector<int>>();
@@ -409,22 +409,22 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 			int sz1=0, sz2=0;
 			for (int i=0; i<3; i++){
 				if (world2L0_symb[i]){
-					world2L0(sz1) = tr[i];
+					par_world2L0(sz1) = tr[i];
 					sz1++;
 				}
 			}
 			for (int i=0; i<3; i++){
 				if (world2L0_symb[i+3]){
-					world2L0(sz1+sz2) = ypr[i];
+					par_world2L0(sz1+sz2) = ypr[i];
 					sz2++;
 				}
 			}
-			world2L0.conservativeResize(sz1+sz2);
+			par_world2L0.conservativeResize(sz1+sz2);
 			// world2L0 = world2L0_new;
 		}
 
 		if (config["Ln_to_EE"]){
-			Ln2EE.resize(6);
+			par_Ln2EE.resize(6);
 			YAML::Node frame_ee = config["Ln_to_EE"];
 			if (frame_ee["symb"]){
 				Ln2EE_symb = frame_ee["symb"].as<std::vector<int>>();
@@ -440,18 +440,18 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 			int sz1=0, sz2=0;
 			for (int i=0; i<3; i++){
 				if (Ln2EE_symb[i]){
-					Ln2EE(sz1) = tr[i];
+					par_Ln2EE(sz1) = tr[i];
 					sz1++;
 				}
 			}
 			for (int i=0; i<3; i++){
 				if (Ln2EE_symb[i+3]){
-					Ln2EE(sz1+sz2) = ypr[i];
+					par_Ln2EE(sz1+sz2) = ypr[i];
 					sz2++;
 				}
 			}
-			Ln2EE.conservativeResize(sz1+sz2);
-			// Ln2EE = Ln2EE_new;
+			par_Ln2EE.conservativeResize(sz1+sz2);
+			// par_Ln2EE = Ln2EE_new;
 		}
 		
 		// --- Parse dynamics --- //
@@ -490,7 +490,7 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 		}
 		// - Gravity - //
 		if (config["gravity"]){
-			gravity.resize(3);
+			par_gravity.resize(3);
 			YAML::Node gravity_node = config["gravity"];
 			if (gravity_node["symb"]){
 				gravity_symb = gravity_node["symb"].as<std::vector<int>>();
@@ -504,12 +504,12 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 			int sz1 = 0;
 			for (int i=0; i<3; i++){
 				if (gravity_symb[i]){
-					gravity(sz1) = grav[i];
+					par_gravity(sz1) = grav[i];
 					sz1++;
 				}
 			}
-			gravity.conservativeResize(sz1);
-			// gravity = gravity_new;
+			par_gravity.conservativeResize(sz1);
+			// par_gravity = gravity_new;
 		}
 
 		// --- Parse elastic --- //
@@ -670,19 +670,19 @@ int thunder_robot::save_par(std::string par_file){
 		YAML::Node yamlFile;
 
 		// - save DHtable - //
-		std::vector<double> DHtable_vect(DHtable.data(), DHtable.data() + DHtable.rows() * DHtable.cols());
+		std::vector<double> DHtable_vect(par_DHtable.data(), par_DHtable.data() + par_DHtable.rows() * par_DHtable.cols());
 		yamlFile["DHtable"] = DHtable_vect;
 
 		// - save world2L0 - //
-		std::vector<double> world2L0_vect(world2L0.data(), world2L0.data() + world2L0.rows() * world2L0.cols());
+		std::vector<double> world2L0_vect(par_world2L0.data(), par_world2L0.data() + par_world2L0.rows() * par_world2L0.cols());
 		yamlFile["world2L0"] = world2L0_vect;
 
 		// - save Ln2EE - //
-		std::vector<double> Ln2EE_vect(Ln2EE.data(), Ln2EE.data() + Ln2EE.rows() * Ln2EE.cols());
+		std::vector<double> Ln2EE_vect(par_Ln2EE.data(), par_Ln2EE.data() + par_Ln2EE.rows() * par_Ln2EE.cols());
 		yamlFile["Ln2EE"] = Ln2EE_vect;
 
 		// - save gravity - //
-		std::vector<double> gravity_vect(gravity.data(), gravity.data() + gravity.rows() * gravity.cols());
+		std::vector<double> gravity_vect(par_gravity.data(), par_gravity.data() + par_gravity.rows() * par_gravity.cols());
 		yamlFile["gravity"] = gravity_vect;
 
 		// - save par_DYN - //

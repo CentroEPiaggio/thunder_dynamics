@@ -21,7 +21,7 @@ class thunder_robot{
 		Eigen::VectorXd q, dq, ddq, d3q, d4q, dqr, ddqr, par_DYN, par_REG, par_Dl;
 		Eigen::VectorXd x, dx, ddx, ddxr, par_K, par_D, par_Dm, par_Mm;
 		Eigen::VectorXd w;
-		Eigen::VectorXd DHtable, gravity, world2L0, Ln2EE;
+		Eigen::VectorXd par_DHtable, par_gravity, par_world2L0, par_Ln2EE;
 		std::vector<int> DHtable_symb, gravity_symb, world2L0_symb, Ln2EE_symb;
 
 		void update_inertial_DYN();
@@ -95,10 +95,10 @@ class thunder_robot{
 		void set_par_Dm(const Eigen::VectorXd& par_);
 		void set_par_Mm(const Eigen::VectorXd& par_);
 		void set_par_Dl(const Eigen::VectorXd& par_);
-		void set_DHtable(const Eigen::MatrixXd& par_);
-		void set_gravity(const Eigen::VectorXd& par_);
-		void set_world2L0(const Eigen::VectorXd& par_);
-		void set_Ln2EE(const Eigen::VectorXd& par_);
+		void set_par_DHtable(const Eigen::MatrixXd& par_);
+		void set_par_gravity(const Eigen::VectorXd& par_);
+		void set_par_world2L0(const Eigen::VectorXd& par_);
+		void set_par_Ln2EE(const Eigen::VectorXd& par_);
 		// void set_par_ELA(const Eigen::VectorXd& par_);
 		Eigen::VectorXd get_par_REG();
 		Eigen::VectorXd get_par_DYN();
@@ -107,10 +107,10 @@ class thunder_robot{
 		Eigen::VectorXd get_par_Dm();
 		Eigen::VectorXd get_par_Mm();
 		Eigen::VectorXd get_par_Dl();
-		Eigen::MatrixXd get_DHtable();
-		Eigen::VectorXd get_gravity();
-		Eigen::VectorXd get_world2L0();
-		Eigen::VectorXd get_Ln2EE();
+		Eigen::MatrixXd get_par_DHtable();
+		Eigen::VectorXd get_par_gravity();
+		Eigen::VectorXd get_par_world2L0();
+		Eigen::VectorXd get_par_Ln2EE();
 		// Eigen::VectorXd get_par_ELA();
 
 		Eigen::VectorXd load_par_REG(std::string, bool update_DYN = true);
