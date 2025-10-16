@@ -12,6 +12,8 @@ For now, for simplicity, the process is not embedded yet in `thunder` code gener
  - We are able to run these functions in batch mode and in GPU in a standalone test script.
 
 ## How to use what we have so far
+### Add Cusadi dictionary
+You will need [THIS FILE](https://github.com/se-hwan/cusadi/blob/dev/src/CusadiOperations.py) from Cusadi for the conversion. Rename it as `cusadiops.py`, place it in `src/thunder_torch/`, and uncomment the last `OP_PYTORCH_DICT`. You can comment out everything else, that's the only part needed.
 
 ### Post Installation steps
 1. You need to re-compile casadi with python bindings, go into the `casadi` directory (if you are using the docker, this is `~/casadi`) and run:
