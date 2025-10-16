@@ -41,7 +41,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-target_link_libraries(library casadi yaml-cpp::yaml-cpp)
+# Fetch URDF parser
+FetchContent_Declare(
+    urdfparser
+    GIT_REPOSITORY https://github.com/tolomeis/URDF_Parser.git
+    GIT_TAG dev/eigen
+)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
+
+FetchContent_MakeAvailable(urdfparser)
+
+
+find_package(yaml-cpp REQUIRED)
+target_link_libraries(library casadi yaml-cpp::yaml-cpp urdfparser)
 
 # Add executables and link them with the library
 add_executable(thunder_test ${CMAKE_SOURCE_DIR}/thunder_test.cpp)

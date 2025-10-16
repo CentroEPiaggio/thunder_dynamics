@@ -1,5 +1,7 @@
 #include "kinematics.h"
 #include "utils.h"
+#include <urdf/model.h>
+#include <urdf/link.h>         	
 
 namespace thunder_ns{
 
@@ -108,8 +110,186 @@ namespace thunder_ns{
 		return T;
 	}
 	
-	int compute_chain(Robot& robot) {
+	casadi::SX to_casadi_sx(const urdf::Transform& T) {
+		casadi::SX R = casadi::SX::zeros(4, 4);
+		Eigen::Matrix4d M = T.matrix();
+		for (int r = 0; r < 4; ++r) {
+			for (int c = 0; c < 4; ++c) {
+				R(r, c) = M(r, c);
+			}
+		}
+		return R;
+	}
 
+	int compute_chain_from_urdf(Robot& robot) {
+		auto numJoints = robot.get_numJoints();
+		const auto& q = robot.model["q"];
+		const auto& world2L0 = robot.model["par_world2L0"];
+		const auto& Ln2EE = robot.model["par_Ln2EE"];
+		using namespace urdf;
+
+		// get urdf path from model
+		std::string urdf_path = robot.urdf_path; 
+		
+		// get base and ee names
+		std::string base_link_name = robot.base_link;
+		std::string ee_link_name = robot.ee_link;
+
+		std::cout << "Computing kinematic chain from:\n";
+		std::cout << "  Base link: " << base_link_name << "\n";
+		std::cout << "  End-effector link: " << ee_link_name << "\n";
+		std::cout << "  URDF path: " << urdf_path << "\n";
+		
+		// Load URDF
+		std::shared_ptr<UrdfModel> urdfmodel;
+		try {
+			urdfmodel = UrdfModel::fromUrdfFile(urdf_path.c_str());
+		} catch (...) {
+			std::cerr << "Failed to load URDF\n";
+			return 1;
+		}
+
+		// Get end-effector link
+		auto ee_link = urdfmodel->getLink(ee_link_name);
+		if (!ee_link) {
+			std::cerr << "EE link not found\n";
+			return 1;
+		}
+
+		// Build chain from EE back to base
+		std::vector<std::shared_ptr<Link>> chain;
+		accumulateChainTransforms(ee_link, base_link_name, chain);
+
+		// Reverse the chain to go from base to end-effector
+		std::reverse(chain.begin(), chain.end());
+
+		casadi::SXVector Ti(numJoints+1);    // We aggregate Ln->EE in the same transform
+		casadi::SXVector T0i(numJoints+2);   // Output
+
+		// Initialize the first transform
+		// Ti is transformation from link i-1 to link i
+		Ti[0] = get_transform(world2L0);
+		// T0i is transformation from link 0 to link i
+		T0i[0] = Ti[0];
+
+
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
+		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
+		arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
+		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
+
+		// for fixed joints
+		casadi::SX T_accum_static = casadi::SX::eye(4);
+		int q_idx = 0;
+
+		for (size_t i = 0; i < chain.size() - 1; ++i) {
+			auto& parent_link = chain[i]; // we use i here to walk the entire chain
+			auto& child_link = chain[i+1];
+			
+			// Find the joint whose child link matches the next link in the chain
+			std::shared_ptr<urdf::Joint> joint;
+			for (auto& j : parent_link->child_joints) { 
+				if (j->child_link_name == child_link->name) {
+					joint = j;
+					break;
+				}
+			}
+
+			if (!joint) {
+				std::cerr << "Failed to find joint connecting " 
+							<< parent_link->name << " to " << child_link->name << "\n";
+				return 1;
+			}
+			
+            // The total relative transform is T_relative = T_static * T_motion(q)            
+            // static transform (parent link to joint frame)
+			casadi::SX T_static = to_casadi_sx(joint->parent_to_joint_transform);
+            T_accum_static = casadi::SX::mtimes(T_accum_static, T_static);
+
+			// If the joint is fixed, we do not need to add a motion transform and we can skip
+			if (joint->type == urdf::JointType::FIXED){
+				// T_accum_static will take into account the current joint transform
+				continue; // Skip to the next joint
+			}
+
+
+            
+			//  symbolic motion transform based on joint type
+            casadi::SX T_motion = casadi::SX::eye(4);
+            casadi::SX qi = q(q_idx); 
+            const auto& axis = joint->axis;
+			
+            if (joint->type == urdf::JointType::REVOLUTE || joint->type == urdf::JointType::CONTINUOUS) {
+                // For the sake of sanity we assume axis is either x, y, or z
+                casadi::SX R_motion;
+                if (axis.x() != 0) R_motion = R_x(qi * axis.x());
+                else if (axis.y() != 0) R_motion = R_y(qi * axis.y());
+                else if (axis.z() != 0) R_motion = R_z(qi * axis.z());
+                else {
+                    // (0,0,0) is probably an error in URDF syntax bu we handle it without panic
+                    R_motion = casadi::SX::eye(3);
+                }
+                T_motion(casadi::Slice(0,3), casadi::Slice(0,3)) = R_motion;
+
+            } else if (joint->type == urdf::JointType::PRISMATIC) {
+                T_motion(0, 3) = axis.x() * qi;
+                T_motion(1, 3) = axis.y() * qi;
+                T_motion(2, 3) = axis.z() * qi;
+			} else {
+				// in this case we properly go panic
+				std::cerr << "Unsupported joint type: " << static_cast<int>(joint->type) << "\n";
+				return 1;
+			}
+            
+            // Full relative transform
+            Ti[q_idx+1] = casadi::SX::mtimes(T_accum_static, T_motion);
+
+			
+			// Update and store the cumulative transform T_world_to_(i+1)
+			// T0i[i+1] = T0i[i] * Ti[i+1]
+			T0i[q_idx+1] = casadi::SX::mtimes(T0i[q_idx], Ti[q_idx+1]); 
+			
+			arg_list = robot.obtain_symb_parameters({"q"}, {});	
+			if (!robot.add_function("T_"+std::to_string(q_idx+1), Ti[q_idx+1], arg_list, "relative transformation from frame"+ std::to_string(q_idx) +"to frame "+std::to_string(q_idx+1))) return 0;
+			arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0"});
+			if (!robot.add_function("T_0_"+std::to_string(q_idx+1), T0i[q_idx+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(q_idx+1))) return 0;
+			
+			q_idx++; // Increment the joint index for the next iteration
+
+			// reset T accum static 
+			T_accum_static = casadi::SX::eye(4);
+		}
+
+		// Add the transform from the last link (Ln) to the End-Effector (EE)
+		T0i[numJoints+1] = casadi::SX::mtimes({T0i[numJoints], get_transform(Ln2EE)});
+		
+		std::cout << "\nSuccessfully computed kinematic chain transforms.\n";
+
+		arg_list = robot.obtain_symb_parameters({"q"}, {"par_world2L0", "par_Ln2EE"});
+		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
+		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
+		
+		return 0;
+	}
+
+
+	void accumulateChainTransforms(std::shared_ptr<urdf::Link> link,
+								const std::string& base,
+								std::vector<std::shared_ptr<urdf::Link>>& chain) {
+		while (link && link->name != base) {
+			chain.push_back(link);
+			link = link->getParent();
+		}
+		if (link && link->name == base) {
+			chain.push_back(link);
+		}
+	}
+
+
+	int compute_chain(Robot& robot) {
+		if (robot.kin_type == "URDF") {
+			return compute_chain_from_urdf(robot);
+		}
 		// parameters from robot
 		auto numJoints = robot.get_numJoints();
 		auto jointsType = robot.get_jointsType();

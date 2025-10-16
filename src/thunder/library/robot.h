@@ -111,6 +111,12 @@ namespace thunder_ns{
 			Robot(const YAML::Node yaml);
 			// Robot(const Config conf);
 			YAML::Node config_yaml;
+			std::string kin_type = "DH"; // Kinematics type, default is DH
+			std::string urdf_path = "";	 // used only if kin_type is "URDF"
+			std::string base_link = "base_link"; // base link name, used only if kin_type is "URDF"
+			std::string ee_link = "end_effector"; // end-effector link name, used only if kin_type is "URDF"
+			FrameOffset Base_to_L0; //
+
 			YAML::Node load_config(std::string config_file);
 			int load_config(YAML::Node yaml);
 			int init_symb_parameters();

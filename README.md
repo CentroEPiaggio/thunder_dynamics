@@ -1,3 +1,30 @@
+# ⚠️ Disclaimer: Experimental URDF Branch ⚠️
+
+This branch of `thunder_dynamics` is experimental and may contain features that are under development, broken or not fully tested. 
+
+What's working:
+- You can import the kinematic chain and joint types from URDF file.
+- You can specify end-effector and base_link, and `thunder` will consider the kinematic chain (if it exists) between these two.
+
+What's NOT working: 
+- All dynamics and regressor methods are currently not working
+
+To read from URDF simply change the kinematics section of the configuration file to:
+
+```yaml
+
+kinematics:
+  type: "URDF" 		
+  urdf_path: "/path/to/urdf"
+  base_link: "base_link_name"
+  ee_link: "end_effector_name"
+
+
+```
+
+
+---
+
 # Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.16
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.

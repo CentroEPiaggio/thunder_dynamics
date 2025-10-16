@@ -86,11 +86,30 @@ namespace thunder_ns{
 
 			// Denavit-Hartenberg
 			YAML::Node kinematics = config_file["kinematics"];
-			std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
-			int dh_size = dh_vect.size();
-			casadi::SX DHtable_numerical(dh_size, 1);
-			for (int i = 0; i < dh_size; i++) {
-				DHtable_numerical(i) = dh_vect[i];
+			this->kin_type  = kinematics["type"].as<std::string>();
+
+			if (this->kin_type == "DH"){
+				// Save Denavit-Hartenberg parameters
+				std::vector<double> dh_vect = kinematics["DH"].as<std::vector<double>>();
+				int dh_size = dh_vect.size();
+				casadi::SX DHtable_numerical(dh_size, 1);
+				for (int i = 0; i < dh_size; i++) {
+					DHtable_numerical(i) = dh_vect[i];
+				}
+				this->args.insert({"DHtable", DHtable_numerical});
+				// populate symbolic selectivity flag. We do it here since we branched the kinematics type
+				if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
+				else this->symb["par_DHtable"].assign(dh_size, 0);
+				
+			}else if(this->kin_type == "URDF"){
+				// save path to urdf file
+				this->urdf_path = kinematics["urdf_path"].as<std::string>();
+
+				//get base and link frames
+				this->base_link = kinematics["base_link"].as<std::string>();
+				this->ee_link = kinematics["ee_link"].as<std::string>();
+			}else{
+				throw std::runtime_error("Unknown kinematics type: " + kin_type);
 			}
 
 			// Gravity
@@ -188,8 +207,7 @@ namespace thunder_ns{
 			this->symb["par_Dm"] = par_Dm_symb;
 			this->symb["par_Mm"] = par_Mm_symb;
 
-			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
-			else this->symb["par_DHtable"].assign(dh_size, 0);
+
 
 			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<std::vector<int>>();
 			else this->symb["par_world2L0"].assign(6, 0);
@@ -227,12 +245,9 @@ namespace thunder_ns{
 			}
 
 			// Populate the 'args' map with numerical values
-			this->args = {
-				{"par_DHtable", DHtable_numerical},
-				{"par_world2L0", world2L0_numerical},
-				{"par_Ln2EE", Ln2EE_numerical},
-				{"par_gravity", gravity_numerical}
-			};
+			this->args.insert({"par_world2L0", world2L0_numerical});
+			this->args.insert({"par_Ln2EE", Ln2EE_numerical});
+			this->args.insert({"par_gravity", gravity_numerical});
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -1143,10 +1158,10 @@ namespace thunder_ns{
 			cout<<"Kinematics ok!"<<endl;
 			compute_dynamics(robot, advanced);
 			cout<<"Dynamics ok!"<<endl;
-			compute_regressors(robot);
-			cout<<"Regressors ok!"<<endl;
-			compute_userDefined(robot);
-			cout<<"User defined functions ok!"<<endl;
+			// compute_regressors(robot);
+			// cout<<"Regressors ok!"<<endl;
+			// compute_userDefined(robot);
+			// cout<<"User defined functions ok!"<<endl;
 
 			// - update parameters - //
 			robot.update_symb_parameters();
