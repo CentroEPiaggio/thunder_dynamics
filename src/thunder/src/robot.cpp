@@ -97,9 +97,9 @@ namespace thunder_ns{
 					DHtable_numerical(i) = dh_vect[i];
 				}
 				this->args.insert({"DHtable", DHtable_numerical});
-				// populate symbolic selectivity flag
-				if (kinematics["symb"]) this->symb["DHtable"] = kinematics["symb"].as<std::vector<int>>();
-				else this->symb["DHtable"].assign(dh_size, 0);
+				// populate symbolic selectivity flag. We do it here since we branched the kinematics type
+				if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
+				else this->symb["par_DHtable"].assign(dh_size, 0);
 				
 			}else if(this->kin_type == "URDF"){
 				// save path to urdf file
@@ -207,8 +207,7 @@ namespace thunder_ns{
 			this->symb["par_Dm"] = par_Dm_symb;
 			this->symb["par_Mm"] = par_Mm_symb;
 
-			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<std::vector<int>>();
-			else this->symb["par_DHtable"].assign(dh_size, 0);
+
 
 			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<std::vector<int>>();
 			else this->symb["par_world2L0"].assign(6, 0);

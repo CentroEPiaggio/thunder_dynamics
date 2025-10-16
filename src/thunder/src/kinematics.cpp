@@ -124,8 +124,8 @@ namespace thunder_ns{
 	int compute_chain_from_urdf(Robot& robot) {
 		auto numJoints = robot.get_numJoints();
 		const auto& q = robot.model["q"];
-		const auto& world2L0 = robot.model["world2L0"];
-		const auto& Ln2EE = robot.model["Ln2EE"];	
+		const auto& world2L0 = robot.model["par_world2L0"];
+		const auto& Ln2EE = robot.model["par_Ln2EE"];
 		using namespace urdf;
 
 		// get urdf path from model
@@ -173,9 +173,9 @@ namespace thunder_ns{
 		T0i[0] = Ti[0];
 
 
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
+		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
 		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
-		arg_list = robot.obtain_symb_parameters({}, {"world2L0"});
+		arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
 		// for fixed joints
@@ -251,7 +251,7 @@ namespace thunder_ns{
 			
 			arg_list = robot.obtain_symb_parameters({"q"}, {});	
 			if (!robot.add_function("T_"+std::to_string(q_idx+1), Ti[q_idx+1], arg_list, "relative transformation from frame"+ std::to_string(q_idx) +"to frame "+std::to_string(q_idx+1))) return 0;
-			arg_list = robot.obtain_symb_parameters({"q"}, {"DHtable", "world2L0"});
+			arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0"});
 			if (!robot.add_function("T_0_"+std::to_string(q_idx+1), T0i[q_idx+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(q_idx+1))) return 0;
 			
 			q_idx++; // Increment the joint index for the next iteration
@@ -265,7 +265,7 @@ namespace thunder_ns{
 		
 		std::cout << "\nSuccessfully computed kinematic chain transforms.\n";
 
-		arg_list = robot.obtain_symb_parameters({"q"}, {"world2L0", "Ln2EE"});
+		arg_list = robot.obtain_symb_parameters({"q"}, {"par_world2L0", "par_Ln2EE"});
 		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
 		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
 		
