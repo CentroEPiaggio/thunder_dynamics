@@ -45,6 +45,7 @@ namespace thunder_ns{
 	int update_cmake(const std::string from_robot, const std::string to_robot, const std::string file_path);
 	void replace_all(std::string& str, const std::string& from_str, const std::string& to_str);
 	int add_bindings_template(const std::string file_path_cpp);
+	std::string get_ret_type(const fun_obj fun);
 
 	casadi::SX hat(const casadi::SX& v);
 	Eigen::Matrix3d hat(const Eigen::Vector3d& v);
