@@ -283,3 +283,7 @@ To cite **Thunder** in your research, please consider citing the following [pape
 	DOI = {10.3390/robotics14090126}
 }
 ```
+
+### Sponsors
+![image info](darko_logo.png)
+[DARKO Project](https://darko-project.eu/)
