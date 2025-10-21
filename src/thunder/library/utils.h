@@ -19,32 +19,7 @@ namespace thunder_ns{
 		std::vector<double> Dl = std::vector<double>(1);
 	}LinkProp;
 
-	typedef struct Config{
-		int numJoints;
-		// configuration
-		int Dl_order = 0;
-		bool ELASTIC = false;
-		int K_order = 0;
-		int D_order = 0;
-		int Dm_order = 0;
-		// parameters
-		std::vector<std::string> jointsType;
-		casadi::SX DHtable;
-		std::vector<LinkProp> links_DYN;
-		FrameOffset base_frame;
-		FrameOffset ee_frame;
-		// symbolic selectivity
-		std::vector<int> DHtable_symb;
-		std::vector<int> par_DYN_symb;
-		std::vector<int> par_Dl_symb;
-		std::vector<int> par_K_symb;
-		std::vector<int> par_D_symb;
-		std::vector<int> par_Dm_symb;
-		std::vector<int> par_Mm_symb;
-		std::vector<int> world2L0_symb;
-		std::vector<int> Ln2EE_symb;
-		std::vector<int> gravity_symb;
-	}Config;
+
 
 	typedef struct fun_obj{
 		std::string name;
@@ -70,6 +45,7 @@ namespace thunder_ns{
 	int update_cmake(const std::string from_robot, const std::string to_robot, const std::string file_path);
 	void replace_all(std::string& str, const std::string& from_str, const std::string& to_str);
 	int add_bindings_template(const std::string file_path_cpp);
+	std::string get_ret_type(const fun_obj fun);
 
 	casadi::SX hat(const casadi::SX& v);
 	Eigen::Matrix3d hat(const Eigen::Vector3d& v);

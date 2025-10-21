@@ -1,14 +1,5 @@
-/* Generate C++ code from classes that use casadi library.
-In particular generate code to compute for franka emika panda robot:
-	- regressor
-	- jacobian
-	- dot jacobian
-	- pseudo-inverse jacobian
-	- dot pseudo-inverse jacobian
-	- forward kinematic
-	- matrix mass
-	- matrix coriolis
-	- matrix gravity
+/*
+Command line interface for Thunder, it can generate code for robots
 */
 
 #include <iostream>
@@ -44,7 +35,7 @@ bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder
 bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
-#define VERSION "0.8.12"
+#define VERSION "0.8.17"
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";

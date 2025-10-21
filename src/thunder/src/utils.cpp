@@ -163,7 +163,7 @@ namespace thunder_ns{
 			string functions_string = "\n";
 			for (int i=0; i<functions.size(); i++){
 				functions_string.append("\t\t// - " + functions[i].description + " - //\n");
-				functions_string.append("\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
+				functions_string.append("\t\t"+get_ret_type(functions[i])+" get_" + functions[i].name + "();\n\n");
 			}
 			replace_all(file_content_h, "/*#-FUNCTIONS_H-#*/", functions_string);
 
@@ -208,15 +208,18 @@ namespace thunder_ns{
 				// 	args_string.append(", " + fun_args[j]);
 				// }
 				// other parts
+				string ret_type = get_ret_type(functions[i]);
 				functions_string.append("// - " + functions[i].description + " - //\n");
-				functions_string.append("Eigen::MatrixXd thunder_" + to_robot + "::" + fun_name + "(){\n");
-				functions_string.append("\tEigen::MatrixXd out;\n");
-				functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
-				functions_string.append("\tlong long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
-				functions_string.append("\tdouble p4[" + fun_name_gen + "_fun_SZ_W];\n");
+				functions_string.append(ret_type + " thunder_" + to_robot + "::" + fun_name + "(){\n");
+				// functions_string.append("\tEigen::MatrixXd out;\n");
+				// functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
+				string size_str = to_string(out_size[0]*out_size[1]);
+				functions_string.append("\tthread_local alignas("+size_str+") double buffer["+size_str+"];\n");
+				functions_string.append("\tthread_local long long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
+				functions_string.append("\tthread_local double p4[" + fun_name_gen + "_fun_SZ_W];\n");
 				// inputs
 				if (fun_args.size() == 0){
-					functions_string.append("\tconst double* input_[] = {};\n");
+					functions_string.append("\tconst double** input_ = nullptr;\n");
 				} else {
 					functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
 					for (int j=1; j<fun_args.size(); j++){
@@ -225,9 +228,9 @@ namespace thunder_ns{
 					functions_string.append("};\n");
 				}
 				// output
-				functions_string.append("\tdouble* output_[] = {out.data()};\n");
+				functions_string.append("\tdouble* output_[] = {buffer};\n");
 				functions_string.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
-				functions_string.append("\treturn out;\n");
+				functions_string.append("\treturn Eigen::Map<"+ret_type+">(buffer);\n");
 				functions_string.append("}\n\n");
 
 				// pybindings
@@ -288,16 +291,43 @@ PYBIND11_MODULE(thunder_robot_py, m) {
 		.def("setArguments", &thunder_robot::setArguments, "Set q, dq, dqr, ddqr", py::arg("q"), py::arg("dq"), py::arg("dqr"), py::arg("ddqr"))
 		.def("set_q", &thunder_robot::set_q, "Set q", py::arg("q"))
 		.def("set_dq", &thunder_robot::set_dq, "Set dq", py::arg("dq"))
+		.def("set_ddq", &thunder_robot::set_ddq, "Set ddq", py::arg("ddq"))
+		.def("set_d3q", &thunder_robot::set_d3q, "Set d3q", py::arg("d3q"))
+		.def("set_d4q", &thunder_robot::set_d4q, "Set d4q", py::arg("d4q"))
 		.def("set_dqr", &thunder_robot::set_dqr, "Set dqr", py::arg("dqr"))
 		.def("set_ddqr", &thunder_robot::set_ddqr, "Set ddqr", py::arg("ddqr"))
+		.def("set_x", &thunder_robot::set_x, "Set x", py::arg("x"))
+		.def("set_dx", &thunder_robot::set_dx, "Set dx", py::arg("dx"))
+		.def("set_ddx", &thunder_robot::set_ddx, "Set ddx", py::arg("ddx"))
+		.def("set_ddxr", &thunder_robot::set_ddxr, "Set ddxr", py::arg("ddxr"))
+		.def("set_w", &thunder_robot::set_w, "Set w", py::arg("w"))
 		.def("set_par_REG", &thunder_robot::set_par_REG, "Set inertial parameters REG", py::arg("par"), py::arg("update_DYN") = true)
 		.def("set_par_DYN", &thunder_robot::set_par_DYN, "Set inertial parameters DYN", py::arg("par"), py::arg("update_REG") = true)
+		.def("set_par_K", &thunder_robot::set_par_K, "Set inertial parameters K", py::arg("par"))
+		.def("set_par_D", &thunder_robot::set_par_D, "Set inertial parameters D", py::arg("par"))
+		.def("set_par_Dm", &thunder_robot::set_par_Dm, "Set inertial parameters Dm", py::arg("par"))
+		.def("set_par_Mm", &thunder_robot::set_par_Mm, "Set inertial parameters Mm", py::arg("par"))
+		.def("set_par_Dl", &thunder_robot::set_par_Dl, "Set inertial parameters Dl", py::arg("par"))
+		.def("set_par_DHtable", &thunder_robot::set_par_DHtable, "Set inertial parameters DHtable", py::arg("par"))
+		.def("set_par_gravity", &thunder_robot::set_par_gravity, "Set inertial parameters gravity", py::arg("par"))
+		.def("set_par_world2L0", &thunder_robot::set_par_world2L0, "Set inertial parameters world2L0", py::arg("par"))
+		.def("set_par_Ln2EE", &thunder_robot::set_par_Ln2EE, "Set inertial parameters Ln2EE", py::arg("par"))
 		.def("get_par_REG", &thunder_robot::get_par_REG, "Get par parameters REG")
 		.def("get_par_DYN", &thunder_robot::get_par_DYN, "Get inertial parameters DYN")
+		.def("get_par_K", &thunder_robot::get_par_K, "Get par parameters K")
+		.def("get_par_D", &thunder_robot::get_par_D, "Get par parameters D")
+		.def("get_par_Dm", &thunder_robot::get_par_Dm, "Get par parameters Dm")
+		.def("get_par_Mm", &thunder_robot::get_par_Mm, "Get par parameters Mm")
+		.def("get_par_Dl", &thunder_robot::get_par_Dl, "Get par parameters Dl")
+		.def("get_par_DHtable", &thunder_robot::get_par_DHtable, "Get par parameters par_DHtable")
+		.def("get_par_gravity", &thunder_robot::get_par_gravity, "Get par parameters gravity")
+		.def("get_par_world2L0", &thunder_robot::get_par_world2L0, "Get par parameters world2L0")
+		.def("get_par_Ln2EE", &thunder_robot::get_par_Ln2EE, "Get par parameters Ln2EE")
 		.def("load_par_REG", &thunder_robot::load_par_REG, "Load par parameters REG from YAML file", py::arg("file_path"), py::arg("update_DYN") = true)
 		.def("load_conf", &thunder_robot::load_conf, "Load configuration from YAML file", py::arg("file_path"), py::arg("update_REG") = true)
 		.def("save_par_REG", &thunder_robot::save_par_REG, "Save par parameters REG to YAML file", py::arg("file_path"))
 		.def("save_par_DYN", &thunder_robot::save_par_DYN, "Save inertial parameters DYN to YAML file", py::arg("file_path"))
+		.def("save_par", &thunder_robot::save_par, "Save all parameters into file", py::arg("file_path"))
 		.def("get_numJoints", &thunder_robot::get_numJoints, "Get number of joints")
 		.def("get_numParDYN", &thunder_robot::get_numParDYN, "Get number of parameters per link")
 		.def("get_numParREG", &thunder_robot::get_numParREG, "Get number of parameters")
@@ -394,6 +424,12 @@ PYBIND11_MODULE(thunder_robot_py, m) {
 
 		source.swap(newString);
 		// return newString;
+	}
+
+	std::string get_ret_type(const fun_obj fun){
+		std::vector<int> out_size = fun.out_size;
+		string ret_type = "Eigen::Matrix<double,"+to_string(out_size[0])+","+to_string(out_size[1])+">";
+		return ret_type;
 	}
 
 	casadi::SX hat(const casadi::SX& v) {

@@ -26,8 +26,10 @@ int main(){
 
 	// std::string config_file = "../robots/RRR/RRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
-	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	std::string config_file = "../robots/ego/ego_arm.yaml";
+	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string config_file = "../robots/ego/egoRightArm.yaml";
+	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
+	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
 	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
 
 	// ---------------------------------------------------------------------------------//
@@ -87,8 +89,8 @@ int main(){
 	par_D = robot.get_arg("par_D");
 	par_Dm = robot.get_arg("par_Dm");
 	Eigen::VectorXd par_Mm = robot.get_arg("par_Mm");
-	Eigen::MatrixXd DHtable = robot.get("DHtable");
-	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
+	Eigen::MatrixXd par_DHtable = robot.get("par_DHtable");
+	cout<<"par_DHtable:"<<endl<<par_DHtable.transpose()<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
 	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
@@ -102,17 +104,18 @@ int main(){
 	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
 
 	/* Test */
-	q.setRandom();
-	dq.setRandom();
-	dqr.setRandom();
-	ddqr.setRandom();
-	x = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dx = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddx = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	q.setOnes(); // setRandom();
+	dq.setZero(); // setRandom();
+	dqr.setZero(); // setRandom();
+	ddqr.setZero(); // setRandom();
+	x.setZero(); // = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
+	dx.setZero(); // = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	ddx.setZero(); // = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
 
 	robot.set_q(q);
 	robot.set_dq(dq);
 	robot.set_dqr(dqr);
+	// robot.set_ddq(ddqr);
 	robot.set_ddqr(ddqr);
 	robot.set_x(x);
 	robot.set_dx(dx);
@@ -154,9 +157,9 @@ int main(){
 	G = robot.get("G");
 	cout<<endl<<"G\n"<<G<<endl;
 	if (robot.get_Dl_order()){
-		Dl = robot.get("Dl");
+		Dl = robot.get("dl");
 		cout<<endl<<"D_link\n"<<Dl<<endl;
-		reg_Dl = robot.get("reg_Dl");
+		reg_Dl = robot.get("reg_dl");
 		cout<<endl<<"reg_Dl\n"<<reg_Dl<<endl;
 	} else {
 		Dl.setZero();
@@ -202,8 +205,8 @@ int main(){
 	// - symbolic quantities - //
 	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
 	// cout << "M_symb: " << robot.model["M"] << endl;
-	// cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
-	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
+	// cout << "par_world2L0: " << robot.model["par_world2L0"] << endl<<endl;
+	// cout << "par_Ln2EE: " << robot.model["par_Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
 	// // Eigen::VectorXd wrench(6);
@@ -214,9 +217,9 @@ int main(){
 	// // // auto reg_omega = robot.model["reg_Jdq"];
 	// // // auto reg_tau = robot.model["reg_JTw"];
 	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// auto par_dh = robot.get_arg("DHtable");
-	// auto par_base = robot.get_arg("world2L0");
-	// auto par_ee = robot.get_arg("Ln2EE");
+	// auto par_dh = robot.get_arg("par_DHtable");
+	// auto par_base = robot.get_arg("par_world2L0");
+	// auto par_ee = robot.get_arg("par_Ln2EE");
 	// Eigen::VectorXd par(20,1);
 	// par << par_dh, par_base, par_ee;
 	// Eigen::VectorXd omega_reg = reg_omega * par;
@@ -233,10 +236,10 @@ int main(){
 	// cout << "M_ddot: " << endl << M_ddot << endl<<endl;
 
 	// - save parameters - //
-	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
+	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"par_world2L0", "par_Ln2EE"});
 	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
-	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
-	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
+	// cout << "par_world2L0: " << robot.get_arg("par_world2L0") << endl<<endl;
+	// cout << "par_Ln2EE: " << robot.get_arg("par_Ln2EE") << endl<<endl;
 
 	return 0;
 }
