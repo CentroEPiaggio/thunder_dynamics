@@ -16,3 +16,4 @@ src/thunder_robot_chrono/src/**
 !src/thunder_robot_chrono/robots/.gitkeep
 !src/thunder_robot_chrono/library/.gitkeep
 !src/thunder_robot_chrono/src/.gitkeep
+*__pycache__/
