@@ -18,7 +18,7 @@ import argparse
 from casadi import *
 from cusadiops import *
 from tqdm import tqdm
-
+import shutil
 
 def modified_generate_pytorch_code(f: casadi.Function):
     """
@@ -127,6 +127,16 @@ def modified_generate_pytorch_code(f: casadi.Function):
 
     return str_operations + "\n"
 
+def _derive_robot_name(robot_dir: str) -> str:
+    base = os.path.basename(os.path.normpath(robot_dir)) if robot_dir else "robot"
+    # Heuristics to strip common suffixes
+    for suf in ["_generatedFiles", "-generatedFiles", "generatedFiles"]:
+        if base.endswith(suf):
+            base = base[: -len(suf)] or base
+            break
+    return base.replace("-", "_")
+
+
 def main(cusadi_folder="casadi_functions", output_dir=None, output_file="gen_file.py"):
     """
     Batch processes all .casadi files in a directory and generates a unified PyTorch module.
@@ -184,17 +194,35 @@ def main(cusadi_folder="casadi_functions", output_dir=None, output_file="gen_fil
     successful_conversions = 0
     failed_conversions = []
 
+    # Track metadata for wrapper generation
+    functions_meta = []  # list of dicts: name, nnz_in, nnz_out, input_names, output_names, sz_w
+
     pbar = tqdm(cusadi_files, desc="Processing files", unit="file")
     for cusadi_file in pbar:
         try:
             func_path = os.path.join(cusadi_folder, cusadi_file)
-
 
             f = Function.load(func_path)
             
             generated_code = modified_generate_pytorch_code(f)
             
             all_generated_code += generated_code
+
+            #function name is 'get_' + cusadi_file_name without .casadi
+            function_name = os.path.splitext(cusadi_file)[0]
+
+            # get output shape
+            output_shape = (f.sparsity_out(0).size1(), f.sparsity_out(0).size2())
+            # stash meta used for wrapper
+            functions_meta.append({
+                "name": "get_" + function_name,
+                "nnz_in": [f.nnz_in(i) for i in range(f.n_in())],
+                "nnz_out": [f.nnz_out(i) for i in range(f.n_out())],
+                "input_names": [f.name_in(i) for i in range(f.n_in())],
+                "output_names": [f.name_out(i) for i in range(f.n_out())],
+                "sz_w": f.sz_w(),
+                "output_shape": output_shape,
+            })
             
             successful_conversions += 1
             
@@ -224,6 +252,164 @@ def main(cusadi_folder="casadi_functions", output_dir=None, output_file="gen_fil
         return
 
     print(f"{'='*60}")
+
+    # ==================== Wrapper Class Generation ====================
+    # Derive names and sizes
+    robot_name = _derive_robot_name(os.path.dirname(cusadi_folder))
+    module_basename = os.path.splitext(os.path.basename(output_file))[0]
+    class_name = f"thunder_{robot_name}"
+    wrapper_filename = f"{class_name}_torch.py"  # module containing the wrapper class
+    wrapper_path = os.path.join(output_dir if output_dir else os.getcwd(), wrapper_filename)
+
+    # Aggregate input sizes across functions to infer robot dimensions
+    agg_in_sizes = {}
+    for meta in functions_meta:
+        for nm, sz in zip(meta["input_names"], meta["nnz_in"]):
+            agg_in_sizes[nm] = max(sz, agg_in_sizes.get(nm, 0))
+
+    def _infer_int(name: str, default: int = 0) -> int:
+        return int(agg_in_sizes.get(name, default))
+
+    # Infer core sizes
+    n_joints = _infer_int("q", default=_infer_int("dq", default=_infer_int("ddq", default=0)))
+    numElasticJoints = _infer_int("x", default=0)
+    # Orders via division where available
+    Dl_order = 0
+    if n_joints > 0 and agg_in_sizes.get("par_Dl", 0) % max(n_joints, 1) == 0:
+        Dl_order = agg_in_sizes.get("par_Dl", 0) // max(n_joints, 1)
+    K_order = 0
+    if numElasticJoints > 0 and agg_in_sizes.get("par_K", 0) % max(numElasticJoints, 1) == 0:
+        K_order = agg_in_sizes.get("par_K", 0) // max(numElasticJoints, 1)
+    D_order = 0
+    if numElasticJoints > 0 and agg_in_sizes.get("par_D", 0) % max(numElasticJoints, 1) == 0:
+        D_order = agg_in_sizes.get("par_D", 0) // max(numElasticJoints, 1)
+    Dm_order = 0
+    if numElasticJoints > 0 and agg_in_sizes.get("par_Dm", 0) % max(numElasticJoints, 1) == 0:
+        Dm_order = agg_in_sizes.get("par_Dm", 0) // max(numElasticJoints, 1)
+
+    # Build wrapper source
+    wrapper_header = textwrap.dedent(f"""
+    # ! AUTOMATICALLY GENERATED WRAPPER
+    # Wrapper class for robot '{robot_name}'
+    import torch
+    from thunder_robot import ThunderRobotTorch
+
+    import {module_basename} as gen
+
+    class {class_name}(ThunderRobotTorch):
+        def __init__(self, batch_size: int = 1, device: str = 'cpu'):
+            super().__init__(
+                n_joints={n_joints or 0},
+                numElasticJoints={numElasticJoints or 0},
+                K_order={K_order or 0},
+                D_order={D_order or 0},
+                Dl_order={Dl_order or 0},
+                Dm_order={Dm_order or 0},
+                batch_size=batch_size,
+                device=device,
+            )
+
+       
+    """)
+
+    # Generate one method per function
+    methods_code = []
+    for meta in functions_meta:
+        fname = meta["name"]
+        method = [f"    def {fname}(self):"]
+        method.append("        B = self.batch_size")
+        # method.append(f"        _N_OUT = gen._{fname}_N_OUT")
+        method.append(f"        _NNZ_OUT = gen._{fname}_NNZ_OUT")
+        # method.append(f"        _N_IN = gen._{fname}_N_IN")
+        # method.append(f"        _NNZ_IN = gen._{fname}_NNZ_IN")
+        method.append(f"        _INPUT_NAMES = gen._{fname}_INPUT_NAMES")
+        method.append(f"        _SZ_W = gen._{fname}_SZ_W")
+        method.append( "        inputs = [getattr(self, in_name) for in_name in _INPUT_NAMES]")
+        method.append( "        outputs = [torch.empty((B, n), device=self.device, dtype=self.dtype).contiguous() for n in _NNZ_OUT]")
+        method.append( "        work = torch.empty((B, _SZ_W), device=self.device, dtype=self.dtype)")
+        method.append(f"        gen._{fname}(outputs, inputs, work)")
+        method.append(f"        out = outputs[0].reshape((B, {meta['output_shape'][0]}, {meta['output_shape'][1]}))")
+        method.append( "        return out")
+        methods_code.append("\n".join(method))
+
+    wrapper_code = wrapper_header + "\n" + "\n\n".join(methods_code) + "\n"
+
+    try:
+        with open(wrapper_path, "w") as wf:
+            wf.write(wrapper_code)
+        print(f"Wrapper class generated: {wrapper_path}")
+        print(f"Class name: {class_name}")
+    except Exception as e:
+        print(f"ERROR: Could not write wrapper file '{wrapper_path}': {e}")
+   
+    # Determine destination base directory once
+    try:
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+    except NameError:
+        script_dir = os.getcwd()
+    dest_base_dir = output_dir if output_dir else os.getcwd()
+
+    # Copy thunder_robot.py (located next to this script) into the output directory (if provided)
+    src_thunder = os.path.join(script_dir, "thunder_robot.py")
+    if os.path.isfile(src_thunder):
+        try:
+            os.makedirs(dest_base_dir, exist_ok=True)
+            dest_thunder = os.path.join(dest_base_dir, "thunder_robot.py")
+            shutil.copy2(src_thunder, dest_thunder)
+            print(f"Copied thunder_robot.py -> {dest_thunder}")
+        except Exception as e:
+            print(f"Warning: failed to copy thunder_robot.py to '{dest_base_dir}': {e}")
+    else:
+        print(f"Warning: thunder_robot.py not found at '{src_thunder}', skipping copy.")
+
+    # Create a simple installable entry (setup.py) and a package initializer (__init__.py)
+    try:
+        dest_dir = dest_base_dir
+        os.makedirs(dest_dir, exist_ok=True)
+
+        wrapper_module = os.path.splitext(wrapper_filename)[0]  # e.g. 'thunder_robotname_py'
+        pkg_name = f"thunder_{robot_name}_torch"
+
+        # Write __init__.py to make the output directory importable and expose convenient names
+        init_path = os.path.join(dest_dir, "__init__.py")
+        init_content = textwrap.dedent(f"""
+        # Auto-generated package initializer for '{pkg_name}'
+
+        from {wrapper_module} import {class_name}
+
+        __all__ = ["{class_name}"]
+        """)
+        with open(init_path, "w") as f_init:
+            f_init.write(init_content)
+        print(f"Created package initializer: {init_path}")
+
+        # Write a minimal setup.py so the generated module directory can be installed with pip
+        setup_path = os.path.join(dest_dir, "setup.py")
+
+
+        setup_content = textwrap.dedent(f"""
+        from setuptools import setup
+
+        setup(
+            name="{pkg_name}",
+            version="0.0.1",
+            description="Auto-generated Thunder Dynamics PyTorch modules for robot {robot_name}",
+            py_modules=["{wrapper_module}"],
+            install_requires=["torch"],
+            author="Thunder Dynamics",
+            classifiers=[
+                "Programming Language :: Python :: 3",
+            ],
+        )
+        """)
+        with open(setup_path, "w") as f_setup:
+            f_setup.write(setup_content)
+        print(f"Created installer file: {setup_path}")
+
+    except Exception as e:
+        print(f"Warning: failed to create setup/init files: {e}")
+
+
 
 if __name__ == '__main__':
     """
@@ -262,5 +448,3 @@ if __name__ == '__main__':
     
     # ==================== Execute Code Generation ====================
     main(cusadi_folder, args.output_dir)
-
-
