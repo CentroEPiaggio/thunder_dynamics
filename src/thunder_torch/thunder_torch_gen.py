@@ -216,6 +216,7 @@ def main(cusadi_folder="casadi_functions", output_dir=None, output_file="gen_fil
             # stash meta used for wrapper
             functions_meta.append({
                 "name": "get_" + function_name,
+                "internal_name": f.name(),
                 "nnz_in": [f.nnz_in(i) for i in range(f.n_in())],
                 "nnz_out": [f.nnz_out(i) for i in range(f.n_out())],
                 "input_names": [f.name_in(i) for i in range(f.n_in())],
@@ -316,18 +317,19 @@ def main(cusadi_folder="casadi_functions", output_dir=None, output_file="gen_fil
     methods_code = []
     for meta in functions_meta:
         fname = meta["name"]
+        iname = meta["internal_name"]
         method = [f"    def {fname}(self):"]
         method.append("        B = self.batch_size")
         # method.append(f"        _N_OUT = gen._{fname}_N_OUT")
-        method.append(f"        _NNZ_OUT = gen._{fname}_NNZ_OUT")
+        method.append(f"        _NNZ_OUT = gen._{iname}_NNZ_OUT")
         # method.append(f"        _N_IN = gen._{fname}_N_IN")
         # method.append(f"        _NNZ_IN = gen._{fname}_NNZ_IN")
-        method.append(f"        _INPUT_NAMES = gen._{fname}_INPUT_NAMES")
-        method.append(f"        _SZ_W = gen._{fname}_SZ_W")
+        method.append(f"        _INPUT_NAMES = gen._{iname}_INPUT_NAMES")
+        method.append(f"        _SZ_W = gen._{iname}_SZ_W")
         method.append( "        inputs = [getattr(self, in_name) for in_name in _INPUT_NAMES]")
         method.append( "        outputs = [torch.empty((B, n), device=self.device, dtype=self.dtype).contiguous() for n in _NNZ_OUT]")
         method.append( "        work = torch.empty((B, _SZ_W), device=self.device, dtype=self.dtype)")
-        method.append(f"        gen._{fname}(outputs, inputs, work)")
+        method.append(f"        gen._{iname}(outputs, inputs, work)")
         method.append(f"        out = outputs[0].reshape((B, {meta['output_shape'][0]}, {meta['output_shape'][1]}))")
         method.append( "        return out")
         methods_code.append("\n".join(method))
