@@ -96,6 +96,7 @@ improvings:
 		☐ clean everything
 		☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
 	Performances:
+		- thread_local used in generated functions, could it lead to problems for parallel code?
 		- Symbolic or not parameters does not change so much the performances
 		- Eigen is faster than for cycles
 		- compiler optimization could slow down significantly the building process

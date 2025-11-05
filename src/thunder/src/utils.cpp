@@ -163,7 +163,7 @@ namespace thunder_ns{
 			string functions_string = "\n";
 			for (int i=0; i<functions.size(); i++){
 				functions_string.append("\t\t// - " + functions[i].description + " - //\n");
-				functions_string.append("\t\tEigen::MatrixXd get_" + functions[i].name + "();\n\n");
+				functions_string.append("\t\t"+get_ret_type(functions[i])+" get_" + functions[i].name + "();\n\n");
 			}
 			replace_all(file_content_h, "/*#-FUNCTIONS_H-#*/", functions_string);
 
@@ -208,15 +208,18 @@ namespace thunder_ns{
 				// 	args_string.append(", " + fun_args[j]);
 				// }
 				// other parts
+				string ret_type = get_ret_type(functions[i]);
 				functions_string.append("// - " + functions[i].description + " - //\n");
-				functions_string.append("Eigen::MatrixXd thunder_" + to_robot + "::" + fun_name + "(){\n");
-				functions_string.append("\tEigen::MatrixXd out;\n");
-				functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
-				functions_string.append("\tlong long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
-				functions_string.append("\tdouble p4[" + fun_name_gen + "_fun_SZ_W];\n");
+				functions_string.append(ret_type + " thunder_" + to_robot + "::" + fun_name + "(){\n");
+				// functions_string.append("\tEigen::MatrixXd out;\n");
+				// functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
+				string size_str = to_string(out_size[0]*out_size[1]);
+				functions_string.append("\tthread_local alignas("+size_str+") double buffer["+size_str+"];\n");
+				functions_string.append("\tthread_local long long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
+				functions_string.append("\tthread_local double p4[" + fun_name_gen + "_fun_SZ_W];\n");
 				// inputs
 				if (fun_args.size() == 0){
-					functions_string.append("\tconst double* input_[] = {};\n");
+					functions_string.append("\tconst double** input_ = nullptr;\n");
 				} else {
 					functions_string.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
 					for (int j=1; j<fun_args.size(); j++){
@@ -225,9 +228,9 @@ namespace thunder_ns{
 					functions_string.append("};\n");
 				}
 				// output
-				functions_string.append("\tdouble* output_[] = {out.data()};\n");
+				functions_string.append("\tdouble* output_[] = {buffer};\n");
 				functions_string.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
-				functions_string.append("\treturn out;\n");
+				functions_string.append("\treturn Eigen::Map<"+ret_type+">(buffer);\n");
 				functions_string.append("}\n\n");
 
 				// pybindings
@@ -421,6 +424,12 @@ PYBIND11_MODULE(thunder_robot_py, m) {
 
 		source.swap(newString);
 		// return newString;
+	}
+
+	std::string get_ret_type(const fun_obj fun){
+		std::vector<int> out_size = fun.out_size;
+		string ret_type = "Eigen::Matrix<double,"+to_string(out_size[0])+","+to_string(out_size[1])+">";
+		return ret_type;
 	}
 
 	casadi::SX hat(const casadi::SX& v) {

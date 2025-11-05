@@ -2,7 +2,7 @@
 
 This branch is experimental and under development. It aims to provide a PyTorch-based batched operations. Details in the [road_to_pytorch.md](road_to_pytorch.md) file.
 
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.16
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.17
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -287,3 +287,7 @@ To cite **Thunder** in your research, please consider citing the following [pape
 	DOI = {10.3390/robotics14090126}
 }
 ```
+
+### Sponsors
+![image info](darko_logo.png)
+[DARKO Project](https://darko-project.eu/)
