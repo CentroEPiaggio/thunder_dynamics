@@ -16,10 +16,16 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
 # Aggiungi la cartella "library" per cercare gli header
-include_directories(${CMAKE_SOURCE_DIR}/library)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/library
+    ${CMAKE_SOURCE_DIR}/library/control
+)
 
 # Aggiungi tutti i file di origine nella cartella "src"
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB SOURCES 
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/src/control/*.cpp
+)
 
 # Definisci la tua libreria
 add_library(thunder_robot ${SOURCES})

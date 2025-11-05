@@ -1,3 +1,4 @@
+☐ create the basic functions, init(), start(), update()
 improvings:
 	Console parser:
 		☐ automatically set version?
@@ -63,6 +64,8 @@ improvings:
 	Regressors:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
+	Control:
+		☐ add infrastructure for acados
 	General:
 		☐ substitute cout with errors or info
 		☐ decrease the dimension of generated files
