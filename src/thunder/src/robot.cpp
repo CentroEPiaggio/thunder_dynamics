@@ -972,9 +972,9 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(std::string f_name, casadi::SX expr, std::vector<std::string> f_args, std::string descr){
+	int Robot::add_function(std::string f_name, casadi::SX expr, std::vector<std::string> f_args, std::string descr, bool overwrite){
 		// maybe directly model[f_name] = ...?
-		if (model.count(f_name)){
+		if ((!overwrite) && model.count(f_name)){
 			// key already exists
 			return 0;
 		} else {
