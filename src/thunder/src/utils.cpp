@@ -214,7 +214,7 @@ namespace thunder_ns{
 				// functions_string.append("\tEigen::MatrixXd out;\n");
 				// functions_string.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
 				string size_str = to_string(out_size[0]*out_size[1]);
-				functions_string.append("\tthread_local alignas("+size_str+") double buffer["+size_str+"];\n");
+				functions_string.append("\tthread_local double buffer["+size_str+"];\n"); // alignas("+size_str+") 
 				functions_string.append("\tthread_local long long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
 				functions_string.append("\tthread_local double p4[" + fun_name_gen + "_fun_SZ_W];\n");
 				// inputs
