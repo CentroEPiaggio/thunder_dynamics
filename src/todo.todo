@@ -61,6 +61,9 @@ improvings:
 		☐ parameters in thunder_robot depending on the symbolic choose
 		☐ clean symbolic selectivity
 	Regressors:
+		☐ for now, the regressors (not slotine or dynamics) are computed only if there is at least one simbolic parameter.
+		☐ change dimension of the regressor dependently on the symbolic parameters, now is full size always.
+		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
