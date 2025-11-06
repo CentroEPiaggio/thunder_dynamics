@@ -5,6 +5,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ load_conf_par do not take all the parameters and do not checks on symbolic selectivity
 		☐ if parameter is not symbolic, also regressor have to be resized!
 		☐ parse in the same section variables and symbolic flags to avoid confusion!
 		☐ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..)

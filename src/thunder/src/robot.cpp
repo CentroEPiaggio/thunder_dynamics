@@ -96,14 +96,14 @@ namespace thunder_ns{
 			// Gravity
 			std::vector<double> gravity_vect = {0.0, 0.0, 0.0}; // default no gravity
 			if (config_file["gravity"]){
-				std::vector<double> gravity_vect = config_file["gravity"]["value"].as<std::vector<double>>();
+				gravity_vect = config_file["gravity"]["value"].as<std::vector<double>>();
 			}
 
 			// Frame Offsets
 			YAML::Node frame_base = config_file["Base_to_L0"];
 			Base_to_L0.set_translation(frame_base["tr"].as<std::vector<double>>());
 			Base_to_L0.set_ypr(frame_base["ypr"].as<std::vector<double>>());
-			Base_to_L0.set_gravity(gravity_vect);
+			// Base_to_L0.set_gravity(gravity_vect);
 
 			YAML::Node frame_ee = config_file["Ln_to_EE"];
 			Ln_to_EE.set_translation(frame_ee["tr"].as<std::vector<double>>());
@@ -223,7 +223,7 @@ namespace thunder_ns{
 				world2L0_numerical(i + 3) = Base_to_L0.ypr[i];
 				Ln2EE_numerical(i) = Ln_to_EE.translation[i];
 				Ln2EE_numerical(i + 3) = Ln_to_EE.ypr[i];
-				gravity_numerical(i) = Base_to_L0.gravity[i];
+				gravity_numerical(i) = gravity_vect[i];
 			}
 
 			// Populate the 'args' map with numerical values
