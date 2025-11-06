@@ -215,12 +215,9 @@ namespace thunder_ns{
 		}
 		casadi::SX par = casadi::SX::vertcat(par_symb);
 
-		if (par.size1() != 0){
-			casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par);
-			if (!robot.add_function("reg_dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
+		casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par);
+		if (!robot.add_function("reg_dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
 
-		}
-		
 		return 1;
 	}
 
@@ -285,23 +282,16 @@ namespace thunder_ns{
 		casadi::SX par_Dm_tmp = casadi::SX::vertcat(par_symb_Dm);
 		casadi::SX par_Mm_tmp = casadi::SX::vertcat(par_symb_Mm);
 
-		if (par_K_tmp.size1() != 0){
-			casadi::SX reg_K = casadi::SX::jacobian(K, par_K_tmp);
-			if (!robot.add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
-		}
-		if (par_K_tmp.size1() != 0){
-			casadi::SX reg_D = casadi::SX::jacobian(D, par_D_tmp);
-			if (!robot.add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
-		}
-		if (par_K_tmp.size1() != 0){
-			casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm_tmp);
-			if (!robot.add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
-		}
-		if (par_K_tmp.size1() != 0){
-			casadi::SX reg_Mm = casadi::SX::jacobian(mtimes(Mm,ddx), par_Mm_tmp);
-			if (!robot.add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
-		}
-		
+		casadi::SX reg_K = casadi::SX::jacobian(K, par_K_tmp);
+		casadi::SX reg_D = casadi::SX::jacobian(D, par_D_tmp);
+		casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm_tmp);
+		casadi::SX reg_Mm = casadi::SX::jacobian(mtimes(Mm,ddx), par_Mm_tmp);
+
+		if (!robot.add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
+		if (!robot.add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
+		if (!robot.add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
+		if (!robot.add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
+
 		return 1;
 	}
 
@@ -357,27 +347,24 @@ namespace thunder_ns{
 		casadi::SX par = casadi::SX::vertcat(par_symb);
 		// std::cout <<"par: " << par << std::endl;
 		
-		if (par.size1() != 0){
-			casadi::SX Jdq = casadi::SX::mtimes(J, dq);
-			// std::cout <<"Jdq: " << Jdq << std::endl;
-			casadi::SX reg_Jdq = casadi::SX::jacobian(Jdq, par);
-			// std::cout <<"reg_Jdq: " << reg_Jdq << std::endl;
-			// reg_Jdq += casadi::SX::jacobian(Jdq, par_world2L0);
-			// reg_Jdq += casadi::SX::jacobian(Jdq, par_Ln2EE);
-			casadi::SX JTw = casadi::SX::mtimes(J.T(), w);
-			// std::cout <<"JTw: " << JTw << std::endl;
-			casadi::SX reg_JTw = casadi::SX::jacobian(JTw, par);
-			// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
+		casadi::SX Jdq = casadi::SX::mtimes(J, dq);
+		// std::cout <<"Jdq: " << Jdq << std::endl;
+		casadi::SX reg_Jdq = casadi::SX::jacobian(Jdq, par);
+		// std::cout <<"reg_Jdq: " << reg_Jdq << std::endl;
+		// reg_Jdq += casadi::SX::jacobian(Jdq, par_world2L0);
+		// reg_Jdq += casadi::SX::jacobian(Jdq, par_Ln2EE);
+		casadi::SX JTw = casadi::SX::mtimes(J.T(), w);
+		// std::cout <<"JTw: " << JTw << std::endl;
+		casadi::SX reg_JTw = casadi::SX::jacobian(JTw, par);
+		// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
-			std::vector<std::string> arg_list;
-			arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
-			// std::cout << "par_list: " << par_symb << std::endl;
-			if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
+		std::vector<std::string> arg_list;
+		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		// std::cout << "par_list: " << par_symb << std::endl;
+		if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
-			arg_list = robot.obtain_symb_parameters({"q", "w"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
-			if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
-		}
-		
+		arg_list = robot.obtain_symb_parameters({"q", "w"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 
 		return 1;
 	}
