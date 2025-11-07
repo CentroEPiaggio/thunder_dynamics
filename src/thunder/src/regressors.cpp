@@ -289,15 +289,15 @@ namespace thunder_ns{
 			casadi::SX reg_K = casadi::SX::jacobian(K, par_K_tmp);
 			if (!robot.add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
 		}
-		if (par_K_tmp.size1() != 0){
+		if (par_D_tmp.size1() != 0){
 			casadi::SX reg_D = casadi::SX::jacobian(D, par_D_tmp);
 			if (!robot.add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
 		}
-		if (par_K_tmp.size1() != 0){
+		if (par_Dm_tmp.size1() != 0){
 			casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm_tmp);
 			if (!robot.add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
 		}
-		if (par_K_tmp.size1() != 0){
+		if (par_Mm_tmp.size1() != 0){
 			casadi::SX reg_Mm = casadi::SX::jacobian(mtimes(Mm,ddx), par_Mm_tmp);
 			if (!robot.add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
 		}
