@@ -1,7 +1,9 @@
 .devcontainer/.bash_history
 bin/
 **/build/
+**/__pycache__/
 **generatedFiles/
+**generatedTorchLib/
 *_gen.h
 *_gen.cpp
 src/thunder_robot/robots/**
