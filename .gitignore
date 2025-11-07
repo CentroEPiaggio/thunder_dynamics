@@ -2,6 +2,7 @@
 bin/
 **/build/
 **generatedFiles/
+**generatedTorchLib/
 *_gen.h
 *_gen.cpp
 src/thunder_robot/robots/**
