@@ -10,10 +10,6 @@ using std::endl;
 
 namespace thunder_ns{
 
-	// constexpr double MU = 0.02; //pseudo-inverse damping coeff
-	// constexpr unsigned int N_PAR_LINK = 10; // number of link+joint parameters
-	// constexpr unsigned int NUMBER_FUNCTIONS = 10; // number of generable functions
-
 	Robot::Robot(const std::string config_file){
 		load_config(config_file); 	// load config and parameters from yaml file
 		initVarsFuns();				// initialize variables
@@ -23,7 +19,6 @@ namespace thunder_ns{
 		load_config(yaml); 		// load config and parameters from yaml file
 		initVarsFuns();			// initialize variables
 	}
-
 
 	YAML::Node Robot::load_config(std::string config_file){
 		try {
