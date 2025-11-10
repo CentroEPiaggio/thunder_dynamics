@@ -12,6 +12,7 @@
 
 namespace thunder_ns{
 	
+	typedef struct par_obj par_obj;
 	typedef struct fun_obj fun_obj;
 
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute = 1);

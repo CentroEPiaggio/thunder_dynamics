@@ -19,7 +19,14 @@ namespace thunder_ns{
 		std::vector<double> Dl = std::vector<double>(1);
 	}LinkProp;
 
-
+	typedef struct par_obj{
+		std::string name;
+		int size;
+		std::string description;
+		std::vector<bool> is_symbolic;
+		casadi::SX symb;
+		casadi::SX value;
+	}par_obj;
 
 	typedef struct fun_obj{
 		std::string name;
