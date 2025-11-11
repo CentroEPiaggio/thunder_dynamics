@@ -43,11 +43,16 @@ int main(){
 	// - setup robot - //
 	thunder_RRR robot;
 	robot.load_conf(conf_file);
+	int nj = robot.get_numJoints();
 	// - setup controller - //
 	thunder_control<thunder_RRR> controller(&robot);
 	controller.init();
 
 	// - starting state - //
+	VectorXd q(nj);
+	VectorXd dq(nj);
+	VectorXd dqr(nj);
+	VectorXd ddqr(nj);
 	q.setOnes();
 	dq.setZero();
 	dqr.setZero();
@@ -59,9 +64,10 @@ int main(){
 	// - controller loop test - //
 	time_start = high_resolution_clock::now();
 	controller.update();
-	controller.get_command();
+	VectorXd tau = controller.get_action();
 	time_stop = high_resolution_clock::now();
 	duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+	cout << "tau: " << tau.transpose() << endl;
 	cout << "Controller cycle time: " << duration << " ns" << endl;
 
 	return 0;

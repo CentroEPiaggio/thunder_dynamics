@@ -18,13 +18,12 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # Aggiungi la cartella "library" per cercare gli header
 include_directories(
     ${CMAKE_SOURCE_DIR}/library
-    ${CMAKE_SOURCE_DIR}/control_h
+    ${CMAKE_SOURCE_DIR}/control_header
 )
 
 # Aggiungi tutti i file di origine nella cartella "src"
 file(GLOB SOURCES 
     ${CMAKE_SOURCE_DIR}/src/*.cpp
-    ${CMAKE_SOURCE_DIR}/control_cpp/*.cpp
 )
 
 # Definisci la tua libreria

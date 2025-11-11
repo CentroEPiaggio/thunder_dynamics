@@ -36,7 +36,7 @@ bool COPY_GEN_CONTROL_FLAG = false;	// used to copy generated files into thunder
 bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
-#define VERSION "0.8.18"
+#define VERSION "0.8.21"
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]){
 	// --- copy generated files in thunder_control project --- //
 	if(COPY_GEN_CONTROL_FLAG){
 		copy_to(robot_name, absolutePath, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_H, PATH_COPY_CONTROL_CPP);
-		std::cout << "Copied to thunder_robot_chrono!" << std::endl;
+		std::cout << "Copied to thunder_control!" << std::endl;
 	}
 
 	// --- elapsed time --- //

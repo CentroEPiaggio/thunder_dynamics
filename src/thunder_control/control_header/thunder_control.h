@@ -1,9 +1,29 @@
-#include "thunder_control.h"
+#ifndef THUNDERCONTROL_H
+#define THUNDERCONTROL_H
 
 #include <iostream>
 #include <string>
 #include <cmath>
 #include <eigen3/Eigen/Dense>
+
+using Eigen::VectorXd;
+
+// namespace thunder_ns{
+
+template<class Robot> class thunder_control{
+    private:
+        Robot* robot;
+
+    public:
+        thunder_control(Robot* robot);
+        // ~thunder_control();
+
+        int init();
+        int start();
+        int update();
+
+        VectorXd get_action();
+};
 
 template<class Robot> thunder_control<Robot>::thunder_control(Robot* robot){
     this->robot = robot;
@@ -24,7 +44,13 @@ template<class Robot> int thunder_control<Robot>::update(){
     return 1;
 }
 
-template<class Robot> VectorXd thunder_control<Robot>::get_command(){
+template<class Robot> VectorXd thunder_control<Robot>::get_action(){
     // control law
     VectorXd tau = VectorXd::Zero(robot->get_numJoints());
+    return tau;
 }
+	
+// }
+
+
+#endif
