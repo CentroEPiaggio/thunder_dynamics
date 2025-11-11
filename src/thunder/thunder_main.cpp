@@ -32,6 +32,7 @@ using std::endl;
 
 bool COPY_GEN_FLAG = false; 		// used to copy generated files into thunder_robot project
 bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder_robot_chrono project
+bool COPY_GEN_CONTROL_FLAG = false;	// used to copy generated files into thunder_control project
 bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
@@ -93,6 +94,7 @@ int main(int argc, char* argv[]){
 	GEN_CASADI = gen_command.get<bool>("--casadifunc");
 	COPY_GEN_FLAG = gen_command.get<bool>("--copy");
 	COPY_GEN_CHRONO_FLAG = COPY_GEN_FLAG;
+	COPY_GEN_CONTROL_FLAG = COPY_GEN_FLAG;
 
 	// - check config_file and name - //
 	int index_yaml = config_file.find_last_of(".yaml");
@@ -216,6 +218,9 @@ int main(int argc, char* argv[]){
 	std::string PATH_COPY_CHRONO_H = COPY_PREFIX + "src/thunder_robot_chrono/library/";
 	std::string PATH_COPY_CHRONO_CPP = COPY_PREFIX + "src/thunder_robot_chrono/src/";
 	std::string PATH_COPY_CHRONO_YAML = COPY_PREFIX + "src/thunder_robot_chrono/robots/";
+	std::string PATH_COPY_CONTROL_H = COPY_PREFIX + "src/thunder_control/library/";
+	std::string PATH_COPY_CONTROL_CPP = COPY_PREFIX + "src/thunder_control/src/";
+	std::string PATH_COPY_CONTROL_YAML = COPY_PREFIX + "src/thunder_control/robots/";
 	
 	// --- copy generated files in thunder_robot project --- //
 	if(COPY_GEN_FLAG){
@@ -226,6 +231,12 @@ int main(int argc, char* argv[]){
 	// --- copy generated files in thunder_robot project --- //
 	if(COPY_GEN_CHRONO_FLAG){
 		copy_to(robot_name, absolutePath, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_H, PATH_COPY_CHRONO_CPP);
+		std::cout << "Copied to thunder_robot_chrono!" << std::endl;
+	}
+
+	// --- copy generated files in thunder_control project --- //
+	if(COPY_GEN_CONTROL_FLAG){
+		copy_to(robot_name, absolutePath, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_H, PATH_COPY_CONTROL_CPP);
 		std::cout << "Copied to thunder_robot_chrono!" << std::endl;
 	}
 
