@@ -23,3 +23,8 @@ template<class Robot> int thunder_control<Robot>::update(){
     // control law
     return 1;
 }
+
+template<class Robot> VectorXd thunder_control<Robot>::get_command(){
+    // control law
+    VectorXd tau = VectorXd::Zero(robot->get_numJoints());
+}

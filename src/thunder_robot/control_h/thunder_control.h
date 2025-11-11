@@ -14,6 +14,8 @@ template<class Robot> class thunder_control{
         int init();
         int start();
         int update();
+
+        VectorXd get_command();
 };
 	
 // }

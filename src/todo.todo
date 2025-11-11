@@ -1,5 +1,6 @@
-☐ create the basic functions, init(), start(), update()
 improvings:
+	Control:
+		☐ define the control interface
 	Console parser:
 		☐ automatically set version?
 		☐ problem if robot_name contains special characters
