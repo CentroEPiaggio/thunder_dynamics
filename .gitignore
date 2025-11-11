@@ -1,6 +1,8 @@
 .devcontainer/.bash_history
 bin/
 **/build/
+**/__pycache__/
+**generatedTorchLib/
 **generatedFiles/
 *_gen.h
 *_gen.cpp
