@@ -35,10 +35,13 @@ namespace thunder_ns{
 			// elastic parameters
 			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
 			// Input of casadi function //
+			// maybe map<string, fun_obj>functions?
 			std::map<string, casadi::SX> args;
 			std::map<string, casadi::Function> casadi_fun;
 			std::map<string, vector<string>> fun_args;
 			std::map<string, string> fun_descr;
+			// - Parameters map - //
+			std::map<string, par_obj> parameters;
 			// Dynamic parameters //
 			casadi::SXVector _mass_vec_;
 			casadi::SXVector _distCM_;
@@ -104,6 +107,7 @@ namespace thunder_ns{
 			int update_inertial_DYN();
 			int update_inertial_REG();
 			vector<fun_obj> get_functions(bool onlyNames = 1);
+			int add_parameter(string name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr = "", bool overwrite = true);
 			int add_function(string name, casadi::SX expr, vector<string> f_args, string descr = "", bool overwrite = true);
 			void generate_library(const string& savePath, const string& name_file, const bool SAVE_CASADI);
 

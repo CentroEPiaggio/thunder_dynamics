@@ -25,7 +25,23 @@ namespace thunder_ns{
 		std::string description;
 		std::vector<bool> is_symbolic;
 		casadi::SX symb;
-		casadi::SX value;
+		casadi::SX num;
+		casadi::SX get_value(){
+			int new_size = 0;
+			casadi::SX ret(size,1);
+			for (int i=0; i<size; i++){
+				if (is_symbolic[i]) ret(new_size++) = symb(i);
+			}
+			ret.resize(new_size,1);
+			return ret;
+		}
+		casadi::SX get_value_full(){
+			casadi::SX ret(size,1);
+			for (int i=0; i<size; i++){
+				ret(i) = (is_symbolic[i]) ? symb(i) : num(i);
+			}
+			return ret;
+		}
 	}par_obj;
 
 	typedef struct fun_obj{

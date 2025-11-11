@@ -967,6 +967,42 @@ namespace thunder_ns{
 		return 1;
 	}
 
+	int Robot::add_parameter(string p_name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr, bool overwrite){
+		if ((!overwrite) && model.count(p_name)){
+			// key already exists
+			return 0;
+		} else {
+			par_obj param;
+			param.name = p_name;
+			param.description = descr;
+			param.symb = symb;
+			int size = symb.size1();
+			param.size = size;
+
+			if (num.size1()!=size){
+				std::cerr << "Error dimension of numeric SX: " << std::endl;
+				return 0;
+			} else {
+				param.num = num;
+			}
+
+			if ((is_symbolic.empty()) || (is_symbolic.size()!=size)){
+				std::cerr << "Error dimension of symbolic vector: " << std::endl;
+				return 0;
+			}
+			if (is_symbolic.size() == 1) { 		// one value initialization
+				for (int i=0; i<size; i++){
+					param.is_symbolic[i] = is_symbolic[0];
+				}
+			} else {							// normal initialization
+				param.is_symbolic = is_symbolic;
+			}
+
+			// add to parameters map
+			parameters[p_name] = param;
+		}
+	}
+
 	int Robot::add_function(string f_name, casadi::SX expr, vector<string> f_args, string descr, bool overwrite){
 		// maybe directly model[f_name] = ...?
 		if ((!overwrite) && model.count(f_name)){

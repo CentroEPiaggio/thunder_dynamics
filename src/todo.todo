@@ -5,6 +5,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ allow different type for parameters
 		☐ load_conf_par do not take all the parameters and do not checks on symbolic selectivity
 		☐ if parameter is not symbolic, also regressor have to be resized!
 		☐ parse in the same section variables and symbolic flags to avoid confusion!
@@ -68,6 +69,8 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
+		☐ change get("") in Robot to get_value("")
+		☐ map of fun_obj instead of three maps (check possibility, same as parameters)
 		☐ substitute cout with errors or info
 		☐ decrease the dimension of generated files
 		☐ explain better stiffness and friction in readme (maybe create sections for it)
