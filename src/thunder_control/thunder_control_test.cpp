@@ -72,3 +72,42 @@ int main(){
 
 	return 0;
 }
+
+
+
+
+// extern "C" {
+// #include "acados_solver_simple_model.h"
+// }
+
+// #include <iostream>
+
+// int main() {
+//     // Sover creation
+//     void *solver = acados_create();
+
+//     // Initial conditions
+//     double x0[1] = {2.0};
+//     acados_solver_simple_model_set(solver, 0, "x", x0);
+
+//     // Solver execution
+//     int status = acados_solver_simple_model_solve(solver);
+
+//     if (status == 0) {
+//         std::cout << "Solver converged!" << std::endl;
+//     } else {
+//         std::cout << "Solver error: " << status << std::endl;
+//     }
+
+//     // Obtain the solution
+//     double x_opt[1];
+//     acados_solver_simple_model_get(solver, 0, "x", x_opt);
+
+//     std::cout << "Optimal x: " << x_opt[0] << std::endl;
+
+//     // Resource freeing
+//     acados_free(solver);
+
+//     return 0;
+// }
+

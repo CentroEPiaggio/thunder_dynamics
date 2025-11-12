@@ -1,0 +1,3 @@
+☐ create solver in scripts/generate_solver.py
+☐ test solver with another script python (maybe scripts/test_solver.py)
+☐ insert in thunder_control_test.cpp the use of the solver (commented below as an example)
