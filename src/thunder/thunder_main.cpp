@@ -237,6 +237,15 @@ int main(int argc, char* argv[]){
 	// --- copy generated files in thunder_control project --- //
 	if(COPY_GEN_CONTROL_FLAG){
 		copy_to(robot_name, absolutePath, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_YAML, PATH_COPY_CONTROL_H, PATH_COPY_CONTROL_CPP);
+		// casadi functions
+		if (GEN_CASADI){
+			std::filesystem::path sourcePath;
+			std::filesystem::path sourceDestPath;
+			std::string PATH_COPY_CONTROL_YAML = COPY_PREFIX + "src/thunder_control/robots/";
+			sourcePath = absolutePath + "casadi_functions";
+			sourceDestPath = PATH_COPY_CONTROL_YAML + robot_name + "_functions";
+			std::filesystem::copy(sourcePath, sourceDestPath, std::filesystem::copy_options::recursive | std::filesystem::copy_options::overwrite_existing);
+		}
 		std::cout << "Copied to thunder_control!" << std::endl;
 	}
 
