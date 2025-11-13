@@ -51,35 +51,11 @@ namespace thunder_ns{
 			nj = config_file["num_joints"].as<int>();
 			this->numJoints = nj;
 			this->jointsType = config_file["type_joints"].as<vector<string>>();
-
-			// Friction model order (defaults to 0)
-			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;
-
-			// Elastic model properties (defaults to false)
-			this->ELASTIC = false;
-			this->K_order = 0;
-			this->D_order = 0;
-			this->Dm_order = 0;
-			if (config_file["ELASTIC_MODEL"] && config_file["ELASTIC_MODEL"].as<bool>()) {
-				this->ELASTIC = true;
-				YAML::Node elastic_node = config_file["elastic"];
-				this->K_order = elastic_node["K_order"].as<int>();
-				this->D_order = elastic_node["D_order"].as<int>();
-				this->Dm_order = elastic_node["Dm_order"].as<int>();
-			}
-			// identify elastic joints
-			this->numElasticJoints = 0;
-			this->isElasticJoint.resize(this->numJoints);
-			for (int i = 0; i < this->numJoints; i++) {
-				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
-					this->isElasticJoint[i] = 1;
-					this->numElasticJoints++;
-				} else {
-					this->isElasticJoint[i] = 0;
-				}
+			if (this->jointsType.size() != this->numJoints) {
+				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
 			}
 
-			// Denavit-Hartenberg
+			// --- Denavit-Hartenberg --- //
 			YAML::Node kinematics = config_file["kinematics"];
 			vector<double> dh_vect = kinematics["DH"].as<vector<double>>();
 			int dh_size = dh_vect.size();
@@ -87,28 +63,59 @@ namespace thunder_ns{
 			for (int i = 0; i < dh_size; i++) {
 				DHtable_numerical(i) = dh_vect[i];
 			}
+			// - Symbolic - //
+			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<vector<int>>();
+			else this->symb["par_DHtable"].assign(dh_size, 0);
+			// - Update model - //
+			this->model["par_DHtable"] = casadi::SX::sym("DHtable", this->numJoints * 4);
+			// - Numeric - //
+			this->args["par_DHtable"] = DHtable_numerical;
 
-			// Gravity
+			// --- Gravity --- //
 			vector<double> gravity_vect = {0.0, 0.0, 0.0}; // default no gravity
 			if (config_file["gravity"]){
 				gravity_vect = config_file["gravity"]["value"].as<vector<double>>();
 			}
+			casadi::SX gravity_numerical(3, 1);
+			for (int i = 0; i < 3; i++) {
+				gravity_numerical(i) = gravity_vect[i];
+			}
+			// - Symbolic - //
+			if (config_file["gravity"]["symb"]) this->symb["par_gravity"] = config_file["gravity"]["symb"].as<vector<int>>();
+			else this->symb["par_gravity"].assign(3, 0);
+			// - Update model - //
+			this->model["par_gravity"] = casadi::SX::sym("gravity", 3, 1);
+			// - Numeric - //
+			this->args["par_gravity"] = gravity_numerical;
 
-			// Frame Offsets
+			// --- Frame Offsets --- //
 			YAML::Node frame_base = config_file["Base_to_L0"];
+			YAML::Node frame_ee = config_file["Ln_to_EE"];
 			Base_to_L0.set_translation(frame_base["tr"].as<vector<double>>());
 			Base_to_L0.set_ypr(frame_base["ypr"].as<vector<double>>());
-			// Base_to_L0.set_gravity(gravity_vect);
-
-			YAML::Node frame_ee = config_file["Ln_to_EE"];
 			Ln_to_EE.set_translation(frame_ee["tr"].as<vector<double>>());
 			Ln_to_EE.set_ypr(frame_ee["ypr"].as<vector<double>>());
-
-
-			// ---- Symbolic Selectivity Vectors ---- //
-			// These vectors determine which parameters are treated as symbolic variables.
+			casadi::SX world2L0_numerical(6, 1);
+			casadi::SX Ln2EE_numerical(6, 1);
+			for (int i = 0; i < 3; i++) {
+				world2L0_numerical(i) = Base_to_L0.translation[i];
+				world2L0_numerical(i + 3) = Base_to_L0.ypr[i];
+				Ln2EE_numerical(i) = Ln_to_EE.translation[i];
+				Ln2EE_numerical(i + 3) = Ln_to_EE.ypr[i];
+			}
+			// - Symbolic - //
+			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<vector<int>>();
+			else this->symb["par_world2L0"].assign(6, 0);
+			if (frame_ee["symb"]) this->symb["par_Ln2EE"] = frame_ee["symb"].as<vector<int>>();
+			else this->symb["par_Ln2EE"].assign(6, 0);
+			// - Update model - //
+			model["par_world2L0"] = casadi::SX::sym("world2L0", 6, 1);
+			model["par_Ln2EE"] = casadi::SX::sym("Ln2EE", 6, 1);
+			// - Numeric - //
+			args["par_world2L0"] = world2L0_numerical;
+			args["par_Ln2EE"] = Ln2EE_numerical;
 			
-			// Dynamics (Inertia)
+			// --- Dynamics (Inertia) --- //
 			vector<int> par_DYN_symb(STD_PAR_LINK * nj);
 			YAML::Node dynamics = config_file["dynamics"];
 			int link_index = 0;
@@ -123,8 +130,11 @@ namespace thunder_ns{
 				std::copy(link_symb.begin(), link_symb.end(), par_DYN_symb.begin() + link_index * STD_PAR_LINK);
 				link_index++;
 			}
-			
-			// Link Friction
+			// - Symbolic - //
+			this->symb["par_DYN"] = par_DYN_symb;
+
+			// --- Link friction --- //
+			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;	// defaults to 0
 			vector<int> par_Dl_symb;
 			if (this->Dl_order > 0) {
 				par_Dl_symb.resize(this->Dl_order * nj);
@@ -141,8 +151,33 @@ namespace thunder_ns{
 					link_index++;
 				}
 			}
-			
-			// Elasticity (Stiffness, Damping, etc.)
+			// - Symbolic - //
+			this->symb["par_Dl"] = par_Dl_symb;
+
+			// --- Elastic model properties (defaults to false) --- //
+			this->ELASTIC = false;
+			this->K_order = 0;
+			this->D_order = 0;
+			this->Dm_order = 0;
+			if (config_file["ELASTIC_MODEL"] && config_file["ELASTIC_MODEL"].as<bool>()) {
+				this->ELASTIC = true;
+				YAML::Node elastic_node = config_file["elastic"];
+				this->K_order = elastic_node["K_order"].as<int>();
+				this->D_order = elastic_node["D_order"].as<int>();
+				this->Dm_order = elastic_node["Dm_order"].as<int>();
+			}
+			// - identify elastic joints - //
+			this->numElasticJoints = 0;
+			this->isElasticJoint.resize(this->numJoints);
+			for (int i = 0; i < this->numJoints; i++) {
+				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
+					this->isElasticJoint[i] = 1;
+					this->numElasticJoints++;
+				} else {
+					this->isElasticJoint[i] = 0;
+				}
+			}
+			// - Simbolic - //
 			vector<int> par_K_symb, par_D_symb, par_Dm_symb, par_Mm_symb;
 			if (this->ELASTIC) {
 				YAML::Node elastic_joints = config_file["elastic"]["joints"];
@@ -158,76 +193,21 @@ namespace thunder_ns{
 						} else vec.assign(order, 0);
 						return vec;
 					};
-
 					vector<int> K_symb = parse_symb_vector("K_symb", this->K_order);
-					if (K_order > 0) par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
-
 					vector<int> D_symb = parse_symb_vector("D_symb", this->D_order);
-					if (D_order > 0) par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
-
 					vector<int> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
-					if (Dm_order > 0) par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
-
 					int Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
+					if (K_order > 0) par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
+					if (D_order > 0) par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
+					if (Dm_order > 0) par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
 					par_Mm_symb.push_back(Mm_symb);
-
 					i++;
 				}
 			}
-
-			// ---- Populate the Symbolic Selectivity Map (`symb`) ---- //
-			this->symb["par_DYN"] = par_DYN_symb;
-			this->symb["par_Dl"] = par_Dl_symb;
 			this->symb["par_K"] = par_K_symb;
 			this->symb["par_D"] = par_D_symb;
 			this->symb["par_Dm"] = par_Dm_symb;
 			this->symb["par_Mm"] = par_Mm_symb;
-
-			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<vector<int>>();
-			else this->symb["par_DHtable"].assign(dh_size, 0);
-
-			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<vector<int>>();
-			else this->symb["par_world2L0"].assign(6, 0);
-			
-			if (frame_ee["symb"]) this->symb["par_Ln2EE"] = frame_ee["symb"].as<vector<int>>();
-			else this->symb["par_Ln2EE"].assign(6, 0);
-
-			if (config_file["gravity"]["symb"]) this->symb["par_gravity"] = config_file["gravity"]["symb"].as<vector<int>>();
-			else this->symb["par_gravity"].assign(3, 0);
-
-
-			// ---- Finalize Robot State and CasADi Model ---- //
-			if (this->jointsType.size() != this->numJoints) {
-				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
-			}
-			
-			// Define symbolic variables for the model
-			this->model = {
-				{"par_DHtable", casadi::SX::sym("DHtable", this->numJoints * 4)},
-				{"par_world2L0", casadi::SX::sym("world2L0", 6, 1)},
-				{"par_Ln2EE", casadi::SX::sym("Ln2EE", 6, 1)},
-				{"par_gravity", casadi::SX::sym("gravity", 3, 1)}
-			};
-
-			// Create CasADi numerical vectors from parsed data
-			casadi::SX world2L0_numerical(6, 1);
-			casadi::SX Ln2EE_numerical(6, 1);
-			casadi::SX gravity_numerical(3, 1);
-			for (int i = 0; i < 3; i++) {
-				world2L0_numerical(i) = Base_to_L0.translation[i];
-				world2L0_numerical(i + 3) = Base_to_L0.ypr[i];
-				Ln2EE_numerical(i) = Ln_to_EE.translation[i];
-				Ln2EE_numerical(i + 3) = Ln_to_EE.ypr[i];
-				gravity_numerical(i) = gravity_vect[i];
-			}
-
-			// Populate the 'args' map with numerical values
-			this->args = {
-				{"par_DHtable", DHtable_numerical},
-				{"par_world2L0", world2L0_numerical},
-				{"par_Ln2EE", Ln2EE_numerical},
-				{"par_gravity", gravity_numerical}
-			};
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -345,7 +325,6 @@ namespace thunder_ns{
 			symb.insert({"ddx", ddx_symb});
 			symb.insert({"ddxr", ddxr_symb});
 		}
-
 	}
 
 	Eigen::MatrixXd Robot::get(string name){

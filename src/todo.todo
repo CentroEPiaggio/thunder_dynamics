@@ -1,3 +1,12 @@
+✔ finish to update parse_conf using args @done (11/13/2025, 9:27:12 PM)
+☐ substitute args with the parameters map (also for the state)
+☐ change template to add automatically every parameter to the members
+☐ add map for hyperparameters
+☐ create operator [] to have access to the hyperparameters (like robot["numJoints"])
+☐ check everywhere what is used for parameters
+☐ model will contain mix of symbolic and numerics based on symbolic selectivity
+☐ add functions instead of the three maps of the functions
+
 improvings:
 	Console parser:
 		☐ automatically set version?
@@ -5,6 +14,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ substitute casadi::SX with vector<> for numerical parameters?
 		☐ allow different type for parameters
 		☐ load_conf_par do not take all the parameters and do not checks on symbolic selectivity
 		☐ if parameter is not symbolic, also regressor have to be resized!
