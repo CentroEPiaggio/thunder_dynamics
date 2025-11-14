@@ -6,6 +6,8 @@
 ☐ check everywhere what is used for parameters
 ☐ model will contain mix of symbolic and numerics based on symbolic selectivity
 ☐ add functions instead of the three maps of the functions
+☐ save_parameters(path) save all the hyperparameters and the parameters from the internal representation
+☐ load_parameters(path, par_list={}) that load the parameters saved by save_conf
 
 improvings:
 	Console parser:
@@ -14,6 +16,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ add_variable() is using add_parameter()
 		☐ substitute casadi::SX with vector<> for numerical parameters?
 		☐ allow different type for parameters
 		☐ load_conf_par do not take all the parameters and do not checks on symbolic selectivity

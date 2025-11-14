@@ -217,13 +217,6 @@ namespace thunder_ns{
 	}
 
 	void Robot::initVarsFuns(){
-		// if (_DHtable_.rows() != numJoints || _DHtable_.columns() != 4){
-		// 	throw std::runtime_error("DHTemplate: Error size of DH table");
-		// }
-		if ((int)jointsType.size()!=numJoints){
-			throw std::runtime_error("DHFwkinJoints: Error size of joints string");
-		}
-
 		casadi::SX q = casadi::SX::sym("q", numJoints,1);
 		casadi::SX dq = casadi::SX::sym("dq", numJoints,1);
 		casadi::SX ddq = casadi::SX::sym("ddq", numJoints,1);
@@ -944,6 +937,10 @@ namespace thunder_ns{
 		}
 		set_par_REG(param_REG);
 		return 1;
+	}
+
+	int Robot::add_variable(string v_name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr, bool overwrite){
+		add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
 	}
 
 	int Robot::add_parameter(string p_name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr, bool overwrite){

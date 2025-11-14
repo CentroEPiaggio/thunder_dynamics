@@ -107,6 +107,7 @@ namespace thunder_ns{
 			int update_inertial_DYN();
 			int update_inertial_REG();
 			vector<fun_obj> get_functions(bool onlyNames = 1);
+			int add_variable(string name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr = "", bool overwrite = true);
 			int add_parameter(string name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr = "", bool overwrite = true);
 			int add_function(string name, casadi::SX expr, vector<string> f_args, string descr = "", bool overwrite = true);
 			void generate_library(const string& savePath, const string& name_file, const bool SAVE_CASADI);
