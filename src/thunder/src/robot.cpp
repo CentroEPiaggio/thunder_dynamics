@@ -576,7 +576,7 @@ namespace thunder_ns{
 
 	int Robot::update_inertial_DYN(){
 		// not efficient, should be made in casadi
-		Eigen::VectorXd param_REG(get_par("par_REG"));
+		Eigen::VectorXd param_REG = Eigen::Map<Eigen::VectorXd>(get_par("par_REG").data(),get_par("par_REG").size());
 		Eigen::VectorXd param_DYN(STD_PAR_LINK*numJoints);
 		for (int i=0; i<numJoints; i++){
 			Eigen::VectorXd p_reg = param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
@@ -601,7 +601,7 @@ namespace thunder_ns{
 
 	int Robot::update_inertial_REG(){
 		// not efficient, should be made in casadi
-		Eigen::VectorXd param_DYN(get_par("par_DYN"));
+		Eigen::VectorXd param_DYN = Eigen::Map<Eigen::VectorXd>(get_par("par_DYN").data(),get_par("par_REG").size());
 		// cout<<"param_DYN:"<<endl<<param_DYN<<endl<<endl;
 		Eigen::VectorXd param_REG(STD_PAR_LINK*numJoints);
 		for (int i=0; i<numJoints; i++){
@@ -634,7 +634,8 @@ namespace thunder_ns{
 	}
 
 	int Robot::add_variable(string v_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
-		add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
+		int ret = add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
+		return ret;
 	}
 
 	int Robot::add_parameter(string p_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
@@ -672,6 +673,7 @@ namespace thunder_ns{
 			parameters[p_name] = param;
 			model[p_name] = param.get_value_full();
 		}
+		return 1;
 	}
 
 	int Robot::add_function(string f_name, casadi::SX expr, vector<string> f_args, string descr, bool overwrite){
@@ -827,8 +829,6 @@ namespace thunder_ns{
 
 
 	Robot robot_from_file(string robot_name, string file, bool compute){
-		// create config
-		// Config conf = load_config(file);
 		bool advanced = true;
 		Robot robot(file);
 		robot.robotName = robot_name;
