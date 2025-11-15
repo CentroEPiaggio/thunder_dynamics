@@ -83,7 +83,7 @@ namespace thunder_ns{
 			int save_par(string par_file, vector<string> par_list = {});
 
 			// to clean ! --------------------------------------------
-			Eigen::MatrixXd get_value(string name);
+			casadi::SX get_value(string name);
 			// _value functions
 			int get_numJoints();
 			vector<string> get_jointsType();
