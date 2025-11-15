@@ -2,8 +2,7 @@
 #define ROBOT_H
 
 #include <string>
-// #include <map> // used for model and functions into Robot, like dictionaries
-// #include <functional>
+#include <map>
 #include <yaml-cpp/yaml.h>
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
@@ -33,6 +32,8 @@ namespace thunder_ns{
 			vector<int> isElasticJoint;
 			// elastic parameters
 			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
+			// // - Properties map - //
+			// std::map<string, void*> properties;
 
 			// --- Internal methods --- //
 			int parse_config();
@@ -48,6 +49,17 @@ namespace thunder_ns{
 			Robot(const YAML::Node yaml);
 			// - destructor - //
 			// ~Robot(){};
+
+			// - Get property functions - //
+			int get_numJoints();
+			vector<string> get_jointsType();
+			bool get_ELASTIC();
+			int get_K_order();
+			int get_D_order();
+			int get_Dl_order();
+			int get_Dm_order();
+			vector<int> get_isElasticJoint();
+			int get_numElasticJoints();
 
 			// --- Robot configuration --- //
 			string robotName = "robot";
@@ -79,23 +91,11 @@ namespace thunder_ns{
 			int load_par(string par_file, vector<string> par_list = {});
 			int save_par(string par_file, vector<string> par_list = {});
 
-			// to clean ! --------------------------------------------
+			// --- Robot interactions --- //
 			casadi::SX get_value(string name);
-			// _value functions
-			int get_numJoints();
-			vector<string> get_jointsType();
-			bool get_ELASTIC();
-			int get_K_order();
-			int get_D_order();
-			int get_Dl_order();
-			int get_Dm_order();
-			vector<int> get_isElasticJoint();
-			int get_numElasticJoints();
-			// load functions
 			vector<fun_obj> get_functions(bool onlyNames = 1);
-			// --------------------------------------------------------
 
-			// --- Map populators --- //
+			// --- Robot populators --- //
 			int add_variable(string name, SX symb, vector<double> num, vector<short> is_symbolic = {1}, string descr = "", bool overwrite = true);
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
 			int add_function(string name, SX expr, vector<string> f_args, string descr = "", bool overwrite = true);

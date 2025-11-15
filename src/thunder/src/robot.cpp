@@ -671,7 +671,6 @@ namespace thunder_ns{
 	}
 
 	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args, string descr, bool overwrite){
-		// maybe directly model[f_name] = ...?
 		if ((!overwrite) && model.count(f_name)){
 			// key already exists
 			return 0;
