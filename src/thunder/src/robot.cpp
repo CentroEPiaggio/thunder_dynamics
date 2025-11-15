@@ -311,10 +311,10 @@ namespace thunder_ns{
 	casadi::SX Robot::get_value(string name){
 		vector<casadi::SX> result;
 		// Eigen::MatrixXd result_num;
-		if (fun_args.count(name)){
+		if (functions.count(name)){
     		// key exists
 			// cout<<"name: "<<name<<endl;
-			auto f_args = fun_args[name];
+			auto f_args = functions[name].args;
 			int sz = f_args.size();
 			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::SXVector inputs(sz);
@@ -326,7 +326,7 @@ namespace thunder_ns{
 			// cout<<"args: "<<inputs<<endl;
 			// casadi::Function fun = casadi_fun[name];
 			// cout<<"fun: "<<fun<<endl;
-			casadi_fun[name].call(inputs, result);
+			functions[name].fun.call(inputs, result);
 			// cout<<"result: "<<result<<endl;
 			return casadi::SX::vertcat(result);
 		} else {
@@ -359,25 +359,25 @@ namespace thunder_ns{
 	}
 
 	vector<fun_obj> Robot::get_functions(bool onlyNames) {
-		vector<fun_obj> functions;
-		int sz = casadi_fun.size();
-		functions.resize(sz);
+		vector<fun_obj> fun_vect;
+		int sz = functions.size();
+		fun_vect.resize(sz);
 		int i=0;
-		for (auto &f : casadi_fun){
+		for (auto &f : functions){
 			string name = f.first;
-			functions[i].name = f.first;
-			functions[i].description = fun_descr[name];
-			functions[i].args = fun_args[name];
-			functions[i].out_size.resize(2);
-			functions[i].out_size[0] = model[name].size1();
-			functions[i].out_size[1] = model[name].size2();
+			fun_vect[i].name = f.first;
+			fun_vect[i].description = f.second.description;
+			fun_vect[i].args = f.second.args;
+			fun_vect[i].out_size.resize(2);
+			fun_vect[i].out_size[0] = model[name].size1();
+			fun_vect[i].out_size[1] = model[name].size2();
 			if (!onlyNames){
-				functions[i].expr = model[name];
-				functions[i].fun = f.second;
+				fun_vect[i].expr = model[name];
+				fun_vect[i].fun = f.second.fun;
 			}
 			i++;
 		}
-		return functions;
+		return fun_vect;
 	}
 
 	int Robot::get_numJoints(){
@@ -670,22 +670,23 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(string f_name, casadi::SX expr, vector<string> f_args, string descr, bool overwrite){
+	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args, string descr, bool overwrite){
 		// maybe directly model[f_name] = ...?
 		if ((!overwrite) && model.count(f_name)){
 			// key already exists
 			return 0;
 		} else {
+			fun_obj fun_struct;
 			model[f_name] = expr;
-			fun_args[f_name] = f_args;
-			fun_descr[f_name] = descr;
+			fun_struct.args = args;
+			fun_struct.description = descr;
 
-			casadi::SXVector inputs(f_args.size());
-			// for (const auto& arg : f_args) {
+			casadi::SXVector inputs(args.size());
+			// for (const auto& arg : args) {
 			// 	inputs.push_back(model[arg]);
 			// }
 			int arg_index=0;
-			for (const auto& arg : f_args) {
+			for (const auto& arg : args) {
 				// - resize parameters - //
 				// int sz_original = args[arg].size();
 				// std::cout << "fun: " << f_name << std::endl;
@@ -720,7 +721,8 @@ namespace thunder_ns{
 
 			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
 			// cout<<"fun: "<<fun<<endl;
-			casadi_fun[f_name] = fun;
+			fun_struct.fun = fun;
+			functions[f_name] = fun_struct;
 		}
 
 		return 1;
@@ -736,8 +738,8 @@ namespace thunder_ns{
 		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(name_file, opts);
 		// cout<<"casadi_fun: "<<casadi_fun<<endl;
 
-		for (const auto& f : casadi_fun) {
-			myCodeGen.add(f.second);
+		for (const auto& f : functions) {
+			myCodeGen.add(f.second.fun);
 			// cout<<"f_name: "<<f.first<<endl;
 			// cout<<"fun: "<<f.second<<endl<<endl;
 		}
@@ -745,10 +747,10 @@ namespace thunder_ns{
 
 		if(SAVE_CASADI){
 			// Save CasADi functions
-			for (const auto& f : casadi_fun) {
+			for (const auto& f : functions) {
 				string function_file = savePath + "/" + f.first + ".casadi";
 				// std::ofstream file(function_file, std::ios::binary);
-				f.second.save(function_file);
+				f.second.fun.save(function_file);
 				// file.close();
 			}
 		}

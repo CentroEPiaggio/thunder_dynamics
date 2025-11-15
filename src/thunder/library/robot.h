@@ -67,10 +67,7 @@ namespace thunder_ns{
 			// - Parameters map - //
 			std::map<string, par_obj> parameters;
 			// - Functions map - //
-			// maybe map<string, fun_obj>functions?
-			std::map<string, casadi::Function> casadi_fun;
-			std::map<string, vector<string>> fun_args;
-			std::map<string, string> fun_descr;
+			std::map<string, fun_obj> functions;
 			// --- Model map --- //
 			std::map<string, casadi::SX> model;
 

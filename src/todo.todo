@@ -7,7 +7,7 @@
 ☐ create operator [] to have access to the hyperparameters (like robot["numJoints"])
 ☐ check everywhere what is used for parameters
 ✔ model will contain mix of symbolic and numerics based on symbolic selectivity @done (11/15/2025, 7:44:07 PM)
-☐ add functions instead of the three maps of the functions
+✔ add functions instead of the three maps of the functions @done (11/15/2025, 10:30:31 PM)
 ☐ save_par(path) save all the hyperparameters and the parameters from the internal representation
 ☐ load_par(path, par_list={}) that load the parameters saved by save_conf
 
