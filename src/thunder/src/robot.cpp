@@ -7,17 +7,16 @@
 
 using std::cout;
 using std::endl;
+using casadi::SX;
 
 namespace thunder_ns{
 
 	Robot::Robot(const string config_file){
 		load_config(config_file); 	// load config and parameters from yaml file
-		initVarsFuns();				// initialize variables
 	}
 
 	Robot::Robot(const YAML::Node yaml){
 		load_config(yaml); 		// load config and parameters from yaml file
-		initVarsFuns();			// initialize variables
 	}
 
 	YAML::Node Robot::load_config(string config_file){
@@ -45,115 +44,17 @@ namespace thunder_ns{
 
 		// ----- Parsing YAML File ----- //
 		try {
+
 			YAML::Node config_file = this->config_yaml;
 
-			// ---- Basic Robot Properties ---- //
+
+			// --- Basic Robot properties --- //
 			nj = config_file["num_joints"].as<int>();
 			this->numJoints = nj;
 			this->jointsType = config_file["type_joints"].as<vector<string>>();
 			if (this->jointsType.size() != this->numJoints) {
 				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
 			}
-
-			// --- Denavit-Hartenberg --- //
-			YAML::Node kinematics = config_file["kinematics"];
-			vector<double> dh_vect = kinematics["DH"].as<vector<double>>();
-			int dh_size = dh_vect.size();
-			casadi::SX DHtable_numerical(dh_size, 1);
-			for (int i = 0; i < dh_size; i++) {
-				DHtable_numerical(i) = dh_vect[i];
-			}
-			// - Symbolic - //
-			if (kinematics["symb"]) this->symb["par_DHtable"] = kinematics["symb"].as<vector<int>>();
-			else this->symb["par_DHtable"].assign(dh_size, 0);
-			// - Update model - //
-			this->model["par_DHtable"] = casadi::SX::sym("DHtable", this->numJoints * 4);
-			// - Numeric - //
-			this->args["par_DHtable"] = DHtable_numerical;
-
-			// --- Gravity --- //
-			vector<double> gravity_vect = {0.0, 0.0, 0.0}; // default no gravity
-			if (config_file["gravity"]){
-				gravity_vect = config_file["gravity"]["value"].as<vector<double>>();
-			}
-			casadi::SX gravity_numerical(3, 1);
-			for (int i = 0; i < 3; i++) {
-				gravity_numerical(i) = gravity_vect[i];
-			}
-			// - Symbolic - //
-			if (config_file["gravity"]["symb"]) this->symb["par_gravity"] = config_file["gravity"]["symb"].as<vector<int>>();
-			else this->symb["par_gravity"].assign(3, 0);
-			// - Update model - //
-			this->model["par_gravity"] = casadi::SX::sym("gravity", 3, 1);
-			// - Numeric - //
-			this->args["par_gravity"] = gravity_numerical;
-
-			// --- Frame Offsets --- //
-			YAML::Node frame_base = config_file["Base_to_L0"];
-			YAML::Node frame_ee = config_file["Ln_to_EE"];
-			Base_to_L0.set_translation(frame_base["tr"].as<vector<double>>());
-			Base_to_L0.set_ypr(frame_base["ypr"].as<vector<double>>());
-			Ln_to_EE.set_translation(frame_ee["tr"].as<vector<double>>());
-			Ln_to_EE.set_ypr(frame_ee["ypr"].as<vector<double>>());
-			casadi::SX world2L0_numerical(6, 1);
-			casadi::SX Ln2EE_numerical(6, 1);
-			for (int i = 0; i < 3; i++) {
-				world2L0_numerical(i) = Base_to_L0.translation[i];
-				world2L0_numerical(i + 3) = Base_to_L0.ypr[i];
-				Ln2EE_numerical(i) = Ln_to_EE.translation[i];
-				Ln2EE_numerical(i + 3) = Ln_to_EE.ypr[i];
-			}
-			// - Symbolic - //
-			if (frame_base["symb"]) this->symb["par_world2L0"] = frame_base["symb"].as<vector<int>>();
-			else this->symb["par_world2L0"].assign(6, 0);
-			if (frame_ee["symb"]) this->symb["par_Ln2EE"] = frame_ee["symb"].as<vector<int>>();
-			else this->symb["par_Ln2EE"].assign(6, 0);
-			// - Update model - //
-			model["par_world2L0"] = casadi::SX::sym("world2L0", 6, 1);
-			model["par_Ln2EE"] = casadi::SX::sym("Ln2EE", 6, 1);
-			// - Numeric - //
-			args["par_world2L0"] = world2L0_numerical;
-			args["par_Ln2EE"] = Ln2EE_numerical;
-			
-			// --- Dynamics (Inertia) --- //
-			vector<int> par_DYN_symb(STD_PAR_LINK * nj);
-			YAML::Node dynamics = config_file["dynamics"];
-			int link_index = 0;
-			for (const auto& node : dynamics) {
-				YAML::Node inertial = node.second["inertial"];
-				vector<int> link_symb;
-				if (inertial["symb"]) {
-					link_symb = inertial["symb"].as<vector<int>>();
-				} else {
-					link_symb.assign(STD_PAR_LINK, 0); // Default to non-symbolic
-				}
-				std::copy(link_symb.begin(), link_symb.end(), par_DYN_symb.begin() + link_index * STD_PAR_LINK);
-				link_index++;
-			}
-			// - Symbolic - //
-			this->symb["par_DYN"] = par_DYN_symb;
-
-			// --- Link friction --- //
-			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;	// defaults to 0
-			vector<int> par_Dl_symb;
-			if (this->Dl_order > 0) {
-				par_Dl_symb.resize(this->Dl_order * nj);
-				link_index = 0;
-				for (const auto& node : dynamics) {
-					YAML::Node friction = node.second["friction"];
-					vector<int> fric_symb;
-					if (friction["symb"]) {
-						fric_symb = friction["symb"].as<vector<int>>();
-					} else {
-						fric_symb.assign(this->Dl_order, 0);
-					}
-					std::copy(fric_symb.begin(), fric_symb.end(), par_Dl_symb.begin() + link_index * this->Dl_order);
-					link_index++;
-				}
-			}
-			// - Symbolic - //
-			this->symb["par_Dl"] = par_Dl_symb;
-
 			// --- Elastic model properties (defaults to false) --- //
 			this->ELASTIC = false;
 			this->K_order = 0;
@@ -177,37 +78,228 @@ namespace thunder_ns{
 					this->isElasticJoint[i] = 0;
 				}
 			}
-			// - Simbolic - //
-			vector<int> par_K_symb, par_D_symb, par_Dm_symb, par_Mm_symb;
+
+
+			// --- Variables --- //
+			// - Normal joints - //
+			add_variable("q", SX::sym("q",numJoints,1), vector<double>(numJoints,0), {1}, "Configuration", true);
+			add_variable("dq", SX::sym("dq",numJoints,1), vector<double>(numJoints,0), {1}, "Velocity", true);
+			add_variable("ddq", SX::sym("ddq",numJoints,1), vector<double>(numJoints,0), {1}, "Acceleration", true);
+			add_variable("dqr", SX::sym("dqr",numJoints,1), vector<double>(numJoints,0), {1}, "Velocity reference", true);
+			add_variable("ddqr", SX::sym("ddqr",numJoints,1), vector<double>(numJoints,0), {1}, "Acceleration reference", true);
+			add_variable("d3q", SX::sym("d3q",numJoints,1), vector<double>(numJoints,0), {1}, "Jerk", true);
+			add_variable("d4q", SX::sym("d4q",numJoints,1), vector<double>(numJoints,0), {1}, "Snap", true);
+			// - Elastic joints - //
+			add_variable("x", SX::sym("x",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor angle", true);
+			add_variable("dx", SX::sym("dx",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor velocity", true);
+			add_variable("ddx", SX::sym("ddx",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration", true);
+			add_variable("ddxr", SX::sym("ddxr",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration reference", true);
+			// - Regressors - //
+			add_variable("w", SX::sym("w",6,1), vector<double>(6,1), {1}, "Wrench", true);
+
+
+			// --- Denavit-Hartenberg --- //
+			YAML::Node kinematics = config_file["kinematics"];
+			vector<double> dh_num = kinematics["DH"].as<vector<double>>();
+			int dh_size = dh_num.size();
+			// - Symbolic selectivity - //
+			vector<short> dh_isSymb;
+			if (kinematics["symb"]) dh_isSymb = kinematics["symb"].as<vector<short>>();
+			else dh_isSymb.assign(dh_size, 0);
+			// - Model - //
+			SX dh_symb = SX::sym("DHtable", this->numJoints * 4);
+			// - Add to parameters - //
+			add_parameter("par_DHtable", dh_symb, dh_num, dh_isSymb, "DH parameters", true);
+
+
+			// --- Gravity --- //
+			vector<double> gravity_num = {0.0, 0.0, 0.0}; // default no gravity
+			if (config_file["gravity"]){
+				gravity_num = config_file["gravity"]["value"].as<vector<double>>();
+			}
+			// - Symbolic selectivity - //
+			vector<short> gravity_isSymb;
+			if (config_file["gravity"]["symb"]) gravity_isSymb = config_file["gravity"]["symb"].as<vector<short>>();
+			else gravity_isSymb.assign(3, 0);
+			// - Model - //
+			SX gravity_symb = SX::sym("gravity", 3);
+			// - Add to parameters - //
+			add_parameter("par_gravity", gravity_symb, gravity_num, gravity_isSymb, "Gravity on world frame", true);
+
+
+			// --- Frame Offsets --- //
+			YAML::Node frame_base = config_file["Base_to_L0"];
+			YAML::Node frame_ee = config_file["Ln_to_EE"];
+			Base_to_L0.set_translation(frame_base["tr"].as<vector<double>>());
+			Base_to_L0.set_ypr(frame_base["ypr"].as<vector<double>>());
+			Ln_to_EE.set_translation(frame_ee["tr"].as<vector<double>>());
+			Ln_to_EE.set_ypr(frame_ee["ypr"].as<vector<double>>());
+			vector<double> world2L0_num(6, 0);
+			vector<double> Ln2EE_num(6, 0);
+			for (int i = 0; i < 3; i++) {
+				world2L0_num[i] = Base_to_L0.translation[i];
+				world2L0_num[i + 3] = Base_to_L0.ypr[i];
+				Ln2EE_num[i] = Ln_to_EE.translation[i];
+				Ln2EE_num[i + 3] = Ln_to_EE.ypr[i];
+			}
+			// - Symbolic selectivity - //
+			vector<short> world2L0_isSymb;
+			vector<short> Ln2EE_isSymb;
+			if (frame_base["symb"]) world2L0_isSymb = frame_base["symb"].as<vector<short>>();
+			else world2L0_isSymb.assign(6, 0);
+			if (frame_ee["symb"]) Ln2EE_isSymb = frame_ee["symb"].as<vector<short>>();
+			else Ln2EE_isSymb.assign(6, 0);
+			// - Model - //
+			SX world2L0_symb = SX::sym("world2L0", 6);
+			SX Ln2EE_symb = SX::sym("Ln2EE", 6);
+			// - Numeric - //
+			add_parameter("par_world2L0", world2L0_symb, world2L0_num, world2L0_isSymb, "World to base frame", true);
+			add_parameter("par_Ln2EE", Ln2EE_symb, Ln2EE_num, Ln2EE_isSymb, "Last link to end-effector frame", true);
+			
+
+			// --- Dynamics (Inertial) --- //
+			vector<double> par_DYN_num(STD_PAR_LINK*numJoints,0);
+			vector<double> par_REG_num(STD_PAR_LINK*numJoints,0);
+			vector<short> par_DYN_isSymb(STD_PAR_LINK * nj);
+			YAML::Node dynamics = config_file["dynamics"];
+			int idx = 0;
+			for (const auto& node : dynamics) {
+				YAML::Node inertial = node.second["inertial"];
+
+				if (idx==numJoints) break;	// termination on link number
+				string linkName = node.first.as<string>();
+				
+				// - Numeric - //
+				par_DYN_num[STD_PAR_LINK*idx] = inertial["mass"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+1] = inertial["CoM_x"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+2] = inertial["CoM_y"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+3] = inertial["CoM_z"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+4] = inertial["Ixx"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+5] = inertial["Ixy"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+6] = inertial["Ixz"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+7] = inertial["Iyy"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+8] = inertial["Iyz"].as<double>();
+				par_DYN_num[STD_PAR_LINK*idx+9] = inertial["Izz"].as<double>();
+
+				// - Symbolic selectivity - //
+				vector<short> link_isSymb;
+				if (inertial["symb"]) {
+					link_isSymb = inertial["symb"].as<vector<short>>();
+				} else {
+					link_isSymb.assign(STD_PAR_LINK, 0); // Default to non-symbolic
+				}
+				std::copy(link_isSymb.begin(), link_isSymb.end(), par_DYN_isSymb.begin() + idx * STD_PAR_LINK);
+				idx++;
+			}
+			// - Model - //
+			SX par_DYN_symb = SX::sym("par_DYN", STD_PAR_LINK*numJoints,1);
+			SX par_REG_symb = SX::sym("par_REG", STD_PAR_LINK*numJoints,1);
+			// - Add to parameters - //
+			add_parameter("par_DYN", par_DYN_symb, par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
+			vector<short> par_REG_isSymb = par_DYN_isSymb;
+			add_parameter("par_REG", par_REG_symb, par_REG_num, par_REG_isSymb, "Dynamic parameters for regressor", true);
+			update_inertial_REG();
+
+
+			// --- Link friction --- //
+			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;	// defaults to 0
+			vector<double> par_Dl_num;
+			vector<short> par_Dl_isSymb;
+			if (this->Dl_order > 0) {
+				par_Dl_num.resize(this->Dl_order * nj);
+				par_Dl_isSymb.resize(this->Dl_order * nj);
+				idx = 0;
+				for (const auto& node : dynamics) {
+					// - Numeric - //
+					if (node.second["friction"]){
+						vector<double> Dl = node.second["friction"]["Dl"].as<vector<double>>();
+						for (int j=0; j<Dl_order; j++){
+							par_Dl_num[Dl_order*idx + j] = Dl[j];
+						}
+					}
+
+					// - Symbolic selectivity - //
+					YAML::Node friction = node.second["friction"];
+					vector<int> fric_isSymb;
+					if (friction["symb"]) {
+						fric_isSymb = friction["symb"].as<vector<int>>();
+					} else {
+						fric_isSymb.assign(this->Dl_order, 0);
+					}
+					std::copy(fric_isSymb.begin(), fric_isSymb.end(), par_Dl_isSymb.begin() + idx * this->Dl_order);
+					idx++;
+				}
+				// - Model - //
+				SX par_Dl_symb = SX::sym("par_Dl", numJoints*Dl_order,1);
+				// - Add to parameters - //
+				add_parameter("par_Dl", par_Dl_symb, par_Dl_num, par_Dl_isSymb, "Link friction parameters", true);
+			}
+
+			// - Elastic joints parameters - //
+			vector<double> par_K_num, par_D_num, par_Dm_num, par_Mm_num;
+			vector<short> par_K_isSymb, par_D_isSymb, par_Dm_isSymb, par_Mm_isSymb;
 			if (this->ELASTIC) {
+				par_K_num.resize(numElasticJoints*K_order);
+				par_D_num.resize(numElasticJoints*D_order);
+				par_Dm_num.resize(numElasticJoints*Dm_order);
+				par_Mm_num.resize(numElasticJoints);
 				YAML::Node elastic_joints = config_file["elastic"]["joints"];
 				int i = 0;
 				for (const auto& node : elastic_joints) {
 					if (i==numElasticJoints) break; // break if nore joints defined
+					string jointName = node.first.as<string>();
+
 					// Helper lambda to parse a symbolic vector
 					auto parse_symb_vector = [&](const string& key, int order) {
-						vector<int> vec;
+						vector<short> vec;
 						if (node.second[key]){
-							vec = node.second[key].as<vector<int>>();
+							vec = node.second[key].as<vector<short>>();
 							vec.resize(order);
 						} else vec.assign(order, 0);
 						return vec;
 					};
-					vector<int> K_symb = parse_symb_vector("K_symb", this->K_order);
-					vector<int> D_symb = parse_symb_vector("D_symb", this->D_order);
-					vector<int> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
-					int Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
-					if (K_order > 0) par_K_symb.insert(par_K_symb.end(), K_symb.begin(), K_symb.end());
-					if (D_order > 0) par_D_symb.insert(par_D_symb.end(), D_symb.begin(), D_symb.end());
-					if (Dm_order > 0) par_Dm_symb.insert(par_Dm_symb.end(), Dm_symb.begin(), Dm_symb.end());
-					par_Mm_symb.push_back(Mm_symb);
+
+					// - Numeric - //
+					// stiffness
+					if (K_order > 0){
+						vector<double> K = node.second["K"].as<vector<double>>();
+						for (int j=0; j<K_order; j++) par_K_num[K_order*i+j] = K[j];
+					}
+					// coupling friction
+					if (D_order > 0){
+						vector<double> D = node.second["D"].as<vector<double>>();
+						for (int j=0; j<D_order; j++) par_D_num[D_order*i + j] = D[j];
+					}
+					// motor friction
+					if (Dm_order > 0){
+						vector<double> Dm = node.second["Dm"].as<vector<double>>();
+						for (int j=0; j<Dm_order; j++) par_Dm_num[Dm_order*i + j] = Dm[j];
+					}
+					// motor inertia
+					par_Mm_num[i] = node.second["Mm"].as<double>();
+					
+					// - Symbolic selectivity - //
+					vector<short> K_symb = parse_symb_vector("K_symb", this->K_order);
+					vector<short> D_symb = parse_symb_vector("D_symb", this->D_order);
+					vector<short> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
+					short Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
+					if (K_order > 0) par_K_isSymb.insert(par_K_isSymb.end(), K_symb.begin(), K_symb.end());
+					if (D_order > 0) par_D_isSymb.insert(par_D_isSymb.end(), D_symb.begin(), D_symb.end());
+					if (Dm_order > 0) par_Dm_isSymb.insert(par_Dm_isSymb.end(), Dm_symb.begin(), Dm_symb.end());
+					par_Mm_isSymb.push_back(Mm_symb);
 					i++;
 				}
+				// - Models - //
+				SX par_K_symb = SX::sym("par_K", numElasticJoints*K_order,1);
+				SX par_D_symb = SX::sym("par_D", numElasticJoints*D_order,1);
+				SX par_Dm_symb = SX::sym("par_Dm", numElasticJoints*Dm_order,1);
+				SX par_Mm_symb = SX::sym("par_Mm", numElasticJoints,1);
+				// - Add to parameters - //
+				add_parameter("par_K", par_K_symb, par_K_num, par_K_isSymb, "Coupling stiffness parameters", true);
+				add_parameter("par_D", par_D_symb, par_D_num, par_D_isSymb, "Coupling friction parameters", true);
+				add_parameter("par_Dm", par_Dm_symb, par_Dm_num, par_Dm_isSymb, "Motor friction parameters", true);
+				add_parameter("par_Mm", par_Mm_symb, par_Mm_num, par_Mm_isSymb, "Motor inertia parameters", true);
 			}
-			this->symb["par_K"] = par_K_symb;
-			this->symb["par_D"] = par_D_symb;
-			this->symb["par_Dm"] = par_Dm_symb;
-			this->symb["par_Mm"] = par_Mm_symb;
 
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
@@ -216,111 +308,7 @@ namespace thunder_ns{
 		return 1; // Indicate success
 	}
 
-	void Robot::initVarsFuns(){
-		casadi::SX q = casadi::SX::sym("q", numJoints,1);
-		casadi::SX dq = casadi::SX::sym("dq", numJoints,1);
-		casadi::SX ddq = casadi::SX::sym("ddq", numJoints,1);
-		casadi::SX d3q = casadi::SX::sym("d3q", numJoints,1);
-		casadi::SX d4q = casadi::SX::sym("d4q", numJoints,1);
-		casadi::SX dqr = casadi::SX::sym("dqr", numJoints,1);
-		casadi::SX ddqr = casadi::SX::sym("ddqr", numJoints,1);
-		casadi::SX x = casadi::SX::sym("x", numElasticJoints,1);
-		casadi::SX dx = casadi::SX::sym("dx", numElasticJoints,1);
-		casadi::SX ddx = casadi::SX::sym("ddx", numElasticJoints,1);
-		casadi::SX ddxr = casadi::SX::sym("ddxr", numElasticJoints,1);
-		// _par_KIN_ = casadi::SX::sym("par_DYN", N_PAR_KIN,1);
-		casadi::SX par_DYN = casadi::SX::sym("par_DYN", STD_PAR_LINK*numJoints,1);
-		casadi::SX par_REG = casadi::SX::sym("par_REG", STD_PAR_LINK*numJoints,1);
-		casadi::SX par_Dl = casadi::SX::sym("par_Dl", numJoints*Dl_order,1);
-		casadi::SX par_K = casadi::SX::sym("par_K", numElasticJoints*K_order,1);
-		casadi::SX par_D = casadi::SX::sym("par_D", numElasticJoints*D_order,1);
-		casadi::SX par_Dm = casadi::SX::sym("par_Dm", numElasticJoints*Dm_order,1);
-		casadi::SX par_Mm = casadi::SX::sym("par_Mm", numElasticJoints,1);
-		casadi::SX w = casadi::SX::sym("w", 6,1);
-		
-		// model update
-		model.insert({"q", q});
-		model.insert({"dq", dq});
-		model.insert({"ddq", ddq});
-		model.insert({"d3q", d3q});
-		model.insert({"d4q", d4q});
-		model.insert({"dqr", dqr});
-		model.insert({"ddqr", ddqr});
-		model.insert({"w", w});
-		// model.insert({"par_KIN", _par_KIN_});
-		model.insert({"par_DYN", par_DYN});
-		model.insert({"par_REG", par_REG});
-		if (Dl_order > 0){
-			model.insert({"par_Dl", par_Dl});
-		}
-		if (ELASTIC){
-			model.insert({"x", x});
-			model.insert({"dx", dx});
-			model.insert({"ddx", ddx});
-			model.insert({"ddxr", ddxr});
-			model.insert({"par_K", par_K});
-			model.insert({"par_D", par_D});
-			model.insert({"par_Dm", par_Dm});
-			model.insert({"par_Mm", par_Mm});
-		}
-
-		args.insert({"q", casadi::SX::zeros(numJoints,1)});
-		args.insert({"dq", casadi::SX::zeros(numJoints,1)});
-		args.insert({"ddq", casadi::SX::zeros(numJoints,1)});
-		args.insert({"d3q", casadi::SX::zeros(numJoints,1)});
-		args.insert({"d4q", casadi::SX::zeros(numJoints,1)});
-		args.insert({"dqr", casadi::SX::zeros(numJoints,1)});
-		args.insert({"ddqr", casadi::SX::zeros(numJoints,1)});
-		args.insert({"w", casadi::SX::zeros(6)});
-		// args.insert({"par_KIN", par_KIN});
-		args.insert({"par_DYN", casadi::SX::zeros(STD_PAR_LINK*numJoints,1)});
-		args.insert({"par_REG", casadi::SX::zeros(STD_PAR_LINK*numJoints,1)});
-		if (Dl_order > 0){
-			args.insert({"par_Dl", casadi::SX::zeros(Dl_order*numJoints,1)});
-		}
-		if (ELASTIC){
-			args.insert({"x", casadi::SX::zeros(numElasticJoints,1)});
-			args.insert({"dx", casadi::SX::zeros(numElasticJoints,1)});
-			args.insert({"ddx", casadi::SX::zeros(numElasticJoints,1)});
-			args.insert({"ddxr", casadi::SX::zeros(numElasticJoints,1)});
-			args.insert({"par_K", casadi::SX::zeros(K_order*numElasticJoints,1)});
-			args.insert({"par_D", casadi::SX::zeros(D_order*numElasticJoints,1)});
-			args.insert({"par_Dm", casadi::SX::zeros(Dm_order*numElasticJoints,1)});
-			args.insert({"par_Mm", casadi::SX::zeros(numElasticJoints,1)});
-		}
-		// args.insert({"par_ELA", casadi::SX::zeros(numParELA)});
-
-		// // - symbolics - //
-		// symb.insert({"q", casadi::SX::zeros(numElasticJoints)})
-		vector<int> q_symb(numJoints, 1);
-		vector<int> dq_symb(numJoints, 1);
-		vector<int> ddq_symb(numJoints, 1);
-		vector<int> d3q_symb(numJoints, 1);
-		vector<int> d4q_symb(numJoints, 1);
-		vector<int> dqr_symb(numJoints, 1);
-		vector<int> ddqr_symb(numJoints, 1);
-		vector<int> w_symb(6, 1);
-		symb.insert({"q", q_symb});
-		symb.insert({"dq", dq_symb});
-		symb.insert({"ddq", ddq_symb});
-		symb.insert({"d3q", d3q_symb});
-		symb.insert({"d4q", d4q_symb});
-		symb.insert({"dqr", dqr_symb});
-		symb.insert({"ddqr", ddqr_symb});
-		symb.insert({"w", w_symb});
-		if (ELASTIC){
-			vector<int> x_symb(numElasticJoints, 1);
-			vector<int> dx_symb(numElasticJoints, 1);
-			vector<int> ddx_symb(numElasticJoints, 1);
-			vector<int> ddxr_symb(numElasticJoints, 1);
-			symb.insert({"x", x_symb});
-			symb.insert({"dx", dx_symb});
-			symb.insert({"ddx", ddx_symb});
-			symb.insert({"ddxr", ddxr_symb});
-		}
-	}
-
-	Eigen::MatrixXd Robot::get(string name){
+	Eigen::MatrixXd Robot::get_value(string name){
 		vector<casadi::SX> result;
 		// Eigen::MatrixXd result_num;
 		if (fun_args.count(name)){
@@ -334,7 +322,7 @@ namespace thunder_ns{
 			casadi::SXVector inputs(sz);
 			int i=0;
 			for (const auto& arg : f_args) {
-				inputs[i] = args[arg];
+				inputs[i] = parameters[arg].get_value_full();
 				i++;
 			}
 			// cout<<"args: "<<inputs<<endl;
@@ -357,178 +345,23 @@ namespace thunder_ns{
 		// return result_num;
 	}
 
-	int Robot::set_arg(string name, Eigen::VectorXd value){
-		int sz = value.size();
-		casadi::SX& arg = args[name];
-		arg = casadi::SX::zeros(sz);
-		for (int i=0; i<sz; i++){
-			arg(i) = value(i);
+	int Robot::set_par(string name, vector<double> value){
+		if (parameters.count(name)){
+			if (value.size() == parameters[name].num.size()){
+				parameters[name].num = value;
+			} else {
+				std::cerr << "Size mismatch when setting parameter: " << name << endl;
+				return 0;
+			}
+		} else {
+			std::cerr << "Parameter not found: " << name << endl;
+			return 0;
 		}
-
 		return 1;
 	}
 
-	int Robot::set_q(Eigen::VectorXd value){
-		casadi::SX& q = args["q"];
-		if (value.size() == numJoints){
-			for (int i=0; i<numJoints; i++){
-				q(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_dq(Eigen::VectorXd value){
-		casadi::SX& dq = args["dq"];
-		if (value.size() == numJoints){
-			for (int i=0; i<numJoints; i++){
-				dq(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_dqr(Eigen::VectorXd value){
-		casadi::SX& dqr = args["dqr"];
-		if (value.size() == numJoints){
-			for (int i=0; i<numJoints; i++){
-				dqr(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_ddqr(Eigen::VectorXd value){
-		casadi::SX& ddqr = args["ddqr"];
-		if (value.size() == numJoints){
-			for (int i=0; i<numJoints; i++){
-				ddqr(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_x(Eigen::VectorXd value){
-		casadi::SX& x = args["x"];
-		if (value.size() == numElasticJoints){
-			for (int i=0; i<numElasticJoints; i++){
-				x(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_dx(Eigen::VectorXd value){
-		casadi::SX& dx = args["dx"];
-		if (value.size() == numElasticJoints){
-			for (int i=0; i<numElasticJoints; i++){
-				dx(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_ddx(Eigen::VectorXd value){
-		casadi::SX& ddx = args["ddx"];
-		if (value.size() == numElasticJoints){
-			for (int i=0; i<numElasticJoints; i++){
-				ddx(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_ddxr(Eigen::VectorXd value){
-		casadi::SX& ddxr = args["ddxr"];
-		if (value.size() == numElasticJoints){
-			for (int i=0; i<numElasticJoints; i++){
-				ddxr(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-	}
-
-	int Robot::set_par_DYN(Eigen::VectorXd value){
-		casadi::SX& par_DYN = args["par_DYN"];
-		int numPar = STD_PAR_LINK*numJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_DYN(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-		// change par_REG
-		update_inertial_REG();
-	}
-
-	int Robot::set_par_REG(Eigen::VectorXd value){
-		casadi::SX& par_REG = args["par_REG"];
-		int numPar = STD_PAR_LINK*numJoints;
-		if (value.size() == numPar){
-			for (int i=0; i<numPar; i++){
-				par_REG(i) = value(i);
-			}
-			return 1;
-		} else {
-			std::cout<<"in setArguments: invalid dimensions of arguments\n";
-			return 0;
-		}
-		update_inertial_DYN();
-	}
-
-
-	Eigen::VectorXd Robot::get_arg(string par){
-		const casadi::SX& par_casadi = args[par];
-		int numPar = par_casadi.size1() * par_casadi.size2();
-		Eigen::VectorXd param(numPar);
-		vector<casadi::SXElem> res_elements = par_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param.data(), mapFunction);
-		return param;
-	}
-
-	Eigen::VectorXd Robot::get_par_DYN(){
-		const casadi::SX& par_DYN_casadi = args["par_DYN"];
-		int numPar = STD_PAR_LINK*numJoints;
-		Eigen::VectorXd param_DYN(numPar);
-		vector<casadi::SXElem> res_elements = par_DYN_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_DYN.data(), mapFunction);
-		return param_DYN;
-	}
-
-	Eigen::VectorXd Robot::get_par_REG(){
-		const casadi::SX& par_REG_casadi = args["par_REG"];
-		int numPar = STD_PAR_LINK*numJoints;
-		Eigen::VectorXd param_REG(numPar);
-		vector<casadi::SXElem> res_elements = par_REG_casadi.get_elements();
-		std::transform(res_elements.begin(), res_elements.end(), param_REG.data(), mapFunction);
-		return param_REG;
+	vector<double> Robot::get_par(string par){
+		return parameters[par].num;
 	}
 
 	vector<fun_obj> Robot::get_functions(bool onlyNames) {
@@ -565,135 +398,12 @@ namespace thunder_ns{
 	int Robot::get_numElasticJoints(){ return numElasticJoints; };
 	vector<int> Robot::get_isElasticJoint(){ return isElasticJoint; };
 
-	// vector<int> Robot::get_numParLink(){
-	// 	return numParLink;
-	// }
-
-	// int Robot::get_numParLink(int i){
-	// 	return numParLink[i];
-	// }
-
-	int Robot::get_numParDYN(){
-		return STD_PAR_LINK*numJoints;
-	}
-
-	int Robot::get_numParREG(){
-		return STD_PAR_LINK*numJoints;
-	}
-
-	// int Robot::get_numParELA(){
-	// 	return numParELA;
-	// }
-
 	vector<string> Robot::get_jointsType(){
 		return jointsType;
 	}
 
-	// casadi::SX Robot::get_DHTable(){
-	// 	return _DHtable_;
-	// }
-
-	// FrameOffset Robot::get_world2L0(){
-	// 	return _world2L0_;
-	// }
-
-	// FrameOffset Robot::get_Ln2EE(){
-	// 	return _Ln2EE_;
-	// }
-
-	int Robot::load_conf_par(string file, bool update_REG){
-		// Eigen::VectorXd param_DYN;
-		casadi::SX param_DYN(STD_PAR_LINK*numJoints,1);
-		casadi::SX param_Dl(Dl_order*numJoints,1);
-		casadi::SX param_K(numElasticJoints*K_order,1);
-		casadi::SX param_D(numElasticJoints*D_order,1);
-		casadi::SX param_Dm(numElasticJoints*Dm_order,1);
-		casadi::SX param_Mm(numElasticJoints,1);
-		// ----- parsing yaml inertial ----- //
-		try {
-			// load yaml
-			YAML::Node config_file = YAML::LoadFile(file);
-			// load inertial
-			YAML::Node dynamics = config_file["dynamics"];
-			int i = 0;
-			for (const auto& node : dynamics) {
-				YAML::Node inertial = node.second["inertial"];
-				
-				if (i==numJoints) break;
-				string linkName = node.first.as<string>();
-
-				// standard parameters
-				param_DYN(STD_PAR_LINK*i) = inertial["mass"].as<double>();
-				param_DYN(STD_PAR_LINK*i+1) = inertial["CoM_x"].as<double>();
-				param_DYN(STD_PAR_LINK*i+2) = inertial["CoM_y"].as<double>();
-				param_DYN(STD_PAR_LINK*i+3) = inertial["CoM_z"].as<double>();
-				param_DYN(STD_PAR_LINK*i+4) = inertial["Ixx"].as<double>();
-				param_DYN(STD_PAR_LINK*i+5) = inertial["Ixy"].as<double>();
-				param_DYN(STD_PAR_LINK*i+6) = inertial["Ixz"].as<double>();
-				param_DYN(STD_PAR_LINK*i+7) = inertial["Iyy"].as<double>();
-				param_DYN(STD_PAR_LINK*i+8) = inertial["Iyz"].as<double>();
-				param_DYN(STD_PAR_LINK*i+9) = inertial["Izz"].as<double>();
-				
-				// link friction
-				if (node.second["friction"]){
-					vector<double> Dl = node.second["friction"]["Dl"].as<vector<double>>();
-					for (int j=0; j<Dl_order; j++){
-						param_Dl(Dl_order*i + j) = Dl[j];
-					}
-				}
-
-				i++;
-			}
-
-			// ----- parsing yaml elastic ----- //
-			if ((ELASTIC) && (config_file["elastic"])){
-				YAML::Node elastic = config_file["elastic"];
-				i = 0;
-				for (const auto& node : elastic["joints"]) {
-					
-					if (i==numElasticJoints) break;
-					string jointName = node.first.as<string>();
-					// stiffness
-					if (K_order > 0){
-						vector<double> K = node.second["K"].as<vector<double>>();
-						for (int j=0; j<K_order; j++) param_K(K_order*i+j) = K[j];
-					}
-					// coupling friction
-					if (D_order > 0){
-						vector<double> D = node.second["D"].as<vector<double>>();
-						for (int j=0; j<D_order; j++) param_D(D_order*i + j) = D[j];
-					}
-					// motor friction
-					if (Dm_order > 0){
-						vector<double> Dm = node.second["Dm"].as<vector<double>>();
-						for (int j=0; j<Dm_order; j++) param_Dm(Dm_order*i + j) = Dm[j];
-					}
-					// motor inertia
-					param_Mm(i) = node.second["Mm"].as<double>();
-
-					i++;
-				}
-				// std::cout<<"YAML_DH letto"<<std::endl;
-				// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
-			}
-		} catch (const YAML::Exception& e) {
-			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-		}
-		args["par_DYN"] = param_DYN;
-		if (Dl_order > 0) args["par_Dl"] = param_Dl;
-		if (K_order>0) args["par_K"] = param_K;
-		if (D_order>0) args["par_D"] = param_D;
-		if (Dm_order>0) args["par_Dm"] = param_Dm;
-		if (ELASTIC) args["par_Mm"] = param_Mm;
-		if (update_REG) update_inertial_REG();
-		return 1;
-	}
-
 	casadi::SX Robot::load_par_REG(string file, bool update_DYN){
-		// Eigen::VectorXd param_REG;
-		casadi::SX param_REG(STD_PAR_LINK*numJoints,1);
-		casadi::SX param_Dl(Dl_order*numJoints,1);
-		// casadi::SX::zeros(numJoints,1)
+		vector<double> par_REG_num(STD_PAR_LINK*numJoints,0);
 		// ----- parsing yaml inertial ----- //
 		try {
 			// load yaml
@@ -707,36 +417,26 @@ namespace thunder_ns{
 				string linkName = node.first.as<string>();
 				
 				// standard parameters
-				param_REG(STD_PAR_LINK*i) = node.second["mass"].as<double>();
-				param_REG(STD_PAR_LINK*i+1) = node.second["m_CoM_x"].as<double>();
-				param_REG(STD_PAR_LINK*i+2) = node.second["m_CoM_y"].as<double>();
-				param_REG(STD_PAR_LINK*i+3) = node.second["m_CoM_z"].as<double>();
-				param_REG(STD_PAR_LINK*i+4) = node.second["Ixx"].as<double>();
-				param_REG(STD_PAR_LINK*i+5) = node.second["Ixy"].as<double>();
-				param_REG(STD_PAR_LINK*i+6) = node.second["Ixz"].as<double>();
-				param_REG(STD_PAR_LINK*i+7) = node.second["Iyy"].as<double>();
-				param_REG(STD_PAR_LINK*i+8) = node.second["Iyz"].as<double>();
-				param_REG(STD_PAR_LINK*i+9) = node.second["Izz"].as<double>();
-
-				// link friction
-				if (node.second["Dl"]){
-					vector<double> Dl = node.second["Dl"].as<vector<double>>();
-					for (int j=0; j<Dl_order; j++){
-						param_Dl(Dl_order*i + j) = Dl[j];
-					}
-				}
+				par_REG_num[STD_PAR_LINK*i] = node.second["mass"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+1] = node.second["m_CoM_x"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+2] = node.second["m_CoM_y"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+3] = node.second["m_CoM_z"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+4] = node.second["Ixx"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+5] = node.second["Ixy"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+6] = node.second["Ixz"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+7] = node.second["Iyy"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+8] = node.second["Iyz"].as<double>();
+				par_REG_num[STD_PAR_LINK*i+9] = node.second["Izz"].as<double>();
 
 				i++;
 			}
-			// std::cout<<"YAML_DH letto"<<std::endl;
-			// std::cout<<"\nparam REG \n"<<param_REG<<std::endl;
+			// std::cout<<"\nparam REG \n"<<par_REG_num<<std::endl;
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
 		}
-		args["par_REG"] = param_REG;
-		if (Dl_order > 0) args["par_Dl"] = param_Dl;
+		parameters["par_REG"].num = par_REG_num;
 		if (update_DYN) update_inertial_DYN();
-		return param_REG;
+		return par_REG_num;
 	}
 
 	int Robot::load_par(string par_file, vector<string> par_list){
@@ -745,18 +445,15 @@ namespace thunder_ns{
 			YAML::Node yamlFile = YAML::LoadFile(par_file);
 			if (par_list.size() == 0){
 				for (const auto& node : yamlFile){
-					vector<double> par_vect = node.second.as<vector<double>>();
-					casadi::SX& par = args[node.first.as<string>()];
-					for (int i=0; i<par_vect.size(); i++){
-						par(i) = par_vect[i];
+					string key = node.first.as<string>();
+					if (parameters.count(key)){
+						parameters[key].num = node.second.as<vector<double>>();
 					}
 				}
 			} else {
-				for (string par_str : par_list){
-					vector<double> par_vect = yamlFile[par_str].as<vector<double>>();
-					casadi::SX& par = args[par_str];
-					for (int i=0; i<par_vect.size(); i++){
-						par(i) = par_vect[i];
+				for (string key : par_list){
+					if (parameters.count(key)){
+						parameters[key].num = yamlFile[key].as<vector<double>>();
 					}
 				}
 			}
@@ -766,11 +463,6 @@ namespace thunder_ns{
 		}
 		return 1;
 	}
-
-	// to modify this file, load_par_elastic
-	// int Robot::load_par_elastic(string file){		
-	// 	return 1;
-	// }
 
 	void Robot::update_conf(){
 		// to do!
@@ -808,7 +500,7 @@ namespace thunder_ns{
 				"Inertial parameters referred to Denavit-Hartenberg parametrization to use with regressor matrix\n");
 			emitter << YAML::Newline;
 
-			casadi::SX par_REG = args["par_REG"];
+			vector<double> par_REG = parameters["par_REG"].num;
 			for (int i=0;  i<numJoints;  i++) {
 
 				// LinkProp link = links_prop_[i];    
@@ -818,16 +510,16 @@ namespace thunder_ns{
 				YAML::Node linkFric;
 
 				nodeName = "link" + std::to_string(i+1);
-				linkInertia["mass"] = (double)par_REG(i*STD_PAR_LINK+0);
-				linkInertia["m_CoM_x"] = (double)par_REG(i*STD_PAR_LINK+1);
-				linkInertia["m_CoM_y"] = (double)par_REG(i*STD_PAR_LINK+2);
-				linkInertia["m_CoM_z"] = (double)par_REG(i*STD_PAR_LINK+3);
-				linkInertia["Ixx"] = (double)par_REG(i*STD_PAR_LINK+4);
-				linkInertia["Ixy"] = (double)par_REG(i*STD_PAR_LINK+5);
-				linkInertia["Ixz"] = (double)par_REG(i*STD_PAR_LINK+6);
-				linkInertia["Iyy"] = (double)par_REG(i*STD_PAR_LINK+7);
-				linkInertia["Iyz"] = (double)par_REG(i*STD_PAR_LINK+8);
-				linkInertia["Izz"] = (double)par_REG(i*STD_PAR_LINK+9);
+				linkInertia["mass"] = (double)par_REG[i*STD_PAR_LINK+0];
+				linkInertia["m_CoM_x"] = (double)par_REG[i*STD_PAR_LINK+1];
+				linkInertia["m_CoM_y"] = (double)par_REG[i*STD_PAR_LINK+2];
+				linkInertia["m_CoM_z"] = (double)par_REG[i*STD_PAR_LINK+3];
+				linkInertia["Ixx"] = (double)par_REG[i*STD_PAR_LINK+4];
+				linkInertia["Ixy"] = (double)par_REG[i*STD_PAR_LINK+5];
+				linkInertia["Ixz"] = (double)par_REG[i*STD_PAR_LINK+6];
+				linkInertia["Iyy"] = (double)par_REG[i*STD_PAR_LINK+7];
+				linkInertia["Iyz"] = (double)par_REG[i*STD_PAR_LINK+8];
+				linkInertia["Izz"] = (double)par_REG[i*STD_PAR_LINK+9];
 				// link friction
 				// linkFric["Dl"] = link.Dl;
 
@@ -864,9 +556,9 @@ namespace thunder_ns{
 				// yamlFile[par] = args[par];
 
 				// std::cout << par + "_sx: " << args[par] << endl;
-				Eigen::VectorXd vect_eig = get_arg(par);
+				// Eigen::VectorXd vect_eig = get_arg(par);
 				// std::cout << par + "_eig: " << vect_eig << endl;
-				vector<double> vect_std(vect_eig.data(), vect_eig.data() + vect_eig.rows() * vect_eig.cols());
+				vector<double> vect_std = get_par(par);
 				yamlFile[par] = vect_std;
 				
 			}
@@ -884,7 +576,7 @@ namespace thunder_ns{
 
 	int Robot::update_inertial_DYN(){
 		// not efficient, should be made in casadi
-		Eigen::VectorXd param_REG = get_par_REG();
+		Eigen::VectorXd param_REG(get_par("par_REG"));
 		Eigen::VectorXd param_DYN(STD_PAR_LINK*numJoints);
 		for (int i=0; i<numJoints; i++){
 			Eigen::VectorXd p_reg = param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
@@ -902,13 +594,14 @@ namespace thunder_ns{
 			// }
 			param_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I-I_tmp_v;
 		}
-		set_par_DYN(param_DYN);
+		vector<double> par_DYN {param_DYN.data(), param_DYN.data() + param_DYN.size()};
+		set_par("par_DYN", par_DYN);
 		return 1;
 	}
 
 	int Robot::update_inertial_REG(){
 		// not efficient, should be made in casadi
-		Eigen::VectorXd param_DYN = get_par_DYN();
+		Eigen::VectorXd param_DYN(get_par("par_DYN"));
 		// cout<<"param_DYN:"<<endl<<param_DYN<<endl<<endl;
 		Eigen::VectorXd param_REG(STD_PAR_LINK*numJoints);
 		for (int i=0; i<numJoints; i++){
@@ -935,15 +628,16 @@ namespace thunder_ns{
 			// }
 			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, m_CoM, I+I_tmp_v;
 		}
-		set_par_REG(param_REG);
+		vector<double> par_REG {param_REG.data(), param_REG.data() + param_REG.size()};
+		set_par("par_REG", par_REG);
 		return 1;
 	}
 
-	int Robot::add_variable(string v_name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr, bool overwrite){
+	int Robot::add_variable(string v_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
 		add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
 	}
 
-	int Robot::add_parameter(string p_name, casadi::SX symb, casadi::SX num, vector<bool> is_symbolic, string descr, bool overwrite){
+	int Robot::add_parameter(string p_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
 		if ((!overwrite) && model.count(p_name)){
 			// key already exists
 			return 0;
@@ -955,7 +649,7 @@ namespace thunder_ns{
 			int size = symb.size1();
 			param.size = size;
 
-			if (num.size1()!=size){
+			if (num.size()!=size){
 				std::cerr << "Error dimension of numeric SX: " << std::endl;
 				return 0;
 			} else {
@@ -976,6 +670,7 @@ namespace thunder_ns{
 
 			// add to parameters map
 			parameters[p_name] = param;
+			model[p_name] = param.get_value_full();
 		}
 	}
 
@@ -999,7 +694,7 @@ namespace thunder_ns{
 				// int sz_original = args[arg].size();
 				// std::cout << "fun: " << f_name << std::endl;
 				// std::cout << "arg: " << arg << std::endl;
-				vector<int>& symb_flag = symb[arg];
+				vector<short>& symb_flag = parameters[arg].is_symbolic;
 				vector<casadi::SX> par_symb;
 				casadi::SX& par_model = model[arg];
 				// cout << "model[arg]: " << par_model << endl;
@@ -1064,7 +759,7 @@ namespace thunder_ns{
 	}
 
 	int Robot::subs_symb_par(string par){
-		vector<int> symbolic = symb[par];
+		vector<short> symbolic = parameters[par].is_symbolic;
 		// cout << "par: " << par << endl;
 		// cout << "symbolic: " << symbolic << endl;
 		// cout << "model: " << model[par] << endl;
@@ -1073,7 +768,7 @@ namespace thunder_ns{
 
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
-				model[par](i) = (double)args[par](i);
+				model[par](i) = (double)parameters[par].num[i];
 			}
 		}
 
@@ -1084,7 +779,7 @@ namespace thunder_ns{
 
 	int Robot::init_symb_parameters(){
 		// - substitute non-symbolic variables with numbers - //
-		for (auto par : symb){
+		for (auto par : parameters){
 			subs_symb_par(par.first);
 		}
 		return 1;
@@ -1095,7 +790,7 @@ namespace thunder_ns{
 		vector<string> arg_list = par_sure;
 		for (auto& par : par_possible){
 			bool is_symb = false;
-			for (int v : symb[par]){
+			for (short v : parameters[par].is_symbolic){
 				if (v) is_symb = true;
 			}
 			if (is_symb){
@@ -1107,24 +802,25 @@ namespace thunder_ns{
 
 	int Robot::update_symb_parameters(){
 		// - resize parameter variables to right dimension - //
-		for (auto par_symb : symb){
-			int sz_original = par_symb.second.size();
-			string par_name = par_symb.first;
+		for (auto par : parameters){
+			auto par_isSymb = par.second.is_symbolic;
+			int sz_original = par_isSymb.size();
+			string par_name = par.first;
 			casadi::SX& par_model = model[par_name];
-			casadi::SX& par_arg = args[par_name];
-			// casadi::SX new_par(sz_original,1);
+			vector<double>& par_num = par.second.num;
 			int sz = 0;
 			for (int i=0; i<sz_original; i++){
-				if (par_symb.second[i]){
+				if (par_isSymb[i]){
 					par_model(sz) = par_model(i);
-					par_arg(sz) = par_arg(i);
+					par_num[sz] = par_num[i];
 					sz++;
 				}
 			}
 			par_model.resize(sz,1);
-			par_arg.resize(sz,1);
+			par_num.resize(sz,1);
 			// cout << "par_model: " << par_model << endl;
-			// cout << "par_arg: " << par_arg << endl;
+			// cout << "par_num: " << par_num << endl;
+			// cout << "par_isSymb: " << par_isSymb << endl;
 		}
 		return 1;
 	}
@@ -1136,8 +832,6 @@ namespace thunder_ns{
 		bool advanced = true;
 		Robot robot(file);
 		robot.robotName = robot_name;
-		// --- load parameters --- //
-		robot.load_conf_par(file);
 		cout<<"Configuration loaded!"<<endl;
 		// --- compute functions --- //
 		if (compute){

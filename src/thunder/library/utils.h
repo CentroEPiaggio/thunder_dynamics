@@ -23,9 +23,9 @@ namespace thunder_ns{
 		std::string name;
 		int size;
 		std::string description;
-		std::vector<bool> is_symbolic;
+		std::vector<short> is_symbolic;
 		casadi::SX symb;
-		casadi::SX num;
+		std::vector<double> num;
 		casadi::SX get_value(){
 			int new_size = 0;
 			casadi::SX ret(size,1);
@@ -38,7 +38,7 @@ namespace thunder_ns{
 		casadi::SX get_value_full(){
 			casadi::SX ret(size,1);
 			for (int i=0; i<size; i++){
-				ret(i) = (is_symbolic[i]) ? symb(i) : num(i);
+				ret(i) = (is_symbolic[i]) ? symb(i) : SX(num[i]);
 			}
 			return ret;
 		}
