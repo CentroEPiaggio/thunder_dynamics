@@ -1,15 +1,16 @@
+☐ thunder_robot should have the numerical parameters inside when created (no need to load conf)
 ✔ finish to update parse_conf using args @done (11/13/2025, 9:27:12 PM)
 ☐ modify simbolic selectivity structure!
 ✔ parse_conf have to import numerical values also for dynamics @done (11/15/2025, 7:43:22 PM)
 ✔ substitute args with the parameters map (also for the state) @done (11/15/2025, 7:43:26 PM)
 ☐ change template to add automatically every parameter to the members
-☐ add map for hyperparameters
-☐ create operator [] to have access to the hyperparameters (like robot["numJoints"])
 ☐ check everywhere what is used for parameters
 ✔ model will contain mix of symbolic and numerics based on symbolic selectivity @done (11/15/2025, 7:44:07 PM)
 ✔ add functions instead of the three maps of the functions @done (11/15/2025, 10:30:31 PM)
 ☐ save_par(path) save all the hyperparameters and the parameters from the internal representation
 ☐ load_par(path, par_list={}) that load the parameters saved by save_conf
+☐ update_inertial_DYN/REG should use casadi
+☐ test
 
 improvings:
 	Console parser:
@@ -85,6 +86,8 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
+		☐ add map for properties?
+		☐ create operator [] to have access to the properties? (like robot["numJoints"])
 		☐ do not use eigen in Robot, only casadi::SX and std::vector?
 		☐ change get("") in Robot to get_value("")
 		☐ map of fun_obj instead of three maps (check possibility, same as parameters)

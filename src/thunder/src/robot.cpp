@@ -448,6 +448,8 @@ namespace thunder_ns{
 				for (string key : par_list){
 					if (parameters.count(key)){
 						parameters[key].num = yamlFile[key].as<vector<double>>();
+					} else {
+						std::cerr << "Parameter does not exist: " << key << std::endl;
 					}
 				}
 			}
@@ -458,28 +460,28 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	void Robot::update_conf(){
-		// to do!
-	}
+	// void Robot::update_conf(){
+	// 	// to do!
+	// }
 
-	int Robot::save_conf(string par_file){
-		update_conf();
-		try {
-			YAML::Emitter emitter;
-			emitter.SetIndent(2);
-			emitter.SetSeqFormat(YAML::Flow);
+	// int Robot::save_conf(string par_file){
+	// 	update_conf();
+	// 	try {
+	// 		YAML::Emitter emitter;
+	// 		emitter.SetIndent(2);
+	// 		emitter.SetSeqFormat(YAML::Flow);
 
-			emitter << config_yaml << YAML::Newline;
+	// 		emitter << config_yaml << YAML::Newline;
 
-			std::ofstream fout(par_file);
-			fout << emitter.c_str();
-			fout.close();
-		} catch (const YAML::Exception& e) {
-			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-			return 0;
-		}
-		return 1;
-	}
+	// 		std::ofstream fout(par_file);
+	// 		fout << emitter.c_str();
+	// 		fout.close();
+	// 	} catch (const YAML::Exception& e) {
+	// 		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+	// 		return 0;
+	// 	}
+	// 	return 1;
+	// }
 
 	int Robot::save_par_REG(string par_file){
 		try {
@@ -543,19 +545,31 @@ namespace thunder_ns{
 
 			YAML::Node yamlFile;
 
-			for (auto& par : par_list){
-				// YAML::Node par_node;
-				// par_node[par] = args[par];
-				// emitter << par_node << YAML::Newline;
-				// yamlFile[par] = args[par];
+			if (par_list.size() == 0){
+				for (auto& par : parameters){
+					string par_name = par.first;
+					vector<double> vect_std = par.second.num;
+					yamlFile[par.first] = vect_std;
+				}
+			} else {
+				for (auto& par : par_list){
+					// YAML::Node par_node;
+					// par_node[par] = args[par];
+					// emitter << par_node << YAML::Newline;
+					// yamlFile[par] = args[par];
 
-				// std::cout << par + "_sx: " << args[par] << endl;
-				// Eigen::VectorXd vect_eig = get_arg(par);
-				// std::cout << par + "_eig: " << vect_eig << endl;
-				vector<double> vect_std = get_par(par);
-				yamlFile[par] = vect_std;
-				
+					// std::cout << par + "_sx: " << args[par] << endl;
+					// Eigen::VectorXd vect_eig = get_arg(par);
+					// std::cout << par + "_eig: " << vect_eig << endl;
+					if (parameters.count(par)){
+						vector<double> vect_std = get_par(par);
+						yamlFile[par] = vect_std;
+					} else {
+						std::cerr << "Parameter does not exist: " << par << std::endl;
+					}
+				}
 			}
+
 			emitter << yamlFile << YAML::Newline;
 
 			std::ofstream fout(par_file);

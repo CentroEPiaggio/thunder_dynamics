@@ -66,8 +66,8 @@ namespace thunder_ns{
 			YAML::Node config_yaml;
 			YAML::Node load_config(string config_file);
 			int load_config(YAML::Node yaml);
-			void update_conf();
-			int save_conf(string par_file);
+			// void update_conf();
+			// int save_conf(string par_file);
 
 			// --- Symbolic selectivity --- //
 			int init_symb_parameters();
