@@ -25,20 +25,21 @@ namespace thunder_ns{
 		std::string description;
 		std::vector<short> is_symbolic;
 		casadi::SX symb;
-		std::vector<double> num;
-		casadi::DM get_value(){
-			int new_size = 0;
-			casadi::DM ret(size,1);
-			for (int i=0; i<size; i++){
-				if (is_symbolic[i]) ret(new_size++) = symb(i);
-			}
-			ret.resize(new_size,1);
-			return ret;
-		}
+		casadi::DM num;
+		// std::vector<double> num;
+		// casadi::DM get_value(){
+		// 	int new_size = 0;
+		// 	casadi::DM ret(size,1);
+		// 	for (int i=0; i<size; i++){
+		// 		if (is_symbolic[i]) ret(new_size++) = symb(i);
+		// 	}
+		// 	ret.resize(new_size,1);
+		// 	return ret;
+		// }
 		casadi::SX get_value_all(){
 			casadi::SX ret(size,1);
 			for (int i=0; i<size; i++){
-				ret(i) = (is_symbolic[i]) ? symb(i) : casadi::SX(num[i]);
+				ret(i) = (is_symbolic[i]) ? symb(i) : casadi::SX(num(i));
 			}
 			return ret;
 		}

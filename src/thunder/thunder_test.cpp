@@ -38,8 +38,6 @@ int main(){
 
 	int NJ = robot.get_numJoints();
 	int NEJ = robot.get_numElasticJoints();
-	int N_PARAM_DYN = robot.get_par("par_DYN").size();
-	int N_PARAM_REG = robot.get_par("par_REG").size();
 	int N_PARAM_DL = NJ*robot.get_Dl_order();
 	int N_PARAM_K = NEJ*robot.get_K_order();
 	int N_PARAM_D = NEJ*robot.get_D_order();
@@ -59,7 +57,7 @@ int main(){
 	robot.set_par("dx", std::vector<double>(NEJ,0));
 	robot.set_par("ddxr", std::vector<double>(NEJ,0));
 
-	cout << "q: " << robot.get_par("q") << endl;
+	cout << "q: " << robot.get_value("q") << endl;
 
 	/* Matrices declaration*/
 	casadi::DM par_DYN(robot.get_par("par_DYN"));

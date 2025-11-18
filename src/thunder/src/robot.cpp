@@ -308,19 +308,21 @@ namespace thunder_ns{
 		return 1; // Indicate success
 	}
 
-	casadi::DM Robot::get_value(string name){
+	DM Robot::get_value(string name){
 		if (parameters.count(name)){					// parameter exists
-			return casadi::DM(parameters[name].num);
+			return parameters[name].num;
 		} else if (functions.count(name)){				// function exists
-			vector<casadi::DM> result;
+			vector<DM> result;
 			cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
 			int sz = f_args.size();
 			cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::DMVector inputs(sz);
+			cout << "arg_names: ";
 			int i=0;
 			for (const auto& arg : f_args) {
-				inputs[i] = parameters[arg].get_value();
+				cout << arg << ", " << endl;
+				inputs[i] = parameters[arg].num;
 				i++;
 			}
 			cout<<"args: "<<inputs<<endl;
@@ -328,18 +330,18 @@ namespace thunder_ns{
 			cout<<"fun: "<<fun<<endl;
 			functions[name].fun.call(inputs, result);
 			cout<<"result: "<<result<<endl;
-			return casadi::DM::vertcat(result);
+			return DM::vertcat(result);
 		} else {
 			cout<<name + " not recognised"<<endl;
 			// result_num.resize(1,1);
 			// result_num << 0;
-			return casadi::DM::zeros(1,1);
+			return DM::zeros(1,1);
 		}
 		
 		// return result_num;
 	}
 
-	int Robot::set_par(string name, vector<double> value){
+	int Robot::set_par(string name, DM value){
 		if (parameters.count(name)){
 			if (value.size() == parameters[name].num.size()){
 				parameters[name].num = value;
@@ -354,7 +356,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	vector<double> Robot::get_par(string par){
+	DM Robot::get_par(string par){
 		return parameters[par].num;
 	}
 
@@ -496,7 +498,7 @@ namespace thunder_ns{
 				"Inertial parameters referred to Denavit-Hartenberg parametrization to use with regressor matrix\n");
 			emitter << YAML::Newline;
 
-			vector<double> par_REG = parameters["par_REG"].num;
+			DM par_REG = parameters["par_REG"].num;
 			for (int i=0;  i<numJoints;  i++) {
 
 				// LinkProp link = links_prop_[i];    
@@ -506,16 +508,16 @@ namespace thunder_ns{
 				YAML::Node linkFric;
 
 				nodeName = "link" + std::to_string(i+1);
-				linkInertia["mass"] = (double)par_REG[i*STD_PAR_LINK+0];
-				linkInertia["m_CoM_x"] = (double)par_REG[i*STD_PAR_LINK+1];
-				linkInertia["m_CoM_y"] = (double)par_REG[i*STD_PAR_LINK+2];
-				linkInertia["m_CoM_z"] = (double)par_REG[i*STD_PAR_LINK+3];
-				linkInertia["Ixx"] = (double)par_REG[i*STD_PAR_LINK+4];
-				linkInertia["Ixy"] = (double)par_REG[i*STD_PAR_LINK+5];
-				linkInertia["Ixz"] = (double)par_REG[i*STD_PAR_LINK+6];
-				linkInertia["Iyy"] = (double)par_REG[i*STD_PAR_LINK+7];
-				linkInertia["Iyz"] = (double)par_REG[i*STD_PAR_LINK+8];
-				linkInertia["Izz"] = (double)par_REG[i*STD_PAR_LINK+9];
+				linkInertia["mass"] = (double)par_REG(i*STD_PAR_LINK+0);
+				linkInertia["m_CoM_x"] = (double)par_REG(i*STD_PAR_LINK+1);
+				linkInertia["m_CoM_y"] = (double)par_REG(i*STD_PAR_LINK+2);
+				linkInertia["m_CoM_z"] = (double)par_REG(i*STD_PAR_LINK+3);
+				linkInertia["Ixx"] = (double)par_REG(i*STD_PAR_LINK+4);
+				linkInertia["Ixy"] = (double)par_REG(i*STD_PAR_LINK+5);
+				linkInertia["Ixz"] = (double)par_REG(i*STD_PAR_LINK+6);
+				linkInertia["Iyy"] = (double)par_REG(i*STD_PAR_LINK+7);
+				linkInertia["Iyz"] = (double)par_REG(i*STD_PAR_LINK+8);
+				linkInertia["Izz"] = (double)par_REG(i*STD_PAR_LINK+9);
 				// link friction
 				// linkFric["Dl"] = link.Dl;
 
@@ -548,7 +550,7 @@ namespace thunder_ns{
 			if (par_list.size() == 0){
 				for (auto& par : parameters){
 					string par_name = par.first;
-					vector<double> vect_std = par.second.num;
+					vector<double> vect_std = par.second.num.get_elements();
 					yamlFile[par.first] = vect_std;
 				}
 			} else {
@@ -562,7 +564,7 @@ namespace thunder_ns{
 					// Eigen::VectorXd vect_eig = get_arg(par);
 					// std::cout << par + "_eig: " << vect_eig << endl;
 					if (parameters.count(par)){
-						vector<double> vect_std = get_par(par);
+						vector<double> vect_std = parameters[par].num.get_elements();
 						yamlFile[par] = vect_std;
 					} else {
 						std::cerr << "Parameter does not exist: " << par << std::endl;
@@ -583,46 +585,36 @@ namespace thunder_ns{
 	}
 
 	int Robot::update_inertial_DYN(){
-		using casadi::DM;
-		DM param_REG(parameters["par_REG"].num);
-		DM param_DYN(STD_PAR_LINK*numJoints,1);
+		DM& par_REG = parameters["par_REG"].num;
+		DM& par_DYN = parameters["par_REG"].num;
 		for (int i=0; i<numJoints; i++){
 			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
-			DM p_reg(param_REG(p_idx));
+			DM p_reg(par_REG(p_idx));
 			DM mass = p_reg(0);
 			DM CoM = p_reg(casadi::Slice(1,4))/mass;
 			DM I_tmp = mass * DM::mtimes(hat(CoM).T(), hat(CoM));
 			DM I_reg = p_reg(casadi::Slice(4,10));
 			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
 			DM I = I_reg - I_tmp_v;
-			param_DYN(p_idx) = DM::vertcat({mass, CoM, I});
+			par_DYN(p_idx) = DM::vertcat({mass, CoM, I});
 		}
-		size_t n = param_DYN.size1() * param_DYN.size2();
-		const double* data_ptr = param_DYN.ptr();
-		std::vector<double> par_DYN(data_ptr, data_ptr + n);
-		set_par("par_DYN", par_DYN);
 		return 1;
 	}
 
 	int Robot::update_inertial_REG(){
-		using casadi::DM;
-		DM param_DYN(parameters["par_DYN"].num);
-		DM param_REG(STD_PAR_LINK*numJoints,1);
+		DM& par_DYN = parameters["par_DYN"].num;
+		DM& par_REG = parameters["par_REG"].num;
 		for (int i=0; i<numJoints; i++){
 			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
-			DM p_dyn(param_DYN(p_idx));
+			DM p_dyn(par_DYN(p_idx));
 			DM mass = p_dyn(0);
 			DM mCoM = mass*p_dyn(casadi::Slice(1,4));
 			DM I_tmp = DM::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
 			DM I_dyn = p_dyn(casadi::Slice(4,10));
 			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
 			DM I = I_dyn + I_tmp_v;
-			param_REG(p_idx) = DM::vertcat({mass, mCoM, I});
+			par_REG(p_idx) = DM::vertcat({mass, mCoM, I});
 		}
-		size_t n = param_REG.size1() * param_REG.size2();
-		const double* data_ptr = param_REG.ptr();
-		std::vector<double> par_REG(data_ptr, data_ptr + n);
-		set_par("par_REG", par_REG);
 		return 1;
 	}
 
@@ -764,7 +756,7 @@ namespace thunder_ns{
 
 		for (int i=0; i<symbolic.size(); i++){
 			if (symbolic[i] == 0){
-				model[par](i) = (double)parameters[par].num[i];
+				model[par](i) = (double)parameters[par].num(i);
 			}
 		}
 
@@ -803,12 +795,12 @@ namespace thunder_ns{
 			int sz_original = par_isSymb.size();
 			string par_name = par.first;
 			casadi::SX& par_model = model[par_name];
-			vector<double>& par_num = par.second.num;
+			DM& par_num = par.second.num;
 			int sz = 0;
 			for (int i=0; i<sz_original; i++){
 				if (par_isSymb[i]){
 					par_model(sz) = par_model(i);
-					par_num[sz] = par_num[i];
+					par_num(sz) = par_num(i);
 					sz++;
 				}
 			}
