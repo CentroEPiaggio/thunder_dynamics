@@ -592,9 +592,10 @@ namespace thunder_ns{
 			DM mass = p_reg(0);
 			DM CoM = p_reg(casadi::Slice(1,4))/mass;
 			DM I_tmp = mass * DM::mtimes(hat(CoM).T(), hat(CoM));
-			DM I = p_reg(casadi::Slice(4,10));
-			DM I_tmp_v(vector({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)}));
-			param_DYN(p_idx) = vector({mass, CoM, I-I_tmp_v});
+			DM I_reg = p_reg(casadi::Slice(4,10));
+			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
+			DM I = I_reg - I_tmp_v;
+			param_DYN(p_idx) = DM::vertcat({mass, CoM, I});
 		}
 		size_t n = param_DYN.size1() * param_DYN.size2();
 		const double* data_ptr = param_DYN.ptr();
@@ -613,9 +614,10 @@ namespace thunder_ns{
 			DM mass = p_dyn(0);
 			DM mCoM = mass*p_dyn(casadi::Slice(1,4));
 			DM I_tmp = DM::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
-			DM I = p_dyn(casadi::Slice(4,10));
-			DM I_tmp_v(vector({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)}));
-			param_REG(p_idx) = vector({mass, mCoM, I+I_tmp_v});
+			DM I_dyn = p_dyn(casadi::Slice(4,10));
+			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
+			DM I = I_dyn + I_tmp_v;
+			param_REG(p_idx) = DM::vertcat({mass, mCoM, I});
 		}
 		size_t n = param_REG.size1() * param_REG.size2();
 		const double* data_ptr = param_REG.ptr();
@@ -650,8 +652,8 @@ namespace thunder_ns{
 
 			if (is_symbolic.size()==size){ 				// normal initialization
 				param.is_symbolic = is_symbolic;
-				
 			}else if (is_symbolic.size() == 1) { 		// one value initialization
+				param.is_symbolic.resize(size);
 				for (int i=0; i<size; i++){
 					param.is_symbolic[i] = is_symbolic[0];
 				}

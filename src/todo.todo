@@ -88,6 +88,7 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 		☐ how to handle known parameters in regressors computations?
 	General:
+		☐ add verbosity
 		☐ add map for properties?
 		☐ create operator [] to have access to the properties? (like robot["numJoints"])
 		☐ do not use eigen in Robot, only casadi::SX and std::vector?

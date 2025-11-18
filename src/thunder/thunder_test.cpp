@@ -175,7 +175,7 @@ int main(){
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
 	tau_cmd_dyn = M*ddqr + C*dqr + G;
-	tau_cmd_reg = Yr*par_REG;
+	tau_cmd_reg = mtimes(Yr, par_REG);
 	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
 	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
