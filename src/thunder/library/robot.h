@@ -84,15 +84,15 @@ namespace thunder_ns{
 			std::map<string, casadi::SX> model;
 
 			// --- Parameters functions --- //
-			DM get_par(string par);
-			int set_par(string name, DM value);
+			const par_obj get_par(string par);
+			int set(string name, DM value);
 			casadi::SX load_par_REG(string config_file, bool update_DYN = 1);
 			int save_par_REG(string par_file);
 			int load_par(string par_file, vector<string> par_list = {});
 			int save_par(string par_file, vector<string> par_list = {});
 
 			// --- Robot interactions --- //
-			DM get_value(string name);
+			DM get(string name);
 			vector<fun_obj> get_functions(bool onlyNames = 1);
 
 			// --- Robot populators --- //
