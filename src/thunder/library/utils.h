@@ -35,7 +35,7 @@ namespace thunder_ns{
 			ret.resize(new_size,1);
 			return ret;
 		}
-		casadi::SX get_value_full(){
+		casadi::SX get_value_all(){
 			casadi::SX ret(size,1);
 			for (int i=0; i<size; i++){
 				ret(i) = (is_symbolic[i]) ? symb(i) : casadi::SX(num[i]);

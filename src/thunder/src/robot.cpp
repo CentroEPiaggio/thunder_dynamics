@@ -664,7 +664,7 @@ namespace thunder_ns{
 
 			// add to parameters map
 			parameters[p_name] = param;
-			model[p_name] = param.get_value_full();
+			model[p_name] = param.get_value_all();
 		}
 		return 1;
 	}
