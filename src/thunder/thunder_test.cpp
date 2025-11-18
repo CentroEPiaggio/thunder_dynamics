@@ -56,40 +56,40 @@ int main(){
 	robot.set_par("ddxr", std::vector<double>(NEJ,0));
 
 	/* Matrices declaration*/
-	casadi::SX par_DYN(robot.get_par("par_DYN"));
-	casadi::SX par_REG(robot.get_par("par_REG"));
-	casadi::SX par_Dl(robot.get_par("par_Dl"));
-	casadi::SX par_K(robot.get_par("par_K"));
-	casadi::SX par_D(robot.get_par("par_D"));
-	casadi::SX par_Dm(robot.get_par("par_Dm"));
-	casadi::SX par_Mm(robot.get_par("par_Mm"));
-	casadi::SX par_DHtable(robot.get_par("par_DHtable"));
-	casadi::SX Yr(robot.get_value("Yr"));
-	casadi::SX reg_M(robot.get_value("reg_M"));
-	casadi::SX reg_C(robot.get_value("reg_C"));
-	casadi::SX reg_G(robot.get_value("reg_G"));
-	casadi::SX reg_Dl(robot.get_value("reg_Dl"));
-	casadi::SX reg_K(robot.get_value("reg_K"));
-	casadi::SX reg_D(robot.get_value("reg_D"));
-	casadi::SX reg_Dm(robot.get_value("reg_Dm"));
-	casadi::SX M(robot.get_value("M"));
-	casadi::SX C(robot.get_value("C"));
-	casadi::SX C_std(robot.get_value("C_std"));
-	casadi::SX G(robot.get_value("G"));
-	casadi::SX Dl(robot.get_value("Dl"));
-	casadi::SX K(robot.get_value("k"));
-	casadi::SX D(robot.get_value("d"));
-	casadi::SX Dm(robot.get_value("dm"));
-	casadi::SX Kin(robot.get_value("T_0_ee"));
-	casadi::SX Jac(robot.get_value("J_ee"));
+	casadi::DM par_DYN(robot.get_par("par_DYN"));
+	casadi::DM par_REG(robot.get_par("par_REG"));
+	casadi::DM par_Dl(robot.get_par("par_Dl"));
+	casadi::DM par_K(robot.get_par("par_K"));
+	casadi::DM par_D(robot.get_par("par_D"));
+	casadi::DM par_Dm(robot.get_par("par_Dm"));
+	casadi::DM par_Mm(robot.get_par("par_Mm"));
+	casadi::DM par_DHtable(robot.get_par("par_DHtable"));
+	casadi::DM Yr(robot.get_value("Yr"));
+	casadi::DM reg_M(robot.get_value("reg_M"));
+	casadi::DM reg_C(robot.get_value("reg_C"));
+	casadi::DM reg_G(robot.get_value("reg_G"));
+	casadi::DM reg_Dl(robot.get_value("reg_Dl"));
+	casadi::DM reg_K(robot.get_value("reg_K"));
+	casadi::DM reg_D(robot.get_value("reg_D"));
+	casadi::DM reg_Dm(robot.get_value("reg_Dm"));
+	casadi::DM M(robot.get_value("M"));
+	casadi::DM C(robot.get_value("C"));
+	casadi::DM C_std(robot.get_value("C_std"));
+	casadi::DM G(robot.get_value("G"));
+	casadi::DM Dl(robot.get_value("Dl"));
+	casadi::DM K(robot.get_value("k"));
+	casadi::DM D(robot.get_value("d"));
+	casadi::DM Dm(robot.get_value("dm"));
+	casadi::DM Kin(robot.get_value("T_0_ee"));
+	casadi::DM Jac(robot.get_value("J_ee"));
 
-	casadi::SX tau_cmd_dyn(NJ, 1);
-	casadi::SX tau_cmd_reg(NJ, 1);
-	casadi::SX tau_cmd_regMat(NJ, 1);
+	casadi::DM tau_cmd_dyn(NJ, 1);
+	casadi::DM tau_cmd_reg(NJ, 1);
+	casadi::DM tau_cmd_regMat(NJ, 1);
 
 	// arguments
-	casadi::SX q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
-	casadi::SX x(NEJ), dx(NEJ), ddx(NEJ);
+	casadi::DM q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
+	casadi::DM x(NEJ), dx(NEJ), ddx(NEJ);
 
 	cout<<"par_DHtable:"<<endl<<par_DHtable<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN<<endl<<endl;
@@ -155,12 +155,12 @@ int main(){
 		cout<<endl<<"D_coupling\n"<<D<<endl;
 		Dm = robot.get_value("dm");
 		cout<<endl<<"D_motor\n"<<Dm<<endl;
-		casadi::SX Mm = robot.get_value("Mm");
+		casadi::DM Mm = robot.get_value("Mm");
 		cout<<endl<<"M_motor\n"<<Mm<<endl;
 		reg_K = robot.get_value("reg_k");
 		reg_D = robot.get_value("reg_d");
 		reg_Dm = robot.get_value("reg_dm");
-		casadi::SX reg_Mm = robot.get_value("reg_Mm");
+		casadi::DM reg_Mm = robot.get_value("reg_Mm");
 		cout<<endl<<"reg_K\n"<<reg_K<<endl;
 		cout<<endl<<"reg_Dm\n"<<reg_Dm<<endl;
 		cout<<endl<<"reg_D\n"<<reg_D<<endl;
@@ -193,7 +193,7 @@ int main(){
 	// cout << "par_Ln2EE: " << robot.model["par_Ln2EE"] << endl<<endl;
 
 	// - kinematic regressors - //
-	// // casadi::SX wrench(6);
+	// // casadi::DM wrench(6);
 	// // wrench << 1, 1, 1, 1, 1, 1;
 	// // robot.set_arg("w", wrench);
 	// auto reg_omega = robot.get_value("reg_Jdq");
@@ -204,10 +204,10 @@ int main(){
 	// auto par_dh = robot.get_arg("par_DHtable");
 	// auto par_base = robot.get_arg("par_world2L0");
 	// auto par_ee = robot.get_arg("par_Ln2EE");
-	// casadi::SX par(20,1);
+	// casadi::DM par(20,1);
 	// par << par_dh, par_base, par_ee;
-	// casadi::SX omega_reg = reg_omega * par;
-	// casadi::SX omega_kin = robot.get_value("J_ee")*dq;
+	// casadi::DM omega_reg = reg_omega * par;
+	// casadi::DM omega_kin = robot.get_value("J_ee")*dq;
 	// cout << "omega_reg: " << omega_reg.transpose() << endl;
 	// cout << "omega_kin: " << omega_kin.transpose() << endl;
 	// cout << "diff: " << omega_reg - omega_kin << endl;
