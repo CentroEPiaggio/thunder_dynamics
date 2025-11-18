@@ -7,9 +7,9 @@
 ☐ check everywhere what is used for parameters
 ✔ model will contain mix of symbolic and numerics based on symbolic selectivity @done (11/15/2025, 7:44:07 PM)
 ✔ add functions instead of the three maps of the functions @done (11/15/2025, 10:30:31 PM)
-☐ save_par(path) save all the hyperparameters and the parameters from the internal representation
-☐ load_par(path, par_list={}) that load the parameters saved by save_conf
-☐ update_inertial_DYN/REG should use casadi
+✔ save_par(path) save all the hyperparameters and the parameters from the internal representation @done (11/17/2025, 12:25:00 PM)
+✔ load_par(path, par_list={}) that load the parameters saved by save_conf @done (11/17/2025, 12:25:02 PM)
+✔ update_inertial_DYN/REG should use casadi @done (11/18/2025, 7:59:18 AM)
 ☐ test
 
 improvings:
@@ -19,6 +19,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ use DM for numeric parameters?
 		☐ rename base parameters in casadi model expressions? (e.g. par_DYM->DYN)
 		☐ add_variable() is using add_parameter()
 		☐ substitute casadi::SX with vector<> for numerical parameters?
@@ -80,6 +81,7 @@ improvings:
 		☐ parameters in thunder_robot depending on the symbolic choose
 		☐ clean symbolic selectivity
 	Regressors:
+		☐ update_inertial_DYN/REG could be more efficient
 		☐ for now, the regressors (not slotine or dynamics) are computed only if there is at least one simbolic parameter.
 		☐ change dimension of the regressor dependently on the symbolic parameters, now is full size always.
 		☐ Decide how to handle known parameters in the use of the regressor.

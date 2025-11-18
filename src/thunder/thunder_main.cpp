@@ -195,7 +195,7 @@ int main(int argc, char* argv[]){
 	// --- generate parameters files --- //
 	std::string par_file = absolutePath + robot_name + "_conf.yaml";
 	std::string par_REG_file = absolutePath + robot_name + "_par_REG.yaml";
-	robot.save_conf(par_file);
+	robot.save_par(par_file);
 	robot.save_par_REG(par_REG_file);
 	// if (!genInertial_files(robot_name, nj, config_file, par_file, par_REG_file)){
 	// 	return 0;

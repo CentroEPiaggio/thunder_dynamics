@@ -583,60 +583,43 @@ namespace thunder_ns{
 	}
 
 	int Robot::update_inertial_DYN(){
-		// not efficient, should be made in casadi
-		Eigen::VectorXd param_REG = Eigen::Map<Eigen::VectorXd>(get_par("par_REG").data(),get_par("par_REG").size());
-		Eigen::VectorXd param_DYN(STD_PAR_LINK*numJoints);
+		using casadi::DM;
+		DM param_REG(parameters["par_REG"].num);
+		DM param_DYN(STD_PAR_LINK*numJoints,1);
 		for (int i=0; i<numJoints; i++){
-			Eigen::VectorXd p_reg = param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK);
-			double mass = p_reg(0);
-			Eigen::Vector3d CoM = {p_reg(1)/mass, p_reg(2)/mass, p_reg(3)/mass};
-			Eigen::Matrix3d I_tmp = mass * (hat(CoM).transpose() * hat(CoM));
-			Eigen::Matrix<double, 6, 1> I_tmp_v;
-			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
-			Eigen::Matrix<double, 6, 1> I;
-			I << p_reg(4), p_reg(5), p_reg(6), p_reg(7), p_reg(8), p_reg(9);
-			// Eigen::VectorXd Dl;
-			// Dl.resize(Dl_order);
-			// for(int j=0; j<Dl_order; j++){
-			// 	Dl(j) = param_REG(STD_PAR_LINK*i + STD_PAR_LINK + j);
-			// }
-			param_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, CoM, I-I_tmp_v;
+			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
+			DM p_reg(param_REG(p_idx));
+			DM mass = p_reg(0);
+			DM CoM = p_reg(casadi::Slice(1,4))/mass;
+			DM I_tmp = mass * DM::mtimes(hat(CoM).T(), hat(CoM));
+			DM I = p_reg(casadi::Slice(4,10));
+			DM I_tmp_v(vector({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)}));
+			param_DYN(p_idx) = vector({mass, CoM, I-I_tmp_v});
 		}
-		vector<double> par_DYN {param_DYN.data(), param_DYN.data() + param_DYN.size()};
+		size_t n = param_DYN.size1() * param_DYN.size2();
+		const double* data_ptr = param_DYN.ptr();
+		std::vector<double> par_DYN(data_ptr, data_ptr + n);
 		set_par("par_DYN", par_DYN);
 		return 1;
 	}
 
 	int Robot::update_inertial_REG(){
-		// not efficient, should be made in casadi
-		Eigen::VectorXd param_DYN = Eigen::Map<Eigen::VectorXd>(get_par("par_DYN").data(),get_par("par_REG").size());
-		// cout<<"param_DYN:"<<endl<<param_DYN<<endl<<endl;
-		Eigen::VectorXd param_REG(STD_PAR_LINK*numJoints);
+		using casadi::DM;
+		DM param_DYN(parameters["par_DYN"].num);
+		DM param_REG(STD_PAR_LINK*numJoints,1);
 		for (int i=0; i<numJoints; i++){
-			Eigen::VectorXd p_dyn = param_DYN.segment(STD_PAR_LINK*i, STD_PAR_LINK);
-			// cout<<"p_dyn:"<<endl<<p_dyn<<endl<<endl;
-			double mass = p_dyn(0);
-			Eigen::Vector3d CoM = {p_dyn(1), p_dyn(2), p_dyn(3)};
-			// cout<<"CoM:"<<endl<<CoM<<endl<<endl;
-			Eigen::Vector3d m_CoM = mass * CoM;
-			// cout<<"m_CoM:"<<endl<<m_CoM<<endl<<endl;
-			Eigen::Matrix3d I_tmp = mass * (hat(CoM).transpose() * hat(CoM));
-			// cout<<"I_tmp:"<<endl<<I_tmp<<endl<<endl;
-			Eigen::Matrix<double, 6, 1> I_tmp_v;
-			I_tmp_v << I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2);
-			// cout<<"I_tmp_v:"<<endl<<I_tmp_v<<endl<<endl;
-			Eigen::Matrix<double, 6, 1> I;
-			I << p_dyn(4), p_dyn(5), p_dyn(6), p_dyn(7), p_dyn(8), p_dyn(9);
-			// cout<<"I:"<<endl<<I<<endl<<endl;
-			// cout<<"I+I_tmp_v:"<<endl<<I+I_tmp_v<<endl<<endl;
-			// Eigen::VectorXd Dl;
-			// Dl.resize(Dl_order);
-			// for(int j=0; j<Dl_order; j++){
-			// 	Dl(j) = param_DYN(STD_PAR_LINK*i + STD_PAR_LINK + j);
-			// }
-			param_REG.segment(STD_PAR_LINK*i, STD_PAR_LINK) << mass, m_CoM, I+I_tmp_v;
+			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
+			DM p_dyn(param_DYN(p_idx));
+			DM mass = p_dyn(0);
+			DM mCoM = mass*p_dyn(casadi::Slice(1,4));
+			DM I_tmp = DM::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
+			DM I = p_dyn(casadi::Slice(4,10));
+			DM I_tmp_v(vector({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)}));
+			param_REG(p_idx) = vector({mass, mCoM, I+I_tmp_v});
 		}
-		vector<double> par_REG {param_REG.data(), param_REG.data() + param_REG.size()};
+		size_t n = param_REG.size1() * param_REG.size2();
+		const double* data_ptr = param_REG.ptr();
+		std::vector<double> par_REG(data_ptr, data_ptr + n);
 		set_par("par_REG", par_REG);
 		return 1;
 	}
@@ -665,16 +648,16 @@ namespace thunder_ns{
 				param.num = num;
 			}
 
-			if ((is_symbolic.empty()) || (is_symbolic.size()!=size)){
-				std::cerr << "Error dimension of symbolic vector: " << std::endl;
-				return 0;
-			}
-			if (is_symbolic.size() == 1) { 		// one value initialization
+			if (is_symbolic.size()==size){ 				// normal initialization
+				param.is_symbolic = is_symbolic;
+				
+			}else if (is_symbolic.size() == 1) { 		// one value initialization
 				for (int i=0; i<size; i++){
 					param.is_symbolic[i] = is_symbolic[0];
 				}
-			} else {							// normal initialization
-				param.is_symbolic = is_symbolic;
+			} else {							
+				std::cerr << "Error dimension of symbolic vector: " << p_name << std::endl;
+				return 0;
 			}
 
 			// add to parameters map
