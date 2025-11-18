@@ -24,9 +24,9 @@ using std::endl;
 
 int main(){
 
-	// std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/RRR/RRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
-	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
 	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
 	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
@@ -46,6 +46,10 @@ int main(){
 	int N_PARAM_DM = NEJ*robot.get_Dm_order();
 	// int N_PARAM_ELA = robot.get_numParELA();
 
+	// // arguments
+	// casadi::DM q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
+	// casadi::DM x(NEJ), dx(NEJ), ddx(NEJ);
+
 	/* Test */
 	robot.set_par("q", std::vector<double>(NJ,0));
 	robot.set_par("dq", std::vector<double>(NJ,0));
@@ -54,6 +58,8 @@ int main(){
 	robot.set_par("x", std::vector<double>(NEJ,0));
 	robot.set_par("dx", std::vector<double>(NEJ,0));
 	robot.set_par("ddxr", std::vector<double>(NEJ,0));
+
+	cout << "q: " << robot.get_par("q") << endl;
 
 	/* Matrices declaration*/
 	casadi::DM par_DYN(robot.get_par("par_DYN"));
@@ -86,10 +92,6 @@ int main(){
 	casadi::DM tau_cmd_dyn(NJ, 1);
 	casadi::DM tau_cmd_reg(NJ, 1);
 	casadi::DM tau_cmd_regMat(NJ, 1);
-
-	// arguments
-	casadi::DM q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
-	casadi::DM x(NEJ), dx(NEJ), ddx(NEJ);
 
 	cout<<"par_DHtable:"<<endl<<par_DHtable<<endl<<endl;
 	cout<<"par_DYN:"<<endl<<par_DYN<<endl<<endl;
@@ -174,7 +176,7 @@ int main(){
 
 	// cout<<endl<<"Yr\n"<<Yr<<endl;
 
-	tau_cmd_dyn = M*ddqr + C*dqr + G;
+	tau_cmd_dyn = mtimes(M,robot.get_value("ddqr")) + mtimes(C,robot.get_value("dqr")) + G;
 	tau_cmd_reg = mtimes(Yr, par_REG);
 	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
 
