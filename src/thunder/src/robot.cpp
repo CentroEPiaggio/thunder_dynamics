@@ -309,10 +309,10 @@ namespace thunder_ns{
 	}
 
 	casadi::DM Robot::get_value(string name){
-		vector<casadi::DM> result;
-		// Eigen::MatrixXd result_num;
-		if (functions.count(name)){
-    		// key exists
+		if (parameters.count(name)){					// parameter exists
+			return casadi::DM(parameters[name].num);
+		} else if (functions.count(name)){				// function exists
+			vector<casadi::DM> result;
 			cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
 			int sz = f_args.size();
