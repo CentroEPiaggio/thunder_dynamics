@@ -26,9 +26,9 @@ namespace thunder_ns{
 		std::vector<short> is_symbolic;
 		casadi::SX symb;
 		std::vector<double> num;
-		casadi::SX get_value(){
+		casadi::DM get_value(){
 			int new_size = 0;
-			casadi::SX ret(size,1);
+			casadi::DM ret(size,1);
 			for (int i=0; i<size; i++){
 				if (is_symbolic[i]) ret(new_size++) = symb(i);
 			}

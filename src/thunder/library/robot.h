@@ -91,7 +91,7 @@ namespace thunder_ns{
 			int save_par(string par_file, vector<string> par_list = {});
 
 			// --- Robot interactions --- //
-			casadi::SX get_value(string name);
+			casadi::DM get_value(string name);
 			vector<fun_obj> get_functions(bool onlyNames = 1);
 
 			// --- Robot populators --- //

@@ -308,32 +308,32 @@ namespace thunder_ns{
 		return 1; // Indicate success
 	}
 
-	casadi::SX Robot::get_value(string name){
-		vector<casadi::SX> result;
+	casadi::DM Robot::get_value(string name){
+		vector<casadi::DM> result;
 		// Eigen::MatrixXd result_num;
 		if (functions.count(name)){
     		// key exists
-			// cout<<"name: "<<name<<endl;
+			cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
 			int sz = f_args.size();
-			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
-			casadi::SXVector inputs(sz);
+			cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
+			casadi::DMVector inputs(sz);
 			int i=0;
 			for (const auto& arg : f_args) {
-				inputs[i] = parameters[arg].get_value_full();
+				inputs[i] = parameters[arg].get_value();
 				i++;
 			}
-			// cout<<"args: "<<inputs<<endl;
-			// casadi::Function fun = casadi_fun[name];
-			// cout<<"fun: "<<fun<<endl;
+			cout<<"args: "<<inputs<<endl;
+			casadi::Function fun = functions[name].fun;
+			cout<<"fun: "<<fun<<endl;
 			functions[name].fun.call(inputs, result);
-			// cout<<"result: "<<result<<endl;
-			return casadi::SX::vertcat(result);
+			cout<<"result: "<<result<<endl;
+			return casadi::DM::vertcat(result);
 		} else {
 			cout<<name + " not recognised"<<endl;
 			// result_num.resize(1,1);
 			// result_num << 0;
-			return casadi::SX::zeros(1,1);
+			return casadi::DM::zeros(1,1);
 		}
 		
 		// return result_num;
