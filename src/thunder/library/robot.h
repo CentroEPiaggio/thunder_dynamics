@@ -23,6 +23,7 @@ namespace thunder_ns{
 	typedef struct fun_obj fun_obj;
 	// Config load_config(std::string file);
 	Robot robot_from_file(std::string robot_name, std::string file, bool compute = 1);
+	Robot robot_from_yaml(std::string robot_name, const YAML::Node& config_node, bool compute = 1);
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
@@ -182,6 +183,7 @@ namespace thunder_ns{
 			// int set_par_ELA(Eigen::VectorXd);
 			// load functions
 			int load_conf_par(std::string config_file, bool update_REG = 1);
+			int load_conf_par_yml(const YAML::Node& node, bool update_REG = 1);
 			casadi::SX load_par_REG(std::string config_file, bool update_DYN = 1);
 			int load_par(std::string par_file, std::vector<std::string> par_list = {});
 			// int load_par_elastic(std::string file);

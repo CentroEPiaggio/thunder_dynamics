@@ -722,6 +722,90 @@ namespace thunder_ns{
 		return 1;
 	}
 
+
+	int Robot::load_conf_par_yml(const YAML::Node& node, bool update_REG){
+		// Eigen::VectorXd param_DYN;
+		casadi::SX param_DYN(STD_PAR_LINK*numJoints,1);
+		casadi::SX param_Dl(Dl_order*numJoints,1);
+		casadi::SX param_K(numElasticJoints*K_order,1);
+		casadi::SX param_D(numElasticJoints*D_order,1);
+		casadi::SX param_Dm(numElasticJoints*Dm_order,1);
+		casadi::SX param_Mm(numElasticJoints,1);
+		// ----- parsing yaml inertial ----- //
+		// load yaml
+		// load inertial
+		YAML::Node dynamics = node["dynamics"];
+		int i = 0;
+		for (const auto& node : dynamics) {
+			YAML::Node inertial = node.second["inertial"];
+			
+			if (i==numJoints) break;
+			std::string linkName = node.first.as<std::string>();
+
+			// standard parameters
+			param_DYN(STD_PAR_LINK*i) = inertial["mass"].as<double>();
+			param_DYN(STD_PAR_LINK*i+1) = inertial["CoM_x"].as<double>();
+			param_DYN(STD_PAR_LINK*i+2) = inertial["CoM_y"].as<double>();
+			param_DYN(STD_PAR_LINK*i+3) = inertial["CoM_z"].as<double>();
+			param_DYN(STD_PAR_LINK*i+4) = inertial["Ixx"].as<double>();
+			param_DYN(STD_PAR_LINK*i+5) = inertial["Ixy"].as<double>();
+			param_DYN(STD_PAR_LINK*i+6) = inertial["Ixz"].as<double>();
+			param_DYN(STD_PAR_LINK*i+7) = inertial["Iyy"].as<double>();
+			param_DYN(STD_PAR_LINK*i+8) = inertial["Iyz"].as<double>();
+			param_DYN(STD_PAR_LINK*i+9) = inertial["Izz"].as<double>();
+			
+			// link friction
+			if (node.second["friction"]){
+				std::vector<double> Dl = node.second["friction"]["Dl"].as<std::vector<double>>();
+				for (int j=0; j<Dl_order; j++){
+					param_Dl(Dl_order*i + j) = Dl[j];
+				}
+			}
+
+			i++;
+		}
+
+		// ----- parsing yaml elastic ----- //
+		if ((ELASTIC) && (node["elastic"])){
+			YAML::Node elastic = node["elastic"];
+			i = 0;
+			for (const auto& node : elastic["joints"]) {
+				
+				if (i==numElasticJoints) break;
+				std::string jointName = node.first.as<std::string>();
+				// stiffness
+				if (K_order > 0){
+					std::vector<double> K = node.second["K"].as<std::vector<double>>();
+					for (int j=0; j<K_order; j++) param_K(K_order*i+j) = K[j];
+				}
+				// coupling friction
+				if (D_order > 0){
+					std::vector<double> D = node.second["D"].as<std::vector<double>>();
+					for (int j=0; j<D_order; j++) param_D(D_order*i + j) = D[j];
+				}
+				// motor friction
+				if (Dm_order > 0){
+					std::vector<double> Dm = node.second["Dm"].as<std::vector<double>>();
+					for (int j=0; j<Dm_order; j++) param_Dm(Dm_order*i + j) = Dm[j];
+				}
+				// motor inertia
+				param_Mm(i) = node.second["Mm"].as<double>();
+
+				i++;
+			}
+			// std::cout<<"YAML_DH letto"<<std::endl;
+			// std::cout<<"\nparam DYN \n"<<param_DYN<<std::endl;
+		}
+		args["par_DYN"] = param_DYN;
+		if (Dl_order > 0) args["par_Dl"] = param_Dl;
+		if (K_order>0) args["par_K"] = param_K;
+		if (D_order>0) args["par_D"] = param_D;
+		if (Dm_order>0) args["par_Dm"] = param_Dm;
+		if (ELASTIC) args["par_Mm"] = param_Mm;
+		if (update_REG) update_inertial_REG();
+		return 1;
+	}
+
 	casadi::SX Robot::load_par_REG(std::string file, bool update_DYN){
 		// Eigen::VectorXd param_REG;
 		casadi::SX param_REG(STD_PAR_LINK*numJoints,1);
