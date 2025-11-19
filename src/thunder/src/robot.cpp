@@ -313,28 +313,26 @@ namespace thunder_ns{
 			return parameters[name].num;
 		} else if (functions.count(name)){				// function exists
 			vector<DM> result;
-			// cout<<"name: "<<name<<endl;
+			cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
 			int sz = f_args.size();
-			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
+			cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::DMVector inputs(sz);
-			// cout << "arg_names: ";
+			cout << "arg_names: ";
 			int i=0;
 			for (const auto& arg : f_args) {
-				// cout << arg << ", " << endl;
-				inputs[i] = parameters[arg].num;
+				cout << arg << ", ";
+				inputs[i] = parameters[arg].get_value_resized();
 				i++;
 			}
-			// cout<<"args: "<<inputs<<endl;
+			cout<<"args: "<<inputs<<endl;
 			casadi::Function fun = functions[name].fun;
-			// cout<<"fun: "<<fun<<endl;
+			cout<<"fun: "<<fun<<endl;
 			functions[name].fun.call(inputs, result);
-			// cout<<"result: "<<result<<endl;
+			cout<<"result: "<<result<<endl;
 			return DM::vertcat(result);
 		} else {
 			std::cerr << name + " not recognised" << endl;
-			// result_num.resize(1,1);
-			// result_num << 0;
 			return DM::zeros(1,1);
 		}
 		
@@ -343,8 +341,18 @@ namespace thunder_ns{
 
 	int Robot::set(string name, DM value){
 		if (parameters.count(name)){
-			if (value.size() == parameters[name].num.size()){
+			if (value.size() == parameters[name].num.size()){			// substitute the entire vector
 				parameters[name].num = value;
+			} else if (value.size() < parameters[name].num.size()){		// substitute only the symbolic if the size match
+				int size_symbolic = parameters[name].symb_size();
+				if (value.size1() == size_symbolic){
+					DM& num = parameters[name].num;
+					int i=0;
+					for (short x : parameters[name].is_symbolic) num(i) = (x)?value(i++):num(i);
+				} else {
+					std::cerr << "Size mismatch when setting parameter: " << name << endl;
+					return 0;
+				}
 			} else {
 				std::cerr << "Size mismatch when setting parameter: " << name << endl;
 				return 0;
@@ -632,8 +640,8 @@ namespace thunder_ns{
 			param.name = p_name;
 			param.description = descr;
 			param.symb = symb;
-			int size = symb.size1();
-			param.size = size;
+			int size = symb.size1()*symb.size2();
+			// param.size = size;
 
 			if (num.size()!=size){
 				std::cerr << "Error dimension of numeric SX: " << std::endl;
@@ -656,7 +664,7 @@ namespace thunder_ns{
 
 			// add to parameters map
 			parameters[p_name] = param;
-			model[p_name] = param.get_value_all();
+			model[p_name] = param.get_model();
 		}
 		return 1;
 	}
@@ -746,32 +754,32 @@ namespace thunder_ns{
 		}
 	}
 
-	int Robot::subs_symb_par(string par){
-		vector<short> symbolic = parameters[par].is_symbolic;
-		// cout << "par: " << par << endl;
-		// cout << "symbolic: " << symbolic << endl;
-		// cout << "model: " << model[par] << endl;
-		// cout << "args: " << args[par] << endl;
-		// cout << "size: " << symbolic.size() << endl;
+	// int Robot::subs_symb_par(string par){
+	// 	vector<short> symbolic = parameters[par].is_symbolic;
+	// 	// cout << "par: " << par << endl;
+	// 	// cout << "symbolic: " << symbolic << endl;
+	// 	// cout << "model: " << model[par] << endl;
+	// 	// cout << "args: " << args[par] << endl;
+	// 	// cout << "size: " << symbolic.size() << endl;
 
-		for (int i=0; i<symbolic.size(); i++){
-			if (symbolic[i] == 0){
-				model[par](i) = (double)parameters[par].num(i);
-			}
-		}
+	// 	for (int i=0; i<symbolic.size(); i++){
+	// 		if (symbolic[i] == 0){
+	// 			model[par](i) = (double)parameters[par].num(i);
+	// 		}
+	// 	}
 
-		// cout<<"model: "<< model[par] << endl;
-		// cout<<"arg: "<< args[par] << endl;
-		return 1;
-	}
+	// 	// cout<<"model: "<< model[par] << endl;
+	// 	// cout<<"arg: "<< args[par] << endl;
+	// 	return 1;
+	// }
 
-	int Robot::init_symb_parameters(){
-		// - substitute non-symbolic variables with numbers - //
-		for (auto par : parameters){
-			subs_symb_par(par.first);
-		}
-		return 1;
-	}
+	// int Robot::init_symb_parameters(){
+	// 	// - substitute non-symbolic variables with numbers - //
+	// 	for (auto par : parameters){
+	// 		subs_symb_par(par.first);
+	// 	}
+	// 	return 1;
+	// }
 
 	vector<string> Robot::obtain_symb_parameters(vector<string> par_sure, vector<string> par_possible){
 		// - obtain parameters that have symbolic values inside - //
@@ -788,30 +796,30 @@ namespace thunder_ns{
 		return arg_list;
 	}
 
-	int Robot::update_symb_parameters(){
-		// - resize parameter variables to right dimension - //
-		for (auto par : parameters){
-			auto par_isSymb = par.second.is_symbolic;
-			int sz_original = par_isSymb.size();
-			string par_name = par.first;
-			casadi::SX& par_model = model[par_name];
-			DM& par_num = par.second.num;
-			int sz = 0;
-			for (int i=0; i<sz_original; i++){
-				if (par_isSymb[i]){
-					par_model(sz) = par_model(i);
-					par_num(sz) = par_num(i);
-					sz++;
-				}
-			}
-			par_model.resize(sz,1);
-			par_num.resize(sz,1);
-			// cout << "par_model: " << par_model << endl;
-			// cout << "par_num: " << par_num << endl;
-			// cout << "par_isSymb: " << par_isSymb << endl;
-		}
-		return 1;
-	}
+	// int Robot::update_symb_parameters(){
+	// 	// - resize parameter variables to right dimension - //
+	// 	for (auto par : parameters){
+	// 		auto par_isSymb = par.second.is_symbolic;
+	// 		int sz_original = par_isSymb.size();
+	// 		string par_name = par.first;
+	// 		casadi::SX& par_model = model[par_name];
+	// 		DM& par_num = par.second.num;
+	// 		int sz = 0;
+	// 		for (int i=0; i<sz_original; i++){
+	// 			if (par_isSymb[i]){
+	// 				par_model(sz) = par_model(i);
+	// 				par_num(sz) = par_num(i);
+	// 				sz++;
+	// 			}
+	// 		}
+	// 		par_model.resize(sz,1);
+	// 		par_num.resize(sz,1);
+	// 		// cout << "par_model: " << par_model << endl;
+	// 		// cout << "par_num: " << par_num << endl;
+	// 		// cout << "par_isSymb: " << par_isSymb << endl;
+	// 	}
+	// 	return 1;
+	// }
 
 
 	Robot robot_from_file(string robot_name, string file, bool compute){
@@ -822,7 +830,7 @@ namespace thunder_ns{
 		// --- compute functions --- //
 		if (compute){
 			// - symbolic selectivity - //
-			robot.init_symb_parameters();
+			// robot.init_symb_parameters();
 			cout<<"symbolic parameters ok!"<<endl;
 
 			// - compute functions - //
@@ -836,7 +844,7 @@ namespace thunder_ns{
 			cout<<"User defined functions ok!"<<endl;
 
 			// - update parameters - //
-			robot.update_symb_parameters();
+			// robot.update_symb_parameters();
 			cout<<"symbolic parameters ready!"<<endl;
 		}
 		

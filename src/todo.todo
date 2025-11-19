@@ -1,3 +1,7 @@
+✔ update set function to handle dimension of set @done (11/19/2025, 7:15:23 PM)
+☐ change add_function to handle automatically the symbolic parameters.
+✔ delete update_symb_parameters, model should not change @done (11/19/2025, 8:14:48 AM)
+☐ ceck where to use full parameters and resized ones. Use the function of parameters struct.
 ☐ thunder_robot should have the numerical parameters inside when created (no need to load conf)
 ✔ finish to update parse_conf using args @done (11/13/2025, 9:27:12 PM)
 ☐ modify simbolic selectivity structure!
