@@ -109,6 +109,7 @@ namespace thunder_ns{
 			base_frame: is used to set transformation between link0 and world_frame */
 			Robot(const std::string config_file);
 			Robot(const YAML::Node yaml);
+			Robot() = default;
 			// Robot(const Config conf);
 			YAML::Node config_yaml;
 			YAML::Node load_config(std::string config_file);

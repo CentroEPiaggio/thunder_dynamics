@@ -53,7 +53,6 @@ target_link_libraries(thunder_test_chrono library)
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
 
-
 # fetch latest argparse
 FetchContent_Declare(
     argparse
