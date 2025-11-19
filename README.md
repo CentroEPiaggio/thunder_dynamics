@@ -1,5 +1,91 @@
 # Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.18
 
+
+## Experimental plugin-based infrastructure
+
+Thunder is now built using a plugin-based infrastructure.
+
+Example config file, for a RR
+
+```yaml
+pipeline:
+  loaders: ["dh_loader"]
+  builders: ["kin"]
+  generators: ["cpp"]
+
+
+#########################
+cpp:
+  gen_casadi: True
+  python: True
+
+#########################
+dh_loader:
+  robot_name: "test_robot"
+  # --- Constants --- #
+  PI_2: &PI_2           1.5707963267948966
+  PI_2_neg: &PI_2_neg  -1.5707963267948966
+
+
+   ... old config
+```
+
+To see the list of plugin, together with the descriptions:
+
+	thunder plugin list --verbose
+
+The names displayed in this command are the same used in the `pipeline` parameter.
+
+
+To write a new builder, minimal template:
+
+```CPP
+
+#ifndef MY_BUILDER_H
+#define MY_BUILDER_H
+
+#include "../plugin_interfaces.h"
+#include "../../library/robot.h"
+#include <yaml-cpp/yaml.h>
+
+namespace thunder_ns {
+
+
+    class MyBuilder : public BaseBuilder {
+        public:
+        MyBuilder() : BaseBuilder("My custom builder", "My amazing new builder that adds a lot of useful functions.") {}
+        
+        int configure(const YAML::Node& config) override{
+			// CONFIGURE MY STUFF!
+            debug_log("Configured", VERB_INFO);
+            return 0;
+        }
+
+        void execute(std::shared_ptr<Robot> robot) override{
+            debug_log("Starting my amazing builder", VERB_INFO);
+			// COMPUTING MY STUFF!
+			//If I want to debug something:			
+            debug_log("This info is useful for debug porpose", VERB_DEBUG);
+			//robot.add_function("my_stuff");
+        }
+
+    };
+
+} // namespace thunder_ns
+
+#endif // MY_BUILDER_H
+```
+
+
+Then include your file and add the plugin to the map in `src/thunder/library/plugin_registry.h`
+
+Done!
+
+---
+
+
+
+
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
 * `thunder`: we implemented some classes in OOP to generalize the approach to serial manipulator control, under the point of view of Denavit-Hartenberg parametrization.
