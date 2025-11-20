@@ -39,8 +39,6 @@ namespace thunder_ns{
 		// Local variables for parsing
 		int nj;
 		int STD_PAR_LINK = Robot::STD_PAR_LINK;
-		FrameOffset Base_to_L0;
-		FrameOffset Ln_to_EE;
 
 		// ----- Parsing YAML File ----- //
 		try {
@@ -130,17 +128,17 @@ namespace thunder_ns{
 			// --- Frame Offsets --- //
 			YAML::Node frame_base = config_file["Base_to_L0"];
 			YAML::Node frame_ee = config_file["Ln_to_EE"];
-			Base_to_L0.set_translation(frame_base["tr"].as<vector<double>>());
-			Base_to_L0.set_ypr(frame_base["ypr"].as<vector<double>>());
-			Ln_to_EE.set_translation(frame_ee["tr"].as<vector<double>>());
-			Ln_to_EE.set_ypr(frame_ee["ypr"].as<vector<double>>());
-			vector<double> world2L0_num(6, 0);
+			vector<double> world2L0_tr = frame_base["tr"].as<vector<double>>();
+			vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
+			vector<double> Ln2EE_tr = frame_ee["tr"].as<vector<double>>();
+			vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
+			vector<double> world2L0_num(6,1);
 			vector<double> Ln2EE_num(6, 0);
 			for (int i = 0; i < 3; i++) {
-				world2L0_num[i] = Base_to_L0.translation[i];
-				world2L0_num[i + 3] = Base_to_L0.ypr[i];
-				Ln2EE_num[i] = Ln_to_EE.translation[i];
-				Ln2EE_num[i + 3] = Ln_to_EE.ypr[i];
+				world2L0_num[i] = world2L0_tr[i];
+				world2L0_num[i + 3] = world2L0_ypr[i];
+				Ln2EE_num[i] = Ln2EE_tr[i];
+				Ln2EE_num[i + 3] = Ln2EE_ypr[i];
 			}
 			// - Symbolic selectivity - //
 			vector<short> world2L0_isSymb;
@@ -509,7 +507,6 @@ namespace thunder_ns{
 			DM par_REG = parameters["par_REG"].num;
 			for (int i=0;  i<numJoints;  i++) {
 
-				// LinkProp link = links_prop_[i];    
 				YAML::Node linkNode;
 				string nodeName;
 				YAML::Node linkInertia;

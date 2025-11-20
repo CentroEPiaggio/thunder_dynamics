@@ -5,7 +5,6 @@
 #include <map>
 #include <yaml-cpp/yaml.h>
 #include <casadi/casadi.hpp>
-#include "FrameOffset.h"
 #include "utils.h"
 
 using std::string;

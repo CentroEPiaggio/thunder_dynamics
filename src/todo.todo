@@ -47,7 +47,7 @@ improvings:
 		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 	General:
-		☐ not using FrameOffset
+		✔ not using FrameOffset @done (11/20/2025, 2:51:47 PM)
 		☐ generic utils.spatial and generic wrt robot and thunder_robot
 		☐ delete Robot::model? instead use get_model("expr") that internally uses the functions
 		☐ add verbosity
