@@ -179,13 +179,13 @@ namespace thunder_ns{
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr", "ddqr"}, {"par_DHtable", "par_world2L0", "par_gravity"});
+		arg_list = {"q", "dq", "dqr", "ddqr", "par_DHtable", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "ddqr"}, {"par_DHtable", "par_world2L0"});
+		arg_list = {"q", "ddqr", "par_DHtable", "par_world2L0"};
 		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr"}, {"par_DHtable", "par_world2L0"});
+		arg_list = {"q", "dq", "dqr", "par_DHtable", "par_world2L0"};
 		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_gravity"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
@@ -370,11 +370,11 @@ namespace thunder_ns{
 			// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 			std::vector<std::string> arg_list;
-			arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+			arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 			// std::cout << "par_list: " << par_symb << std::endl;
 			if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
-			arg_list = robot.obtain_symb_parameters({"q", "w"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+			arg_list = {"q", "w", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 			if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 		}
 		

@@ -1,10 +1,11 @@
+✔ test add_function with a model name in args @done (11/20/2025, 1:41:21 PM)
+✔ add_function can add the parameters of a existing model @done (11/20/2025, 11:59:39 AM)
 ✔ update set function to handle dimension of set @done (11/19/2025, 7:15:23 PM)
-☐ change add_function to handle automatically the symbolic parameters.
+✔ change add_function to handle automatically the symbolic parameters. @done (11/20/2025, 11:47:03 AM)
 ✔ delete update_symb_parameters, model should not change @done (11/19/2025, 8:14:48 AM)
 ☐ ceck where to use full parameters and resized ones. Use the function of parameters struct.
-☐ thunder_robot should have the numerical parameters inside when created (no need to load conf)
 ✔ finish to update parse_conf using args @done (11/13/2025, 9:27:12 PM)
-☐ modify simbolic selectivity structure!
+✔ modify simbolic selectivity structure! @done (11/20/2025, 1:41:28 PM)
 ✔ parse_conf have to import numerical values also for dynamics @done (11/15/2025, 7:43:22 PM)
 ✔ substitute args with the parameters map (also for the state) @done (11/15/2025, 7:43:26 PM)
 ☐ change template to add automatically every parameter to the members
@@ -23,6 +24,7 @@ improvings:
 		☐ not possible to insert path in robot_name
 		✔ take robot_name from yaml if not explicitly defined @done (12/23/2024, 10:36:29 PM)
 	Paramaters:
+		☐ thunder_robot should have the numerical parameters inside when created (no need to load conf)
 		☐ use DM for numeric parameters?
 		☐ rename base parameters in casadi model expressions? (e.g. par_DYM->DYN)
 		☐ add_variable() is using add_parameter()
@@ -77,7 +79,7 @@ improvings:
 	Symbolic selectivity:
 		☐ get_par_DYN returns vector also if symb is 0,0...
 		☐ problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
-		☐ obtain_symb_parameters() with one only argument?
+		✔ obtain_symb_parameters() with one only argument? @done (11/20/2025, 11:50:41 AM)
 		✔ if "symb" is not present, default is not symbolic @done (11/5/2024, 6:31:16 PM)
 		☐ pay attention to resize symb vector flags before using it, from load_conf or load_par
 		☐ load symbolics selectivity from conf in thunder_robot, now only on world_frame, ee_frame and gravity

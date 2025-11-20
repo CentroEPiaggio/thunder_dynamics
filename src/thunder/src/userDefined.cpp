@@ -41,7 +41,7 @@ namespace thunder_ns{
 			casadi::SX q0_dist = casadi::SX::norm_2(q-q0);
 
 			// --- save function into robot --- //
-			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "q0"}, {});
+			std::vector<std::string> arg_list = {"q", "q0"};	// valid also with model terms
 			if (!robot.add_function("q0_dist", q0_dist, arg_list, "distance from q0")) return 0;
 			// when you create the library, the function "get_q_dist()" into thunder_<robot> will return the distance from q0
 		}

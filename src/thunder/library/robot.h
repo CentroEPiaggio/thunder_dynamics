@@ -47,6 +47,7 @@ namespace thunder_ns{
 			// --- Constructors --- //
 			Robot(const string config_file);
 			Robot(const YAML::Node yaml);
+			Robot() = default;
 			// - destructor - //
 			// ~Robot(){};
 
@@ -68,12 +69,6 @@ namespace thunder_ns{
 			int load_config(YAML::Node yaml);
 			// void update_conf();
 			// int save_conf(string par_file);
-
-			// --- Symbolic selectivity --- //
-			int init_symb_parameters();
-			int subs_symb_par(string par);
-			vector<string> obtain_symb_parameters(vector<string>, vector<string>);
-			int update_symb_parameters();
 
 			// --- Robot maps --- //
 			// - Parameters map - //

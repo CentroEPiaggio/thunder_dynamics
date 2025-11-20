@@ -669,24 +669,61 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args, string descr, bool overwrite){
+	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, bool overwrite){
 		if ((!overwrite) && model.count(f_name)){
-			// key already exists
+			std::cerr << "Function already exist! set flag for overwrite " << std::endl;
 			return 0;
 		} else {
+			// - substitute expressions in args_raw with parameters list - //
+			vector<string> args = {};
+			for (auto& arg_raw : args_raw){
+				if (parameters.count(arg_raw)) args.push_back(arg_raw);
+				else if (functions.count(arg_raw)){
+					for (auto arg : functions[arg_raw].args) args.push_back(arg);
+				} else {
+					std::cerr << "Arg not present in parameters nor functions: " << arg_raw << std::endl;
+					return 0;
+				}
+			}
+			// - delete repetitions - //
+			int new_size = 0;
+			bool new_arg = false;
+			for (auto& arg : args){
+				// check if already present
+				new_arg = true;
+				for (int i=0; i<new_size; i++){
+					if (arg == args[i]){
+						new_arg = false;
+						break;
+					}
+				}
+				// add parameter
+				if (new_arg) args[new_size++] = arg;
+			}
+			args.resize(new_size);
+			// - delete non-symbolic arguments - //
+			vector<string> arg_list = {};
+			for (auto& par : args){
+				bool is_symb = false;
+				for (short v : parameters[par].is_symbolic){
+					if (v) is_symb = true;
+				}
+				if (is_symb){
+					arg_list.push_back(par);
+				}
+			}
+
+			// - creating fun object
 			fun_obj fun_struct;
 			model[f_name] = expr;
-			fun_struct.args = args;
+			fun_struct.args = arg_list;
 			fun_struct.description = descr;
 
-			casadi::SXVector inputs(args.size());
-			// for (const auto& arg : args) {
-			// 	inputs.push_back(model[arg]);
-			// }
+			// - only symbolic parameters as arguments - //
+			casadi::SXVector inputs(arg_list.size());
 			int arg_index=0;
-			for (const auto& arg : args) {
+			for (const auto& arg : arg_list) {
 				// - resize parameters - //
-				// int sz_original = args[arg].size();
 				// std::cout << "fun: " << f_name << std::endl;
 				// std::cout << "arg: " << arg << std::endl;
 				vector<short>& symb_flag = parameters[arg].is_symbolic;
@@ -695,25 +732,17 @@ namespace thunder_ns{
 				// cout << "model[arg]: " << par_model << endl;
 				// cout << "symb_flag: " << symb_flag << endl;
 				int sz_original = par_model.size().first;
-				// casadi::SX par_model_new = casadi::SX::zeros(sz_original);
-				// casadi::SX new_par(sz_original,1);
 				int sz = 0;
 				for (int i=0; i<sz_original; i++){
 					if (symb_flag[i]){
 						par_symb.push_back(par_model(i));
-						// par_model_new(sz) = par_model(i);
 						sz++;
 					}
 				}
 				casadi::SX par_symb_new = casadi::SX::vertcat(par_symb);
-				// casadi::Slice newsize(0,sz);
-				// par_model = par_model(newsize,1);
-				// par_arg = par_arg(newsize,1);
-				// par_model_new.resize(sz,1);
-				// cout << "par_model_new: " << par_symb_new << endl;
+				// cout << "par_symb_new: " << par_symb_new << endl;
 
 				inputs[arg_index] = par_symb_new;
-				// inputs[arg_index] = model[arg](newsize, 0);
 				arg_index++;
 			}
 
@@ -753,74 +782,6 @@ namespace thunder_ns{
 			}
 		}
 	}
-
-	// int Robot::subs_symb_par(string par){
-	// 	vector<short> symbolic = parameters[par].is_symbolic;
-	// 	// cout << "par: " << par << endl;
-	// 	// cout << "symbolic: " << symbolic << endl;
-	// 	// cout << "model: " << model[par] << endl;
-	// 	// cout << "args: " << args[par] << endl;
-	// 	// cout << "size: " << symbolic.size() << endl;
-
-	// 	for (int i=0; i<symbolic.size(); i++){
-	// 		if (symbolic[i] == 0){
-	// 			model[par](i) = (double)parameters[par].num(i);
-	// 		}
-	// 	}
-
-	// 	// cout<<"model: "<< model[par] << endl;
-	// 	// cout<<"arg: "<< args[par] << endl;
-	// 	return 1;
-	// }
-
-	// int Robot::init_symb_parameters(){
-	// 	// - substitute non-symbolic variables with numbers - //
-	// 	for (auto par : parameters){
-	// 		subs_symb_par(par.first);
-	// 	}
-	// 	return 1;
-	// }
-
-	vector<string> Robot::obtain_symb_parameters(vector<string> par_sure, vector<string> par_possible){
-		// - obtain parameters that have symbolic values inside - //
-		vector<string> arg_list = par_sure;
-		for (auto& par : par_possible){
-			bool is_symb = false;
-			for (short v : parameters[par].is_symbolic){
-				if (v) is_symb = true;
-			}
-			if (is_symb){
-				arg_list.push_back(par);
-			}
-		}
-		return arg_list;
-	}
-
-	// int Robot::update_symb_parameters(){
-	// 	// - resize parameter variables to right dimension - //
-	// 	for (auto par : parameters){
-	// 		auto par_isSymb = par.second.is_symbolic;
-	// 		int sz_original = par_isSymb.size();
-	// 		string par_name = par.first;
-	// 		casadi::SX& par_model = model[par_name];
-	// 		DM& par_num = par.second.num;
-	// 		int sz = 0;
-	// 		for (int i=0; i<sz_original; i++){
-	// 			if (par_isSymb[i]){
-	// 				par_model(sz) = par_model(i);
-	// 				par_num(sz) = par_num(i);
-	// 				sz++;
-	// 			}
-	// 		}
-	// 		par_model.resize(sz,1);
-	// 		par_num.resize(sz,1);
-	// 		// cout << "par_model: " << par_model << endl;
-	// 		// cout << "par_num: " << par_num << endl;
-	// 		// cout << "par_isSymb: " << par_isSymb << endl;
-	// 	}
-	// 	return 1;
-	// }
-
 
 	Robot robot_from_file(string robot_name, string file, bool compute){
 		bool advanced = true;
