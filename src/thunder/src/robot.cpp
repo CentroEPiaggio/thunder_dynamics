@@ -310,26 +310,26 @@ namespace thunder_ns{
 
 	DM Robot::get(string name){
 		if (parameters.count(name)){					// parameter exists
-			return parameters[name].num;
+			return parameters[name].get_value_resized();
 		} else if (functions.count(name)){				// function exists
 			vector<DM> result;
-			cout<<"name: "<<name<<endl;
+			// cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
 			int sz = f_args.size();
-			cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
+			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::DMVector inputs(sz);
-			cout << "arg_names: ";
+			// cout << "arg_names: ";
 			int i=0;
 			for (const auto& arg : f_args) {
-				cout << arg << ", ";
+				// cout << arg << ", ";
 				inputs[i] = parameters[arg].get_value_resized();
 				i++;
 			}
-			cout<<"args: "<<inputs<<endl;
+			// cout<<"args: "<<inputs<<endl;
 			casadi::Function fun = functions[name].fun;
-			cout<<"fun: "<<fun<<endl;
+			// cout<<"fun: "<<fun<<endl;
 			functions[name].fun.call(inputs, result);
-			cout<<"result: "<<result<<endl;
+			// cout<<"result: "<<result<<endl;
 			return DM::vertcat(result);
 		} else {
 			std::cerr << name + " not recognised" << endl;
@@ -451,13 +451,13 @@ namespace thunder_ns{
 				for (const auto& node : yamlFile){
 					string key = node.first.as<string>();
 					if (parameters.count(key)){
-						parameters[key].num = node.second.as<vector<double>>();
+						set(key, node.second.as<vector<double>>());
 					}
 				}
 			} else {
 				for (string key : par_list){
 					if (parameters.count(key)){
-						parameters[key].num = yamlFile[key].as<vector<double>>();
+						set(key, yamlFile[key].as<vector<double>>());
 					} else {
 						std::cerr << "Parameter does not exist: " << key << std::endl;
 					}
@@ -558,7 +558,7 @@ namespace thunder_ns{
 			if (par_list.size() == 0){
 				for (auto& par : parameters){
 					string par_name = par.first;
-					vector<double> vect_std = par.second.num.get_elements();
+					vector<double> vect_std = par.second.get_value_resized().get_elements();
 					yamlFile[par.first] = vect_std;
 				}
 			} else {
@@ -572,7 +572,7 @@ namespace thunder_ns{
 					// Eigen::VectorXd vect_eig = get_arg(par);
 					// std::cout << par + "_eig: " << vect_eig << endl;
 					if (parameters.count(par)){
-						vector<double> vect_std = parameters[par].num.get_elements();
+						vector<double> vect_std = parameters[par].get_value_resized().get_elements();
 						yamlFile[par] = vect_std;
 					} else {
 						std::cerr << "Parameter does not exist: " << par << std::endl;
