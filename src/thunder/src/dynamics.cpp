@@ -181,7 +181,7 @@ namespace thunder_ns{
 
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
-			std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+			std::vector<std::string> arg_list = {"q", "par_DHtable", "par_world2L0", "par_DYN"};
 			robot.add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
 		}
 
@@ -252,13 +252,13 @@ namespace thunder_ns{
 		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("M", M, arg_list, "Manipulator mass matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("C", C, arg_list, "Manipulator Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("C_std", C_std, arg_list, "Classic formulation of the manipulator Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G", G, arg_list, "Manipulator gravity terms");
 
 		return 1;
@@ -339,30 +339,30 @@ namespace thunder_ns{
 			}
 			std::vector<std::string> arg_list;
 			if (K_order > 0) {
-				arg_list = robot.obtain_symb_parameters({"q", "x"}, {"par_K"});
+				arg_list = {"q", "x", "par_K"};
 				robot.add_function("k", k, arg_list, "SEA manipulator elastic coupling");
-				arg_list = robot.obtain_symb_parameters({}, {"par_K"});
+				arg_list = {"par_K"};
 				for (int ord=0; ord<K_order; ord++){ 
 					robot.add_function("K"+std::to_string(2*ord+1), K_vec[ord], arg_list, "SEA manipulator elastic coupling, order "+std::to_string(2*ord+1));
 				}
 			}
 			if (D_order > 0) {
-				arg_list = robot.obtain_symb_parameters({"dq", "dx"}, {"par_D"});
+				arg_list = {"dq", "dx", "par_D"};
 				robot.add_function("d", d, arg_list, "SEA manipulator dampind coupling");
-				arg_list = robot.obtain_symb_parameters({}, {"par_D"});
+				arg_list = {"par_D"};
 				for (int ord=0; ord<D_order; ord++){ 
 					robot.add_function("D"+std::to_string(ord+1), D_vec[ord], arg_list, "SEA manipulator damping coupling, order "+std::to_string(ord+1));
 				}
 			}
 			if (Dm_order > 0) {
-				arg_list = robot.obtain_symb_parameters({"dx"}, {"par_Dm"});
+				arg_list = {"dx", "par_Dm"};
 				robot.add_function("dm", dm, arg_list, "SEA manipulator motor damping");
-				arg_list = robot.obtain_symb_parameters({}, {"par_Dm"});
+				arg_list = {"par_Dm"};
 				for (int ord=0; ord<Dm_order; ord++){ 
 					robot.add_function("Dm"+std::to_string(ord+1), Dm_vec[ord], arg_list, "SEA manipulator motor damping, order "+std::to_string(ord+1));
 				}
 			}
-			arg_list = robot.obtain_symb_parameters({}, {"par_Mm"});
+			arg_list = {"par_Mm"};
 			robot.add_function("Mm", Mm, arg_list, "SEA manipulator motor inertia");
 
 			return 1;
@@ -392,9 +392,9 @@ namespace thunder_ns{
 				}
 			}
 			std::vector<std::string> arg_list;
-			arg_list = robot.obtain_symb_parameters({"dq"}, {"par_Dl"});
+			arg_list = {"dq", "par_Dl"};
 			robot.add_function("dl", dl, arg_list, "Manipulator link friction");
-			arg_list = robot.obtain_symb_parameters({}, {"par_Dl"});
+			arg_list = {"par_Dl"};
 			for (int ord=0; ord<Dl_order; ord++){ 
 				robot.add_function("Dl"+std::to_string(ord+1), Dl_vec[ord], arg_list, "SEA manipulator link damping, order "+std::to_string(ord+1));
 			}
@@ -418,25 +418,25 @@ namespace thunder_ns{
 		// - Mass derivatives - //
 		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
 		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		std::vector<std::string> arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
 
 		// - Coriolis derivatives - //
 		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
 		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq", "d3q"}, {"par_DHtable", "par_world2L0", "par_DYN"});
+		arg_list = {"q", "dq", "ddq", "d3q", "par_DHtable", "par_world2L0", "par_DYN"};
 		robot.add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
 
 		// - Gravity derivatives - //
 		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
 		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
-		arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
+		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_gravity", "par_DYN"});
+		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
 
 		return 1;

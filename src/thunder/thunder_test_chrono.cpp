@@ -48,7 +48,7 @@ int main(){
 		cout<<"robot created in "<<duration_rob<<" us"<<endl;
 
 		int nj = robot.get_numJoints();
-		Eigen::VectorXd param_DYN = robot.get_par_DYN();
+		// auto param_DYN = robot.get("par_DYN");
 
 		int n_rep = 100;
 		int min_dur = 999999999;
@@ -57,30 +57,19 @@ int main(){
 		auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
 		/* Matrices */
-		Eigen::MatrixXd myYr(nj, nj*N_PAR_LINK);
-		Eigen::MatrixXd myM(nj, nj);
-		Eigen::MatrixXd myC(nj, nj);
-		Eigen::MatrixXd myC_std(nj, nj);
-		Eigen::MatrixXd myG(nj, 1);
-		Eigen::MatrixXd myKin(4, 4);
-		Eigen::MatrixXd myJac(6, nj);
-
-		Eigen::VectorXd q(nj), dq(nj), dqr(nj), ddqr(nj);
+		casadi::SX myYr(nj, nj*N_PAR_LINK);
+		casadi::SX myM(nj, nj);
+		casadi::SX myC(nj, nj);
+		casadi::SX myC_std(nj, nj);
+		casadi::SX myG(nj, 1);
+		casadi::SX myKin(4, 4);
+		casadi::SX myJac(6, nj);
 
 		/* Test */
-		q.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
-		dq.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
-		dqr.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
-		ddqr.setOnes();// = Eigen::Vector<double,nj>::Random();//setOnes();
-
-		robot.set_q(q);
-		// cout<<"q set"<<endl;
-		robot.set_dq(dq);
-		// cout<<"dq set"<<endl;
-		robot.set_dqr(dqr);
-		// cout<<"dqr set"<<endl;
-		robot.set_ddqr(ddqr);
-		// cout<<"ddqr set"<<endl;
+		robot.set("q", std::vector<double>(nj,0));
+		robot.set("dq", std::vector<double>(nj,0));
+		robot.set("dqr", std::vector<double>(nj,0));
+		robot.set("ddqr", std::vector<double>(nj,0));
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){

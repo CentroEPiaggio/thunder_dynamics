@@ -179,13 +179,13 @@ namespace thunder_ns{
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 		std::vector<std::string> arg_list;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr", "ddqr"}, {"par_DHtable", "par_world2L0", "par_gravity"});
+		arg_list = {"q", "dq", "dqr", "ddqr", "par_DHtable", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "ddqr"}, {"par_DHtable", "par_world2L0"});
+		arg_list = {"q", "ddqr", "par_DHtable", "par_world2L0"};
 		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "dqr"}, {"par_DHtable", "par_world2L0"});
+		arg_list = {"q", "dq", "dqr", "par_DHtable", "par_world2L0"};
 		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_gravity"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
@@ -199,7 +199,7 @@ namespace thunder_ns{
 		const auto& dq = robot.model["dq"];
 		if (Dl_order==0) return 0;
 		const auto& par_Dl = robot.model["par_Dl"];
-		const auto& par_Dl_symb = robot.symb["par_Dl"];
+		const auto& par_Dl_isSymb = robot.parameters["par_Dl"].is_symbolic;
 		if (robot.model.count("Dl") == 0){
 			compute_Dl(robot);
 		}
@@ -209,7 +209,7 @@ namespace thunder_ns{
 		std::vector<casadi::SX> par_symb;
 		// parse par_Dl
 		for (int i=0; i<par_Dl.size1(); i++){
-			if (par_Dl_symb[i]){
+			if (par_Dl_isSymb[i]){
 				par_symb.push_back(par_Dl(i));
 			}
 		}
@@ -238,10 +238,10 @@ namespace thunder_ns{
 		const auto& par_D = robot.model["par_D"];
 		const auto& par_Dm = robot.model["par_Dm"];
 		const auto& par_Mm = robot.model["par_Mm"];
-		const auto& par_K_symb = robot.symb["par_K"];
-		const auto& par_D_symb = robot.symb["par_D"];
-		const auto& par_Dm_symb = robot.symb["par_Dm"];
-		const auto& par_Mm_symb = robot.symb["par_Mm"];
+		const auto& par_K_isSymb = robot.parameters["par_K"].is_symbolic;
+		const auto& par_D_isSymb = robot.parameters["par_D"].is_symbolic;
+		const auto& par_Dm_isSymb = robot.parameters["par_Dm"].is_symbolic;
+		const auto& par_Mm_isSymb = robot.parameters["par_Mm"].is_symbolic;
 
 		if (robot.model.count("k") == 0){
 			compute_elastic(robot);
@@ -258,25 +258,25 @@ namespace thunder_ns{
 		std::vector<casadi::SX> par_symb_Mm;
 		// parse par_K
 		for (int i=0; i<par_K.size1(); i++){
-			if (par_K_symb[i]){
+			if (par_K_isSymb[i]){
 				par_symb_K.push_back(par_K(i));
 			}
 		}
 		// parse par_D
 		for (int i=0; i<par_D.size1(); i++){
-			if (par_D_symb[i]){
+			if (par_D_isSymb[i]){
 				par_symb_D.push_back(par_D(i));
 			}
 		}
 		// parse par_Dm
 		for (int i=0; i<par_Dm.size1(); i++){
-			if (par_Dm_symb[i]){
+			if (par_Dm_isSymb[i]){
 				par_symb_Dm.push_back(par_Dm(i));
 			}
 		}
 		// parse par_Mm
 		for (int i=0; i<par_Mm.size1(); i++){
-			if (par_Mm_symb[i]){
+			if (par_Mm_isSymb[i]){
 				par_symb_Mm.push_back(par_Mm(i));
 			}
 		}
@@ -312,9 +312,9 @@ namespace thunder_ns{
 		const auto& par_DHtable = robot.model["par_DHtable"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
 		const auto& par_Ln2EE = robot.model["par_Ln2EE"];
-		const auto& DHtable_symb = robot.symb["par_DHtable"];
-		const auto& world2L0_symb = robot.symb["par_world2L0"];
-		const auto& Ln2EE_symb = robot.symb["par_Ln2EE"];
+		const auto& DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
+		const auto& world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
+		const auto& Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
 		const auto& w = robot.model["w"];
@@ -337,19 +337,19 @@ namespace thunder_ns{
 		// int sz = 0;
 		// parse DH
 		for (int i=0; i<par_DHtable.size1(); i++){
-			if (DHtable_symb[i]){
+			if (DHtable_isSymb[i]){
 				par_symb.push_back(par_DHtable(i));
 			}
 		}
 		// parse world2L0
 		for (int i=0; i<par_world2L0.size1(); i++){
-			if (world2L0_symb[i]){
+			if (world2L0_isSymb[i]){
 				par_symb.push_back(par_world2L0(i));
 			}
 		}
 		// parse Ln2EE
 		for (int i=0; i<par_Ln2EE.size1(); i++){
-			if (Ln2EE_symb[i]){
+			if (Ln2EE_isSymb[i]){
 				par_symb.push_back(par_Ln2EE(i));
 			}
 		}
@@ -370,11 +370,11 @@ namespace thunder_ns{
 			// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 			std::vector<std::string> arg_list;
-			arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+			arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 			// std::cout << "par_list: " << par_symb << std::endl;
 			if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
-			arg_list = robot.obtain_symb_parameters({"q", "w"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+			arg_list = {"q", "w", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 			if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 		}
 		

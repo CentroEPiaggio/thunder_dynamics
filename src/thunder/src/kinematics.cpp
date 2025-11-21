@@ -128,9 +128,9 @@ namespace thunder_ns{
 		// T0i is transformation from link 0 to link i
 		T0i[0] = Ti[0];
 
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
+		std::vector<std::string> arg_list = {"par_world2L0"};
 		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
-		arg_list = robot.obtain_symb_parameters({}, {"par_world2L0"});
+		arg_list = {"par_world2L0"};
 		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
 
 		for (int i = 0; i < numJoints; i++) {
@@ -138,16 +138,16 @@ namespace thunder_ns{
 			Ti[i+1] = DHTemplate(par_DHtable(row_i), q(i), jointsType[i]);
 			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
 			
-			arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable"});
+			arg_list = {"q", "par_DHtable"};
 			if (!robot.add_function("T_"+std::to_string(i+1), Ti[i+1], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
-			arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0"});
+			arg_list = {"q", "par_DHtable", "par_world2L0"};
 			if (!robot.add_function("T_0_"+std::to_string(i+1), T0i[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
 		}
 
 		// end-effector transform
 		T0i[numJoints+1] = casadi::SX::mtimes({T0i[numJoints], get_transform(par_Ln2EE)});
 
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
 		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
 		// std::cout<<"functions created"<<std::endl;
@@ -256,14 +256,14 @@ namespace thunder_ns{
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			std::vector<std::string> arg_list;
 			if (i<nj){
-				arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0"});
+				arg_list = {"q", "par_DHtable", "par_world2L0"};
 			} else {
-				arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+				arg_list = {"q", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 			}
 			if (!robot.add_function("J_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of frame "+std::to_string(i+1))) return 0;
 		}
 
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		std::vector<std::string> arg_list = {"q", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 		if (!robot.add_function("J_ee", Ji[nj], arg_list, "Jacobian of the end-effector")) return 0;
 		return 1;
 	}
@@ -283,15 +283,15 @@ namespace thunder_ns{
 		// jacobian derivatives
 		casadi::SX dJn = casadi::SX::jtimes(Jn,q,dq);
 		casadi::SX ddJn = casadi::SX::jtimes(dJn,q,dq) + casadi::SX::jtimes(dJn,dq,ddq);
-		std::vector<std::string> arg_list = robot.obtain_symb_parameters({"q", "dq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		std::vector<std::string> arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 		robot.add_function("J_ee_dot", dJn, arg_list, "Time derivative of jacobian matrix");
-		arg_list = robot.obtain_symb_parameters({"q", "dq", "ddq"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 		robot.add_function("J_ee_ddot", ddJn, arg_list, "Time second derivative of jacobian matrix");
 
 		// jacobian inverse
 		casadi::SX invJn_dumped = casadi::SX::inv(casadi::SX::mtimes({Jn,Jn.T()}) + casadi::SX::eye(6)*MU);
 		casadi::SX pinvJn = casadi::SX::mtimes({Jn.T(),invJn_dumped});
-		arg_list = robot.obtain_symb_parameters({"q"}, {"par_DHtable", "par_world2L0", "par_Ln2EE"});
+		arg_list = {"q", "par_DHtable", "par_world2L0", "par_Ln2EE"};
 		robot.add_function("J_ee_pinv", pinvJn, arg_list, "Pseudo-Inverse of jacobian matrix");
 
 		return 1;
