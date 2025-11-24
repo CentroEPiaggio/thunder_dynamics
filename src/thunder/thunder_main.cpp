@@ -149,9 +149,19 @@ int main(int argc, char* argv[]){
     // PARSE YAML 
     YAML::Node config_node = YAML::LoadFile(config_file);
 
-    auto loaders = config_node["pipeline"]["loaders"].as<std::vector<std::string>>();
-    auto builders = config_node["pipeline"]["builders"].as<std::vector<std::string>>();
-    auto generators = config_node["pipeline"]["generators"].as<std::vector<std::string>>();
+	std::vector<std::string> loaders;
+	std::vector<std::string> builders;
+	std::vector<std::string> generators;
+
+	if (config_node["pipeline"]){
+		loaders = config_node["pipeline"]["loaders"].as<std::vector<std::string>>();
+		builders = config_node["pipeline"]["builders"].as<std::vector<std::string>>();
+		generators = config_node["pipeline"]["generators"].as<std::vector<std::string>>();
+	} else {
+		loaders = std::vector<std::string>({"legacy_loader"});
+		builders = std::vector<std::string>({"legacy_builder"});
+		generators = std::vector<std::string>({"legacy_generator"});
+	}
 
     // execute loaders
 	auto robot_ptr = std::make_shared<Robot>();
