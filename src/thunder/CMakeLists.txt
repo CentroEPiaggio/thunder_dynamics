@@ -14,7 +14,7 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
 # Include the "library" directory for header file search
-include_directories(${CMAKE_SOURCE_DIR}/library)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add all source files in the "src" directory to the SOURCES variable
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
@@ -26,7 +26,7 @@ add_library(library ${SOURCES})
 set_target_properties(library PROPERTIES OUTPUT_NAME "library")
 
 # Make the library's headers available to other projects
-target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
+target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # Find and link the CasADi library
 find_package(casadi REQUIRED)
