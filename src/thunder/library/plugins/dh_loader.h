@@ -14,7 +14,7 @@ namespace thunder_ns {
         std::string robot_name;
 
         public:
-        DHLoader() : BaseLoader("DH Loader", "Loads a robot using modified DH parameters.") {}
+        DHLoader() : BaseLoader("DH Loader", "Creates a robot structure using DH parameters (modified convention).") {}
 
         int configure(const YAML::Node& config) override{
             config_ = config;
@@ -29,11 +29,11 @@ namespace thunder_ns {
             auto robot = std::make_shared<Robot>(Robot(config_));
             robot->robotName = robot_name;
             // --- load parameters --- //
-            robot->load_conf_par_yml(config_);
+            // robot->load_config(config_);
             debug_log("Configuration Loaded", VERB_DEBUG);
             // - symbolic selectivity - //
-            robot->init_symb_parameters();
-            debug_log("Symbolic paramters ok, loading finished", VERB_INFO);
+            // robot->init_symb_parameters();
+            debug_log("Kinematic loading finished", VERB_INFO);
             return robot;
         }
 

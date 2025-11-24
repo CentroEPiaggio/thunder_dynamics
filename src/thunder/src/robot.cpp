@@ -789,7 +789,7 @@ namespace thunder_ns{
 		if (compute){
 			// - symbolic selectivity - //
 			// robot.init_symb_parameters();
-			cout<<"symbolic parameters ok!"<<endl;
+			// cout<<"symbolic parameters ok!"<<endl;
 
 			// - compute functions - //
 			compute_kinematics(robot, advanced);
@@ -803,7 +803,7 @@ namespace thunder_ns{
 
 			// - update parameters - //
 			// robot.update_symb_parameters();
-			cout<<"symbolic parameters ready!"<<endl;
+			// cout<<"symbolic parameters ready!"<<endl;
 		}
 		
 		cout<<"Robot created!"<<endl;
