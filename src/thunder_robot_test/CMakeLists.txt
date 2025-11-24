@@ -16,7 +16,7 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
 # Aggiungi la cartella "library" per cercare gli header
-include_directories(${CMAKE_SOURCE_DIR}/library)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Aggiungi tutti i file di origine nella cartella "src"
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
@@ -28,7 +28,7 @@ add_library(thunder_robot ${SOURCES})
 set_target_properties(thunder_robot PROPERTIES OUTPUT_NAME "thunder_robot")
 
 # Indica che altri progetti possono trovare questa libreria
-target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/library)
+target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 find_package(yaml-cpp REQUIRED)
 target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
