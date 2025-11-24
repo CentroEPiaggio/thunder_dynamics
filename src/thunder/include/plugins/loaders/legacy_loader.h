@@ -1,5 +1,5 @@
-#ifndef DH_LOADER_H
-#define DH_LOADER_H
+#ifndef LEGACY_LOADER_H
+#define LEGACY_LOADER_H
 
 #include <yaml-cpp/yaml.h>
 
@@ -8,17 +8,18 @@
 
 namespace thunder_ns {
 
-	class DHLoader : public BaseLoader {
+	class LegacyLoader : public BaseLoader {
 		private:
 		YAML::Node config_;
 		std::string robot_name;
 
 		public:
-		DHLoader() : BaseLoader("DH Loader", "Creates a robot structure using DH parameters (modified convention).") {}
+		LegacyLoader() : BaseLoader("Legacy Loader", "Creates a robot with the old yaml structure.") {}
 
 		int configure(const YAML::Node& config) override{
 			config_ = config;
-			robot_name = config_["robot_name"].as<std::string>();
+			if (config_["robot_name"]) robot_name = config_["robot_name"].as<std::string>();
+			// default robot_name?
 			debug_log("Configured", VERB_INFO);
 			return 0;
 		}
@@ -33,7 +34,7 @@ namespace thunder_ns {
 			debug_log("Configuration Loaded", VERB_DEBUG);
 			// - symbolic selectivity - //
 			// robot->init_symb_parameters();
-			debug_log("Kinematic loading finished", VERB_INFO);
+			debug_log("Loading finished", VERB_INFO);
 			return robot;
 		}
 
@@ -41,4 +42,4 @@ namespace thunder_ns {
 
 } // namespace thunder_ns
 
-#endif // DH_LOADER_H
+#endif // LEGACY_LOADER_H

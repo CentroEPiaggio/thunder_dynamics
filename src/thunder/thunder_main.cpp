@@ -190,32 +190,6 @@ int main(int argc, char* argv[]){
 		generator_plugin->generate(robot_ptr);
     }
 
-	// // thunder_robot path
-	// std::string COPY_PREFIX;
-	// if (currentPath.filename() == "build") { // last directory name
-	// 	COPY_PREFIX = currentPath/"../../../";
-	// } else {
-	// 	COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
-	// }
-	// std::string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot/library/";
-	// std::string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot/src/";
-	// std::string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot/robots/";
-	// std::string PATH_COPY_CHRONO_H = COPY_PREFIX + "src/thunder_robot_chrono/library/";
-	// std::string PATH_COPY_CHRONO_CPP = COPY_PREFIX + "src/thunder_robot_chrono/src/";
-	// std::string PATH_COPY_CHRONO_YAML = COPY_PREFIX + "src/thunder_robot_chrono/robots/";
-	
-	// // --- copy generated files in thunder_robot project --- //
-	// if(COPY_GEN_FLAG){
-	// 	copy_to(robot_name, absolutePath, PATH_COPY_YAML, PATH_COPY_YAML, PATH_COPY_H, PATH_COPY_CPP);
-	// 	std::cout << "Copied to thunder_robot!" << std::endl;
-	// }
-
-	// // --- copy generated files in thunder_robot project --- //
-	// if(COPY_GEN_CHRONO_FLAG){
-	// 	copy_to(robot_name, absolutePath, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_YAML, PATH_COPY_CHRONO_H, PATH_COPY_CHRONO_CPP);
-	// 	std::cout << "Copied to thunder_robot_chrono!" << std::endl;
-	// }
-
 	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(time_stop - time_start);
