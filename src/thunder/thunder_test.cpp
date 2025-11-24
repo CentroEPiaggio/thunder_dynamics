@@ -10,10 +10,10 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-#include "library/robot.h"
-#include "library/kinematics.h"
-#include "library/dynamics.h"
-#include "library/regressors.h"
+#include "include/robot.h"
+#include "include/kinematics.h"
+#include "include/dynamics.h"
+#include "include/regressors.h"
 
 using namespace thunder_ns;
 using std::cout;

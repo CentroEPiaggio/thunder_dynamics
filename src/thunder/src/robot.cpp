@@ -1,9 +1,9 @@
-#include "../library/robot.h"
-#include "../library/kinematics.h"
-#include "../library/dynamics.h"
-#include "../library/regressors.h"
-#include "../library/utils.h"
-#include "../library/userDefined.h"
+#include "../include/robot.h"
+#include "../include/kinematics.h"
+#include "../include/dynamics.h"
+#include "../include/regressors.h"
+#include "../include/utils.h"
+#include "../include/userDefined.h"
 
 using std::cout;
 using std::endl;

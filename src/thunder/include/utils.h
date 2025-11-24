@@ -4,7 +4,6 @@
 #include <string>
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
-#include "FrameOffset.h"
 
 namespace thunder_ns{
 

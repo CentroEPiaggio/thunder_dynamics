@@ -1,7 +1,7 @@
-#include "dynamics.h"
-#include "utils.h"
-#include "robot.h"
-#include "kinematics.h"
+#include "../include/dynamics.h"
+#include "../include/utils.h"
+#include "../include/robot.h"
+#include "../include/kinematics.h"
 
 namespace thunder_ns{
 

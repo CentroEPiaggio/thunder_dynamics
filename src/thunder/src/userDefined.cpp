@@ -1,7 +1,8 @@
-#include "userDefined.h"
-#include "robot.h"
-#include "utils.h"
 #include <yaml-cpp/yaml.h>
+
+#include "../include/userDefined.h"
+#include "../include/robot.h"
+#include "../include/utils.h"
 
 namespace thunder_ns{
 

@@ -1,5 +1,5 @@
-#include "kinematics.h"
-#include "utils.h"
+#include "../include/kinematics.h"
+#include "../include/utils.h"
 
 namespace thunder_ns{
 

@@ -1,8 +1,8 @@
-#include "regressors.h"
-#include "utils.h"
-#include "robot.h"
-#include "kinematics.h"
-#include "dynamics.h"
+#include "../include/regressors.h"
+#include "../include/utils.h"
+#include "../include/robot.h"
+#include "../include/kinematics.h"
+#include "../include/dynamics.h"
 
 namespace thunder_ns{
 

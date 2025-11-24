@@ -12,8 +12,8 @@ Command line interface for Thunder, it can generate code for robots
 
 #include <argparse/argparse.hpp>
 
-#include "plugin_interfaces.h"
-#include "plugin_registry.h"
+#include "include/plugin_interfaces.h"
+#include "include/plugin_registry.h"
 
 
 using namespace thunder_ns;

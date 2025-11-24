@@ -5,7 +5,7 @@
 #include <random>
 
 #include <yaml-cpp/yaml.h>
-#include "genYaml.h"
+#include "../include/genYaml.h"
 
 // using namespace thunder_ns;
 
