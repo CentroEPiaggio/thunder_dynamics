@@ -6,9 +6,9 @@
 #include <memory>
 
 // TODO: ADD ALL NEW PLUGIN HEADERS HERE
-#include "plugins/dh_loader.h"
-#include "plugins/kinematic_plugin.h"
-#include "plugins/cpp_generator.h"
+#include "plugins/loaders/dh_loader.h"
+#include "plugins/builders/kinematic_plugin.h"
+#include "plugins/generators/cpp_generator.h"
 
 
 namespace thunder_ns {

@@ -5,9 +5,9 @@
 #include <yaml-cpp/yaml.h>
 #include "robot.h"
 
+#define VERB_INFO 0
+#define VERB_DEBUG 1
 
-    #define VERB_INFO 0
-    #define VERB_DEBUG 1
 
 namespace thunder_ns{ 
 

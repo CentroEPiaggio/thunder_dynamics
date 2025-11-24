@@ -1,19 +1,17 @@
 #ifndef KIN_BUILDER_H
 #define KIN_BUILDER_H
 
-#include "../plugin_interfaces.h"
-#include "../robot.h"
-#include "../../library/robot.h"
-#include "../../library/kinematics.h"
-#include "../../library/dynamics.h"
-#include "../../library/regressors.h"
-#include "../../library/utils.h"
-#include "../../library/userDefined.h"
+#include "../../plugin_interfaces.h"
+#include "../../robot.h"
+#include "../../kinematics.h"
+#include "../../dynamics.h"
+#include "../../regressors.h"
+#include "../../utils.h"
+#include "../../userDefined.h"
 #include <yaml-cpp/yaml.h>
 
 
 namespace thunder_ns {
-
 
     class KinBuilder : public BaseBuilder {
         public:

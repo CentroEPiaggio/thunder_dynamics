@@ -1,14 +1,15 @@
 #ifndef CPP_GEN_H
 #define CPP_GEN_H
 
-#include "../plugin_interfaces.h"
-#include "../robot.h"
+#include "../../plugin_interfaces.h"
+#include "../../robot.h"
 #include <yaml-cpp/yaml.h>
 
 using std::cout;
 using std::endl;
-namespace thunder_ns {
 
+
+namespace thunder_ns {
 
     class CPPGenerator : public BaseGenerator {
         private:

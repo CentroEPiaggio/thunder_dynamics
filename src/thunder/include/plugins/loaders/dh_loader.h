@@ -1,12 +1,12 @@
 #ifndef DH_LOADER_H
 #define DH_LOADER_H
 
-#include "../plugin_interfaces.h"
-#include "../robot.h"
+#include "../../plugin_interfaces.h"
+#include "../../robot.h"
 #include <yaml-cpp/yaml.h>
 
-namespace thunder_ns {
 
+namespace thunder_ns {
 
     class DHLoader : public BaseLoader {
         private:
