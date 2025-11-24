@@ -62,6 +62,7 @@ std::string robot_name_gen = robot_name + "_gen";
 int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
+	bool LEGACY = false;
 
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
@@ -145,7 +146,6 @@ int main(int argc, char* argv[]){
 	auto time_start = high_resolution_clock::now();
 	robot_name_gen = robot_name + "_gen";
 
-
     // PARSE YAML 
     YAML::Node config_node = YAML::LoadFile(config_file);
 
@@ -158,6 +158,7 @@ int main(int argc, char* argv[]){
 		builders = config_node["pipeline"]["builders"].as<std::vector<std::string>>();
 		generators = config_node["pipeline"]["generators"].as<std::vector<std::string>>();
 	} else {
+		LEGACY = true;
 		loaders = std::vector<std::string>({"legacy_loader"});
 		builders = std::vector<std::string>({"legacy_builder"});
 		generators = std::vector<std::string>({"legacy_generator"});
@@ -165,6 +166,7 @@ int main(int argc, char* argv[]){
 
     // execute loaders
 	auto robot_ptr = std::make_shared<Robot>();
+	robot_ptr->robotName = robot_name;
 
 	auto verbosity = gen_command.get<bool>("--verbose");
 
@@ -173,7 +175,7 @@ int main(int argc, char* argv[]){
         std::shared_ptr<BaseLoader> loader_plugin = find_loader(loader);
 
 		loader_plugin->set_debug_flag(verbosity);
-        loader_plugin->configure(config_node[loader]);
+        loader_plugin->configure((LEGACY)?config_node:config_node[loader]);
 
         robot_ptr = loader_plugin->load(robot_ptr);
     }
@@ -184,7 +186,7 @@ int main(int argc, char* argv[]){
         std::shared_ptr<BaseBuilder> builder_plugin = find_builder(builder);
 		
 		builder_plugin->set_debug_flag(verbosity);
-        builder_plugin->configure(config_node[builder]);
+        builder_plugin->configure((LEGACY)?config_node:config_node[builder]);
 
         builder_plugin->execute(robot_ptr);
     }
@@ -195,7 +197,7 @@ int main(int argc, char* argv[]){
         
 		std::shared_ptr<BaseGenerator> generator_plugin = find_generator(generator);
 		generator_plugin->set_debug_flag(verbosity);
-        generator_plugin->configure(config_node[generator]);
+        generator_plugin->configure((LEGACY)?config_node:config_node[generator]);
         
 		generator_plugin->generate(robot_ptr);
     }

@@ -72,7 +72,7 @@ namespace thunder_ns {
 			int nj = robot->get_numJoints();
 			// --- Generate merge code --- //
 
-			std::string robot_name = "robot";
+			std::string robot_name = robot->robotName;
 			std::string path_robot = "../robots/";
 			std::string config_file = path_robot + robot_name + "/robot.yaml";
 			std::string robot_name_gen = robot_name + "_gen";

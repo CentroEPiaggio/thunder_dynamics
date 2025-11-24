@@ -46,7 +46,11 @@ namespace thunder_ns{
 			YAML::Node config_file = this->config_yaml;
 
 			// --- Basic Robot properties --- //
-			if (config_file["num_joints"]) nj = config_file["num_joints"].as<int>();
+			if (config_file["num_joints"]) {
+				nj = config_file["num_joints"].as<int>();
+			} else {
+				throw std::runtime_error("No num_joints in yaml file.");
+			}
 			this->numJoints = nj;
 			this->jointsType = config_file["type_joints"].as<vector<string>>();
 			if (this->jointsType.size() != this->numJoints) {

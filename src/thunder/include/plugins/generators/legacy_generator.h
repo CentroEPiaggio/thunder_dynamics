@@ -66,7 +66,7 @@ namespace thunder_ns {
 		
 		
 		int configure(const YAML::Node& config) override{
-			std::cout<<"Configuring cpp plugin"<<std::endl;
+			std::cout<<"Configuring legacy generator"<<std::endl;
 			config_ = config;
 
 			if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
@@ -81,7 +81,7 @@ namespace thunder_ns {
 			int nj = robot->get_numJoints();
 			// --- Generate merge code --- //
 
-			std::string robot_name = "robot";
+			std::string robot_name = robot->robotName;
 			std::string path_robot = "../robots/";
 			std::string config_file = path_robot + robot_name + "/robot.yaml";
 			std::string robot_name_gen = robot_name + "_gen";

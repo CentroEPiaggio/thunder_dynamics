@@ -49,6 +49,7 @@ improvings:
 		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 	General:
+		☐ robot_name is important, check the entire pipeline of generations and use of Robot
 		☐ plugin manager
 		☐ move thunder_robot_template to thunder/data/thunder_robot_template
 		✔ not using FrameOffset @done (11/20/2025, 2:51:47 PM)
