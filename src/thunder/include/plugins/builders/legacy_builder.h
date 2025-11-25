@@ -25,9 +25,13 @@ namespace thunder_ns {
 		void execute(std::shared_ptr<Robot> robot) override{
 			debug_log("Starting kinematic computations", VERB_INFO);
 			compute_kinematics(*robot, 1);
-			compute_dynamics(*robot, 1);
-			compute_regressors(*robot);
 			debug_log("Kinematics computed", VERB_INFO);
+			compute_dynamics(*robot, 1);
+			debug_log("Dynamics computed", VERB_INFO);
+			compute_regressors(*robot);
+			debug_log("Regressors computed", VERB_INFO);
+			compute_userDefined(*robot);
+			debug_log("User functions computed", VERB_INFO);
 		}
 
 	};

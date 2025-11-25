@@ -55,7 +55,7 @@ improvings:
 		✔ not using FrameOffset @done (11/20/2025, 2:51:47 PM)
 		☐ generic utils.spatial and generic wrt robot and thunder_robot
 		☐ delete Robot::model? instead use get_model("expr") that internally uses the functions
-		☐ add verbosity
+		☐ add verbosity levels (not bool)
 		☐ add map for properties?
 		☐ create operator [] to have access to the properties? (like robot["numJoints"])
 		☐ substitute cout with errors or info

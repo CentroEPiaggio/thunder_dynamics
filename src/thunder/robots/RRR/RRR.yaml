@@ -1,7 +1,10 @@
 # -------------------------- #
 ## ----- Robot Config ----- ##
 # -------------------------- #
-version: 0.2
+version: 0.3
+gen_python:   true
+gen_casadi:   true
+copy_gen:     true
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966

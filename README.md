@@ -1,26 +1,27 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.18
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.9.19 - legacy
 
 
 ## Experimental plugin-based infrastructure
 
 Thunder is now built using a plugin-based infrastructure.
+This implementation works with the older yaml structure.
 
 Example config file, for a RR
 
 ```yaml
 pipeline:
-  loaders: ["dh_loader"]
-  builders: ["kin"]
-  generators: ["cpp"]
+  loaders: ["legacy_loader"]
+  builders: ["legacy_builder"]
+  generators: ["legacy_generator"]
 
 
 #########################
-cpp:
+legacy_generator:
   gen_casadi: True
   python: True
 
 #########################
-dh_loader:
+legacy_loader:
   robot_name: "test_robot"
   # --- Constants --- #
   PI_2: &PI_2           1.5707963267948966
@@ -44,9 +45,10 @@ To write a new builder, minimal template:
 #ifndef MY_BUILDER_H
 #define MY_BUILDER_H
 
+#include <yaml-cpp/yaml.h>
+
 #include "../plugin_interfaces.h"
 #include "../../library/robot.h"
-#include <yaml-cpp/yaml.h>
 
 namespace thunder_ns {
 

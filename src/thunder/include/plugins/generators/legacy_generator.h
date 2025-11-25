@@ -62,16 +62,17 @@ namespace thunder_ns {
 		
 		public:
 		
-		LegacyGenerator() : BaseGenerator("CPP Generator", "Generates a plaiin Eigen C++ library for Robot") {}
+		LegacyGenerator() : BaseGenerator("CPP Generator", "Generates a plain Eigen C++ library for Robot") {}
 		
 		
-		int configure(const YAML::Node& config) override{
-			std::cout<<"Configuring legacy generator"<<std::endl;
+		int configure(const YAML::Node& config) override{			
 			config_ = config;
 
 			if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
 			if (config_["gen_python"]) GEN_PYTHON = config_["gen_python"].as<bool>();
 			if (config_["copy_gen"]) COPY_GEN = config_["copy_gen"].as<bool>();
+
+			debug_log("Configured", VERB_INFO);
 
 			return 0;
 		}
@@ -103,6 +104,10 @@ namespace thunder_ns {
 			// if( gen_command.get<bool>("casadi"))
 			// 	std::cout<<"Saving Casadi functions!"<<std::endl;
 			robot->generate_library(absolutePath, robot_name_gen, GEN_CASADI);
+
+			if (GEN_CASADI){
+				debug_log("Casadi functions generated", VERB_INFO);
+			}
 
 			// --- Write thunder_robot into generatedFiles --- //
 			std::filesystem::path sourcePath;
@@ -140,13 +145,13 @@ namespace thunder_ns {
 					cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
 					return;
 				}
-				cout<<"Python binding generated!"<<endl;
+				debug_log("Python bindings generated", VERB_INFO);
 			}
 
 			// --- change the necessary into thunder_robot --- //
 			int changed = change_to_robot("robot", robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
 			if (!changed) {
-				cout<<"problem on changing robot name:"<<endl;
+				debug_log("Problem on modifying template", VERB_INFO);
 				return;
 			}
 
@@ -159,7 +164,7 @@ namespace thunder_ns {
 			// 	return 0;
 			// }
 
-			std::cout<<"Library generated!"<<std::endl;
+			debug_log("Library generated", VERB_INFO);
 
 			// thunder_robot path
 			std::string COPY_PREFIX;
@@ -168,14 +173,14 @@ namespace thunder_ns {
 			} else {
 				COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
 			}
-			std::string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot/library/";
-			std::string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot/src/";
-			std::string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot/robots/";
+			std::string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot_test/include/";
+			std::string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot_test/src/";
+			std::string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot_test/robots/";
 			
 			// --- copy generated files in thunder_robot project --- //
 			if(COPY_GEN){
 				copy_to(robot_name, absolutePath, PATH_COPY_YAML, PATH_COPY_YAML, PATH_COPY_H, PATH_COPY_CPP);
-				std::cout << "Copied to thunder_robot!" << std::endl;
+				debug_log("Copied to thunder_robot_test", VERB_INFO);
 			}
 
 		}

@@ -30,15 +30,13 @@ namespace thunder_ns {
 
 			std::shared_ptr<Robot> load(std::shared_ptr<Robot> robot_ptr) override{
 				debug_log("Loading started", VERB_INFO);
-				auto robot = std::make_shared<Robot>(Robot(config_));
-				if (robot_name != "") robot->robotName = robot_name;
+				if (robot_name != "") robot_ptr->robotName = robot_name;
 				// --- load parameters --- //
-				// robot->load_config(config_);
+				robot_ptr->load_config(config_);
 				debug_log("Configuration Loaded", VERB_DEBUG);
 				// - symbolic selectivity - //
-				// robot->init_symb_parameters();
 				debug_log("Loading finished", VERB_INFO);
-				return robot;
+				return robot_ptr;
 			}
 
 	};

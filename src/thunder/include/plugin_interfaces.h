@@ -7,6 +7,7 @@
 
 #define VERB_INFO 0
 #define VERB_DEBUG 1
+#define VERB_ERROR 2
 
 
 namespace thunder_ns{ 
