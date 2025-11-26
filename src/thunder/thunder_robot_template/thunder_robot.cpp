@@ -587,80 +587,6 @@ void thunder_robot::load_conf(std::string file_path, bool update_REG){
 // 	}
 // }
 
-void thunder_robot::save_par_REG(std::string path_yaml_DH_REG){
-	std::vector<std::string> keys_reg;
-	keys_reg.resize(5);
-	keys_reg[0] = "mass"; keys_reg[1] = "m_CoM_"; keys_reg[2] = "I"; keys_reg[3] = "REG"; keys_reg[4] = "regressor";
-	std::vector<LinkProp> links_prop_REG;
-	links_prop_REG.resize(n_joints);
-
-	for(int i=0; i<n_joints; i++){
-		links_prop_REG[i].Dl.resize(Dl_order);
-		links_prop_REG[i].name = "link" + std::to_string(i+1);
-		links_prop_REG[i].mass = par_REG[STD_PAR_LINK*i + 0];
-		links_prop_REG[i].xyz = {par_REG[STD_PAR_LINK*i + 1], par_REG[STD_PAR_LINK*i + 2], par_REG[STD_PAR_LINK*i + 3]};
-		links_prop_REG[i].parI[0] = par_REG[STD_PAR_LINK*i + 4];
-		links_prop_REG[i].parI[1] = par_REG[STD_PAR_LINK*i + 5];
-		links_prop_REG[i].parI[2] = par_REG[STD_PAR_LINK*i + 6];
-		links_prop_REG[i].parI[3] = par_REG[STD_PAR_LINK*i + 7];
-		links_prop_REG[i].parI[4] = par_REG[STD_PAR_LINK*i + 8];
-		links_prop_REG[i].parI[5] = par_REG[STD_PAR_LINK*i + 9];
-		for (int j=0; j<Dl_order; j++){
-			links_prop_REG[i].Dl[j] = par_Dl[Dl_order*i + j];
-		}
-	}
-	// create file
-	try {
-		YAML::Emitter emitter;
-		fillInertialYaml(n_joints, emitter, links_prop_REG, keys_reg);
-		std::ofstream fout(path_yaml_DH_REG);
-		fout << emitter.c_str();
-		fout.close();
-
-		std::cout << "par_REG saved on path: " << path_yaml_DH_REG << std::endl;
-
-	} catch (const YAML::Exception& e) {
-		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-	}
-}
-
-void thunder_robot::save_par_DYN(std::string path_yaml_DH_DYN){
-	std::vector<std::string> keys_reg;
-	keys_reg.resize(5);
-	keys_reg[0] = "mass"; keys_reg[1] = "CoM_"; keys_reg[2] = "I"; keys_reg[3] = "DYN"; keys_reg[4] = "dynamics";
-	std::vector<LinkProp> links_prop_DYN;
-	links_prop_DYN.resize(n_joints);
-
-	for(int i=0; i<n_joints; i++){
-		links_prop_DYN[i].Dl.resize(Dl_order);
-		links_prop_DYN[i].name = "link" + std::to_string(i+1);
-		links_prop_DYN[i].mass = par_DYN[STD_PAR_LINK*i + 0];
-		links_prop_DYN[i].xyz = {par_DYN[STD_PAR_LINK*i + 1], par_DYN[STD_PAR_LINK*i + 2], par_DYN[STD_PAR_LINK*i + 3]};
-		links_prop_DYN[i].parI[0] = par_DYN[STD_PAR_LINK*i + 4];
-		links_prop_DYN[i].parI[1] = par_DYN[STD_PAR_LINK*i + 5];
-		links_prop_DYN[i].parI[2] = par_DYN[STD_PAR_LINK*i + 6];
-		links_prop_DYN[i].parI[3] = par_DYN[STD_PAR_LINK*i + 7];
-		links_prop_DYN[i].parI[4] = par_DYN[STD_PAR_LINK*i + 8];
-		links_prop_DYN[i].parI[5] = par_DYN[STD_PAR_LINK*i + 9];
-		for (int j=0; j<Dl_order; j++){
-			links_prop_DYN[i].Dl[j] = par_Dl[Dl_order*i + j];
-		}
-	}
-	// create file
-	try {
-		YAML::Emitter emitter;
-		fillInertialYaml(n_joints, emitter, links_prop_DYN, keys_reg);
-		std::ofstream fout(path_yaml_DH_DYN);
-		fout << emitter.c_str();
-		fout.close();
-
-		std::cout << "par_DYN saved on path: " << path_yaml_DH_DYN << std::endl;
-
-	} catch (const YAML::Exception& e) {
-		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-	}
-}
-
 int thunder_robot::save_par(std::string par_file){
 	try {
 		YAML::Emitter emitter;
@@ -725,47 +651,6 @@ int thunder_robot::save_par(std::string par_file){
 	return 1;
 }
 
-// Other functions
-void thunder_robot::fillInertialYaml(int n_joints, YAML::Emitter &emitter_, std::vector<LinkProp> &links_prop_, std::vector<std::string> keys_){
-	YAML::Node yamlFile;
-	YAML::Node dynamicsNode;
-
-	emitter_.SetIndent(2);
-	emitter_.SetSeqFormat(YAML::Flow);
-	emitter_ << YAML::Comment(
-		"Inertial parameters referred to Denavit-Hartenberg parametrization to use " + keys_[4] + "\n");
-	emitter_ << YAML::Newline;
-
-	for (int i=0;  i<n_joints;  i++) {
-
-		LinkProp link = links_prop_[i];    
-		YAML::Node linkNode;
-		std::string nodeName;
-		YAML::Node linkInertia;
-		YAML::Node linkFric;
-
-		nodeName = link.name;
-		linkInertia[keys_[0]] = link.mass;
-		linkInertia[keys_[1]+"x"] = link.xyz[0];
-		linkInertia[keys_[1]+"y"] = link.xyz[1];
-		linkInertia[keys_[1]+"z"] = link.xyz[2];
-		linkInertia[keys_[2]+"xx"] = link.parI[0];
-		linkInertia[keys_[2]+"xy"] = link.parI[1];
-		linkInertia[keys_[2]+"xz"] = link.parI[2];
-		linkInertia[keys_[2]+"yy"] = link.parI[3];
-		linkInertia[keys_[2]+"yz"] = link.parI[4];
-		linkInertia[keys_[2]+"zz"] = link.parI[5];
-		// link friction
-		linkFric["Dl"] = link.Dl;
-
-		linkNode["inertial"] = linkInertia;
-		linkNode["friction"] = linkFric;
-		dynamicsNode[nodeName] = linkNode;
-	}
-	yamlFile["dynamics"] = dynamicsNode;
-	emitter_ << yamlFile << YAML::Newline;
-}
-
 Eigen::Matrix3d thunder_robot::hat(const Eigen::Vector3d v){
 	Eigen::Matrix3d vhat;
 			
@@ -785,45 +670,6 @@ Eigen::Matrix3d thunder_robot::hat(const Eigen::Vector3d v){
 	vhat(2,2) = 0;
 
 	return vhat;
-}
-
-Eigen::Matrix3d thunder_robot::rpyRot(const std::vector<double> rpy){
-	Eigen::Matrix3d rotTr;
-	
-	double cy = cos(rpy[2]);
-	double sy = sin(rpy[2]);
-	double cp = cos(rpy[1]);
-	double sp = sin(rpy[1]);
-	double cr = cos(rpy[0]);
-	double sr = sin(rpy[0]);
-
-	//template R yaw-pitch-roll
-	rotTr(0,0)=cy*cp;
-	rotTr(0,1)=cy*sp*sr-sy*cr;
-	rotTr(0,2)=cy*sp*cr-sy*sr;
-	rotTr(1,0)=sy*cp;
-	rotTr(1,1)=sy*sp*sr+cy*cr;
-	rotTr(1,2)=sy*sp*cr-cy*sr;
-	rotTr(2,0)=-sp;
-	rotTr(2,1)=cp*sr;
-	rotTr(2,2)=cp*cr;
-
-	return rotTr;
-}
-
-Eigen::Matrix3d thunder_robot::createI(const std::vector<double> parI){
-	Eigen::Matrix3d I;
-	I(0, 0) = parI[0];
-	I(0, 1) = parI[1];
-	I(0, 2) = parI[2];
-	I(1, 0) = parI[1];
-	I(1, 1) = parI[3];
-	I(1, 2) = parI[4];
-	I(2, 0) = parI[2];
-	I(2, 1) = parI[4];
-	I(2, 2) = parI[5];
-
-	return I;
 }
 
 // ----- generated functions ----- //

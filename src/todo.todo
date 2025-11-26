@@ -1,7 +1,7 @@
 ✔ default robot_name in loader? @done (11/25/2025, 8:51:00 PM)
 ✔ change CPP generator in C generator (only C gen) @done (11/26/2025, 7:59:53 AM)
-☐ save_par_REG not useful
-☐ delete useless code and commented in replace
+✔ save_par_REG not useful @done (11/26/2025, 8:22:37 AM)
+✔ delete useless code and commented in replace @done (11/26/2025, 8:28:26 AM)
 ☐ improve structure of the todo file
 improvings:
 	plugins:
