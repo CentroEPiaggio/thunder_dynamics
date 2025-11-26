@@ -16,7 +16,7 @@
 #include "plugins/builders/dh_kin_builder.h"
 #include "plugins/builders/legacy_builder.h"
 // - Generators - //
-#include "plugins/generators/cpp_generator.h"
+#include "plugins/generators/c_generator.h"
 #include "plugins/generators/legacy_generator.h"
 
 
@@ -48,7 +48,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 inline const std::map<std::string, std::shared_ptr<BaseGenerator>> GENERATORS = {
 	// TODO: ADD NEW GENERATORS HERE
 	{"legacy_generator", std::make_shared<LegacyGenerator>()},
-	{"cpp", std::make_shared<CPPGenerator>()},
+	{"c_generator", std::make_shared<CGenerator>()},
 	
 };
 

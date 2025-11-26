@@ -22,7 +22,6 @@ namespace thunder_ns {
 	class LegacyGenerator : public BaseGenerator {
 		private:
 			YAML::Node config_;
-			string robot_name;
 			bool GEN_CASADI = false;		// generate casadi functions
 			bool GEN_PYTHON = false;		// generate python bindings
 			bool COPY_GEN = false;			// used to copy generated files into thunder_robot project
@@ -34,7 +33,7 @@ namespace thunder_ns {
 		
 		public:
 		
-			LegacyGenerator() : BaseGenerator("CPP Generator", "Generates a plain Eigen C++ library for Robot") {}
+			LegacyGenerator() : BaseGenerator("Legacy Generator", "Generates an Eigen C++ library for Robot, with python bindings and casadi optional") {}
 			int configure(const YAML::Node& config) override;
 			void generate(const std::shared_ptr<Robot> robot) override;
 
