@@ -14,51 +14,12 @@ namespace thunder_ns {
 
 	class CPPGenerator : public BaseGenerator {
 		private:
-		YAML::Node config_;
-		std::string robot_name;
+			YAML::Node config_;
+			std::string robot_name;
 
-		int copy_to(std::string robot_name, std::string path_from, std::string path_conf, std::string path_par, std::string path_h, std::string path_cpp){
-			// --- copy generated files --- //
-			try{
-				std::filesystem::path sourcePath;
-				std::filesystem::path sourceDestPath;
-
-				// copy .h generated files
-				sourcePath = path_from + robot_name + "_gen" + ".h";
-				sourceDestPath = path_h + robot_name + "_gen" + ".h";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-				// copy .cpp generated files
-				sourcePath = path_from + robot_name + "_gen" + ".cpp";
-				sourceDestPath = path_cpp + robot_name + "_gen" + ".cpp";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-				
-				// copy conf and parameters files
-				sourcePath = path_from + robot_name + "_par_REG.yaml";
-				sourceDestPath = path_par + robot_name + "_par_REG.yaml";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-				sourcePath = path_from + robot_name + "_conf.yaml";
-				sourceDestPath = path_conf + robot_name + "_conf.yaml";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-
-				// copy thunder_robot
-				sourcePath = path_from + "thunder_" + robot_name + ".h";
-				sourceDestPath = path_h + "thunder_" + robot_name + ".h";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-				sourcePath = path_from + "thunder_" + robot_name + ".cpp";
-				sourceDestPath = path_cpp + "thunder_" + robot_name + ".cpp";
-				std::filesystem::copy_file(sourcePath, sourceDestPath, std::filesystem::copy_options::overwrite_existing);
-			} catch (const std::runtime_error &err) {
-				std::cout << err.what() << std::endl;
-				return 0;
-			}
-
-			return 1;
-		}
-		
 		public:
 		
-		CPPGenerator() : BaseGenerator("CPP Generator", "Generates a plaiin Eigen C++ library for Robot") {}
+			CPPGenerator() : BaseGenerator("C++ Generator", "Generates a plain Eigen C++ library for Robot") {}
 		
 		
 		int configure(const YAML::Node& config) override{

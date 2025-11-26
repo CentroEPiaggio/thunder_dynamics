@@ -1,6 +1,11 @@
-☐ default robot_name in loader?
+✔ default robot_name in loader? @done (11/25/2025, 8:51:00 PM)
+☐ change CPP generator in C generator (only C gen)
+☐ delete useless code and commented in replace
 ☐ improve structure of the todo file
 improvings:
+	plugins:
+		☐ create plugin manager
+		☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
 	Console parser:
 		☐ automatically set version?
 		☐ problem if robot_name contains special characters

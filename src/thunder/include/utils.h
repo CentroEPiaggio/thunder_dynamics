@@ -82,10 +82,7 @@ namespace thunder_ns{
 	Eigen::Matrix3d rpyRot(const std::vector<double> rpy);
 	Eigen::Matrix3d createI(const std::vector<double> parI);
 
-	int change_to_robot(const std::string from_robot, const std::string to_robot, Robot& robot, const std::string file_path_h, const std::string file_path_cpp, const bool gen_python);
-	int update_cmake(const std::string from_robot, const std::string to_robot, const std::string file_path);
 	void replace_all(std::string& str, const std::string& from_str, const std::string& to_str);
-	int add_bindings_template(const std::string file_path_cpp);
 	std::string get_ret_type(const fun_obj fun);
 
 	casadi::SX hat(const casadi::SX& v);
