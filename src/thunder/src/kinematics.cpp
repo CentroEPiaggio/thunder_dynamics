@@ -1,6 +1,9 @@
 #include "../include/kinematics.h"
 #include "../include/utils.h"
 
+using std::string;
+using std::vector;
+
 namespace thunder_ns{
 
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
@@ -111,8 +114,8 @@ namespace thunder_ns{
 	int compute_chain(Robot& robot) {
 
 		// parameters from robot
-		auto numJoints = robot.get_numJoints();
-		auto jointsType = robot.get_jointsType();
+		auto numJoints = robot.get<int>("numJoints");
+		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		const auto& q = robot.model["q"];
 		const auto& par_DHtable = robot.model["par_DHtable"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
@@ -158,8 +161,8 @@ namespace thunder_ns{
 	int compute_jacobians(Robot& robot) {
 
 		// parameters from robot
-		int nj = robot.get_numJoints();
-		auto jointsType = robot.get_jointsType();
+		int nj = robot.get<int>("numJoints");
+		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		const auto& q = robot.model["q"];
 		const auto& par_DHtable = robot.model["par_DHtable"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];

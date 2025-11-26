@@ -3,6 +3,9 @@
 #include "../include/robot.h"
 #include "../include/kinematics.h"
 
+using std::string;
+using std::vector;
+
 namespace thunder_ns{
 
 	std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
@@ -99,9 +102,9 @@ namespace thunder_ns{
 
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot){
 		// parameters from robot
-		auto numJoints = robot.get_numJoints();
+		int numJoints = robot.get<int>("numJoints");
 		auto _nParLink_ = robot.STD_PAR_LINK;
-		auto jointsType = robot.get_jointsType();
+		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		const auto& q = robot.model["q"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
 		const auto& par_DYN = robot.model["par_DYN"];
@@ -190,7 +193,7 @@ namespace thunder_ns{
 
 	int compute_MCG(Robot& robot){
 		// parameters from robot
-		auto nj = robot.get_numJoints();
+		int nj = robot.get<int>("numJoints");
 		auto nParLink = robot.STD_PAR_LINK;
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
@@ -266,15 +269,15 @@ namespace thunder_ns{
 
 	int compute_elastic(Robot& robot){
 		// parameters from robot
-		int nj = robot.get_numJoints();
-		bool ELASTIC = robot.get_ELASTIC();
+		int nj = robot.get<int>("numJoints");
+		bool ELASTIC = robot.get<bool>("ELASTIC");
 
 		if (ELASTIC > 0){
-			int numElasticJoints = robot.get_numElasticJoints();
-			std::vector<int> isElasticJoint = robot.get_isElasticJoint();
-			int K_order = robot.get_K_order();
-			int D_order = robot.get_D_order();
-			int Dm_order = robot.get_Dm_order();
+			int numElasticJoints = robot.get<int>("numElasticJoints");
+			vector<short> isElasticJoint = robot.get<vector<short>>("isElasticJoint");
+			int K_order = robot.get<int>("K_order");
+			int D_order = robot.get<int>("D_order");
+			int Dm_order = robot.get<int>("Dm_order");
 			const auto& q = robot.model["q"];
 			const auto& x = robot.model["x"];
 			const auto& dq = robot.model["dq"];
@@ -371,10 +374,10 @@ namespace thunder_ns{
 
 	int compute_Dl(Robot& robot){
 		// parameters from robot
-		int Dl_order = robot.get_Dl_order();
+		int Dl_order = robot.get<int>("Dl_order");
 
 		if (Dl_order > 0){
-			int nj = robot.get_numJoints();
+			int nj = robot.get<int>("numJoints");
 			const auto& dq = robot.model["dq"];
 			const auto& par_Dl = robot.model["par_Dl"];
 

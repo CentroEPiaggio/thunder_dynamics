@@ -4,6 +4,9 @@
 #include "../include/kinematics.h"
 #include "../include/dynamics.h"
 
+using std::string;
+using std::vector;
+
 namespace thunder_ns{
 
 	// extern constexpr int nParLink = 10;
@@ -55,7 +58,7 @@ namespace thunder_ns{
 
 	int compute_Yr(Robot& robot){
 		// parameters from robot
-		int nj = robot.get_numJoints();
+		int nj = robot.get<int>("numJoints");
 		int nParLink = robot.STD_PAR_LINK;
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
@@ -193,9 +196,9 @@ namespace thunder_ns{
 
 	int compute_reg_Dl(Robot& robot){
 		// parameters from robot
-		int nj = robot.get_numJoints();
+		int nj = robot.get<int>("numJoints");
 		int nParLink = robot.STD_PAR_LINK;
-		int Dl_order = robot.get_Dl_order();
+		int Dl_order = robot.get<int>("Dl_order");
 		const auto& dq = robot.model["dq"];
 		if (Dl_order==0) return 0;
 		const auto& par_Dl = robot.model["par_Dl"];
@@ -226,11 +229,11 @@ namespace thunder_ns{
 
 	int compute_reg_elastic(Robot& robot){
 		// parameters from robot
-		int nj = robot.get_numJoints();
-		int nej = robot.get_numElasticJoints();
-		int K_order = robot.get_K_order();
-		int D_order = robot.get_D_order();
-		int Dm_order = robot.get_Dm_order();
+		int nj = robot.get<int>("numJoints");
+		int nej = robot.get<int>("numElasticJoints");
+		int K_order = robot.get<int>("K_order");
+		int D_order = robot.get<int>("D_order");
+		int Dm_order = robot.get<int>("Dm_order");
 		const auto& dq = robot.model["dq"];
 		const auto& dx = robot.model["dx"];
 		const auto& ddx = robot.model["ddx"];
@@ -307,7 +310,7 @@ namespace thunder_ns{
 
 	int compute_reg_J(Robot& robot){
 		// parameters from robot
-		int nj = robot.get_numJoints();
+		int nj = robot.get<int>("numJoints");
 		int nParLink = robot.STD_PAR_LINK;
 		const auto& par_DHtable = robot.model["par_DHtable"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
@@ -384,8 +387,8 @@ namespace thunder_ns{
 
     int compute_regressors(Robot& robot, bool advanced){
 		int ret = 1;
-		bool ELASTIC = robot.get_ELASTIC();
-		int Dl_order = robot.get_Dl_order();
+		bool ELASTIC = robot.get<bool>("ELASTIC");
+		int Dl_order = robot.get<int>("Dl_order");
 
 		if (!compute_Yr(robot)) ret=0;
 		if (!compute_reg_J(robot)) ret=0;

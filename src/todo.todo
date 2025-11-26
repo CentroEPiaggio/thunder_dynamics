@@ -1,8 +1,6 @@
-✔ default robot_name in loader? @done (11/25/2025, 8:51:00 PM)
-✔ change CPP generator in C generator (only C gen) @done (11/26/2025, 7:59:53 AM)
-✔ save_par_REG not useful @done (11/26/2025, 8:22:37 AM)
-✔ delete useless code and commented in replace @done (11/26/2025, 8:28:26 AM)
+☐ move parse_config() to loader
 ☐ improve structure of the todo file
+☐ update readme
 improvings:
 	plugins:
 		☐ create plugin manager
@@ -33,6 +31,8 @@ improvings:
 	Elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
+		☐ obtain orders directly from size of elastic parameters arrays
+		☐ each joint with different orders?
 		☐ could be usefull to use also even orders?
 		☐ add inertia coupling S and for complete elastic model
 		☐ if order==1 K0, D0, Dl0, Dm0 => K, D, Dl, Dm.. It is more intuitive
@@ -62,8 +62,8 @@ improvings:
 		☐ generic utils.spatial and generic wrt robot and thunder_robot
 		☐ delete Robot::model? instead use get_model("expr") that internally uses the functions
 		☐ add verbosity levels (not bool)
-		☐ add map for properties?
-		☐ create operator [] to have access to the properties? (like robot["numJoints"])
+		✔ add map for properties? @done (11/26/2025, 10:24:25 PM)
+		✔ create operator [] to have access to the properties? (like robot["numJoints"]) @done (11/26/2025, 10:24:21 PM)
 		☐ substitute cout with errors or info
 		☐ decrease the dimension of generated files
 		☐ explain better stiffness and friction in readme (maybe create sections for it)

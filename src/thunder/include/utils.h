@@ -2,12 +2,21 @@
 #define THUNDER_UTILS
 
 #include <string>
+#include <any>
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
 
 namespace thunder_ns{
 
 	class Robot;
+
+	class Property{
+		public:
+			std::string name;
+			std::string description;
+			std::any value;
+			std::string type;
+	};
 
 	typedef struct par_obj{
 		std::string name;

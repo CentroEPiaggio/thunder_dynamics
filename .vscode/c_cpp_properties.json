@@ -3,8 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/src/thunder_robot/library"
+                "${workspaceFolder}/src/thunder/include",
+                "${workspaceFolder}/src/thunder_robot_test/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

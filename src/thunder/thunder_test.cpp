@@ -15,6 +15,8 @@
 #include "include/dynamics.h"
 #include "include/regressors.h"
 
+using std::string;
+using std::vector;
 using namespace thunder_ns;
 using std::cout;
 using std::endl;
@@ -36,12 +38,22 @@ int main(){
 	// ------------------------------TEST CLASSES---------------------------------------//
 	// ---------------------------------------------------------------------------------//
 
-	int NJ = robot.get_numJoints();
-	int NEJ = robot.get_numElasticJoints();
-	int N_PARAM_DL = NJ*robot.get_Dl_order();
-	int N_PARAM_K = NEJ*robot.get_K_order();
-	int N_PARAM_D = NEJ*robot.get_D_order();
-	int N_PARAM_DM = NEJ*robot.get_Dm_order();
+	int NEJ = 0;
+	int N_PARAM_K = 0;
+	int N_PARAM_D = 0;
+	int N_PARAM_DM = 0;
+
+	int NJ = robot.get<int>("numJoints");
+	int N_PARAM_DL = NJ*robot.get<int>("Dl_order");
+
+	bool ELASTIC = robot.get<bool>("ELASTIC");
+	if (ELASTIC){
+		NEJ = robot.get<int>("numElasticJoints");
+		N_PARAM_K = NEJ*robot.get<int>("K_order");
+		N_PARAM_D = NEJ*robot.get<int>("D_order");
+		N_PARAM_DM = NEJ*robot.get<int>("Dm_order");
+	}
+	
 	// int N_PARAM_ELA = robot.get_numParELA();
 
 	// // arguments
@@ -140,7 +152,7 @@ int main(){
 	cout<<endl<<"C_std\n"<<C_std<<endl;
 	G = robot.get("G");
 	cout<<endl<<"G\n"<<G<<endl;
-	if (robot.get_Dl_order()){
+	if (robot.get<int>("Dl_order")){
 		Dl = robot.get("dl");
 		cout<<endl<<"D_link\n"<<Dl<<endl;
 		reg_Dl = robot.get("reg_dl");
@@ -148,7 +160,7 @@ int main(){
 	} else {
 		cout<<endl<<"Robot have no Dl_order"<<endl;
 	}
-	if (robot.get_ELASTIC()){
+	if (robot.get<bool>("ELASTIC")){
 		K = robot.get("k");
 		cout<<endl<<"K\n"<<K<<endl;
 		D = robot.get("d");

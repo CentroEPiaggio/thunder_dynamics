@@ -30,7 +30,7 @@ namespace thunder_ns {
 		
 		
 		void generate(const std::shared_ptr<Robot> robot) override{
-			int nj = robot->get_numJoints();
+			int nj = robot->get<int>("numJoints");
 			// --- Generate merge code --- //
 
 			std::string robot_name = robot->robotName;

@@ -3,8 +3,10 @@
 
 #include <string>
 #include <map>
+#include <any>
 #include <yaml-cpp/yaml.h>
 #include <casadi/casadi.hpp>
+
 #include "utils.h"
 
 using std::string;
@@ -14,6 +16,7 @@ using casadi::DM;
 
 namespace thunder_ns{
 	
+	class Property;
 	typedef struct par_obj par_obj;
 	typedef struct fun_obj fun_obj;
 	// Config load_config(std::string file);
@@ -25,15 +28,13 @@ namespace thunder_ns{
 
 		protected:
 			// --- Properties --- //
-			int numJoints;
-			int numElasticJoints = 0;
-			bool ELASTIC = false;
-			vector<string> jointsType;
-			vector<int> isElasticJoint;
-			// elastic parameters
-			int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
-			// // - Properties map - //
-			// std::map<string, void*> properties;
+			// int numJoints;
+			// int numElasticJoints = 0;
+			// bool ELASTIC = false;
+			// vector<string> jointsType;
+			// vector<short> isElasticJoint;
+			// // elastic parameters
+			// int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
 
 			// --- Internal methods --- //
 			int parse_config();
@@ -51,17 +52,6 @@ namespace thunder_ns{
 			// - destructor - //
 			// ~Robot(){};
 
-			// - Get property functions - //
-			int get_numJoints();
-			vector<string> get_jointsType();
-			bool get_ELASTIC();
-			int get_K_order();
-			int get_D_order();
-			int get_Dl_order();
-			int get_Dm_order();
-			vector<int> get_isElasticJoint();
-			int get_numElasticJoints();
-
 			// --- Robot configuration --- //
 			string robotName = "robot";
 			YAML::Node config_yaml;
@@ -71,6 +61,8 @@ namespace thunder_ns{
 			// int save_conf(string par_file);
 
 			// --- Robot maps --- //
+			// - Properties map - //
+			std::map<string, Property> properties;
 			// - Parameters map - //
 			std::map<string, par_obj> parameters;
 			// - Functions map - //
@@ -87,10 +79,30 @@ namespace thunder_ns{
 			int save_par(string par_file, vector<string> par_list = {});
 
 			// --- Robot interactions --- //
+			template<class T> T get(string key){
+				if (!properties.count(key)){
+					throw std::runtime_error("Property " + key + " not found in robot " + robotName);
+				}
+				return std::any_cast<T>(properties.at(key).value);
+			}
 			DM get(string name);
 			vector<fun_obj> get_functions(bool onlyNames = 1);
 
 			// --- Robot populators --- //
+			template<class T> int add_property(string name, T value, string type, string descr = "", bool overwrite = true){
+				if ((!overwrite) && properties.count(name)){
+					// key already exists
+					return 0;
+				} else {
+					Property prop;
+					prop.name = name;
+					prop.value = value;
+					prop.type = type;
+					prop.description = descr;
+					properties[name] = prop;
+				}
+				return 1;
+			}
 			int add_variable(string name, SX symb, vector<double> num, vector<short> is_symbolic = {1}, string descr = "", bool overwrite = true);
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
 			int add_function(string name, SX expr, vector<string> f_args, string descr = "", bool overwrite = true);

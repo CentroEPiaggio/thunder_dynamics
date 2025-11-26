@@ -199,8 +199,8 @@ from thunder_<robot>_py import thunder_<robot>
 robot = thunder_<robot>()
 robot.load_conf("path/to/robot_conf.yaml")
 
-robot.set_q(np.zeros(robot.get_numJoints()))
-robot.set_dq(np.random.rand(robot.get_numJoints()))
+robot.set_q(np.zeros(robot.get<int>("numJoints")))
+robot.set_dq(np.random.rand(robot.get<int>("numJoints")))
 
 T = robot.get_T_0_ee()
 J = robot.get_J_ee()

@@ -54,7 +54,7 @@ namespace thunder_ns {
 
 	// ----- GENERATE ----- //
 	void LegacyGenerator::generate(const std::shared_ptr<Robot> robot){
-		int nj = robot->get_numJoints();
+		int nj = robot->get<int>("numJoints");
 		// --- Generate merge code --- //
 
 		string robot_name = robot->robotName;
@@ -227,14 +227,22 @@ namespace thunder_ns {
 		
 		// - get parameters from robot - //
 		string robotName = robot.robotName;
-		int n_joints = robot.get_numJoints();
-		int numElasticJoints = robot.get_numElasticJoints();
-		bool ELASTIC = robot.get_ELASTIC();
-		int K_order = robot.get_K_order();
-		int D_order = robot.get_D_order();
-		int Dl_order = robot.get_Dl_order();
-		int Dm_order = robot.get_Dm_order();
-		std::vector<int> isElasticJoint = robot.get_isElasticJoint();
+		int n_joints = robot.get<int>("numJoints");
+		int Dl_order = robot.get<int>("Dl_order");
+		bool ELASTIC = robot.get<bool>("ELASTIC");
+
+		int numElasticJoints = 0;
+		std::vector<short> isElasticJoint = {0};
+		int K_order = 0;
+		int D_order = 0;
+		int Dm_order = 0;
+		if (ELASTIC) {
+			numElasticJoints = robot.get<int>("numElasticJoints");
+			isElasticJoint = robot.get<vector<short>>("isElasticJoint");
+			K_order = robot.get<int>("K_order");
+			D_order = robot.get<int>("D_order");
+			Dm_order = robot.get<int>("Dm_order");
+		}
 		
 		// int STD_PAR_LINK = robot.STD_PAR_LINK;
 		std::vector<fun_obj> functions = robot.get_functions();

@@ -47,7 +47,7 @@ int main(){
 		auto duration_rob = duration_cast<microseconds>(time_stop_rob - time_start_rob).count();
 		cout<<"robot created in "<<duration_rob<<" us"<<endl;
 
-		int nj = robot.get_numJoints();
+		int nj = robot.get<int>("numJoints");
 		// auto param_DYN = robot.get("par_DYN");
 
 		int n_rep = 100;

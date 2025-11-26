@@ -25,7 +25,7 @@ namespace thunder_ns{
 			// - copy 'q0: [...]' into yaml file
 
 		// --- parameters from robot --- //
-		auto numJoints = robot.get_numJoints();
+		int numJoints = robot.get<int>("numJoints");
 		// - use model["<term>"] to access the model term you want
 		const auto& q = robot.model["q"];
 

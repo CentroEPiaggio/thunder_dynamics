@@ -7,6 +7,8 @@
 #include "../include/utils.h"
 #include "../include/userDefined.h"
 
+using std::string;
+using std::vector;
 using std::cout;
 using std::endl;
 using casadi::SX;
@@ -38,48 +40,72 @@ namespace thunder_ns{
 	}
 
 	int Robot::parse_config() {
-		// Local variables for parsing
-		int nj;
 		int STD_PAR_LINK = Robot::STD_PAR_LINK;
-
 		// ----- Parsing YAML File ----- //
 		try {
+			// Local properties for parsing
+			int numJoints = 0;
+			vector<string> jointsType;
+			bool ELASTIC = false;
+			int K_order = 0;
+			int D_order = 0;
+			int Dm_order = 0;
+			int Dl_order = 0;
+			int numElasticJoints = 0;
+			vector<short> isElasticJoint;
 
 			YAML::Node config_file = this->config_yaml;
 
 			// --- Basic Robot properties --- //
+			// - numJoints - //
 			if (config_file["num_joints"]) {
-				nj = config_file["num_joints"].as<int>();
+				numJoints = config_file["num_joints"].as<int>();
+				this->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 			} else {
 				throw std::runtime_error("No num_joints in yaml file.");
 			}
-			this->numJoints = nj;
-			this->jointsType = config_file["type_joints"].as<vector<string>>();
-			if (this->jointsType.size() != this->numJoints) {
-				throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
+			// - jointsType - //
+			if (config_file["type_joints"]) {
+				jointsType = config_file["type_joints"].as<vector<string>>();
+				if (jointsType.size() != numJoints) {
+					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
+				} else {
+					this->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Number of joints", true);
+				}
+			} else {
+				throw std::runtime_error("No joints type specified in yaml file.");
 			}
 			// --- Elastic model properties (defaults to false) --- //
-			this->ELASTIC = false;
-			this->K_order = 0;
-			this->D_order = 0;
-			this->Dm_order = 0;
-			if (config_file["ELASTIC_MODEL"] && config_file["ELASTIC_MODEL"].as<bool>()) {
-				this->ELASTIC = true;
-				YAML::Node elastic_node = config_file["elastic"];
-				this->K_order = elastic_node["K_order"].as<int>();
-				this->D_order = elastic_node["D_order"].as<int>();
-				this->Dm_order = elastic_node["Dm_order"].as<int>();
-			}
-			// - identify elastic joints - //
-			this->numElasticJoints = 0;
-			this->isElasticJoint.resize(this->numJoints);
-			for (int i = 0; i < this->numJoints; i++) {
-				if ((this->jointsType[i] == "R_SEA") || (this->jointsType[i] == "P_SEA")) {
-					this->isElasticJoint[i] = 1;
-					this->numElasticJoints++;
-				} else {
-					this->isElasticJoint[i] = 0;
+			YAML::Node elastic_node;
+			ELASTIC = config_file["ELASTIC_MODEL"] && config_file["ELASTIC_MODEL"].as<bool>();
+			this->add_property<bool>("ELASTIC", ELASTIC, "bool", "Elastic flag", true);
+			if (ELASTIC) {
+				// - setup elastic properties - //
+				if (!config_file["K_order"]) throw std::runtime_error("K_order property not present.");
+				if (!config_file["D_order"]) throw std::runtime_error("D_order property not present.");
+				if (!config_file["Dm_order"]) throw std::runtime_error("Dm_order property not present.");
+				if (!config_file["elastic"]) throw std::runtime_error("elastic parameters not present.");
+				elastic_node = config_file["elastic"];
+				K_order = elastic_node["K_order"].as<int>();
+				D_order = elastic_node["D_order"].as<int>();
+				Dm_order = elastic_node["Dm_order"].as<int>();
+				this->add_property<int>("K_order", K_order, "int", "Order of the coupling stiffness model", true);
+				this->add_property<int>("D_order", D_order, "int", "Order of the coupling friction model", true);
+				this->add_property<int>("Dm_order", Dm_order, "int", "Order of the motor stiffness model", true);
+
+				// - identify elastic joints - //
+				numElasticJoints = 0;
+				isElasticJoint.resize(numJoints);
+				for (int i = 0; i < numJoints; i++) {
+					if ((jointsType[i] == "R_SEA") || (jointsType[i] == "P_SEA")) {
+						isElasticJoint[i] = 1;
+						numElasticJoints++;
+					} else {
+						isElasticJoint[i] = 0;
+					}
 				}
+				this->add_property<int>("numElasticJoints", numElasticJoints, "int", "Number of elastic joints", true);
+				this->add_property<vector<short>>("isElasticJoint", isElasticJoint, "vector<short>", "Vector of elastic joint flags", true);
 			}
 
 
@@ -110,7 +136,7 @@ namespace thunder_ns{
 			if (kinematics["symb"]) dh_isSymb = kinematics["symb"].as<vector<short>>();
 			else dh_isSymb.assign(dh_size, 0);
 			// - Model - //
-			SX dh_symb = SX::sym("DHtable", this->numJoints * 4);
+			SX dh_symb = SX::sym("DHtable", numJoints * 4);
 			// - Add to parameters - //
 			add_parameter("par_DHtable", dh_symb, dh_num, dh_isSymb, "DH parameters", true);
 
@@ -163,7 +189,7 @@ namespace thunder_ns{
 			// --- Dynamics (Inertial) --- //
 			vector<double> par_DYN_num(STD_PAR_LINK*numJoints,0);
 			vector<double> par_REG_num(STD_PAR_LINK*numJoints,0);
-			vector<short> par_DYN_isSymb(STD_PAR_LINK * nj);
+			vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints);
 			YAML::Node dynamics = config_file["dynamics"];
 			int idx = 0;
 			for (const auto& node : dynamics) {
@@ -205,12 +231,13 @@ namespace thunder_ns{
 
 
 			// --- Link friction --- //
-			this->Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;	// defaults to 0
+			Dl_order = config_file["Dl_order"] ? config_file["Dl_order"].as<int>() : 0;	// defaults to 0
+			this->add_property<int>("Dl_order", Dl_order, "int", "Order of the link friction model", true);
 			vector<double> par_Dl_num;
 			vector<short> par_Dl_isSymb;
-			if (this->Dl_order > 0) {
-				par_Dl_num.resize(this->Dl_order * nj);
-				par_Dl_isSymb.resize(this->Dl_order * nj);
+			if (Dl_order > 0) {
+				par_Dl_num.resize(Dl_order * numJoints);
+				par_Dl_isSymb.resize(Dl_order * numJoints);
 				idx = 0;
 				for (const auto& node : dynamics) {
 					// - Numeric - //
@@ -227,9 +254,9 @@ namespace thunder_ns{
 					if (friction["symb"]) {
 						fric_isSymb = friction["symb"].as<vector<int>>();
 					} else {
-						fric_isSymb.assign(this->Dl_order, 0);
+						fric_isSymb.assign(Dl_order, 0);
 					}
-					std::copy(fric_isSymb.begin(), fric_isSymb.end(), par_Dl_isSymb.begin() + idx * this->Dl_order);
+					std::copy(fric_isSymb.begin(), fric_isSymb.end(), par_Dl_isSymb.begin() + idx * Dl_order);
 					idx++;
 				}
 				// - Model - //
@@ -241,7 +268,7 @@ namespace thunder_ns{
 			// - Elastic joints parameters - //
 			vector<double> par_K_num, par_D_num, par_Dm_num, par_Mm_num;
 			vector<short> par_K_isSymb, par_D_isSymb, par_Dm_isSymb, par_Mm_isSymb;
-			if (this->ELASTIC) {
+			if (ELASTIC) {
 				par_K_num.resize(numElasticJoints*K_order);
 				par_D_num.resize(numElasticJoints*D_order);
 				par_Dm_num.resize(numElasticJoints*Dm_order);
@@ -282,9 +309,9 @@ namespace thunder_ns{
 					par_Mm_num[i] = node.second["Mm"].as<double>();
 					
 					// - Symbolic selectivity - //
-					vector<short> K_symb = parse_symb_vector("K_symb", this->K_order);
-					vector<short> D_symb = parse_symb_vector("D_symb", this->D_order);
-					vector<short> Dm_symb = parse_symb_vector("Dm_symb", this->Dm_order);
+					vector<short> K_symb = parse_symb_vector("K_symb", K_order);
+					vector<short> D_symb = parse_symb_vector("D_symb", D_order);
+					vector<short> Dm_symb = parse_symb_vector("Dm_symb", Dm_order);
 					short Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
 					if (K_order > 0) par_K_isSymb.insert(par_K_isSymb.end(), K_symb.begin(), K_symb.end());
 					if (D_order > 0) par_D_isSymb.insert(par_D_isSymb.end(), D_symb.begin(), D_symb.end());
@@ -393,23 +420,8 @@ namespace thunder_ns{
 		return fun_vect;
 	}
 
-	int Robot::get_numJoints(){
-		return numJoints;
-	}
-
-	bool Robot::get_ELASTIC(){ return ELASTIC;	};
-	int Robot::get_K_order(){ return K_order; };
-	int Robot::get_D_order(){ return D_order; };
-	int Robot::get_Dl_order(){ return Dl_order; };
-	int Robot::get_Dm_order(){ return Dm_order; };
-	int Robot::get_numElasticJoints(){ return numElasticJoints; };
-	vector<int> Robot::get_isElasticJoint(){ return isElasticJoint; };
-
-	vector<string> Robot::get_jointsType(){
-		return jointsType;
-	}
-
 	casadi::SX Robot::load_par_REG(string file, bool update_DYN){
+		int numJoints = this->get<int>("numJoints");
 		vector<double> par_REG_num(STD_PAR_LINK*numJoints,0);
 		// ----- parsing yaml inertial ----- //
 		try {
@@ -498,6 +510,8 @@ namespace thunder_ns{
 
 	int Robot::save_par_REG(string par_file){
 		try {
+			int numJoints = this->get<int>("numJoints");
+
 			YAML::Emitter emitter;
 			emitter.SetIndent(2);
 			emitter.SetSeqFormat(YAML::Flow);
@@ -595,6 +609,7 @@ namespace thunder_ns{
 	}
 
 	int Robot::update_inertial_DYN(){
+		int numJoints = this->get<int>("numJoints");
 		DM& par_REG = parameters["par_REG"].num;
 		DM& par_DYN = parameters["par_REG"].num;
 		for (int i=0; i<numJoints; i++){
@@ -612,6 +627,7 @@ namespace thunder_ns{
 	}
 
 	int Robot::update_inertial_REG(){
+		int numJoints = this->get<int>("numJoints");
 		DM& par_DYN = parameters["par_DYN"].num;
 		DM& par_REG = parameters["par_REG"].num;
 		for (int i=0; i<numJoints; i++){
@@ -634,7 +650,7 @@ namespace thunder_ns{
 	}
 
 	int Robot::add_parameter(string p_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
-		if ((!overwrite) && model.count(p_name)){
+		if ((!overwrite) && parameters.count(p_name)){
 			// key already exists
 			return 0;
 		} else {
@@ -672,7 +688,7 @@ namespace thunder_ns{
 	}
 
 	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, bool overwrite){
-		if ((!overwrite) && model.count(f_name)){
+		if ((!overwrite) && functions.count(f_name)){
 			std::cerr << "Function already exist! set flag for overwrite " << std::endl;
 			return 0;
 		} else {
