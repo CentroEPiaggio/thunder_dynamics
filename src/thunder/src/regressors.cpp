@@ -59,7 +59,7 @@ namespace thunder_ns{
 	int compute_Yr(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		int nParLink = robot.STD_PAR_LINK;
+		const int nParLink = robot.get<const int>("STD_PAR_LINK");
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
 		const auto& dqr = robot.model["dqr"];
@@ -197,7 +197,7 @@ namespace thunder_ns{
 	int compute_reg_Dl(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		int nParLink = robot.STD_PAR_LINK;
+		const int nParLink = robot.get<const int>("STD_PAR_LINK");
 		int Dl_order = robot.get<int>("Dl_order");
 		const auto& dq = robot.model["dq"];
 		if (Dl_order==0) return 0;
@@ -311,7 +311,7 @@ namespace thunder_ns{
 	int compute_reg_J(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		int nParLink = robot.STD_PAR_LINK;
+		const int nParLink = robot.get<const int>("STD_PAR_LINK");
 		const auto& par_DHtable = robot.model["par_DHtable"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
 		const auto& par_Ln2EE = robot.model["par_Ln2EE"];

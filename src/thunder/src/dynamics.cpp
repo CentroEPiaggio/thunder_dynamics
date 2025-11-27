@@ -103,7 +103,7 @@ namespace thunder_ns{
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot){
 		// parameters from robot
 		int numJoints = robot.get<int>("numJoints");
-		auto _nParLink_ = robot.STD_PAR_LINK;
+		const int _nParLink_ = robot.get<const int>("STD_PAR_LINK");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		const auto& q = robot.model["q"];
 		const auto& par_world2L0 = robot.model["par_world2L0"];
@@ -194,7 +194,7 @@ namespace thunder_ns{
 	int compute_MCG(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		auto nParLink = robot.STD_PAR_LINK;
+		const int nParLink = robot.get<const int>("STD_PAR_LINK");
 		const auto& q = robot.model["q"];
 		const auto& dq = robot.model["dq"];
 		const auto& par_DYN = robot.model["par_DYN"];
