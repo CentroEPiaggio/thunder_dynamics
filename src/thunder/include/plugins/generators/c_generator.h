@@ -48,8 +48,22 @@ namespace thunder_ns {
 				return;
 			}
 
-			// Generate library
-			robot->generate_library(absolutePath, robot_name_gen, false);
+			// - Generate library - //
+			// Options for c-code auto generation
+			casadi::Dict opts = casadi::Dict();
+			opts["cpp"] = true;
+			opts["with_header"] = true;
+			
+			// generate functions in c code
+			casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(robot_name_gen, opts);
+			// cout<<"casadi_fun: "<<casadi_fun<<endl;
+
+			for (const auto& f : robot->functions) {
+				myCodeGen.add(f.second.fun);
+				// cout<<"f_name: "<<f.first<<endl;
+				// cout<<"fun: "<<f.second<<endl<<endl;
+			}
+			myCodeGen.generate(absolutePath);
 
 			debug_log("C library generated", VERB_INFO);
 

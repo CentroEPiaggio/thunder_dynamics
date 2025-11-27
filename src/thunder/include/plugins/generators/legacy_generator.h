@@ -72,12 +72,36 @@ namespace thunder_ns {
 			return;
 		}
 
-		// Generate library
-		// if( gen_command.get<bool>("casadi"))
-		// 	std::cout<<"Saving Casadi functions!"<<std::endl;
-		robot->generate_library(absolutePath, robot_name_gen, GEN_CASADI);
+		// --- Generate C library --- //
+		// Options for c-code auto generation
+		casadi::Dict opts = casadi::Dict();
+		opts["cpp"] = true;
+		opts["with_header"] = true;
+		
+		// generate functions in c code
+		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(robot_name_gen, opts);
+		// cout<<"casadi_fun: "<<casadi_fun<<endl;
 
+		for (const auto& f : robot->functions) {
+			myCodeGen.add(f.second.fun);
+			// cout<<"f_name: "<<f.first<<endl;
+			// cout<<"fun: "<<f.second<<endl<<endl;
+		}
+		myCodeGen.generate(absolutePath);
+
+		// --- Casadi functions generation --- //
 		if (GEN_CASADI){
+			// Create directory
+			try {
+				std::filesystem::create_directory(absolutePath + "/casadi_functions");
+			} catch(std::exception & e){
+				std::cout<<"Problem creating directory casadi_functions/"<<std::endl;
+			}
+			// Save CasADi functions
+			for (const auto& f : robot->functions) {
+				std::string function_file = absolutePath + "/casadi_functions/" + f.first + ".casadi";
+				f.second.fun.save(function_file);
+			}
 			debug_log("Casadi functions generated", VERB_INFO);
 		}
 

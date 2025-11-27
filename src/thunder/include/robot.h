@@ -80,9 +80,6 @@ namespace thunder_ns{
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
 			int add_function(string name, SX expr, vector<string> f_args, string descr = "", bool overwrite = true);
 			
-			// --- Library generation --- //
-			void generate_library(const string& savePath, const string& name_file, const bool SAVE_CASADI);
-
 	};
 
 }
