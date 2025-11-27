@@ -19,14 +19,12 @@ namespace thunder_ns{
 	class Property;
 	typedef struct par_obj par_obj;
 	typedef struct fun_obj fun_obj;
-	// Config load_config(std::string file);
-	Robot robot_from_file(std::string robot_name, std::string file, bool compute = 1);
-	Robot robot_from_yaml(std::string robot_name, const YAML::Node& config_node, bool compute = 1);
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
 		public:
 			// --- Constructors --- //
+			Robot(string name) {robotName = name;}
 			Robot() = default;
 			// - destructor - //
 			// ~Robot(){};

@@ -1,6 +1,6 @@
-☐ cponstructor with robot_name
+✔ constructor with robot_name @done (11/27/2025, 9:56:18 PM)
 ☐ dh_loader to correct
-☐ robot_from_file in thunder_test
+✔ robot_from_file in thunder_test @done (11/27/2025, 9:56:26 PM)
 ☐ generate_library to generators
 ✔ move parse_config() to loader (finish it) @done (11/27/2025, 7:50:02 PM)
 ☐ improve structure of the todo file

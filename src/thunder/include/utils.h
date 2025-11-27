@@ -6,21 +6,23 @@
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
 
+using std::string;
+
 namespace thunder_ns{
 
 	class Robot;
 
 	class Property{
 		public:
-			std::string name;
-			std::string description;
+			string name;
+			string description;
 			std::any value;
-			std::string type;
+			string type;
 	};
 
 	typedef struct par_obj{
-		std::string name;
-		std::string description;
+		string name;
+		string description;
 		std::vector<short> is_symbolic;
 		casadi::SX symb;
 		casadi::DM num;
@@ -63,21 +65,16 @@ namespace thunder_ns{
 	}par_obj;
 
 	typedef struct fun_obj{
-		std::string name;
-		std::string description;
-		std::vector<std::string> args;
+		string name;
+		string description;
+		std::vector<string> args;
 		std::vector<int> out_size;
 		casadi::SX expr;
 		casadi::Function fun;
 	}fun_obj;
 
-	typedef struct urdf2dh_T{
-		std::vector<double> xyz;
-		std::vector<double> rpy;
-	}urdf2dh_T;
-
-	void replace_all(std::string& str, const std::string& from_str, const std::string& to_str);
-	std::string get_ret_type(const fun_obj fun);
+	void replace_all(string& str, const string& from_str, const string& to_str);
+	string get_ret_type(const fun_obj fun);
 
 	casadi::SX hat(const casadi::SX& v);
 	Eigen::Matrix3d hat(const Eigen::Vector3d& v);

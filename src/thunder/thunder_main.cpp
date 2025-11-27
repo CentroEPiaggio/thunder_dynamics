@@ -165,8 +165,8 @@ int main(int argc, char* argv[]){
 	}
 
     // execute loaders
-	auto robot_ptr = std::make_shared<Robot>();
-	robot_ptr->robotName = robot_name;
+	auto robot_ptr = std::make_shared<Robot>(robot_name);
+	// robot_ptr->robotName = robot_name;
 
 	auto verbosity = gen_command.get<bool>("--verbose");
 
