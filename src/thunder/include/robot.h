@@ -25,29 +25,8 @@ namespace thunder_ns{
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
-
-		protected:
-			// --- Properties --- //
-			// int numJoints;
-			// int numElasticJoints = 0;
-			// bool ELASTIC = false;
-			// vector<string> jointsType;
-			// vector<short> isElasticJoint;
-			// // elastic parameters
-			// int K_order=0, D_order=0, Dl_order=0, Dm_order=0;
-
-			// --- Internal methods --- //
-			int parse_config();
-			int update_inertial_DYN();
-			int update_inertial_REG();
-
 		public:
-			// --- Robot constants --- //
-			static const int STD_PAR_LINK = 10;
-
 			// --- Constructors --- //
-			Robot(const string config_file);
-			Robot(const YAML::Node yaml);
 			Robot() = default;
 			// - destructor - //
 			// ~Robot(){};
@@ -55,10 +34,6 @@ namespace thunder_ns{
 			// --- Robot configuration --- //
 			string robotName = "robot";
 			YAML::Node config_yaml;
-			YAML::Node load_config(string config_file);
-			int load_config(YAML::Node yaml);
-			// void update_conf();
-			// int save_conf(string par_file);
 
 			// --- Robot maps --- //
 			// - Properties map - //
@@ -77,6 +52,8 @@ namespace thunder_ns{
 			int save_par_REG(string par_file);
 			int load_par(string par_file, vector<string> par_list = {});
 			int save_par(string par_file, vector<string> par_list = {});
+			int update_inertial_DYN();
+			int update_inertial_REG();
 
 			// --- Robot interactions --- //
 			template<class T> T get(string key){

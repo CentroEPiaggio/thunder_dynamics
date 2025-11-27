@@ -1,4 +1,8 @@
-☐ move parse_config() to loader
+☐ cponstructor with robot_name
+☐ dh_loader to correct
+☐ robot_from_file in thunder_test
+☐ generate_library to generators
+✔ move parse_config() to loader (finish it) @done (11/27/2025, 7:50:02 PM)
 ☐ improve structure of the todo file
 ☐ update readme
 improvings:
@@ -56,6 +60,7 @@ improvings:
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
 	General:
 		☐ robot_name is important, check the entire pipeline of generations and use of Robot
+		☐ robot_name not handled properly in legacy_loader, yaml have priority
 		☐ plugin manager
 		☐ move thunder_robot_template to thunder/data/thunder_robot_template
 		✔ not using FrameOffset @done (11/20/2025, 2:51:47 PM)
