@@ -37,7 +37,7 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 	auto builder = std::make_shared<LegacyBuilder>();
 	builder->configure(config);
-	builder->execute(robot);
+	builder->build(robot);
 
 	return robot;
 }

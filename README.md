@@ -63,7 +63,7 @@ namespace thunder_ns {
             return 0;
         }
 
-        void execute(std::shared_ptr<Robot> robot) override{
+        void build(std::shared_ptr<Robot> robot) override{
             debug_log("Starting my amazing builder", VERB_INFO);
 			// COMPUTING MY STUFF!
 			//If I want to debug something:			

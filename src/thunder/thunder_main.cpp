@@ -188,7 +188,7 @@ int main(int argc, char* argv[]){
 		builder_plugin->set_debug_flag(verbosity);
         builder_plugin->configure((LEGACY)?config_node:config_node[builder]);
 
-        builder_plugin->execute(robot_ptr);
+        builder_plugin->build(robot_ptr);
     }
 
     // execute generators

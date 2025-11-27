@@ -103,7 +103,7 @@ namespace thunder_ns{
 
 	/**
 	 * @brief Base class for plugins that populate symbolic functions.
-	 * Their 'execute' method reads parameters from the Robot object,
+	 * Their 'build' method reads parameters from the Robot object,
 	 * performs symbolic calculations (e.g., kinematics, dynamics),
 	 * and adds new functions to the Robot using `robot.add_function()`.
 	 */
@@ -116,7 +116,7 @@ namespace thunder_ns{
 		 *
 		 * @param robot The Robot instance
 		 */
-		virtual void execute(std::shared_ptr<Robot> robot) = 0;
+		virtual void build(std::shared_ptr<Robot> robot) = 0;
 
 		BaseBuilder(std::string name, std::string desc): BasePlugin(name, desc) {}
 

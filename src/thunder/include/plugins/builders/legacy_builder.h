@@ -22,7 +22,7 @@ namespace thunder_ns {
 			return 0;
 		}
 
-		void execute(std::shared_ptr<Robot> robot) override{
+		void build(std::shared_ptr<Robot> robot) override{
 			debug_log("Starting kinematic computations", VERB_INFO);
 			compute_kinematics(*robot, 1);
 			debug_log("Kinematics computed", VERB_INFO);
