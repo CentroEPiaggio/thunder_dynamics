@@ -46,8 +46,6 @@ namespace thunder_ns{
 			// --- Parameters functions --- //
 			const par_obj get_par(string par);
 			int set(string name, DM value);
-			casadi::SX load_par_REG(string config_file, bool update_DYN = 1);
-			int save_par_REG(string par_file);
 			int load_par(string par_file, vector<string> par_list = {});
 			int save_par(string par_file, vector<string> par_list = {});
 			int update_inertial_DYN();

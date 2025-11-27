@@ -97,45 +97,6 @@ namespace thunder_ns{
 		return fun_vect;
 	}
 
-	casadi::SX Robot::load_par_REG(string file, bool update_DYN){
-		int numJoints = this->get<int>("numJoints");
-		const int STD_PAR_LINK = this->get<const int>("STD_PAR_LINK");
-		vector<double> par_REG_num(STD_PAR_LINK*numJoints,0);
-		// ----- parsing yaml inertial ----- //
-		try {
-			// load yaml
-			YAML::Node config_file = YAML::LoadFile(file);
-			// load inertial
-			YAML::Node inertial = config_file["inertial"];
-			int i = 0;
-			for (const auto& node : inertial) {
-				
-				if (i==numJoints) break;
-				string linkName = node.first.as<string>();
-				
-				// standard parameters
-				par_REG_num[STD_PAR_LINK*i] = node.second["mass"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+1] = node.second["m_CoM_x"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+2] = node.second["m_CoM_y"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+3] = node.second["m_CoM_z"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+4] = node.second["Ixx"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+5] = node.second["Ixy"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+6] = node.second["Ixz"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+7] = node.second["Iyy"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+8] = node.second["Iyz"].as<double>();
-				par_REG_num[STD_PAR_LINK*i+9] = node.second["Izz"].as<double>();
-
-				i++;
-			}
-			// std::cout<<"\nparam REG \n"<<par_REG_num<<std::endl;
-		} catch (const YAML::Exception& e) {
-			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
-		}
-		parameters["par_REG"].num = par_REG_num;
-		if (update_DYN) update_inertial_DYN();
-		return par_REG_num;
-	}
-
 	int Robot::load_par(string par_file, vector<string> par_list){
 		try {
 			// load yaml
@@ -158,85 +119,6 @@ namespace thunder_ns{
 			}
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while loading parameters: " << e.what() << std::endl;
-			return 0;
-		}
-		return 1;
-	}
-
-	// void Robot::update_conf(){
-	// 	// to do!
-	// }
-
-	// int Robot::save_conf(string par_file){
-	// 	update_conf();
-	// 	try {
-	// 		YAML::Emitter emitter;
-	// 		emitter.SetIndent(2);
-	// 		emitter.SetSeqFormat(YAML::Flow);
-
-	// 		emitter << config_yaml << YAML::Newline;
-
-	// 		std::ofstream fout(par_file);
-	// 		fout << emitter.c_str();
-	// 		fout.close();
-	// 	} catch (const YAML::Exception& e) {
-	// 		std::cerr << "Error while generating YAML: " << e.what() << std::endl;
-	// 		return 0;
-	// 	}
-	// 	return 1;
-	// }
-
-	int Robot::save_par_REG(string par_file){
-		try {
-			int numJoints = this->get<int>("numJoints");
-			const int STD_PAR_LINK = this->get<const int>("STD_PAR_LINK");
-
-			YAML::Emitter emitter;
-			emitter.SetIndent(2);
-			emitter.SetSeqFormat(YAML::Flow);
-
-			YAML::Node yamlFile;
-			YAML::Node dynamicsNode;
-
-			emitter << YAML::Comment(
-				"Inertial parameters referred to Denavit-Hartenberg parametrization to use with regressor matrix\n");
-			emitter << YAML::Newline;
-
-			DM par_REG = parameters["par_REG"].num;
-			for (int i=0;  i<numJoints;  i++) {
-
-				YAML::Node linkNode;
-				string nodeName;
-				YAML::Node linkInertia;
-				YAML::Node linkFric;
-
-				nodeName = "link" + std::to_string(i+1);
-				linkInertia["mass"] = (double)par_REG(i*STD_PAR_LINK+0);
-				linkInertia["m_CoM_x"] = (double)par_REG(i*STD_PAR_LINK+1);
-				linkInertia["m_CoM_y"] = (double)par_REG(i*STD_PAR_LINK+2);
-				linkInertia["m_CoM_z"] = (double)par_REG(i*STD_PAR_LINK+3);
-				linkInertia["Ixx"] = (double)par_REG(i*STD_PAR_LINK+4);
-				linkInertia["Ixy"] = (double)par_REG(i*STD_PAR_LINK+5);
-				linkInertia["Ixz"] = (double)par_REG(i*STD_PAR_LINK+6);
-				linkInertia["Iyy"] = (double)par_REG(i*STD_PAR_LINK+7);
-				linkInertia["Iyz"] = (double)par_REG(i*STD_PAR_LINK+8);
-				linkInertia["Izz"] = (double)par_REG(i*STD_PAR_LINK+9);
-				// link friction
-				// linkFric["Dl"] = link.Dl;
-
-				linkNode["inertial"] = linkInertia;
-				// linkNode["friction"] = linkFric;
-				dynamicsNode[nodeName] = linkNode;
-			}
-
-			yamlFile["dynamics"] = dynamicsNode;
-			emitter << yamlFile << YAML::Newline;
-			
-			std::ofstream fout(par_file);
-			fout << emitter.c_str();
-			fout.close();
-		} catch (const YAML::Exception& e) {
-			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
 			return 0;
 		}
 		return 1;
