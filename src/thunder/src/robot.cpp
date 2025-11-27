@@ -169,44 +169,6 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::update_inertial_DYN(){
-		int numJoints = this->get<int>("numJoints");
-		const int STD_PAR_LINK = this->get<const int>("STD_PAR_LINK");
-		DM& par_REG = parameters["par_REG"].num;
-		DM& par_DYN = parameters["par_REG"].num;
-		for (int i=0; i<numJoints; i++){
-			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
-			DM p_reg(par_REG(p_idx));
-			DM mass = p_reg(0);
-			DM CoM = p_reg(casadi::Slice(1,4))/mass;
-			DM I_tmp = mass * DM::mtimes(hat(CoM).T(), hat(CoM));
-			DM I_reg = p_reg(casadi::Slice(4,10));
-			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
-			DM I = I_reg - I_tmp_v;
-			par_DYN(p_idx) = DM::vertcat({mass, CoM, I});
-		}
-		return 1;
-	}
-
-	int Robot::update_inertial_REG(){
-		int numJoints = this->get<int>("numJoints");
-		const int STD_PAR_LINK = this->get<const int>("STD_PAR_LINK");
-		DM& par_DYN = parameters["par_DYN"].num;
-		DM& par_REG = parameters["par_REG"].num;
-		for (int i=0; i<numJoints; i++){
-			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
-			DM p_dyn(par_DYN(p_idx));
-			DM mass = p_dyn(0);
-			DM mCoM = mass*p_dyn(casadi::Slice(1,4));
-			DM I_tmp = DM::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
-			DM I_dyn = p_dyn(casadi::Slice(4,10));
-			DM I_tmp_v = DM::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
-			DM I = I_dyn + I_tmp_v;
-			par_REG(p_idx) = DM::vertcat({mass, mCoM, I});
-		}
-		return 1;
-	}
-
 	int Robot::add_variable(string v_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
 		int ret = add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
 		return ret;

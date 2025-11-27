@@ -445,12 +445,57 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	// compute everything
+	// --- REG/DYN conversions --- //
+	int compute_reg_dyn_conversions(Robot& robot){
+		int numJoints = robot.get<int>("numJoints");
+		const int STD_PAR_LINK = robot.get<const int>("STD_PAR_LINK");
+
+		// - reg2dyn - //
+		SX& par_REG = robot.model["par_REG"];
+		SX reg2dyn = SX::zeros(par_REG.size());
+		for (int i=0; i<numJoints; i++){
+			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
+			SX p_reg(par_REG(p_idx));
+			SX mass = p_reg(0);
+			SX CoM = p_reg(casadi::Slice(1,4))/mass;
+			SX I_tmp = mass * SX::mtimes(hat(CoM).T(), hat(CoM));
+			SX I_reg = p_reg(casadi::Slice(4,10));
+			SX I_tmp_v = SX::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
+			SX I = I_reg - I_tmp_v;
+			reg2dyn(p_idx) = SX::vertcat({mass, CoM, I});
+		}
+		robot.add_function("reg2dyn", reg2dyn, {"par_REG"}, "Conversion from regressor to dynamic parameters");
+
+		// - dyn2reg - //
+		SX& par_DYN = robot.model["par_DYN"];
+		SX dyn2reg = SX::zeros(par_DYN.size());
+		for (int i=0; i<numJoints; i++){
+			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
+			SX p_dyn(par_DYN(p_idx));
+			SX mass = p_dyn(0);
+			SX mCoM = mass*p_dyn(casadi::Slice(1,4));
+			SX I_tmp = SX::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
+			SX I_dyn = p_dyn(casadi::Slice(4,10));
+			SX I_tmp_v = SX::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
+			SX I = I_dyn + I_tmp_v;
+			dyn2reg(p_idx) = SX::vertcat({mass, mCoM, I});
+		}
+		robot.add_function("dyn2reg", dyn2reg, {"par_DYN"}, "Conversion from dynamic to regressor parameters");
+
+		// - Update regressor parameters - //
+		robot.set("par_REG", robot.get("dyn2reg"));
+
+		return 1;
+	}
+
+
+	// - Compute everything - //
 	int compute_dynamics(Robot& robot, bool advanced){
 		bool ret = true;
 		if (!compute_MCG(robot)) ret=false;
 		if (!compute_Dl(robot)) ret=false;
 		if (!compute_elastic(robot)) ret=false;
+		if (!compute_reg_dyn_conversions(robot)) ret=false;
 		
 		if (advanced){
 			if (!compute_dyn_derivatives(robot)) ret=false;

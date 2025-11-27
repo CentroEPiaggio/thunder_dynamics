@@ -1,4 +1,5 @@
-☐ reg2dyn and dyn2reg as functions
+✔ reg2dyn and dyn2reg as functions @done (11/27/2025, 11:26:44 PM)
+☐ delete model map
 ☐ dh_loader to correct
 ☐ improve structure of the todo file
 ☐ update readme
@@ -11,6 +12,7 @@ improvings:
 		☐ problem if robot_name contains special characters
 		☐ not possible to insert path in robot_name
 	Paramaters:
+		☐ numeric par_REG are computed only after building dynamics (because now the conversion is a function), problems?
 		☐ saved parameters are not ordered, solve?
 		☐ saved parameters have only symbolic ones, change?
 		☐ change template to add automatically every parameter to the members (thunder_robot)

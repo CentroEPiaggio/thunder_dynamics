@@ -229,7 +229,6 @@ namespace thunder_ns {
 			robot->add_parameter("par_DYN", par_DYN_symb, par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
 			vector<short> par_REG_isSymb = par_DYN_isSymb;
 			robot->add_parameter("par_REG", par_REG_symb, par_REG_num, par_REG_isSymb, "Dynamic parameters for regressor", true);
-			robot->update_inertial_REG();
 
 
 			// --- Link friction --- //

@@ -48,8 +48,6 @@ namespace thunder_ns{
 			int set(string name, DM value);
 			int load_par(string par_file, vector<string> par_list = {});
 			int save_par(string par_file, vector<string> par_list = {});
-			int update_inertial_DYN();
-			int update_inertial_REG();
 
 			// --- Robot interactions --- //
 			template<class T> T get(string key){
