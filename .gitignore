@@ -24,3 +24,4 @@ src/thunder_control/src/**
 !src/thunder_control/robots/.gitkeep
 !src/thunder_control/library/.gitkeep
 !src/thunder_control/src/.gitkeep
+src/thunder_control/scripts/c_generated_code_frankino_throw/**
