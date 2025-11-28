@@ -105,12 +105,12 @@ namespace thunder_ns{
 		int numJoints = robot.get<int>("numJoints");
 		const int _nParLink_ = robot.get<const int>("STD_PAR_LINK");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
-		const auto& q = robot.model["q"];
-		const auto& par_world2L0 = robot.model["par_world2L0"];
-		const auto& par_DYN = robot.model["par_DYN"];
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
+		// const auto& q = robot.model["q"];
+		// const auto& par_world2L0 = robot.model["par_world2L0"];
+		// const auto& par_DYN = robot.model["par_DYN"];
+		auto q = robot.get_model("q");
+		auto par_world2L0 = robot.get_model("par_world2L0");
+		auto par_DYN = robot.get_model("par_DYN");
 
 		auto par_inertial = createInertialParameters(numJoints, _nParLink_, par_DYN);
 		// casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
@@ -135,7 +135,7 @@ namespace thunder_ns{
 			casadi::SX O_Ci(3,1);
 			casadi::SX R0i;
 			
-			T_0i = robot.model["T_0_"+std::to_string(i+1)];
+			T_0i = robot.get_model("T_0_"+std::to_string(i+1));
 			k0 = T_0i(r_rot_idx, 2);
 			O_0i = T_0i(r_tra_idx, 3);
 			
@@ -159,7 +159,7 @@ namespace thunder_ns{
 				casadi::SX O_jCi(3,1);          // distance of joint i from joint j-1
 				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 
-				T_0j = robot.model["T_0_"+std::to_string(j+1)];
+				T_0j = robot.get_model("T_0_"+std::to_string(j+1));
 				kj = T_0j(r_rot_idx, 2);
 				O_jCi = O_Ci - T_0j(r_tra_idx, 3);
 
@@ -195,13 +195,11 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
 		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		const auto& q = robot.model["q"];
-		const auto& dq = robot.model["dq"];
-		const auto& par_DYN = robot.model["par_DYN"];
-		const auto& par_gravity = robot.model["par_gravity"];
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
+		auto q = robot.get_model("q");
+		auto dq = robot.get_model("dq");
+		auto par_DYN = robot.get_model("par_DYN");
+		auto par_gravity = robot.get_model("par_gravity");
+
 		auto par_inertial = createInertialParameters(nj, nParLink, par_DYN);
 		casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		// casadi::SXVector _distCM_ = std::get<1>(par_inertial);
@@ -233,7 +231,7 @@ namespace thunder_ns{
 		Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
-			T0i = robot.model["T_0_"+std::to_string(i+1)];
+			T0i = robot.get_model("T_0_"+std::to_string(i+1));
 			// std::cout<<"T0i: "<<T0i<<std::endl;
 			casadi::SX R0i = T0i(selR,selR);
 			// std::cout<<"R0i: "<<R0i<<std::endl;
@@ -278,14 +276,14 @@ namespace thunder_ns{
 			int K_order = robot.get<int>("K_order");
 			int D_order = robot.get<int>("D_order");
 			int Dm_order = robot.get<int>("Dm_order");
-			const auto& q = robot.model["q"];
-			const auto& x = robot.model["x"];
-			const auto& dq = robot.model["dq"];
-			const auto& dx = robot.model["dx"];
-			const auto& par_K = robot.model["par_K"];
-			const auto& par_D = robot.model["par_D"];
-			const auto& par_Dm = robot.model["par_Dm"];
-			const auto& par_Mm = robot.model["par_Mm"];
+			const auto& q = robot.get_model("q");
+			const auto& x = robot.get_model("x");
+			const auto& dq = robot.get_model("dq");
+			const auto& dx = robot.get_model("dx");
+			const auto& par_K = robot.get_model("par_K");
+			const auto& par_D = robot.get_model("par_D");
+			const auto& par_Dm = robot.get_model("par_Dm");
+			const auto& par_Mm = robot.get_model("par_Mm");
 
 			// casadi::SX K(numElasticJoints,1);
 			// casadi::SX D(numElasticJoints,1);
@@ -378,8 +376,8 @@ namespace thunder_ns{
 
 		if (Dl_order > 0){
 			int nj = robot.get<int>("numJoints");
-			const auto& dq = robot.model["dq"];
-			const auto& par_Dl = robot.model["par_Dl"];
+			const auto& dq = robot.get_model("dq");
+			const auto& par_Dl = robot.get_model("par_Dl");
 
 			casadi::SX dl(nj,1);
 			std::vector<casadi::SX> Dl_vec(Dl_order);
@@ -406,17 +404,14 @@ namespace thunder_ns{
 	}
 
 	int compute_dyn_derivatives(Robot& robot){
-		if (robot.model.count("M") == 0){
-			compute_MCG(robot);
-		}
-		casadi::SX& q = robot.model["q"];
-		casadi::SX& dq = robot.model["dq"];
-		casadi::SX& ddq = robot.model["ddq"];
-		casadi::SX& d3q = robot.model["d3q"];
-		casadi::SX& d4q = robot.model["d4q"];
-		casadi::SX& M = robot.model["M"];
-		casadi::SX& C = robot.model["C"];
-		casadi::SX& G = robot.model["G"];
+		auto q = robot.get_model("q");
+		auto dq = robot.get_model("dq");
+		auto ddq = robot.get_model("ddq");
+		auto d3q = robot.get_model("d3q");
+		auto d4q = robot.get_model("d4q");
+		auto M = robot.get_model("M");
+		auto C = robot.get_model("C");
+		auto G = robot.get_model("G");
 
 		// - Mass derivatives - //
 		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
@@ -451,7 +446,7 @@ namespace thunder_ns{
 		const int STD_PAR_LINK = robot.get<const int>("STD_PAR_LINK");
 
 		// - reg2dyn - //
-		SX& par_REG = robot.model["par_REG"];
+		SX par_REG = robot.get_model("par_REG");
 		SX reg2dyn = SX::zeros(par_REG.size());
 		for (int i=0; i<numJoints; i++){
 			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
@@ -467,7 +462,7 @@ namespace thunder_ns{
 		robot.add_function("reg2dyn", reg2dyn, {"par_REG"}, "Conversion from regressor to dynamic parameters");
 
 		// - dyn2reg - //
-		SX& par_DYN = robot.model["par_DYN"];
+		SX par_DYN = robot.get_model("par_DYN");
 		SX dyn2reg = SX::zeros(par_DYN.size());
 		for (int i=0; i<numJoints; i++){
 			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));

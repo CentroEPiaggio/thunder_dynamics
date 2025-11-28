@@ -116,10 +116,10 @@ namespace thunder_ns{
 		// parameters from robot
 		auto numJoints = robot.get<int>("numJoints");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
-		const auto& q = robot.model["q"];
-		const auto& par_DHtable = robot.model["par_DHtable"];
-		const auto& par_world2L0 = robot.model["par_world2L0"];
-		const auto& par_Ln2EE = robot.model["par_Ln2EE"];
+		auto q = robot.get_model("q");
+		auto par_DHtable = robot.get_model("par_DHtable");
+		auto par_world2L0 = robot.get_model("par_world2L0");
+		auto par_Ln2EE = robot.get_model("par_Ln2EE");
 
 		// computing chain
 		casadi::SXVector Ti(numJoints+1);    // Output
@@ -163,13 +163,10 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
-		const auto& q = robot.model["q"];
-		const auto& par_DHtable = robot.model["par_DHtable"];
-		const auto& par_world2L0 = robot.model["par_world2L0"];
-		const auto& par_Ln2EE = robot.model["par_Ln2EE"];
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
+		auto q = robot.get_model("q");
+		auto par_DHtable = robot.get_model("par_DHtable");
+		auto par_world2L0 = robot.get_model("par_world2L0");
+		auto par_Ln2EE = robot.get_model("par_Ln2EE");
 		
 		// computing jacobians
 		casadi::SX Ji_pos(3, nj);    // matrix of velocity jacobian
@@ -189,7 +186,7 @@ namespace thunder_ns{
 			casadi::SX O_0i(3,1);           // distance of joint i from joint 0
 			casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
 
-			T_0i = robot.model["T_0_"+std::to_string(i_mod+1)];
+			T_0i = robot.get_model("T_0_"+std::to_string(i_mod+1));
 			// std::cout << "T_0i: " << T_0i << std::endl;
 			k0 = T_0i(r_rot_idx, 2);
 			// k0(2,0) = 1;
@@ -219,7 +216,7 @@ namespace thunder_ns{
 				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
 		
 				// T_0j_1 = T0i_vec[j];	// modified from T0i_vec[j-1];
-				T_0j = robot.model["T_0_"+std::to_string(j+1)];
+				T_0j = robot.get_model("T_0_"+std::to_string(j+1));
 				kj = T_0j(r_rot_idx, 2);
 				O_ji = O_0i - T_0j(r_tra_idx, 3);
 				// std::cout << "kj: " << kj << std::endl;
@@ -272,16 +269,10 @@ namespace thunder_ns{
 	}
 
 	int compute_kin_adv(Robot& robot){
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
-		if (robot.model.count("J_ee") == 0){
-			compute_jacobians(robot);
-		}
-		casadi::SX& q = robot.model["q"];
-		casadi::SX& dq = robot.model["dq"];
-		casadi::SX& ddq = robot.model["ddq"];
-		casadi::SX& Jn = robot.model["J_ee"];
+		auto q = robot.get_model("q");
+		auto dq = robot.get_model("dq");
+		auto ddq = robot.get_model("ddq");
+		auto Jn = robot.get_model("J_ee");
 
 		// jacobian derivatives
 		casadi::SX dJn = casadi::SX::jtimes(Jn,q,dq);

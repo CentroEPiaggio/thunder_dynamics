@@ -40,8 +40,6 @@ namespace thunder_ns{
 			std::map<string, par_obj> parameters;
 			// - Functions map - //
 			std::map<string, fun_obj> functions;
-			// --- Model map --- //
-			std::map<string, casadi::SX> model;
 
 			// --- Parameters functions --- //
 			const par_obj get_par(string par);
@@ -56,6 +54,7 @@ namespace thunder_ns{
 				}
 				return std::any_cast<T>(properties.at(key).value);
 			}
+			SX get_model(string name);
 			DM get(string name);
 			vector<fun_obj> get_functions(bool onlyNames = 1);
 

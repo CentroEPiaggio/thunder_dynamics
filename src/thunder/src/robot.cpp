@@ -46,6 +46,17 @@ namespace thunder_ns{
 		// return result_num;
 	}
 
+	SX Robot::get_model(string name){
+		if (parameters.count(name)){					// parameter exists
+			return parameters[name].get_model();
+		} else if (functions.count(name)){				// function exists
+			return functions[name].expr;
+		} else {
+			std::cerr << name + " not recognised" << endl;
+			return SX::zeros(1,1);
+		}
+	}
+
 	int Robot::set(string name, DM value){
 		if (parameters.count(name)){
 			if (value.size() == parameters[name].num.size()){			// substitute the entire vector
@@ -85,11 +96,9 @@ namespace thunder_ns{
 			fun_vect[i].name = f.first;
 			fun_vect[i].description = f.second.description;
 			fun_vect[i].args = f.second.args;
-			fun_vect[i].out_size.resize(2);
-			fun_vect[i].out_size[0] = model[name].size1();
-			fun_vect[i].out_size[1] = model[name].size2();
+			fun_vect[i].out_size = f.second.out_size;
 			if (!onlyNames){
-				fun_vect[i].expr = model[name];
+				fun_vect[i].expr = f.second.expr;
 				fun_vect[i].fun = f.second.fun;
 			}
 			i++;
@@ -184,7 +193,6 @@ namespace thunder_ns{
 			param.description = descr;
 			param.symb = symb;
 			int size = symb.size1()*symb.size2();
-			// param.size = size;
 
 			if (num.size()!=size){
 				std::cerr << "Error dimension of numeric SX: " << std::endl;
@@ -207,7 +215,6 @@ namespace thunder_ns{
 
 			// add to parameters map
 			parameters[p_name] = param;
-			model[p_name] = param.get_model();
 		}
 		return 1;
 	}
@@ -258,7 +265,7 @@ namespace thunder_ns{
 
 			// - creating fun object
 			fun_obj fun_struct;
-			model[f_name] = expr;
+			fun_struct.expr = expr;
 			fun_struct.args = arg_list;
 			fun_struct.description = descr;
 
@@ -271,7 +278,7 @@ namespace thunder_ns{
 				// std::cout << "arg: " << arg << std::endl;
 				vector<short>& symb_flag = parameters[arg].is_symbolic;
 				vector<casadi::SX> par_symb;
-				casadi::SX& par_model = model[arg];
+				casadi::SX par_model = parameters[arg].get_model();
 				// cout << "model[arg]: " << par_model << endl;
 				// cout << "symb_flag: " << symb_flag << endl;
 				int sz_original = par_model.size().first;

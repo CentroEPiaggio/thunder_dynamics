@@ -60,17 +60,11 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
 		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		const auto& q = robot.model["q"];
-		const auto& dq = robot.model["dq"];
-		const auto& dqr = robot.model["dqr"];
-		const auto& ddqr = robot.model["ddqr"];
-		const auto& par_gravity = robot.model["par_gravity"];
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
-		if (robot.model.count("J_1") == 0){
-			compute_jacobians(robot);
-		}
+		auto q = robot.get_model("q");
+		auto dq = robot.get_model("dq");
+		auto dqr = robot.get_model("dqr");
+		auto ddqr = robot.get_model("ddqr");
+		auto par_gravity = robot.get_model("par_gravity");
 		
 		// regressor computation
 		casadi::SXVector E_ = createE();
@@ -105,8 +99,8 @@ namespace thunder_ns{
 		
 		for (int i=0; i<nj; i++) {
 			
-			T0i = robot.model["T_0_"+std::to_string(i+1)];
-			Ji = robot.model["J_"+std::to_string(i+1)];
+			T0i = robot.get_model("T_0_"+std::to_string(i+1));
+			Ji = robot.get_model("J_"+std::to_string(i+1));
 			casadi::SX R0i = T0i(selR,selR);
 			Jvi = Ji(sel_v, allCols);
 			Jwi = Ji(sel_w, allCols);
@@ -199,14 +193,11 @@ namespace thunder_ns{
 		int nj = robot.get<int>("numJoints");
 		const int nParLink = robot.get<const int>("STD_PAR_LINK");
 		int Dl_order = robot.get<int>("Dl_order");
-		const auto& dq = robot.model["dq"];
+		auto dq = robot.get_model("dq");
 		if (Dl_order==0) return 0;
-		const auto& par_Dl = robot.model["par_Dl"];
-		const auto& par_Dl_isSymb = robot.parameters["par_Dl"].is_symbolic;
-		if (robot.model.count("Dl") == 0){
-			compute_Dl(robot);
-		}
-		const auto& Dl = robot.model["dl"];
+		auto par_Dl = robot.get_model("par_Dl");
+		auto par_Dl_isSymb = robot.parameters["par_Dl"].is_symbolic;
+		auto Dl = robot.get_model("dl");
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb;
@@ -234,25 +225,22 @@ namespace thunder_ns{
 		int K_order = robot.get<int>("K_order");
 		int D_order = robot.get<int>("D_order");
 		int Dm_order = robot.get<int>("Dm_order");
-		const auto& dq = robot.model["dq"];
-		const auto& dx = robot.model["dx"];
-		const auto& ddx = robot.model["ddx"];
-		const auto& par_K = robot.model["par_K"];
-		const auto& par_D = robot.model["par_D"];
-		const auto& par_Dm = robot.model["par_Dm"];
-		const auto& par_Mm = robot.model["par_Mm"];
-		const auto& par_K_isSymb = robot.parameters["par_K"].is_symbolic;
-		const auto& par_D_isSymb = robot.parameters["par_D"].is_symbolic;
-		const auto& par_Dm_isSymb = robot.parameters["par_Dm"].is_symbolic;
-		const auto& par_Mm_isSymb = robot.parameters["par_Mm"].is_symbolic;
+		auto dq = robot.get_model("dq");
+		auto dx = robot.get_model("dx");
+		auto ddx = robot.get_model("ddx");
+		auto par_K = robot.get_model("par_K");
+		auto par_D = robot.get_model("par_D");
+		auto par_Dm = robot.get_model("par_Dm");
+		auto par_Mm = robot.get_model("par_Mm");
+		auto par_K_isSymb = robot.parameters["par_K"].is_symbolic;
+		auto par_D_isSymb = robot.parameters["par_D"].is_symbolic;
+		auto par_Dm_isSymb = robot.parameters["par_Dm"].is_symbolic;
+		auto par_Mm_isSymb = robot.parameters["par_Mm"].is_symbolic;
 
-		if (robot.model.count("k") == 0){
-			compute_elastic(robot);
-		}
-		const auto& K = robot.model["k"];
-		const auto& D = robot.model["d"];
-		const auto& Dm = robot.model["dm"];
-		const auto& Mm = robot.model["Mm"];
+		auto K = robot.get_model("k");
+		auto D = robot.get_model("d");
+		auto Dm = robot.get_model("dm");
+		auto Mm = robot.get_model("Mm");
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb_K;
@@ -312,26 +300,20 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
 		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		const auto& par_DHtable = robot.model["par_DHtable"];
-		const auto& par_world2L0 = robot.model["par_world2L0"];
-		const auto& par_Ln2EE = robot.model["par_Ln2EE"];
-		const auto& DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
-		const auto& world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
-		const auto& Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
-		const auto& q = robot.model["q"];
-		const auto& dq = robot.model["dq"];
-		const auto& w = robot.model["w"];
-		if (robot.model.count("T_0_0") == 0){
-			compute_chain(robot);
-		}
-		if (robot.model.count("J_ee") == 0){
-			compute_jacobians(robot);
-		}
+		auto par_DHtable = robot.get_model("par_DHtable");
+		auto par_world2L0 = robot.get_model("par_world2L0");
+		auto par_Ln2EE = robot.get_model("par_Ln2EE");
+		auto DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
+		auto world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
+		auto Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
+		auto q = robot.get_model("q");
+		auto dq = robot.get_model("dq");
+		auto w = robot.get_model("w");
 
 		// auto dims = par_DHtable.size();
 		// casadi::SX DH_vect = casadi::SX::reshape(par_DHtable, dims.first*dims.second, 1);
 
-		casadi::SX J = robot.model["J_ee"];
+		casadi::SX J = robot.get_model("J_ee");
 		// std::cout <<"J: " << J << std::endl;
 
 		// - symbolic par construction of par - //

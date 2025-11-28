@@ -26,7 +26,7 @@ namespace thunder_ns {
 		
 		std::shared_ptr<Robot> load(std::shared_ptr<Robot> robot_ptr) override{
 			debug_log("Loading started", VERB_INFO);
-			auto robot = std::make_shared<Robot>(Robot(config_));
+			auto robot = robot_ptr;
 			robot->robotName = robot_name;
 			// --- load parameters --- //
 			// robot->load_config(config_);
