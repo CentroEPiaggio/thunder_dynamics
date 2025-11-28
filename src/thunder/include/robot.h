@@ -23,42 +23,81 @@ namespace thunder_ns{
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
 		public:
+			// -------------------- //
 			// --- Constructors --- //
+			// -------------------- //
+
+			// Base costructor, set robot name
 			Robot(string name) {robotName = name;}
+
+			// Default costructor
 			Robot() = default;
-			// - destructor - //
+
+			// Destructor
 			// ~Robot(){};
 
-			// --- Robot configuration --- //
+
+			// ----------------------- //
+			// --- Robot variables --- //
+			// ----------------------- //
+
 			string robotName = "robot";
 			YAML::Node config_yaml;
 
+
+			// ------------------ //
 			// --- Robot maps --- //
-			// - Properties map - //
+			// ------------------ //
+
+			// Property map, contains robot structure
 			std::map<string, Property> properties;
-			// - Parameters map - //
+
+			// Parameter map, contains robot variables and parameters
 			std::map<string, par_obj> parameters;
-			// - Functions map - //
+
+			// Function map, contains robot expressions and functions
 			std::map<string, fun_obj> functions;
 
-			// --- Parameters functions --- //
-			const par_obj get_par(string par);
-			int set(string name, DM value);
-			int load_par(string par_file, vector<string> par_list = {});
-			int save_par(string par_file, vector<string> par_list = {});
 
-			// --- Robot interactions --- //
+			// --------------------------- //
+			// --- Interface functions --- //
+			// --------------------------- //
+
+			// Return the value of property <key> ot type <T>
 			template<class T> T get(string key){
 				if (!properties.count(key)){
 					throw std::runtime_error("Property " + key + " not found in robot " + robotName);
 				}
 				return std::any_cast<T>(properties.at(key).value);
 			}
-			SX get_model(string name);
-			DM get(string name);
+
+			// Return the parameter struct of parameter <key>
+			const par_obj get_par(string par);
+
+			// Return the model (casadi::SX) of <key>
+			SX get_model(string key);
+
+			// Return the value (casadi::DM) of <key>
+			DM get(string key);
+
+			// Return a vector of function structs (casadi::Function)
 			vector<fun_obj> get_functions(bool onlyNames = 1);
 
+			// Set the value of parameter <name> to <value>
+			int set(string name, DM value);
+
+			// Load parameters from file, {} load all
+			int load_par(string par_file, vector<string> par_list = {});
+
+			// Save parameters from file, {} save all
+			int save_par(string par_file, vector<string> par_list = {});
+
+
+			// ------------------------ //
 			// --- Robot populators --- //
+			// ------------------------ //
+
+			// Add the property <name> of type <T> to the property map
 			template<class T> int add_property(string name, T value, string type, string descr = "", bool overwrite = true){
 				if ((!overwrite) && properties.count(name)){
 					// key already exists
@@ -73,8 +112,14 @@ namespace thunder_ns{
 				}
 				return 1;
 			}
+
+			// Add the variable <name> to the parameters map
 			int add_variable(string name, SX symb, vector<double> num, vector<short> is_symbolic = {1}, string descr = "", bool overwrite = true);
+			
+			// Add the parameter <name> to the parameters map
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
+			
+			// Add the function <name> to the function map
 			int add_function(string name, SX expr, vector<string> f_args, string descr = "", bool overwrite = true);
 			
 	};
