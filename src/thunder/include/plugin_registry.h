@@ -1,5 +1,5 @@
-
-#pragma once
+#ifndef PLUGINREGISTRY_H
+#define PLUGINREGISTRY_H
 
 #include "plugin_interfaces.h"
 #include <map>
@@ -102,3 +102,5 @@ inline std::shared_ptr<BaseGenerator> find_generator(const std::string& plugin_t
 
 
 } // namespace thunder_ns
+
+#endif

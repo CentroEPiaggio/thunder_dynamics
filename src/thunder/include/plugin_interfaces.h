@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PLUGININTERFACES_H
+#define PLUGININTERFACES_H
 
 #include <iostream>
 #include <string>
@@ -33,16 +34,12 @@ namespace thunder_ns{
 		/**
 		 * @brief Enables verbose output when set to 1, otherwise prints only essential logs.
 		 */
-		void set_debug_flag(int flag) {
-			debug_flag_ = flag ? 1 : 0;
-		}
+		void set_debug_flag(int flag) {debug_flag_ = flag ? 1 : 0;}
 
 		/**
 		 * @brief Returns the currently selected debug flag value.
 		 */
-		int get_debug_flag() const {
-			return debug_flag_;
-		}
+		int get_debug_flag() const { return debug_flag_; } 
 		
 		/**
 		 * @brief Prints name and descripion to cout.
@@ -62,9 +59,6 @@ namespace thunder_ns{
 		}
 
 
-		/**
-		 * @brief Set descripion, name and 
-		 */
 	protected:
 		/**
 		 * @brief Helper method to print plugin specific debug information.
@@ -196,3 +190,5 @@ namespace thunder_ns{
 
 
 } // namespace thunder
+
+#endif
