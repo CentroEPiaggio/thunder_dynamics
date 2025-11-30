@@ -10,33 +10,25 @@ namespace thunder_ns {
 
 	class LegacyLoader : public BaseLoader {
 		private:
-			YAML::Node config_;
 			std::string robot_name;
 
 		public:
 			LegacyLoader() : BaseLoader("Legacy Loader", "Creates a robot with the old yaml structure.") {}
 
-			int configure(const YAML::Node& config) override;
-
 			std::shared_ptr<Robot> load(std::shared_ptr<Robot> robot_ptr) override;
 
 	};
 
-	int LegacyLoader::configure(const YAML::Node& config) {
-		config_ = config;
+
+	// --- Load function --- //
+	std::shared_ptr<Robot> LegacyLoader::load(std::shared_ptr<Robot> robot){
+		debug_log("Loading started", VERB_INFO);
 		if (config_["robot_name"]) {
 			robot_name = config_["robot_name"].as<std::string>();
 		} else {
 			robot_name = "";
 		}
-		// default robot_name?
-		debug_log("Configured", VERB_INFO);
-		return 0;
-	}
-
-	// --- Load function --- //
-	std::shared_ptr<Robot> LegacyLoader::load(std::shared_ptr<Robot> robot){
-		debug_log("Loading started", VERB_INFO);
+		
 		if (robot_name != "") robot->robotName = robot_name;
 
 		// ----- Parsing YAML File ----- //

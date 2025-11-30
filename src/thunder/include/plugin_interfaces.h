@@ -24,6 +24,8 @@ namespace thunder_ns{
 
 	public:
 
+		YAML::Node config_; 
+		
 		BasePlugin(std::string name, std::string desc) : name_(name), description_(desc) {}
 
 		~BasePlugin() = default;
@@ -54,7 +56,10 @@ namespace thunder_ns{
 		 * 
 		 * @param config The configuration node
 		 */ 
-		virtual int configure(const YAML::Node& config) = 0;
+		int configure(const YAML::Node& config) {
+			config_ = config;
+			return 1;
+		}
 
 
 		/**

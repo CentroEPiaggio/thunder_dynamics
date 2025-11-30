@@ -14,20 +14,10 @@ using std::endl;
 namespace thunder_ns {
 
 	class CGenerator : public BaseGenerator {
-		private:
-			YAML::Node config_;
 
 		public:
-		
-			CGenerator() : BaseGenerator("C Generator", "Generates a plain C library for Robot") {}
-		
-		
-		int configure(const YAML::Node& config) override{
-			config_ = config;
-			debug_log("Configured", VERB_INFO);
-			return 0;
-		}
-		
+
+		CGenerator() : BaseGenerator("C Generator", "Generates a plain C library for Robot") {}
 		
 		void generate(const std::shared_ptr<Robot> robot) override{
 			int nj = robot->get<int>("numJoints");

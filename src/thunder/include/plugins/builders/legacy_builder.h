@@ -17,10 +17,6 @@ namespace thunder_ns {
 		public:
 		LegacyBuilder() : BaseBuilder("Legacy Builder", "Build everythink like the old times.") {}
 		
-		int configure(const YAML::Node& config) override{
-			debug_log("Configured", VERB_INFO);
-			return 0;
-		}
 
 		void build(std::shared_ptr<Robot> robot) override{
 			debug_log("Starting kinematic computations", VERB_INFO);

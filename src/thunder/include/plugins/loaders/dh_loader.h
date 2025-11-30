@@ -10,23 +10,15 @@ namespace thunder_ns {
 
 	class DHLoader : public BaseLoader {
 		private:
-		YAML::Node config_;
 		std::string robot_name;
 
 		public:
 		DHLoader() : BaseLoader("DH Loader", "Creates a robot structure using DH parameters (modified convention).") {}
-
-		int configure(const YAML::Node& config) override{
-			config_ = config;
-			robot_name = config_["robot_name"].as<std::string>();
-			debug_log("Configured", VERB_INFO);
-			return 0;
-		}
-		
 		
 		std::shared_ptr<Robot> load(std::shared_ptr<Robot> robot_ptr) override{
 			debug_log("Loading started", VERB_INFO);
 			auto robot = robot_ptr;
+			robot_name = config_["robot_name"].as<std::string>();
 			robot->robotName = robot_name;
 			// --- load parameters --- //
 			// robot->load_config(config_);

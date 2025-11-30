@@ -21,7 +21,6 @@ namespace thunder_ns {
 
 	class LegacyGenerator : public BaseGenerator {
 		private:
-			YAML::Node config_;
 			bool GEN_CASADI = false;		// generate casadi functions
 			bool GEN_PYTHON = false;		// generate python bindings
 			bool COPY_GEN = false;			// used to copy generated files into thunder_robot project
@@ -34,28 +33,19 @@ namespace thunder_ns {
 		public:
 		
 			LegacyGenerator() : BaseGenerator("Legacy Generator", "Generates an Eigen C++ library for Robot, with python bindings and casadi optional") {}
-			int configure(const YAML::Node& config) override;
 			void generate(const std::shared_ptr<Robot> robot) override;
 
 	};
 
-	// ----- CONFIGURE ----- //
-	int LegacyGenerator::configure(const YAML::Node& config){			
-		config_ = config;
-
-		if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
-		if (config_["gen_python"]) GEN_PYTHON = config_["gen_python"].as<bool>();
-		if (config_["copy_gen"]) COPY_GEN = config_["copy_gen"].as<bool>();
-
-		debug_log("Configured", VERB_INFO);
-
-		return 0;
-	}
 
 	// ----- GENERATE ----- //
 	void LegacyGenerator::generate(const std::shared_ptr<Robot> robot){
 		int nj = robot->get<int>("numJoints");
 		// --- Generate merge code --- //
+
+		if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
+		if (config_["gen_python"]) GEN_PYTHON = config_["gen_python"].as<bool>();
+		if (config_["copy_gen"]) COPY_GEN = config_["copy_gen"].as<bool>();
 
 		string robot_name = robot->robotName;
 		string robot_name_gen = robot_name + "_gen";
