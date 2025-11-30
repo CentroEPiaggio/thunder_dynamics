@@ -3,7 +3,7 @@ import csv
 import os
 
 # Cerca il file csv
-csv_path = '../build/simulation_data.csv'
+csv_path = '/home/thunder_dev/thunder_dynamics/src/thunder_control/build/simulation_data.csv'
 
 if not os.path.exists(csv_path):
     print(f"Errore: Non trovo {csv_path}. Esegui prima ./franka_mpc_run")

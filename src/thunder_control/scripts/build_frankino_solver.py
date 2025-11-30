@@ -46,7 +46,6 @@ def export_franka_model():
     f_expl = ca.vertcat(q_dot, q_ddot)
 
     model.x = x
-    model.x = x
     model.u = u
     model.f_expl_expr = f_expl
 
@@ -89,9 +88,9 @@ def create_ocp_solver():
     # y = [x, u]
     ocp.model.cost_y_expr = ca.vertcat(model.x, model.u)
 
-    W_q_run = 100.0  # Peso sulla traiettoria intermedia
-    W_v_run = 100.0  # Peso sulla velocità intermedia
-    W_tau = 1.0e-2  # Peso basso sullo sforzo (per permettere accelerazioni alte)
+    W_q_run = 10000.0  # Peso sulla traiettoria intermedia
+    W_v_run = 10000.0  # Peso sulla velocità intermedia
+    W_tau = 0.01  # Peso basso sullo sforzo (per permettere accelerazioni alte)
 
     Q_diag_run = np.concatenate([np.full(7, W_q_run), np.full(7, W_v_run)])
     R_diag_run = np.full(7, W_tau)
@@ -102,7 +101,7 @@ def create_ocp_solver():
     ocp.model.cost_y_expr_e = model.x
 
     W_q_end = 1e5  # 1e5: Peso sulla posizione finale
-    W_v_end = 1e5  # 1e5: Peso sulla velocità finale (cruciale per il lancio)
+    W_v_end = 1e5  # 1e5: Peso sulla velocità finale 
 
     Q_diag_end = np.concatenate([np.full(7, W_q_end), np.full(7, W_v_end)])
     ocp.cost.W_e = np.diag(Q_diag_end)
@@ -163,6 +162,9 @@ def create_ocp_solver():
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
     ocp.solver_options.nlp_solver_type = "SQP_RTI"  # Veloce Real-Time Iteration
+
+    ocp.solver_options.levenberg_marquardt = 10.0
+    ocp.solver_options.qp_solver_iter_max = 50
 
     solver = AcadosOcpSolver(ocp, json_file="acados_ocp_throw.json")
     return solver

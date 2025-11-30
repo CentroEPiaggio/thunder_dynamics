@@ -43,7 +43,7 @@ int main()
 
     // SETUP LOGGING
     std::ofstream data_file("simulation_data.csv");
-    data_file << "t,ref_q_elbow,ref_v_elbow,q_elbow,dq_elbow,tau_elbow\n";
+    data_file << "t,ref_q_elbow,ref_v_elbow,q_elbow,dq_elbow,tau_elbow, obstacle_x, obstacle_y, obstacle_z, time_left, current_dt_node \n";
 
     VectorXd q_curr = VectorXd::Zero(NJ);
     VectorXd dq_curr = VectorXd::Zero(NJ);
@@ -54,6 +54,13 @@ int main()
 
     // Posizione iniziale articolazioni
     q_curr << 0.0, -0.78, 0.0, -2.35, 0.0, 1.57, 0.78;
+
+    robot_sim.setArguments(q_curr, dq_curr, zeros, zeros);
+    MatrixXd M = robot_sim.get_M();
+    MatrixXd C = robot_sim.get_C();
+    VectorXd G = robot_sim.get_G();
+
+    tau_cmd = G; // Manteniamo la posizione iniziale con la gravità compensata
 
     // ----------------------------------------------------------------
     // 2. INIZIALIZZAZIONE SOLVER ACADOS
@@ -77,8 +84,9 @@ int main()
     // 3. PIANIFICAZIONE
     // ----------------------------------------------------------------
     MinJerkTrajectory planner;
-    double t_wait = 0.5;
+    double t_wait = 0.2;
     double t_throw_dur = 0.8;
+    double t_total_mission = t_wait + t_throw_dur; // Tempo totale della missione
 
     VectorXd q_start = q_curr;
     VectorXd q_end = q_curr;
@@ -88,7 +96,7 @@ int main()
     VectorXd v_throw = VectorXd::Zero(NJ);
     v_throw(3) = 2.0; // Velocità di lancio target (rad/s)
 
-    planner.init(q_start, q_end, v_start, v_throw, t_wait, t_wait + t_throw_dur);
+    planner.init(q_start, q_end, v_start, v_throw, t_wait, t_total_mission);
 
     // Inizializziamo l'ostacolo lontano. Lo sposteremo in loop.
     double menu_obs_x = 10.0;
@@ -101,10 +109,60 @@ int main()
     std::cout << ">>> Loop avviato. Dati salvati in simulation_data.csv" << std::endl;
 
     // ----------------------------------------------------------------
+    // 3b. WARM-UP SOLVER ACADOS
+    // ----------------------------------------------------------------
+    std::cout << ">>> Eseguo Warmup Solver (20 iterazioni)..." << std::endl;
+
+    for (int k = 0; k < 20; k++)
+    {
+        // --- 1. SETTARE X0 (STATO INIZIALE) ---
+        // Senza questo, il solver pensa di partire da 0.
+        double x0[NX];
+        for (int i = 0; i < NJ; i++) x0[i] = q_curr(i);
+        for (int i = 0; i < NJ; i++) x0[NJ + i] = dq_curr(i); // che è zero
+
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "lbx", x0);
+        ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "ubx", x0);
+        // --------------------------------------------------
+
+        double p_warm[NP] = {menu_obs_x, menu_obs_y, menu_obs_z};
+
+        for (int i = 0; i <= N_HORIZON; i++)
+        {
+            frankino_throw_catch_acados_update_params(capsule, i, p_warm, NP);
+
+            if (i < N_HORIZON)
+            {
+                double yref[NY];
+                for (int j = 0; j < NJ; j++) yref[j] = q_curr(j);
+                for (int j = 0; j < NJ; j++) yref[NJ + j] = 0.0;
+                for (int j = 0; j < NJ; j++) yref[2 * NJ + j] = G(j); 
+
+                ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref);
+            }
+            else
+            {
+                double yref_e[NYN];
+                for (int j = 0; j < NJ; j++) yref_e[j] = q_curr(j);
+                for (int j = 0; j < NJ; j++) yref_e[NJ + j] = 0.0;
+                ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_e);
+            }
+        }
+
+        frankino_throw_catch_acados_solve(capsule);
+    }
+
+    double u0_warm[NU];
+    ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, 0, "u", u0_warm);
+    for (int i = 0; i < NJ; i++) tau_cmd(i) = u0_warm[i];
+
+    std::cout << ">>> Warmup Finito. Tau Start Gomito: " << tau_cmd(3) << " Nm" << std::endl;
+
+
+    // ----------------------------------------------------------------
     // 4. CONTROL LOOP
     // ----------------------------------------------------------------
-    double dt_control = 0.001;            // 1 ms
-    double dt_mpc_step = 1.0 / N_HORIZON; // 0.05 s
+    double dt_control = 0.001; // 1 ms
 
     bool keep_running = true;
     double t_sim = 0.0;
@@ -118,21 +176,39 @@ int main()
         t_sim += dt_control;
         double t_abs = t_sim;
 
-        if (t_abs > (t_wait + t_throw_dur + 0.0))
+        if (t_abs > (t_total_mission + 0.1)) // Aggiungiamo un piccolo buffer
             keep_running = false;
+
+        // --- SHRINKING HORIZON LOGIC ---
+        // 1. Quanto manca alla fine?
+        double time_left = t_total_mission - t_abs;
+
+        // // 2. Clamp: Potrebbe essere utile non scendere mai sotto un orizzonte minimo (es. 0.1s)
+        // // Se scendiamo troppo, il solver diventa instabile (divisioni per dt piccolissimi).
+        // // Quando mancano meno di 0.1s, l'orizzonte rimane fisso a 0.1s e guarda "appena dopo" la fine.
+        // double min_horizon_duration = 0.1;
+        // if (time_left < min_horizon_duration)
+        // {
+        //     time_left = min_horizon_duration;
+        // }
+
+        // 3. Calcolo del nuovo DT per ogni Shooting Node
+        double current_dt_node = time_left / (double)N_HORIZON;
+        // --------------------------------
 
         if (obstacle_active)
         {
             // ESEMPIO: L'ostacolo si muove sinusoidalmente davanti al robot_sim
-            // In un'app reale, leggeresti qui i valori dalla GUI / Tastiera
             menu_obs_x = 0.5 + 0.1 * sin(t_abs * 2.0); // Oscilla su X
             menu_obs_y = 0.0;                          // Al centro su Y
             menu_obs_z = 0.5;                          // Altezza gomito/EE
         }
         else
         {
-            // Ostacolo disattivato (lo spostiamo all'infinito)
+            // Ostacolo disattivato (lo spostiamo lontano)
             menu_obs_x = 10.0;
+            menu_obs_y = 10.0;
+            menu_obs_z = 10.0;
         }
 
         double p_current[NP] = {menu_obs_x, menu_obs_y, menu_obs_z};
@@ -153,7 +229,7 @@ int main()
         VectorXd bias = C * dq_curr + G;
 
         // 4. Attrito viscoso (per stabilizzare la simulazione) tempo fa per le tavole di robotica  lo si aggiungeva al modello
-        VectorXd friction = 0.01 * dq_curr;
+        VectorXd friction = 0.0 * dq_curr;
 
         // 5. Calcolo Accelerazione: M * ddq = tau - bias - friction
         VectorXd tau_net = tau_cmd - bias - friction;
@@ -178,24 +254,32 @@ int main()
         // D. UPDATE REFERENCE (MPC)
         for (int i = 0; i <= N_HORIZON; i++)
         {
+            // --- UPDATE TIME STEP (Shrinking Horizon) ---
+            // Acados richiede di settare "Ts" per i nodi da 0 a N-1
+            if (i < N_HORIZON)
+            {
+                ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &current_dt_node);
+            }
+
             // double t_pred = t_abs + i * dt_mpc_step;
             // MinJerkTrajectory::State des = planner.evaluate(t_pred);
             // frankino_throw_catch_acados_update_params(capsule, i, p_current, NP);
 
-            double t_pred = t_abs + i * dt_mpc_step;
+            double t_pred = t_abs + i * current_dt_node;
             MinJerkTrajectory::State des = planner.evaluate(t_pred);
-            
+
             // --- CALCOLO INVERSE DYNAMICS FEEDFORWARD ---
             // Aggiorniamo il robot "modello" con lo stato desiderato
             robot_model.setArguments(des.pos, des.vel, zeros, zeros);
-            
+
             // Tau_FF = M(q_d)*acc_d + C(q_d, dq_d)*vel_d + g(q_d)
-            VectorXd tau_ff = robot_model.get_M() * des.acc + 
-                              robot_model.get_C() * des.vel + 
+            VectorXd tau_ff = robot_model.get_M() * des.acc +
+                              robot_model.get_C() * des.vel +
                               robot_model.get_G();
 
             // Salviamo per debug il valore corrente (i=0)
-            if (i==0) debug_tau_ff = tau_ff;
+            if (i == 0)
+                debug_tau_ff = tau_ff;
 
             // Update ostacoli
             frankino_throw_catch_acados_update_params(capsule, i, p_current, NP);
@@ -204,20 +288,25 @@ int main()
             {
                 double yref[NY];
                 // Stati
-                for (int k = 0; k < NJ; k++) yref[k] = des.pos(k);
-                for (int k = 0; k < NJ; k++) yref[NJ + k] = des.vel(k);
-                
+                for (int k = 0; k < NJ; k++)
+                    yref[k] = des.pos(k);
+                for (int k = 0; k < NJ; k++)
+                    yref[NJ + k] = des.vel(k);
+
                 // Input (Coppia)
-                for (int k = 0; k < NJ; k++) yref[2 * NJ + k] = tau_ff(k); 
-                
+                for (int k = 0; k < NJ; k++)
+                    yref[2 * NJ + k] = tau_ff(k);
+
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref);
             }
             else
             {
                 // Terminal cost (solo stati)
                 double yref_e[NYN];
-                for (int k = 0; k < NJ; k++) yref_e[k] = des.pos(k);
-                for (int k = 0; k < NJ; k++) yref_e[NJ + k] = des.vel(k);
+                for (int k = 0; k < NJ; k++)
+                    yref_e[k] = des.pos(k);
+                for (int k = 0; k < NJ; k++)
+                    yref_e[NJ + k] = des.vel(k);
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_e);
             }
         }
@@ -242,20 +331,23 @@ int main()
         data_file << t_abs << ","
                   << current_ref.pos(3) << "," << current_ref.vel(3) << ","
                   << q_curr(3) << "," << dq_curr(3) << "," << tau_cmd(3) << ","
-                  << menu_obs_x << "," << menu_obs_y << "," << menu_obs_z << "\n";
+                  << menu_obs_x << "," << menu_obs_y << "," << menu_obs_z << ","
+                  << time_left << "," << current_dt_node << "\n";
 
-        // Stampa ogni 100ms
-        int step_count = (int)(t_sim / dt_control);
-        if (step_count % 100 == 0)
-        {
-            std::cout << "T: " << t_abs
-                      << " | Ref_V: " << current_ref.vel(3)
-                      << " | Real_V: " << dq_curr(3)
-                      << " | Tau: " << tau_cmd(3)
-                      << " | Ref_P: " << current_ref.pos(3)
-                      << " | Real_P: " << q_curr(3)
-                      << std::endl;
-        }
+        // // Stampa ogni 100ms
+        // int step_count = (int)(t_sim / dt_control);
+        // if (step_count % 100 == 0)
+        // {
+        //     std::cout << "T: " << t_abs
+        //               << " | Ref_V: " << current_ref.vel(3)
+        //               << " | Real_V: " << dq_curr(3)
+        //               << " | Tau: " << tau_cmd(3)
+        //               << " | Ref_P: " << current_ref.pos(3)
+        //               << " | Real_P: " << q_curr(3)
+        //               << " | Time Left: " << time_left
+        //               << " | Current Dt Node: " << current_dt_node
+        //               << std::endl;
+        // }
     }
 
     // CLEANUP

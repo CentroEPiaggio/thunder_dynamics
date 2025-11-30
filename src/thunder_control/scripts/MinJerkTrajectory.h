@@ -4,7 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
-#include "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/thunder_frankino.h"
+#include <stdexcept> 
 using namespace Eigen;
 
 class MinJerkTrajectory {
@@ -33,7 +33,6 @@ public:
         int n_joints = q0.size();
         
         // Assumiamo accelerazioni iniziali e finali nulle per semplicità
-        // (Se servissero diverse, basta aggiungerle come argomenti)
         VectorXd a0 = VectorXd::Zero(n_joints);
         VectorXd af = VectorXd::Zero(n_joints);
 
@@ -62,11 +61,10 @@ public:
             throw std::runtime_error("Traiettoria non inizializzata!");
         }
 
-        // Saturazione temporale:
-        // Se t < t0 -> ritorna stato iniziale
-        // Se t > tf -> decidiamo cosa fare. Per ora congeliamo alla fine.
-        double t_sat = std::max(t0, std::min(t, tf));
-        double dt = t_sat - t0;
+        // 1. Saturazione per il calcolo del polinomio base
+        // Calcoliamo lo stato ESATTAMENTE a tf se t > tf
+        double t_poly = std::max(t0, std::min(t, tf));
+        double dt = t_poly - t0;
 
         double dt2 = dt * dt;
         double dt3 = dt2 * dt;
@@ -77,6 +75,16 @@ public:
         s.pos = c0 + c1*dt + c2*dt2 + c3*dt3 + c4*dt4 + c5*dt5;
         s.vel = c1 + 2*c2*dt + 3*c3*dt2 + 4*c4*dt3 + 5*c5*dt4;
         s.acc = 2*c2 + 6*c3*dt + 12*c4*dt2 + 20*c5*dt3;
+
+        // 2. LOGICA FOLLOW THROUGH (Estrapolazione lineare)
+        // Se il tempo richiesto è oltre la fine (t > tf), continuiamo a muoverci
+        // con la velocità finale costante. Questo evita conflitti nel solver MPC
+        // (che altrimenti vedrebbe posizione bloccata ma velocità alta).
+        if (t > tf) {
+            double dt_extra = t - tf;
+            s.pos += s.vel * dt_extra; // Posizione avanza: q = q_f + v_f * delta_t
+            s.acc.setZero();           // Accelerazione nulla dopo il lancio
+        }
 
         return s;
     }
