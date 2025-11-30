@@ -105,9 +105,13 @@ namespace thunder_ns{
 	 * @brief Base class for plugins that populate symbolic functions.
 	 * Their 'build' method reads parameters from the Robot object,
 	 * performs symbolic calculations (e.g., kinematics, dynamics),
-	 * and adds new functions to the Robot using `robot.add_function()`.
+	 * and adds new functions to the Robot using `registrer_function`.
 	 */
 	class BaseBuilder : public BasePlugin {
+		
+  		private:
+		std::vector<std::string> registered_function_names_;
+
 		public:
 
 		/**
@@ -119,6 +123,49 @@ namespace thunder_ns{
 		virtual void build(std::shared_ptr<Robot> robot) = 0;
 
 		BaseBuilder(std::string name, std::string desc): BasePlugin(name, desc) {}
+
+		/**
+		 * @brief Get list of functions registered by this builder
+		 */
+		const std::vector<std::string>& get_registered_functions() const {
+			return registered_function_names_;
+		}
+
+		protected:
+
+		/**
+		 * @brief Wrapper to register functions to the robot.
+		 * 
+		 * Checks YAML config and if functions/<name>/ignore is true, skips registration.
+		 * 
+		 * @param robot The robot instance
+		 * @param f_name Name of the function to add
+		 * @param expr The casadi expression
+		 * @param args_raw tentative list of arguments
+		 * @param descr	description of the functions
+		 * @param overwrite if true, overwrite existing functions with the same name.
+		 * 
+		 * @return true if added, false if ignored
+		 * 
+		 */
+		bool register_function(std::shared_ptr<Robot> robot, string f_name, casadi::SX expr, vector<string> args_raw, string descr, bool overwrite) {
+			
+			// Check YAML for ignore flag
+			if (config_["functions"] && config_["functions"][f_name]) {
+				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
+					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
+					return false;
+				}
+			}
+
+			// Perform actual addition
+			robot->add_function(f_name, expr,  args_raw, descr, overwrite);
+			
+			// Add to local registry
+			registered_function_names_.push_back(f_name);
+			debug_log("Registered function: " + f_name, VERB_DEBUG);
+			return true;
+		}
 
 	};
 
