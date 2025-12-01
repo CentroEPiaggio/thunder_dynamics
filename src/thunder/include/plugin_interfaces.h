@@ -103,8 +103,16 @@ namespace thunder_ns{
 	 */
 	class BaseBuilder : public BasePlugin {
 		
-  		private:
-		std::vector<std::string> registered_function_names_;
+  		protected:
+		// Check if the function f_name has to be ignored
+		bool should_ignore(std::string f_name) {
+			if (config_["functions"] && config_["functions"][f_name]) {
+				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
+					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
+					return false;
+				}
+			}
+		}
 
 		public:
 
