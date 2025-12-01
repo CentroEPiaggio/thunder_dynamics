@@ -31,22 +31,17 @@ namespace thunder_ns{
 
 		~BasePlugin() = default;
 
-		/**
-		 * @brief Enables verbose output when set to 1, otherwise prints only essential logs.
-		 */
+		// Enables verbose output when set to 1, otherwise prints only essential logs.
 		void set_debug_flag(int flag) {debug_flag_ = flag ? 1 : 0;}
 
-		/**
-		 * @brief Returns the currently selected debug flag value.
-		 */
+		// Returns the currently selected debug flag value.
 		int get_debug_flag() const { return debug_flag_; } 
 		
-		/**
-		 * @brief Prints name and descripion to cout.
-		 */
-		void print_info() const{
-			std::cout << "Plugin " << name_ << ". Description: " << description_;
-		}
+		// Returns plugin description
+		const std::string& get_description() const { return description_; }
+
+		// Returns plugin name
+		const std::string& get_name() const { return name_; }
 
 		/**
 		 * @brief Load configuration from yaml
