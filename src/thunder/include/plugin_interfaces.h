@@ -126,12 +126,6 @@ namespace thunder_ns{
 
 		BaseBuilder(std::string name, std::string desc): BasePlugin(name, desc) {}
 
-		/**
-		 * @brief Get list of functions registered by this builder
-		 */
-		const std::vector<std::string>& get_registered_functions() const {
-			return registered_function_names_;
-		}
 
 
 	};
