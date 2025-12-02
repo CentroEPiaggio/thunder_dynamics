@@ -1,5 +1,6 @@
 .devcontainer/.bash_history
 bin/
+**/tmp/
 **/build/
 **/__pycache__/
 **generatedFiles/

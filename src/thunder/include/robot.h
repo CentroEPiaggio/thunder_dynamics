@@ -98,7 +98,7 @@ namespace thunder_ns{
 			// ------------------------ //
 
 			// Add the property <name> of type <T> to the property map
-			template<class T> int add_property(string name, T value, string type, string descr = "", bool overwrite = true){
+			template<class T> int add_property(string name, T value, string type_str, string descr = "", bool overwrite = true){
 				if ((!overwrite) && properties.count(name)){
 					// key already exists
 					return 0;
@@ -106,7 +106,7 @@ namespace thunder_ns{
 					Property prop;
 					prop.name = name;
 					prop.value = value;
-					prop.type = type;
+					prop.type_str = type_str;
 					prop.description = descr;
 					properties[name] = prop;
 				}

@@ -10,6 +10,7 @@
 
 #include "../../plugin_interfaces.h"
 #include "../../robot.h"
+#include "generator_utils.h"
 
 using std::cout;
 using std::endl;
@@ -30,7 +31,7 @@ namespace thunder_ns {
 			int update_cmake(const string from_robot, const string to_robot, const string file_path);
 			int change_to_robot(const string from_robot, const string to_robot, Robot& robot, const string file_path_h, const string file_path_cpp, const bool gen_python);
 			int add_bindings_template(const string file_path_cpp);
-		
+
 		public:
 		
 			LegacyGenerator() : BaseGenerator("Legacy Generator", "Generates an Eigen C++ library for Robot, with python bindings and casadi optional") {}
