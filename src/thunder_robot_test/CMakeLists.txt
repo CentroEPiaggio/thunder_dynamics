@@ -52,3 +52,6 @@ target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
 # Esempio di creazione di un eseguibile che utilizza la tua libreria
 add_executable(thunder_robot_test ${CMAKE_SOURCE_DIR}/thunder_robot_test.cpp)
 target_link_libraries(thunder_robot_test thunder_robot)
+
+add_executable(thunder_robot_test_chrono ${CMAKE_SOURCE_DIR}/thunder_robot_test_chrono.cpp)
+target_link_libraries(thunder_robot_test_chrono thunder_robot)
