@@ -52,8 +52,8 @@ namespace thunder_ns {
 			int numElasticJoints = 0;
 			vector<short> isElasticJoint;
 
-			const int STD_PAR_LINK = 10;
-			robot->add_property<const int>("STD_PAR_LINK", STD_PAR_LINK, "const int", "Standard number of dynamic parameters per link", true);
+			int STD_PAR_LINK = 10;
+			robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
 
 			// YAML::Node config_ = this->config_yaml;
 

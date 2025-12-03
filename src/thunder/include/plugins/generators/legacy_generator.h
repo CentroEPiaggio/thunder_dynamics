@@ -109,8 +109,8 @@ namespace thunder_ns {
 		// --- Write thunder_robot into generatedFiles --- //
 		std::filesystem::path sourcePath;
 		std::filesystem::path destPath;
-		string thunder_robot_cpp_path;
-		string thunder_robot_h_path;
+		// string thunder_robot_cpp_path;
+		// string thunder_robot_h_path;
 		string python_cmake_file;
 
 		// Get home/.local/share directory
@@ -119,20 +119,20 @@ namespace thunder_ns {
 		string template_path = "/usr/local/share/thunder_dynamics/thunder_robot_template/";
 
 		if (std::filesystem::is_directory(template_path)){
-			thunder_robot_cpp_path = template_path + "thunder_robot.cpp";
-			thunder_robot_h_path = template_path + "thunder_robot.h";
+			// thunder_robot_cpp_path = template_path + "thunder_robot.cpp";
+			// thunder_robot_h_path = template_path + "thunder_robot.h";
 			python_cmake_file = template_path + "CMakeLists.txt";
 		}else{
 			std::cerr<<"Template path not found: "<<template_path<<std::endl;
 		}
 
-		destPath = absolutePath + "thunder_" + robot_name + ".h";
-		sourcePath = thunder_robot_h_path;
-		std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
+		// destPath = absolutePath + "thunder_" + robot_name + ".h";
+		// sourcePath = thunder_robot_h_path;
+		// std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
 
-		destPath = absolutePath + "thunder_" + robot_name + ".cpp";
-		sourcePath = thunder_robot_cpp_path;
-		std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
+		// destPath = absolutePath + "thunder_" + robot_name + ".cpp";
+		// sourcePath = thunder_robot_cpp_path;
+		// std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
 
 		if (GEN_PYTHON){
 			// --- Generate python binding --- //
@@ -146,9 +146,10 @@ namespace thunder_ns {
 		}
 
 		// --- change the necessary into thunder_robot --- //
-		int changed = change_to_robot("robot", robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
-		if (!changed) {
-			debug_log("Problem on modifying template", VERB_INFO);
+		// int changed = change_to_robot("robot", robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
+		int robot_generated = create_thunder_robot(robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
+		if (!robot_generated) {
+			debug_log("Problem on creating thunder_robot", VERB_INFO);
 			return;
 		}
 
@@ -316,7 +317,7 @@ namespace thunder_ns {
 			string functions_string = "\n";
 			for (int i=0; i<functions.size(); i++){
 				functions_string.append("\t\t// - " + functions[i].description + " - //\n");
-				functions_string.append("\t\t"+get_ret_type(functions[i])+" get_" + functions[i].name + "();\n\n");
+				functions_string.append("\t\t"+functions[i].get_ret_type_str()+" get_" + functions[i].name + "();\n\n");
 			}
 			replace_all(file_content_h, "/*#-FUNCTIONS_H-#*/", functions_string);
 
@@ -361,7 +362,7 @@ namespace thunder_ns {
 				// 	args_string.append(", " + fun_args[j]);
 				// }
 				// other parts
-				string ret_type = get_ret_type(functions[i]);
+				string ret_type = functions[i].get_ret_type_str();
 				functions_string.append("// - " + functions[i].description + " - //\n");
 				functions_string.append(ret_type + " thunder_" + to_robot + "::" + fun_name + "(){\n");
 				// functions_string.append("\tEigen::MatrixXd out;\n");

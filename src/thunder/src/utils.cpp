@@ -32,12 +32,6 @@ namespace thunder_ns{
 		// return newString;
 	}
 
-	std::string get_ret_type(const fun_obj fun){
-		std::vector<int> out_size = fun.out_size;
-		string ret_type = "Eigen::Matrix<double,"+to_string(out_size[0])+","+to_string(out_size[1])+">";
-		return ret_type;
-	}
-
 	casadi::SX hat(const casadi::SX& v) {
 		
 		casadi::SX skew = casadi::SX::zeros(3,3);

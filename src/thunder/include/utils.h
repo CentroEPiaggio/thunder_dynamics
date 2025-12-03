@@ -7,6 +7,7 @@
 #include <eigen3/Eigen/Dense>
 
 using std::string;
+using std::vector;
 
 namespace thunder_ns{
 
@@ -23,10 +24,10 @@ namespace thunder_ns{
 			string res = "{";
 			if (vec.size() > 0){
 				std::any val = vec[0];
-				res.append("\"" + get_value_str(type, val) + "\"");
+				res.append(get_value_str(type, val));
 				for (size_t i = 1; i<vec.size(); i++){
 					val = vec[i];
-					res.append(", \"" + get_value_str(type, val) + "\"");
+					res.append(", " + get_value_str(type, val));
 				}
 			}
 			res.append("}");
@@ -107,6 +108,19 @@ namespace thunder_ns{
 			}
 			return ret;
 		}
+		std::string get_value_str(){
+			casadi::DM val = get_value_resized();
+			std::string res = "{}";
+			if (symb_size() != 0){
+				res = "{" + std::to_string((double)val(0));
+				for (int i=1; i<symb_size(); i++){
+					res.append(", " + std::to_string((double)val(i)));
+				}
+				res.append("}");
+			}
+			
+			return res;
+		}
 	}par_obj;
 
 	typedef struct fun_obj{
@@ -116,10 +130,24 @@ namespace thunder_ns{
 		std::vector<int> out_size;
 		casadi::SX expr;
 		casadi::Function fun;
+
+		std::string get_args_str(){
+			std::string res = "{" + args[0];
+			for (int i=1; i<args.size(); i++){
+				res.append(", " + args[i]);
+			}
+			res.append("}");
+			return res;
+		}
+
+		std::string get_ret_type_str(){
+			string ret_type = "Eigen::Matrix<double,"+to_string(out_size[0])+","+to_string(out_size[1])+">";
+			return ret_type;
+		}
+		
 	}fun_obj;
 
 	void replace_all(string& str, const string& from_str, const string& to_str);
-	string get_ret_type(const fun_obj fun);
 
 	casadi::SX hat(const casadi::SX& v);
 	Eigen::Matrix3d hat(const Eigen::Vector3d& v);
