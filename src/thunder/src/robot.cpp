@@ -264,6 +264,7 @@ namespace thunder_ns{
 
 			// - creating fun object
 			fun_obj fun_struct;
+			fun_struct.name = f_name;
 			fun_struct.expr = expr;
 			fun_struct.args = arg_list;
 			fun_struct.description = descr;

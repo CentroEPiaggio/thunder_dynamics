@@ -17,7 +17,7 @@
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-const std::string conf_file = "../robots/RRR_conf.yaml";
+const std::string conf_file = "../robots/RRR_par.yaml";
 // const std::string conf_file = "../robots/seaRRR_conf.yaml";
 // const std::string conf_file = "../robots/franka_conf.yaml";
 // const std::string conf_file = "../robots/egoArm_conf.yaml";
@@ -41,8 +41,8 @@ int main(){
 
 	thunder_RRR robot;
 
-	robot.load_conf(conf_file);
-	const int NJ = robot.get_numJoints();
+	// robot.load_conf(conf_file);
+	const int NJ = robot.numJoints;
 	const int N_PARAM_DYN = robot.get_numParDYN();
 	int N_PARAM_REG = robot.get_numParREG();
 	int N_PARAM_DL = NJ*robot.Dl_order;

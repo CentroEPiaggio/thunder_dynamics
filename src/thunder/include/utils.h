@@ -43,7 +43,7 @@ namespace thunder_ns{
 			else if (type == "float") return std::to_string(std::any_cast<float>(val));
 			else if (type == "double") return std::to_string(std::any_cast<double>(val));
 			else if (type == "bool") return string((std::any_cast<bool>(val))?"true":"false");
-			else if ((type == "string") || (type == "std::string")) return std::any_cast<string>(val);
+			else if ((type == "string") || (type == "std::string")) return "\"" + std::any_cast<string>(val) + "\"";
 			else if (type.find("vector<") != std::string::npos) {
 
 				// - identify the vector type - //
