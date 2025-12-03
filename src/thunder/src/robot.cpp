@@ -96,7 +96,6 @@ namespace thunder_ns{
 			fun_vect[i].name = f.first;
 			fun_vect[i].description = f.second.description;
 			fun_vect[i].args = f.second.args;
-			fun_vect[i].out_size = f.second.out_size;
 			if (!onlyNames){
 				fun_vect[i].expr = f.second.expr;
 				fun_vect[i].fun = f.second.fun;

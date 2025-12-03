@@ -212,7 +212,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		string fun_name = "get_" + fun.second.name;
 		string fun_name_gen = robotName + "_" + fun.second.name;
 		std::vector<string> fun_args = fun.second.args;
-		std::vector<int> out_size = fun.second.out_size;
+		std::vector<long> out_size = fun.second.get_out_size();
 		// // function arguments
 		// string args_string = "(" + fun_args[0];
 		// for (int j=1; j<fun_args.size(); j++){

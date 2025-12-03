@@ -355,7 +355,7 @@ namespace thunder_ns {
 				string fun_name = "get_" + functions[i].name;
 				string fun_name_gen = robotName + "_" + functions[i].name;
 				std::vector<string> fun_args = functions[i].args;
-				std::vector<int> out_size = functions[i].out_size;
+				std::vector<long> out_size = functions[i].get_out_size();
 				// // function arguments
 				// string args_string = "(" + fun_args[0];
 				// for (int j=1; j<fun_args.size(); j++){

@@ -127,21 +127,28 @@ namespace thunder_ns{
 		string name;
 		string description;
 		std::vector<string> args;
-		std::vector<int> out_size;
 		casadi::SX expr;
 		casadi::Function fun;
 
+		std::vector<long> get_out_size(){
+			std::vector<long> out_size({expr.size1(), expr.size2()});
+			return out_size;
+		}
+
 		std::string get_args_str(){
-			std::string res = "{" + args[0];
-			for (int i=1; i<args.size(); i++){
-				res.append(", " + args[i]);
-			}
-			res.append("}");
-			return res;
+			if (args.size() != 0){
+				std::string res = "{" + args[0];
+				for (int i=1; i<args.size(); i++){
+					res.append(", " + args[i]);
+				}
+				res.append("}");
+				return res;
+			} else return "{}";
 		}
 
 		std::string get_ret_type_str(){
-			string ret_type = "Eigen::Matrix<double,"+to_string(out_size[0])+","+to_string(out_size[1])+">";
+			std::vector<long> out_size = get_out_size();
+			string ret_type = "Eigen::Matrix<double,"+std::to_string(out_size[0])+","+std::to_string(out_size[1])+">";
 			return ret_type;
 		}
 		
