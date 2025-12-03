@@ -1,6 +1,5 @@
-✔ add function description in Robot @done (11/28/2025, 4:08:23 PM)
-☐ create from zero thunder_robot (continue)
-☐ add function description in thunder_robot_template (or create from zero)
+☐ implement load_par in thunder_robot
+☐ implement save_par in thunder_robot
 ☐ improve structure of the todo file
 ☐ update readme
 improvings:

@@ -2,8 +2,8 @@
 ## ----- Robot Config ----- ##
 # -------------------------- #
 version: 0.3
-gen_python:   true
-gen_casadi:   true
+gen_python:   false
+gen_casadi:   false
 copy_gen:     true
 
 # --- Constants --- #

@@ -131,7 +131,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		"\t\t// ----------------- //\n"
 		"\n"
 		"\t\t// Default constructor\n"
-		"\t\tthunder_" + robot_name + "::thunder_" + robot_name + "();\n\n";
+		"\t\tthunder_" + robot_name + "();\n\n";
 
 	// - parameters gets - //
 	for (auto par : parameters){
@@ -139,7 +139,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			string fun_name = "get_" + par.second.name;
 			int out_size = par.second.symb_size();
 			functions_str.append("\t\t// get the parameter: " + par.second.name + "\n");
-			functions_str.append("\t\tVector<double," + std::to_string(out_size) + "> " + thunder_robot_name + "::" + fun_name + "();\n");
+			functions_str.append("\t\tVector<double," + std::to_string(out_size) + "> " + fun_name + "();\n");
 		}
 	}
 
@@ -149,7 +149,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			string fun_name = "set_" + par.second.name;
 			int in_size = par.second.symb_size();
 			functions_str.append("\t\t// set the parameter: " + par.second.name + "\n");
-			functions_str.append("\t\tvoid " + thunder_robot_name + "::" + fun_name + "(Vector<double,"+std::to_string(in_size)+"> value);\n");
+			functions_str.append("\t\tvoid " + fun_name + "(Vector<double,"+std::to_string(in_size)+"> value);\n");
 		}
 	}
 
@@ -165,7 +165,8 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		// - declaration - //
 		functions_str.append("\t\t"+fun.second.get_ret_type_str()+" get_" + fun.second.name + "();\n\n");
 	}
-	file_content_h.append(functions_str + "};\n");
+	file_content_h.append(functions_str + "};\n"
+	"#endif\n");
 
 	// --- Save thunder_<robot>.h --- //
 	std::ofstream out_h(file_h);

@@ -17,20 +17,16 @@
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-const std::string conf_file = "../robots/RRR_par.yaml";
-// const std::string conf_file = "../robots/seaRRR_conf.yaml";
-// const std::string conf_file = "../robots/franka_conf.yaml";
-// const std::string conf_file = "../robots/egoArm_conf.yaml";
-// const std::string conf_file = "../robots/frankaWrist_conf.yaml";
+const std::string par_file = "../robots/RRR_par.yaml";
+// const std::string par_file = "../robots/seaRRR_conf.yaml";
+// const std::string par_file = "../robots/franka_conf.yaml";
+// const std::string par_file = "../robots/egoArm_conf.yaml";
+// const std::string par_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
 
 using namespace std::chrono;
 using std::cout;
 using std::endl;
-
-// bool use_gripper = false;
-
-// Eigen::Matrix3d hat(const Eigen::Vector3d v);
 
 int main(){
 
@@ -41,59 +37,36 @@ int main(){
 
 	thunder_RRR robot;
 
-	// robot.load_conf(conf_file);
+	// robot.load_par(par_file);
 	const int NJ = robot.numJoints;
-	const int N_PARAM_DYN = robot.get_numParDYN();
-	int N_PARAM_REG = robot.get_numParREG();
-	int N_PARAM_DL = NJ*robot.Dl_order;
-
-	Eigen::VectorXd par_DYN(N_PARAM_DYN);
-	Eigen::VectorXd par_REG(N_PARAM_REG);
-	Eigen::VectorXd par_Dl(N_PARAM_DL);
-
-	Eigen::MatrixXd Yr(NJ, N_PARAM_REG);
-	Eigen::MatrixXd reg_M(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
-	Eigen::MatrixXd myM(NJ, NJ);
-	Eigen::MatrixXd myC(NJ, NJ);
-	Eigen::VectorXd myG(NJ);
-	Eigen::MatrixXd Dl(NJ, 1);
-	Eigen::MatrixXd myKin(4,4);
-	Eigen::MatrixXd myJac(6,NJ);
-	Eigen::MatrixXd myJacCM(6,NJ);
-	Eigen::VectorXd tau_cmd_dyn(NJ);
-	Eigen::VectorXd tau_cmd_reg(NJ);
-
-	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
 
 	/* Test */
-	q.setOnes();
-	dq.setZero();
-	dqr.setZero();
-	ddqr.setZero();
+	VectorXd q = robot.get_q();
+	VectorXd dq = robot.get_dq();
+	VectorXd dqr = robot.get_dqr();
+	VectorXd ddqr = robot.get_ddqr();
 
-	robot.setArguments(q, dq, dqr, ddqr);
+	q.setRandom();
+	robot.set_q(q);
 
 	// get parameters
-	par_REG = robot.get_par_REG();
-	par_DYN = robot.get_par_DYN();
-	par_Dl = robot.get_par_Dl();
+	auto par_REG = robot.get_par_REG();
+	auto par_DYN = robot.get_par_DYN();
+	// auto par_Dl = robot.get_par_Dl();
 	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
 	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
-	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
+	// cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
 
 	// kinematics and dynamics
-	myKin = robot.get_T_0_ee();
+	auto myKin = robot.get_T_0_ee();
 	cout<<"\n\nKin\n"<<myKin;
-	myJac = robot.get_J_ee();
+	auto myJac = robot.get_J_ee();
 	cout<<"\n\nJac\n"<<myJac;
-	myM = robot.get_M();
+	auto myM = robot.get_M();
 	cout<<"\n\nM\n"<<myM;
-	myC = robot.get_C();
+	auto myC = robot.get_C();
 	cout<<"\n\nC\n"<<myC;
-	myG = robot.get_G();
+	auto myG = robot.get_G();
 	cout<<"\n\nG\n"<<myG;
 	// --- Should be commented if Dl does not exists, Uncomment for link friction --- //
 	// if (robot.Dl_order){
@@ -101,12 +74,12 @@ int main(){
 	// 	cout<<"\n\nD_link\n"<<Dl;
 	// }
 	// --- end --- //
-	Yr = robot.get_Yr();
+	auto Yr = robot.get_Yr();
 	cout<<"\n\nYr\n"<<Yr;
 
-	tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
+	auto tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
 	
-	tau_cmd_reg = Yr*par_REG;
+	auto tau_cmd_reg = Yr*par_REG;
 
 	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
@@ -117,9 +90,9 @@ int main(){
 	// robot.load_par_DYN(saved_inertial_file);
 	// robot.save_par_DYN(saved_inertial_file);
 
-	// - conf loading test - //
-	cout << "world2L0: " << robot.get_par_world2L0() << endl;
-	cout << "par_Ln2EE: " << robot.get_par_Ln2EE() << endl;
+	// // - conf loading test - //
+	// cout << "world2L0: " << robot.get_par_world2L0() << endl;
+	// cout << "par_Ln2EE: " << robot.get_par_Ln2EE() << endl;
 
 	// // - set par test - //
 	// Eigen::Vector3d par_ee({3, 3, 3});
