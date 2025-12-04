@@ -22,7 +22,7 @@ const std::string par_file = "../robots/RRR_par.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
 // const std::string par_file = "../robots/frankaWrist_conf.yaml";
-const std::string saved_inertial_file = "../robots/saved_robot_inertial_DYN.yaml";
+const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
 
 using namespace std::chrono;
 using std::cout;
@@ -85,10 +85,12 @@ int main(){
 	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
 	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl<<endl;
 
-	// - save par test - //
-	// robot.save_par_DYN(saved_inertial_file);
-	// robot.load_par_DYN(saved_inertial_file);
-	// robot.save_par_DYN(saved_inertial_file);
+	// // - save par test - //
+	// robot.save_par(saved_inertial_file);
+	// robot.load_par(saved_inertial_file);
+	// robot.save_par(saved_inertial_file, {"par_DYN"});
+	// robot.load_par(saved_inertial_file, {"par_DYN"});
+	// robot.load_par(saved_inertial_file, {"q"});
 
 	// // - conf loading test - //
 	// cout << "world2L0: " << robot.get_par_world2L0() << endl;

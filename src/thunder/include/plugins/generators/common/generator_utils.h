@@ -153,6 +153,33 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		}
 	}
 
+	// - save parameters to file - //
+	functions_str.append(
+		"\n"
+		"\t\t/**\n\t\t * @brief Save parameters to file\n"
+		"\t\t * \n"
+		"\t\t * @param  par_file:  parameter file\n"
+		"\t\t * \n"
+		"\t\t * @param  par_list={}:  list of parameters to save ({} means all parameters)\n"
+		"\t\t * \n"
+		"\t\t * @return  1: succeed,  0: failed\n"
+		"\t\t */ \n"
+		"\t\tint save_par(string par_file, vector<string> par_list = {});\n");
+
+	// - load parameters from file - //
+	functions_str.append(
+		"\n"
+		"\t\t/**\n\t\t * @brief Load parameters from file\n"
+		"\t\t * \n"
+		"\t\t * @param  par_file:  parameter file\n"
+		"\t\t * \n"
+		"\t\t * @param  par_list={}:  list of parameters to load ({} means all parameters)\n"
+		"\t\t * \n"
+		"\t\t * @return  1: succeed,  0: failed\n"
+		"\t\t */ \n"
+		"\t\tint load_par(string par_file, vector<string> par_list = {});\n");
+
+
 	// - robot functions - //
 	functions_str.append("\n");
 	for (auto fun : functions){
@@ -229,6 +256,78 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 				"void " + thunder_robot_name + "::" + fun_name + "(Vector<double,"+std::to_string(in_size)+"> value) {" + par.second.name + " = value;}\n");
 		}
 	}
+
+
+	// - Save parameters to file - //
+	string save_par_fun_str = "\n"
+		"// Save parameters to file\n"
+		"int " + thunder_robot_name + "::save_par(string par_file, vector<string> par_list){\n"
+			"\tYAML::Node yamlFile;\n\n";
+	for (auto par : parameters){
+		if (par.second.symb_size() != 0){
+			string par_name = par.second.name;
+			save_par_fun_str.append(
+			"\tif ((par_list.size()==0)||(std::count(par_list.begin(), par_list.end(), \""+par_name+"\"))){\n"
+				"\t\tvector<double> " + par_name + "_vect("+par_name+".data(), "+par_name+".data() + "+std::to_string(par.second.symb_size())+");\n"
+				"\t\tyamlFile[\""+par_name+"\"] = "+par_name+"_vect;\n"
+			"\t}\n"
+			);
+		}
+	}
+	save_par_fun_str.append(
+		"\n"
+		"\ttry {\n"
+			"\t\tYAML::Emitter emitter;\n"
+			"\t\temitter.SetIndent(2);\n"
+			"\t\temitter.SetSeqFormat(YAML::Flow);\n"
+			"\t\temitter << yamlFile << YAML::Newline;\n"
+			"\t\tstd::ofstream fout(par_file);\n"
+			"\t\tfout << emitter.c_str();\n"
+			"\t\tfout.close();\n"
+		"\t} catch (const YAML::Exception& e) {\n"
+			"\t\tstd::cerr << \"Error while generating YAML: \" << e.what() << std::endl;\n"
+			"\t\treturn 0;\n"
+		"\t}\n"
+		"\treturn 1;\n"
+		"}\n\n"
+	);
+	functions_str.append(save_par_fun_str);
+	
+
+	// - Load parameters from file - //
+	string load_par_fun_str = "\n"
+		"// Load parameters from file\n"
+		"int " + thunder_robot_name + "::load_par(string par_file, vector<string> par_list){\n"
+			"\tYAML::Node yamlFile;\n"
+			"\ttry {\n"
+				"\t\tyamlFile = YAML::LoadFile(par_file);\n\n"
+			"\t} catch (const YAML::Exception& e) {\n"
+				"\t\tstd::cerr << \"Error while loading parameters: \" << e.what() << std::endl;\n"
+				"\t\treturn 0;\n"
+			"\t}\n\n";
+	for (auto par : parameters){
+		if (par.second.symb_size() != 0){
+			string par_name = par.second.name;
+			load_par_fun_str.append(
+			"\tif ((par_list.size()==0)||(std::count(par_list.begin(), par_list.end(), \""+par_name+"\"))){\n"
+				"\t\tif (yamlFile[\""+par_name+"\"]){\n"
+					"\t\t\tvector<double> vec(yamlFile[\""+par_name+"\"].as<vector<double>>());\n"
+					"\t\t\t"+par_name+" = Eigen::Map<Vector<double,"+std::to_string(par.second.symb_size())+">>(vec.data(), vec.size());\n"
+				"\t\t} else {\n"
+					"\t\t\tstd::cerr << \"Error while loading parameters: "+par_name+" not found!\" << std::endl;\n"
+					"\t\t\treturn 0;\n"
+				"\t\t}\n"
+			"\t}\n"
+			);
+		}
+	}
+	load_par_fun_str.append(
+		"\n"
+		"\treturn 1;\n"
+		"}\n\n"
+	);
+	functions_str.append(load_par_fun_str);
+	
 
 	// - robot functions - //
 	functions_str.append("\n");
