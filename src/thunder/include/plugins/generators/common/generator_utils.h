@@ -55,10 +55,9 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	string file_content_h = "";
 
 	// - generate headers - //
-	file_content_h.append("#ifndef Thunder_" + robot_name + "_H\n");
-	file_content_h.append("#define Thunder_" + robot_name + "_H\n\n");
+	file_content_h.append("#ifndef THUNDER_" + robot_name + "_H\n");
+	file_content_h.append("#define THUNDER_" + robot_name + "_H\n\n");
 	file_content_h.append(
-		"#include <iostream>\n"
 		"#include <iostream>\n"
 		"#include <string>\n"
 		"#include <cmath>\n"
@@ -225,9 +224,9 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		// - pybind functions - //
 		for (auto fun : functions){
 			string fun_name = "get_" + fun.second.name;
-			bindings_str.append("\t\t.def(\"" + fun_name + "\", &thunder_" + robot_name + "::" + fun_name + ", \""+ fun.second.description +"\")\n");
+			bindings_str.append("\n\t\t.def(\"" + fun_name + "\", &thunder_" + robot_name + "::" + fun_name + ", \""+ fun.second.description +"\")");
 		}
-		file_content_cpp.append(bindings_str + "}\n");
+		file_content_cpp.append(bindings_str + ";\n}\n");
 	}
 
 	// --- insert functions --- //

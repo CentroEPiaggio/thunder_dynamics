@@ -55,7 +55,6 @@ namespace thunder_ns {
 			int STD_PAR_LINK = 10;
 			robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
 
-			// YAML::Node config_ = this->config_yaml;
 
 			// --- Basic Robot properties --- //
 
@@ -126,7 +125,7 @@ namespace thunder_ns {
 			robot->add_variable("ddx", SX::sym("ddx",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration", true);
 			robot->add_variable("ddxr", SX::sym("ddxr",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration reference", true);
 			// - Regressors - //
-			robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,1), {1}, "Wrench", true);
+			robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,0), {1}, "Wrench", true);
 
 
 			// --- Denavit-Hartenberg --- //

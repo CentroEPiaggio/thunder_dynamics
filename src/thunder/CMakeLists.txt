@@ -106,4 +106,4 @@ set_target_properties(thunder_test_chrono PROPERTIES
 set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
 # Install the executable and the template directory
 install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/thunder_robot_template DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
