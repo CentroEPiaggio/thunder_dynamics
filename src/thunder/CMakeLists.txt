@@ -24,6 +24,7 @@ file(GLOB SOURCES
   ${CMAKE_SOURCE_DIR}/src/plugins/builders/*.cpp
   ${CMAKE_SOURCE_DIR}/src/plugins/builders/common/*.cpp
   ${CMAKE_SOURCE_DIR}/src/plugins/generators/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/generators/common/*.cpp
 )
 
 # Define the library target with the collected source files

@@ -12,8 +12,8 @@ Command line interface for Thunder, it can generate code for robots
 
 #include <argparse/argparse.hpp>
 
-#include "include/plugin_interfaces.h"
-#include "include/plugin_registry.h"
+#include "plugin_interfaces.h"
+#include "plugin_registry.h"
 
 
 using namespace thunder_ns;
@@ -62,7 +62,6 @@ std::string robot_name_gen = robot_name + "_gen";
 int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
-	bool LEGACY = false;
 
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //
@@ -158,7 +157,6 @@ int main(int argc, char* argv[]){
 		builders = config_node["pipeline"]["builders"].as<std::vector<std::string>>();
 		generators = config_node["pipeline"]["generators"].as<std::vector<std::string>>();
 	} else {
-		LEGACY = true;
 		loaders = std::vector<std::string>({"legacy_loader"});
 		builders = std::vector<std::string>({"legacy_builder"});
 		generators = std::vector<std::string>({"legacy_generator"});
@@ -175,7 +173,8 @@ int main(int argc, char* argv[]){
         std::shared_ptr<BaseLoader> loader_plugin = find_loader(loader);
 
 		loader_plugin->set_debug_flag(verbosity);
-        loader_plugin->configure((LEGACY)?config_node:config_node[loader]);
+		if (loader == "legacy_loader") loader_plugin->configure(config_node);
+		else loader_plugin->configure(config_node[loader]);
 
         robot_ptr = loader_plugin->load(robot_ptr);
     }
@@ -186,7 +185,8 @@ int main(int argc, char* argv[]){
         std::shared_ptr<BaseBuilder> builder_plugin = find_builder(builder);
 		
 		builder_plugin->set_debug_flag(verbosity);
-        builder_plugin->configure((LEGACY)?config_node:config_node[builder]);
+		if (builder == "legacy_builder") builder_plugin->configure(config_node);
+		else builder_plugin->configure(config_node[builder]);
 
         builder_plugin->build(robot_ptr);
     }
@@ -197,7 +197,8 @@ int main(int argc, char* argv[]){
         
 		std::shared_ptr<BaseGenerator> generator_plugin = find_generator(generator);
 		generator_plugin->set_debug_flag(verbosity);
-        generator_plugin->configure((LEGACY)?config_node:config_node[generator]);
+		if (generator == "legacy_generator") generator_plugin->configure(config_node);
+		else generator_plugin->configure(config_node[generator]);
         
 		generator_plugin->generate(robot_ptr);
     }
