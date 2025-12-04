@@ -1,6 +1,13 @@
+☐ remove robot.get_model()
+☐ remove robot.get_par()
+☐ change par_obj in Parameter and struct in class
+☐ change fun_obj in Function and struct in class
+☐ create function const vector<Property> get_properties(list)
+☐ create function const vector<Parameter> get_parameters(list)
+☐ create function const vector<Function> get_functions(list)
 ☐ doxigen function documentation in bindings?
 ✔ access to properties of robot in python bindings? @done (12/4/2025, 5:57:39 PM)
-☐ generate get/set functions for parameters in python bindings
+✔ get/set needs args in bindings, check the template @done (12/4/2025, 9:03:12 PM)
 ☐ update readme
 
 general:

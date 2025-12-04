@@ -46,7 +46,6 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	const std::map<string, Property>& properties = robot.properties;
 	const std::map<string, par_obj>& parameters = robot.parameters;
 	const std::map<string, fun_obj>& functions = robot.functions;
-	// std::vector<fun_obj> functions = robot.get_functions();
 
 	// -------------------------------- //
 	// --- Create thunder_<robot>.h --- //
@@ -226,14 +225,21 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			bindings_str.append("\n\t\t.def_readonly(\""+prop.second.name+"\", &"+thunder_robot_name+"::"+prop.second.name+", \""+ prop.second.description +"\")");
 		}
 		// --- pybind parameters gets/sets --- //
+		// check here: .def("set_par_D", &thunder_robot::set_par_D, "Set inertial parameters D", py::arg("par")) ------------!!
 		bindings_str.append("\n");
 		// - gets - //
 		for (auto par : parameters){
-			bindings_str.append("\n\t\t.def(\"get_"+par.second.name+"\", &"+thunder_robot_name+"::get_"+par.second.name+")");
+			if (par.second.symb_size() != 0){
+				string par_name = par.second.name;
+				bindings_str.append("\n\t\t.def(\"get_"+par_name+"\", &"+thunder_robot_name+"::get_"+par_name+", \"Get parameter: "+par_name+"\")");
+			}
 		}
 		// - sets - //
 		for (auto par : parameters){
-			bindings_str.append("\n\t\t.def(\"set_"+par.second.name+"\", &"+thunder_robot_name+"::set_"+par.second.name+")");
+			if (par.second.symb_size() != 0){
+				string par_name = par.second.name;
+				bindings_str.append("\n\t\t.def(\"set_"+par_name+"\", &"+thunder_robot_name+"::set_"+par_name+", \"Set parameter: "+par_name+"\", py::arg(\"value\"))");
+			}
 		}
 		// --- pybind functions --- //
 		bindings_str.append("\n");

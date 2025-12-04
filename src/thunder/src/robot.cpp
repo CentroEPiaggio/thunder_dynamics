@@ -142,23 +142,19 @@ namespace thunder_ns{
 
 			if (par_list.size() == 0){
 				for (auto& par : parameters){
-					string par_name = par.first;
-					vector<double> vect_std = par.second.get_value_resized().get_elements();
-					yamlFile[par.first] = vect_std;
+					if (par.second.symb_size() != 0){
+						string par_name = par.first;
+						vector<double> vect_std = par.second.get_value_resized().get_elements();
+						yamlFile[par.first] = vect_std;
+					}
 				}
 			} else {
 				for (auto& par : par_list){
-					// YAML::Node par_node;
-					// par_node[par] = args[par];
-					// emitter << par_node << YAML::Newline;
-					// yamlFile[par] = args[par];
-
-					// std::cout << par + "_sx: " << args[par] << endl;
-					// Eigen::VectorXd vect_eig = get_arg(par);
-					// std::cout << par + "_eig: " << vect_eig << endl;
 					if (parameters.count(par)){
-						vector<double> vect_std = parameters[par].get_value_resized().get_elements();
-						yamlFile[par] = vect_std;
+						if (parameters[par].symb_size() != 0){
+							vector<double> vect_std = parameters[par].get_value_resized().get_elements();
+							yamlFile[par] = vect_std;
+						}
 					} else {
 						std::cerr << "Parameter does not exist: " << par << std::endl;
 					}
