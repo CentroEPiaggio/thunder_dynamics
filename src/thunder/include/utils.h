@@ -66,7 +66,8 @@ namespace thunder_ns{
 		}
 	};
 
-	typedef struct par_obj{
+	class Parameter{
+		public:
 		string name;
 		string description;
 		std::vector<short> is_symbolic;
@@ -121,9 +122,10 @@ namespace thunder_ns{
 			
 			return res;
 		}
-	}par_obj;
+	};
 
-	typedef struct fun_obj{
+	class Function{
+		public:
 		string name;
 		string description;
 		std::vector<string> args;
@@ -152,7 +154,7 @@ namespace thunder_ns{
 			return ret_type;
 		}
 		
-	}fun_obj;
+	};
 
 	void replace_all(string& str, const string& from_str, const string& to_str);
 

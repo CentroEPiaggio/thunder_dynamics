@@ -44,8 +44,8 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	
 	// int STD_PAR_LINK = robot.STD_PAR_LINK;
 	const std::map<string, Property>& properties = robot.properties;
-	const std::map<string, par_obj>& parameters = robot.parameters;
-	const std::map<string, fun_obj>& functions = robot.functions;
+	const std::map<string, Parameter>& parameters = robot.parameters;
+	const std::map<string, Function>& functions = robot.functions;
 
 	// -------------------------------- //
 	// --- Create thunder_<robot>.h --- //

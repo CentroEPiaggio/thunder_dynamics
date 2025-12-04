@@ -16,9 +16,11 @@ using casadi::DM;
 
 namespace thunder_ns{
 	
-	class Property;
-	typedef struct par_obj par_obj;
-	typedef struct fun_obj fun_obj;
+	// class Property;
+	// class Parameter;
+	// class Function;
+	// typedef struct par_obj par_obj;
+	// typedef struct fun_obj fun_obj;
 	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
@@ -53,10 +55,10 @@ namespace thunder_ns{
 			std::map<string, Property> properties;
 
 			// Parameter map, contains robot variables and parameters
-			std::map<string, par_obj> parameters;
+			std::map<string, Parameter> parameters;
 
 			// Function map, contains robot expressions and functions
-			std::map<string, fun_obj> functions;
+			std::map<string, Function> functions;
 
 
 			// --------------------------- //
@@ -71,8 +73,8 @@ namespace thunder_ns{
 				return std::any_cast<T>(properties.at(key).value);
 			}
 
-			// Return the parameter struct of parameter <key>
-			const par_obj get_par(string par);
+			// // Return the parameter struct of parameter <key>
+			// const Parameter get_par(string par);
 
 			// Return the model (casadi::SX) of <key>
 			SX get_model(string key);
@@ -80,8 +82,14 @@ namespace thunder_ns{
 			// Return the value (casadi::DM) of <key>
 			DM get(string key);
 
-			// Return a vector of function structs (casadi::Function)
-			vector<fun_obj> get_functions(bool onlyNames = 1);
+			// Return a vector of Property elements
+			const vector<Property> get_properties(vector<string> prop_list = {});
+
+			// Return a vector of Parameter elements
+			const vector<Parameter> get_parameters(vector<string> par_list = {});
+
+			// Return a vector of Function elements
+			const vector<Function> get_functions(vector<string> fun_list = {});
 
 			// Set the value of parameter <name> to <value>
 			int set(string name, DM value);
