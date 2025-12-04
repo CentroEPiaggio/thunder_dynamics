@@ -17,7 +17,14 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add all source files in the "src" directory to the SOURCES variable
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB SOURCES 
+  ${CMAKE_SOURCE_DIR}/src/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/loaders/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/builders/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/builders/common/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/generators/*.cpp
+)
 
 # Define the library target with the collected source files
 add_library(library ${SOURCES})

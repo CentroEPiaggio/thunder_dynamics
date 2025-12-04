@@ -1,11 +1,11 @@
 #include <filesystem>
 
 #include "../include/robot.h"
-#include "../include/kinematics.h"
-#include "../include/dynamics.h"
-#include "../include/regressors.h"
 #include "../include/utils.h"
-#include "../include/userDefined.h"
+#include "../include/plugins/builders/common/kinematics.h"
+#include "../include/plugins/builders/common/dynamics.h"
+#include "../include/plugins/builders/common/regressors.h"
+#include "../include/plugins/builders/common/userDefined.h"
 
 using std::string;
 using std::vector;

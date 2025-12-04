@@ -8,8 +8,8 @@
 #include <iostream>
 #include <string>
 
-#include "../../robot.h"
-#include "../../utils.h"
+#include "robot.h"
+#include "utils.h"
 
 using std::endl;
 using std::string;

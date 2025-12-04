@@ -4,8 +4,8 @@
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
 
-#include "../../plugin_interfaces.h"
-#include "../../robot.h"
+#include "plugin_interfaces.h"
+#include "robot.h"
 
 using std::cout;
 using std::endl;

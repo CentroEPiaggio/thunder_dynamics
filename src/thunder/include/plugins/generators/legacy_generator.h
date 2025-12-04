@@ -8,9 +8,9 @@
 #include <iostream>
 #include <string>
 
-#include "../../plugin_interfaces.h"
-#include "../../robot.h"
-#include "generator_utils.h"
+#include "plugin_interfaces.h"
+#include "robot.h"
+#include "plugins/generators/common/generator_utils.h"
 
 using std::cout;
 using std::endl;

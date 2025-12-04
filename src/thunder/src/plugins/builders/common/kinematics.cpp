@@ -1,5 +1,5 @@
-#include "../include/kinematics.h"
-#include "../include/utils.h"
+#include "plugins/builders/common/kinematics.h"
+#include "utils.h"
 
 using std::string;
 using std::vector;
