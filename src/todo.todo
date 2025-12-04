@@ -1,5 +1,6 @@
-✔ implement load_par in thunder_robot @done (12/4/2025, 1:30:23 PM)
-✔ implement save_par in thunder_robot @done (12/4/2025, 1:30:24 PM)
+☐ doxigen function documentation in bindings?
+✔ access to properties of robot in python bindings? @done (12/4/2025, 5:57:39 PM)
+☐ generate get/set functions for parameters in python bindings
 ☐ update readme
 
 general:

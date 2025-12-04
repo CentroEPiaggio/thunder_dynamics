@@ -221,10 +221,25 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			"PYBIND11_MODULE("+thunder_robot_name+"_py, m) {\n"
 			"\tpy::class_<"+thunder_robot_name+">(m, \""+thunder_robot_name+"\")\n"
 			"\t\t.def(py::init<>())\n";
-		// - pybind functions - //
+		// --- pybind properties --- //
+		for (auto prop : properties){
+			bindings_str.append("\n\t\t.def_readonly(\""+prop.second.name+"\", &"+thunder_robot_name+"::"+prop.second.name+", \""+ prop.second.description +"\")");
+		}
+		// --- pybind parameters gets/sets --- //
+		bindings_str.append("\n");
+		// - gets - //
+		for (auto par : parameters){
+			bindings_str.append("\n\t\t.def(\"get_"+par.second.name+"\", &"+thunder_robot_name+"::get_"+par.second.name+")");
+		}
+		// - sets - //
+		for (auto par : parameters){
+			bindings_str.append("\n\t\t.def(\"set_"+par.second.name+"\", &"+thunder_robot_name+"::set_"+par.second.name+")");
+		}
+		// --- pybind functions --- //
+		bindings_str.append("\n");
 		for (auto fun : functions){
 			string fun_name = "get_" + fun.second.name;
-			bindings_str.append("\n\t\t.def(\"" + fun_name + "\", &thunder_" + robot_name + "::" + fun_name + ", \""+ fun.second.description +"\")");
+			bindings_str.append("\n\t\t.def(\"" + fun_name + "\", &" + thunder_robot_name + "::" + fun_name + ", \""+ fun.second.description +"\")");
 		}
 		file_content_cpp.append(bindings_str + ";\n}\n");
 	}
