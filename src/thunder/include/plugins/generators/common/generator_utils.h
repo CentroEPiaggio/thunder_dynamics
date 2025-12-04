@@ -42,7 +42,6 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		Dm_order = robot.get<int>("Dm_order");
 	}
 	
-	// int STD_PAR_LINK = robot.STD_PAR_LINK;
 	const std::map<string, Property>& properties = robot.properties;
 	const std::map<string, Parameter>& parameters = robot.parameters;
 	const std::map<string, Function>& functions = robot.functions;

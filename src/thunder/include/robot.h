@@ -16,12 +16,6 @@ using casadi::DM;
 
 namespace thunder_ns{
 	
-	// class Property;
-	// class Parameter;
-	// class Function;
-	// typedef struct par_obj par_obj;
-	// typedef struct fun_obj fun_obj;
-	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
 		public:
@@ -72,9 +66,6 @@ namespace thunder_ns{
 				}
 				return std::any_cast<T>(properties.at(key).value);
 			}
-
-			// // Return the parameter struct of parameter <key>
-			// const Parameter get_par(string par);
 
 			// Return the model (casadi::SX) of <key>
 			SX get_model(string key);

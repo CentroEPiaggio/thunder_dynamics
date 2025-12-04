@@ -80,10 +80,6 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	// const Parameter Robot::get_par(string par){
-	// 	return parameters[par];
-	// }
-
 	const vector<Property> Robot::get_properties(vector<string> prop_list) {
 		vector<Property> prop_vect;
 		int i=0;
