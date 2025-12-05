@@ -4,357 +4,339 @@
 #include <cmath>
 #include <algorithm>
 #include <Eigen/Dense>
-#include <thread>
 #include <fstream>
-
-// --- INCLUSIONI ACADOS ---
-#include "acados_solver_frankino_throw_catch.h"
-#include "acados_c/ocp_nlp_interface.h"
-
-// --- UTILS ---
+#include <iomanip>
 #include "MinJerkTrajectory.h"
 #include "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/thunder_frankino.h"
 
-using namespace Eigen;
-using namespace std::chrono;
+// --- INCLUSIONI ACADOS ---
+#include "acados_solver_frankino_tracking_mpc.h"
+#include "acados_c/ocp_nlp_interface.h"
 
+using namespace Eigen;
+
+// --- DEFINIZIONI DIMENSIONI (Devono coincidere con il Python generator) ---
 #define N_HORIZON 20
-#define NX 14
-#define NU 7
-#define NY 21
-#define NYN 14
-#define NP 3
+#define NX 14  // [q, dq]
+#define NU 7   // [ddq] <-- L'input MPC è l'accelerazione
+#define NY 21  // [q, dq, u] -> 14 + 7
+#define NYN 14 // [q, dq] nel cost terminale
+#define NP 3   // [obs_x, obs_y, obs_z]
 
 const std::string conf_file = "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/frankino_conf.yaml";
 
 int main()
 {
     // ----------------------------------------------------------------
-    // 1. INIZIALIZZAZIONE ROBOT
+    // 1. SETUP ROBOT
     // ----------------------------------------------------------------
-    // Costruzione corretta: costruttore vuoto + load_conf
     thunder_frankino robot_sim;
     robot_sim.load_conf(conf_file);
+    int NJ = robot_sim.get_numJoints();
 
-    thunder_frankino robot_model;
-    robot_model.load_conf(conf_file);
-
-    int NJ = robot_sim.get_numJoints(); // Meglio usare il getter
-
-    // SETUP LOGGING
+    // Logger: Creiamo un CSV con i dati che ci servono
     std::ofstream data_file("simulation_data.csv");
-    data_file << "t,ref_q_elbow,ref_v_elbow,q_elbow,dq_elbow,tau_elbow, obstacle_x, obstacle_y, obstacle_z, time_left, current_dt_node \n";
+    // data_file << "t,ref_q,ref_dq,ref_ddq,q_real,dq_real,ddq_opt,tau_cmd,obs_dist,obs_x,obs_y,obs_z\n";
+    data_file << "q1,q2,q3,q4,q5,q6,q7,"
+                 "dq1,dq2,dq3,dq4,dq5,dq6,dq7,"
+                 "ddq1,ddq2,ddq3,ddq4,ddq5,ddq6,ddq7,t_solve\n";
 
+    // Vettori di stato
     VectorXd q_curr = VectorXd::Zero(NJ);
     VectorXd dq_curr = VectorXd::Zero(NJ);
+    VectorXd ddq_opt = VectorXd::Zero(NJ); // Output accelerazione MPC
     VectorXd tau_cmd = VectorXd::Zero(NJ);
+    double eps = 1e-6;
+    Eigen::VectorXd tol = VectorXd::Constant(NX, eps);
 
-    // Variabile di supporto per setArguments (accelerazioni nulle per update M,C,G base)
-    VectorXd zeros = VectorXd::Zero(NJ);
+    // Posizione Iniziale
+    q_curr << -1.25962, -0.663669, -0.692637, -2.17138, -0.264125, 1.50759, 0.0630972;
 
-    // Posizione iniziale articolazioni
-    q_curr << 0.0, -0.78, 0.0, -2.35, 0.0, 1.57, 0.78;
-
-    robot_sim.setArguments(q_curr, dq_curr, zeros, zeros);
-    MatrixXd M = robot_sim.get_M();
-    MatrixXd C = robot_sim.get_C();
-    VectorXd G = robot_sim.get_G();
-
-    tau_cmd = G; // Manteniamo la posizione iniziale con la gravità compensata
+    // Init dinamica
+    robot_sim.set_q(q_curr);
+    robot_sim.set_dq(dq_curr);
+    tau_cmd = robot_sim.get_G(); // Compensa gravità all'inizio
+    std::cout << "    Stato iniziale q: " << q_curr.transpose() << std::endl;
+    std::cout << "    Stato iniziale dq: " << dq_curr.transpose() << std::endl;
 
     // ----------------------------------------------------------------
-    // 2. INIZIALIZZAZIONE SOLVER ACADOS
+    // 2. SETUP ACADOS
     // ----------------------------------------------------------------
-    std::cout << ">>> Inizializzazione Solver Acados..." << std::endl;
+    std::cout << ">>> Inizializzazione Acados..." << std::endl;
 
-    frankino_throw_catch_solver_capsule *capsule = frankino_throw_catch_acados_create_capsule();
-    int status = frankino_throw_catch_acados_create(capsule);
-    if (status)
+    frankino_tracking_mpc_solver_capsule *capsule = frankino_tracking_mpc_acados_create_capsule();
+    if (frankino_tracking_mpc_acados_create(capsule) != 0)
     {
-        std::cerr << "Errore creazione solver: " << status << std::endl;
+        std::cerr << "Errore creazione Acados!" << std::endl;
         return 1;
     }
 
-    ocp_nlp_config *nlp_config = frankino_throw_catch_acados_get_nlp_config(capsule);
-    ocp_nlp_dims *nlp_dims = frankino_throw_catch_acados_get_nlp_dims(capsule);
-    ocp_nlp_in *nlp_in = frankino_throw_catch_acados_get_nlp_in(capsule);
-    ocp_nlp_out *nlp_out = frankino_throw_catch_acados_get_nlp_out(capsule);
+    ocp_nlp_config *nlp_config = frankino_tracking_mpc_acados_get_nlp_config(capsule);
+    ocp_nlp_dims *nlp_dims = frankino_tracking_mpc_acados_get_nlp_dims(capsule);
+    ocp_nlp_in *nlp_in = frankino_tracking_mpc_acados_get_nlp_in(capsule);
+    ocp_nlp_out *nlp_out = frankino_tracking_mpc_acados_get_nlp_out(capsule);
 
     // ----------------------------------------------------------------
-    // 3. PIANIFICAZIONE
+    // 3. PIANIFICAZIONE (MinJerkTrajectory)
     // ----------------------------------------------------------------
     MinJerkTrajectory planner;
-    double t_wait = 0.2;
-    double t_throw_dur = 0.8;
-    double t_total_mission = t_wait + t_throw_dur; // Tempo totale della missione
+    double t_start = 0.0;                // Tempo iniziale della traiettoria
+    double t_duration = 5.0;             // Durata della traiettoria (5 secondi)
+    double t_end = t_start + t_duration; // Tempo finale della traiettoria
 
     VectorXd q_start = q_curr;
-    VectorXd q_end = q_curr;
-    q_end(3) += 1.5; // Estensione gomito
+    VectorXd q_final = q_curr;
 
-    VectorXd v_start = VectorXd::Zero(NJ);
-    VectorXd v_throw = VectorXd::Zero(NJ);
-    v_throw(3) = 2.0; // Velocità di lancio target (rad/s)
+    // // Movimento: Estendiamo il braccio e ruotiamo la base
+    // q_final(0) += 1.0; // Base ruota
+    // q_final(3) += 1.0; // Gomito si alza
 
-    planner.init(q_start, q_end, v_start, v_throw, t_wait, t_total_mission);
+    q_final << -0.157, -0.504, -0.623, -2.258, -0.332, 1.637, -1.728; // Posizione finale target
 
-    // Inizializziamo l'ostacolo lontano. Lo sposteremo in loop.
-    double menu_obs_x = 10.0;
-    double menu_obs_y = 10.0;
-    double menu_obs_z = 10.0;
+    // Velocità zero agli estremi
+    VectorXd dq_start = VectorXd::Zero(NJ);
+    VectorXd dq_final = VectorXd::Zero(NJ);
 
-    // Flag per simulare attivazione ostacolo dinamico
-    bool obstacle_active = false;
+    // dq_final(0) += 3.0; // Velocità finale del polso in estensione
+    // dq_final(3) += 2.0; // Velocità finale del gomito in estensione
 
-    std::cout << ">>> Loop avviato. Dati salvati in simulation_data.csv" << std::endl;
+    dq_final << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; // Velocità finali
+
+    planner.init(q_start, q_final, dq_start, dq_final, t_start, t_end);
+
+    // Posizione iniziale ostacolo (Lontano)
+    double obs_p[3] = {0.11, -0.35, 10.53};
 
     // ----------------------------------------------------------------
-    // 3b. WARM-UP SOLVER ACADOS
+    // 4. WARM-UP SOLVER
     // ----------------------------------------------------------------
-    std::cout << ">>> Eseguo Warmup Solver (20 iterazioni)..." << std::endl;
-
-    for (int k = 0; k < 20; k++)
+    std::cout << ">>> Warm-up..." << std::endl;
+    for (int k = 0; k < 10; k++)
     {
-        // --- 1. SETTARE X0 (STATO INIZIALE) ---
-        // Senza questo, il solver pensa di partire da 0.
+        // Set stato iniziale
         double x0[NX];
-        for (int i = 0; i < NJ; i++) x0[i] = q_curr(i);
-        for (int i = 0; i < NJ; i++) x0[NJ + i] = dq_curr(i); // che è zero
-
+        for (int i = 0; i < NJ; i++)
+        {
+            x0[i] = q_curr(i);
+            x0[NJ + i] = dq_curr(i);
+        }
+        // Imposta i bound sullo stato iniziale
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "lbx", x0);
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "ubx", x0);
-        // --------------------------------------------------
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, 0, "x", x0);
 
-        double p_warm[NP] = {menu_obs_x, menu_obs_y, menu_obs_z};
-
+        // Set Reference statico per il warm-up
         for (int i = 0; i <= N_HORIZON; i++)
         {
-            frankino_throw_catch_acados_update_params(capsule, i, p_warm, NP);
+            frankino_tracking_mpc_acados_update_params(capsule, i, obs_p, NP);
 
+            // Reference Dummy
             if (i < N_HORIZON)
             {
-                double yref[NY];
-                for (int j = 0; j < NJ; j++) yref[j] = q_curr(j);
-                for (int j = 0; j < NJ; j++) yref[NJ + j] = 0.0;
-                for (int j = 0; j < NJ; j++) yref[2 * NJ + j] = G(j); 
-
+                double yref[NY] = {0};
+                for (int j = 0; j < NJ; j++)
+                    yref[j] = q_curr(j); // q_ref
+                for (int j = 0; j < NJ; j++)
+                    yref[NJ + j] = dq_start(j);
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref);
             }
             else
             {
-                double yref_e[NYN];
-                for (int j = 0; j < NJ; j++) yref_e[j] = q_curr(j);
-                for (int j = 0; j < NJ; j++) yref_e[NJ + j] = 0.0;
+                double yref_e[NYN] = {0};
+                for (int j = 0; j < NJ; j++)
+                    yref_e[j] = q_curr(j);
+                for (int j = 0; j < NJ; j++)
+                    yref_e[NJ + j] = dq_start(j);
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_e);
             }
         }
 
-        frankino_throw_catch_acados_solve(capsule);
-    }
-
-    double u0_warm[NU];
-    ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, 0, "u", u0_warm);
-    for (int i = 0; i < NJ; i++) tau_cmd(i) = u0_warm[i];
-
-    std::cout << ">>> Warmup Finito. Tau Start Gomito: " << tau_cmd(3) << " Nm" << std::endl;
-
-
-    // ----------------------------------------------------------------
-    // 4. CONTROL LOOP
-    // ----------------------------------------------------------------
-    double dt_control = 0.001; // 1 ms
-
-    bool keep_running = true;
-    double t_sim = 0.0;
-
-    // Variabili per debug feedforward
-    VectorXd debug_tau_ff = VectorXd::Zero(NJ);
-
-    while (keep_running)
-    {
-        // A. GESTIONE TEMPO
-        t_sim += dt_control;
-        double t_abs = t_sim;
-
-        if (t_abs > (t_total_mission + 0.1)) // Aggiungiamo un piccolo buffer
-            keep_running = false;
-
-        // --- SHRINKING HORIZON LOGIC ---
-        // 1. Quanto manca alla fine?
-        double time_left = t_total_mission - t_abs;
-
-        // // 2. Clamp: Potrebbe essere utile non scendere mai sotto un orizzonte minimo (es. 0.1s)
-        // // Se scendiamo troppo, il solver diventa instabile (divisioni per dt piccolissimi).
-        // // Quando mancano meno di 0.1s, l'orizzonte rimane fisso a 0.1s e guarda "appena dopo" la fine.
-        // double min_horizon_duration = 0.1;
-        // if (time_left < min_horizon_duration)
+        int warmup_status = frankino_tracking_mpc_acados_solve(capsule);
+        // if (warmup_status != 0 && warmup_status != 2)
         // {
-        //     time_left = min_horizon_duration;
+        //     std::cout << "    Warm-up solve status: " << warmup_status << " (iter " << k << ")" << std::endl;
         // }
+    }
+    std::cout << ">>> Warm-up completato." << std::endl;
 
-        // 3. Calcolo del nuovo DT per ogni Shooting Node
-        double current_dt_node = time_left / (double)N_HORIZON;
-        // --------------------------------
+    // ----------------------------------------------------------------
+    // 5. LOOP DI CONTROLLO
+    // ----------------------------------------------------------------
+    double dt_sim = 0.001; // 1 kHz loop fisico
+    double t_curr = 0.0;
 
-        if (obstacle_active)
+    std::cout << ">>> Avvio simulazione..." << std::endl;
+
+    while (t_curr < (t_end + 0.1)) // +0.1s extra
+    {
+        // --- A. GESTIONE OSTACOLO DINAMICO ---
+        // Facciamo apparire l'ostacolo tra 1.0s e 2.0s
+        // Lo posizioniamo "in mezzo" al percorso previsto
+        if (t_curr > 2.0)
         {
-            // ESEMPIO: L'ostacolo si muove sinusoidalmente davanti al robot_sim
-            menu_obs_x = 0.5 + 0.1 * sin(t_abs * 2.0); // Oscilla su X
-            menu_obs_y = 0.0;                          // Al centro su Y
-            menu_obs_z = 0.5;                          // Altezza gomito/EE
+            obs_p[0] = 0.11;  // X davanti al robot
+            obs_p[1] = -0.35; // Y leggermente a lato
+            obs_p[2] = 0.53;  // Z altezza critica
         }
         else
         {
-            // Ostacolo disattivato (lo spostiamo lontano)
-            menu_obs_x = 10.0;
-            menu_obs_y = 10.0;
-            menu_obs_z = 10.0;
+            obs_p[0] = 10.0; // Via libera
         }
 
-        double p_current[NP] = {menu_obs_x, menu_obs_y, menu_obs_z};
+        // // ------------------------------------------------------------
+        // // [SHRINKING HORIZON LOGIC]
+        // // ------------------------------------------------------------
 
-        // --------------------------------------------------------
-        // B. INTEGRATORE FISICO REALE (Forward Dynamics)
-        // --------------------------------------------------------
+        // // 1. Calcolo tempo rimanente
+        // double time_to_go = t_end - t_curr;
 
-        // 1. Aggiorna stato interno del modello robot_sim
-        robot_sim.setArguments(q_curr, dq_curr, zeros, zeros);
+        // // 2. Protezione: non scendere mai sotto un dt minimo (es. 1ms)
+        // // altrimenti il solver esplode numericamente quando t_curr ~ t_end
+        // if (time_to_go < 0.02)
+        // {
+        //     time_to_go = 0.02;
+        // }
 
-        // 2. Recupera matrici
-        MatrixXd M = robot_sim.get_M(); // Mass Matrix
-        MatrixXd C = robot_sim.get_C(); // Coriolis Matrix
-        VectorXd G = robot_sim.get_G(); // Gravity Vector
+        // // 3. Calcolo nuovo dt per nodo MPC
+        // double dt_mpc_node = time_to_go / N_HORIZON;
 
-        // 3. Calcolo Bias
-        VectorXd bias = C * dq_curr + G;
+        // // 4. Aggiorna il dt ("Ts") dentro Acados per ogni stage
+        // for (int i = 0; i < N_HORIZON; i++)
+        // {
+        //     ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &dt_mpc_node);
+        // }
 
-        // 4. Attrito viscoso (per stabilizzare la simulazione) tempo fa per le tavole di robotica  lo si aggiungeva al modello
-        VectorXd friction = 0.0 * dq_curr;
+        // // ------------------------------------------------------------
 
-        // 5. Calcolo Accelerazione: M * ddq = tau - bias - friction
-        VectorXd tau_net = tau_cmd - bias - friction;
-        VectorXd ddq_calc = M.llt().solve(tau_net); // LLT per simmetria e definitezza positiva Lower-Upper Cholesky Decomposition
+        // --- B. SETUP MPC (Receding Horizon) ---
+        // L'MPC predice il futuro con passi di 0.05s
+        double dt_mpc_node = 0.05;
 
-        // 6. Integrazione (Eulero semi-implicito)
-        dq_curr += ddq_calc * dt_control;
-        q_curr += dq_curr * dt_control + 0.5 * ddq_calc * dt_control * dt_control;
-
-        // --------------------------------------------------------
-
-        // C. SET X0 (Feedback per MPC)
+        // 1. Feedback Stato Corrente (x0)
         double x0[NX];
         for (int i = 0; i < NJ; i++)
+        {
             x0[i] = q_curr(i);
-        for (int i = 0; i < NJ; i++)
             x0[NJ + i] = dq_curr(i);
-
+        }
+        // Imposta i bound sullo stato iniziale
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "lbx", x0);
         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, 0, "ubx", x0);
+        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, 0, "x", x0);
 
-        // D. UPDATE REFERENCE (MPC)
+        // 2. Aggiornamento Traiettoria Desiderata nell'orizzonte
         for (int i = 0; i <= N_HORIZON; i++)
         {
-            // --- UPDATE TIME STEP (Shrinking Horizon) ---
-            // Acados richiede di settare "Ts" per i nodi da 0 a N-1
-            if (i < N_HORIZON)
-            {
-                ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "Ts", &current_dt_node);
-            }
+            // Il tempo predetto ora usa dt_mpc_node calcolato dinamicamente
+            double t_pred = t_curr + i * dt_mpc_node;
 
-            // double t_pred = t_abs + i * dt_mpc_step;
-            // MinJerkTrajectory::State des = planner.evaluate(t_pred);
-            // frankino_throw_catch_acados_update_params(capsule, i, p_current, NP);
-
-            double t_pred = t_abs + i * current_dt_node;
+            // Usiamo la classe MinJerk
             MinJerkTrajectory::State des = planner.evaluate(t_pred);
 
-            // --- CALCOLO INVERSE DYNAMICS FEEDFORWARD ---
-            // Aggiorniamo il robot "modello" con lo stato desiderato
-            robot_model.setArguments(des.pos, des.vel, zeros, zeros);
-
-            // Tau_FF = M(q_d)*acc_d + C(q_d, dq_d)*vel_d + g(q_d)
-            VectorXd tau_ff = robot_model.get_M() * des.acc +
-                              robot_model.get_C() * des.vel +
-                              robot_model.get_G();
-
-            // Salviamo per debug il valore corrente (i=0)
-            if (i == 0)
-                debug_tau_ff = tau_ff;
-
-            // Update ostacoli
-            frankino_throw_catch_acados_update_params(capsule, i, p_current, NP);
+            // Passiamo param ostacolo
+            frankino_tracking_mpc_acados_update_params(capsule, i, obs_p, NP);
+            double yref[NY] = {0};
 
             if (i < N_HORIZON)
             {
-                double yref[NY];
-                // Stati
-                for (int k = 0; k < NJ; k++)
-                    yref[k] = des.pos(k);
-                for (int k = 0; k < NJ; k++)
-                    yref[NJ + k] = des.vel(k);
 
-                // Input (Coppia)
-                for (int k = 0; k < NJ; k++)
-                    yref[2 * NJ + k] = tau_ff(k);
+                // Copia posizione e velocità desiderate
+                for (int j = 0; j < NJ; j++)
+                    yref[j] = des.pos(j);
+                for (int j = 0; j < NJ; j++)
+                    yref[NJ + j] = des.vel(j);
+                for (int j = 0; j < NJ; j++)
+                    yref[2 * NJ + j] = des.acc(j); // Riferimento accelerazione a 0.0
+
+                // Gli ultimi 7 valori (indici 14-20) sono riferiti a 'u' (accelerazione).
+                // Lasciandoli a 0.0, stiamo dicendo: "Cerca di tenere l'accelerazione bassa".
+                // Questo rende il movimento smooth.
 
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref);
             }
             else
             {
-                // Terminal cost (solo stati)
-                double yref_e[NYN];
-                for (int k = 0; k < NJ; k++)
-                    yref_e[k] = des.pos(k);
-                for (int k = 0; k < NJ; k++)
-                    yref_e[NJ + k] = des.vel(k);
+                // Terminal cost yref_e = [q, dq] (dimensione NYN = 14)
+                double yref_e[NYN] = {0};
+                for (int j = 0; j < NJ; j++)
+                    yref_e[j] = des.pos(j);
+                for (int j = 0; j < NJ; j++)
+                    yref_e[NJ + j] = des.vel(j);
+                // Per il costo terminale usa "yref_e" non "yref"
                 ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_e);
             }
         }
 
-        // E. SOLVE
-        status = frankino_throw_catch_acados_solve(capsule);
-        if (status != 0 && status != 2)
-        {
-            // Ignoriamo status 2 (max iter) che è comune in real-time
-            std::cerr << "Solver error: " << status << std::endl;
-        }
+        auto start_solve = std::chrono::high_resolution_clock::now();
+        // --- C. SOLVE MPC ---
+        int status = frankino_tracking_mpc_acados_solve(capsule);
 
-        // F. GET CONTROL
+        auto end_solve = std::chrono::high_resolution_clock::now();
+        auto solve_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_solve - start_solve);
+
+        // Salva tempo di solve per analisi
+        double solve_time_us = solve_duration.count();
+        double solve_time_ms = solve_time_us / 1000.0;
+        // if (status != 0 && status != 2)
+        // {
+        //     // Status 2 è max iter raggiunto (comune in real-time), va bene.
+        //     std::cout << "    MPC solve status: " << status << " at t=" << t_curr << std::endl;
+        // }
+
+        // --- D. RECUPERO ACCELERAZIONE OTTIMA (u0) ---
         double u0[NU];
         ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, 0, "u", u0);
-        for (int i = 0; i < NJ; i++)
-            tau_cmd(i) = u0[i];
+        for (int j = 0; j < NJ; j++)
+            ddq_opt(j) = u0[j];
 
-        // LOGGING
-        MinJerkTrajectory::State current_ref = planner.evaluate(t_abs);
+        // --- E. COMPUTED TORQUE (Cascade Control) ---
+        // Usiamo l'accelerazione dell'MPC per calcolare la coppia fisica
+        robot_sim.set_q(q_curr);
+        robot_sim.set_dq(dq_curr);
+        MatrixXd M = robot_sim.get_M();
+        MatrixXd C = robot_sim.get_C();
+        VectorXd G = robot_sim.get_G();
+        VectorXd bias = C * dq_curr + G;
 
-        data_file << t_abs << ","
-                  << current_ref.pos(3) << "," << current_ref.vel(3) << ","
-                  << q_curr(3) << "," << dq_curr(3) << "," << tau_cmd(3) << ","
-                  << menu_obs_x << "," << menu_obs_y << "," << menu_obs_z << ","
-                  << time_left << "," << current_dt_node << "\n";
+        // Legge di controllo: Tau = M * ddq_opt + Bias
+        tau_cmd = M * ddq_opt + bias;
 
-        // // Stampa ogni 100ms
-        // int step_count = (int)(t_sim / dt_control);
-        // if (step_count % 100 == 0)
-        // {
-        //     std::cout << "T: " << t_abs
-        //               << " | Ref_V: " << current_ref.vel(3)
-        //               << " | Real_V: " << dq_curr(3)
-        //               << " | Tau: " << tau_cmd(3)
-        //               << " | Ref_P: " << current_ref.pos(3)
-        //               << " | Real_P: " << q_curr(3)
-        //               << " | Time Left: " << time_left
-        //               << " | Current Dt Node: " << current_dt_node
-        //               << std::endl;
-        // }
+        // --- F. SIMULAZIONE (Integrator) ---
+        // Simulo la risposta del robot reale
+        // ddq_real = inv(M) * (tau - bias) -> In teoria tornerà ddq_opt se il modello è perfetto
+        VectorXd ddq_real = M.llt().solve(tau_cmd - bias);
+
+        dq_curr += ddq_real * dt_sim;
+        q_curr += dq_curr * dt_sim + 0.5 * ddq_real * pow(dt_sim, 2);
+
+        // --- G. LOGGING ---
+        MinJerkTrajectory::State ref_now = planner.evaluate(t_curr);
+
+        // Distanza dall'ostacolo (per logging)
+        Vector3d ee_pos = robot_sim.get_T_0_8().block<3, 1>(0, 3);
+        double dist_obs = std::sqrt(std::pow(ee_pos(0) - obs_p[0], 2) +
+                                    std::pow(ee_pos(1) - obs_p[1], 2) +
+                                    std::pow(ee_pos(2) - obs_p[2], 2));
+
+        // Loggiamo i dati relativi al Giunto 3 (Gomito) o 0 (Base) che si muovono molto
+        int log_j = 3; // Logghiamo il giunto gomito
+
+        // data_file << t_curr << ","
+        //           << ref_now.pos(log_j) << "," << ref_now.vel(log_j) << "," << ref_now.acc(log_j) << ","
+        //           << q_curr(log_j) << "," << dq_curr(log_j) << "," << ddq_opt(log_j) << ","
+        //           << tau_cmd(log_j) << "," << dist_obs << ","
+        //           << obs_p[0] << "," << obs_p[1] << "," << obs_p[2] << "\n";
+        data_file << q_curr(0) << "," << q_curr(1) << "," << q_curr(2) << "," << q_curr(3) << "," << q_curr(4) << "," << q_curr(5) << "," << q_curr(6) << ","
+                  << dq_curr(0) << "," << dq_curr(1) << "," << dq_curr(2) << "," << dq_curr(3) << "," << dq_curr(4) << "," << dq_curr(5) << "," << dq_curr(6) << ","
+                  << ddq_opt(0) << "," << ddq_opt(1) << "," << ddq_opt(2) << "," << ddq_opt(3) << "," << ddq_opt(4) << "," << ddq_opt(5) << "," << ddq_opt(6) << "," <<  solve_time_ms << "\n";
+        t_curr += dt_sim;
     }
 
-    // CLEANUP
-    std::cout << ">>> Fine simulazione." << std::endl;
+    std::cout << ">>> Simulazione finita. Dati salvati in simulation_data.csv" << std::endl;
     data_file.close();
-    frankino_throw_catch_acados_free(capsule);
-    frankino_throw_catch_acados_free_capsule(capsule);
+    std::cout << ">>> Pulizia Acados..." << std::endl;
 
+    frankino_tracking_mpc_acados_free(capsule);
+    frankino_tracking_mpc_acados_free_capsule(capsule);
     return 0;
 }
