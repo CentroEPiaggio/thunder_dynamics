@@ -61,14 +61,12 @@ namespace thunder_ns {
             std::vector<std::string> loader_names;
             std::vector<std::string> builder_names;
             std::vector<std::string> generator_names;
-            bool legacy_mode = false;
 
             if (config["pipeline"]) {
                 loader_names = config["pipeline"]["loaders"].as<std::vector<std::string>>();
                 builder_names = config["pipeline"]["builders"].as<std::vector<std::string>>();
                 generator_names = config["pipeline"]["generators"].as<std::vector<std::string>>();
             } else {
-                legacy_mode = true;
                 loader_names = {"legacy_loader"};
                 builder_names = {"legacy_builder"};
                 generator_names = {"legacy_generator"};
@@ -81,8 +79,9 @@ namespace thunder_ns {
                     throw std::runtime_error("Loader not found: " + name);
 
                 plugin->set_debug_flag(verbose_);
-                plugin->configure(legacy_mode ? config : config[name]);
-
+                if (name == "legacy_loader") plugin->configure(config);
+                else plugin->configure(config[name]);
+                
                 active_loaders_.push_back(plugin);
             }
 
@@ -92,7 +91,8 @@ namespace thunder_ns {
                     throw std::runtime_error("Builder not found: " + name);
 
                 plugin->set_debug_flag(verbose_);
-                plugin->configure(legacy_mode ? config : config[name]);
+                if (name == "legacy_builder") plugin->configure(config);
+                else plugin->configure(config[name]);
 
                 active_builders_.push_back(plugin);
             }
@@ -103,7 +103,8 @@ namespace thunder_ns {
                     throw std::runtime_error("Generator not found: " + name);
 
                 plugin->set_debug_flag(verbose_);
-                plugin->configure(legacy_mode ? config : config[name]);
+                if (name == "legacy_generator") plugin->configure(config);
+                else plugin->configure(config[name]);
 
                 active_generators_.push_back(plugin);
             }
