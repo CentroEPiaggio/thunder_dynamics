@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PLUGININTERFACES_H
+#define PLUGININTERFACES_H
 
 #include <iostream>
 #include <string>
@@ -18,49 +19,44 @@ namespace thunder_ns{
 	class BasePlugin {
 
 	private:
+
 		std::string name_;
 		std::string description_;
 		int debug_flag_ = 0;
 
 	public:
 
+		YAML::Node config_; 
+		
 		BasePlugin(std::string name, std::string desc) : name_(name), description_(desc) {}
 
 		~BasePlugin() = default;
 
-		/**
-		 * @brief Enables verbose output when set to 1, otherwise prints only essential logs.
-		 */
-		void set_debug_flag(int flag) {
-			debug_flag_ = flag ? 1 : 0;
-		}
+		// Enables verbose output when set to 1, otherwise prints only essential logs.
+		void set_debug_flag(int flag) {debug_flag_ = flag ? 1 : 0;}
 
-		/**
-		 * @brief Returns the currently selected debug flag value.
-		 */
-		int get_debug_flag() const {
-			return debug_flag_;
-		}
+		// Returns the currently selected debug flag value.
+		int get_debug_flag() const { return debug_flag_; } 
 		
-		/**
-		 * @brief Prints name and descripion to cout.
-		 */
-		void print_info() const{
-			std::cout << "Plugin " << name_ << ". Description: " << description_;
-		}
+		// Returns plugin description
+		const std::string& get_description() const { return description_; }
+
+		// Returns plugin name
+		const std::string& get_name() const { return name_; }
 
 		/**
 		 * @brief Load configuration from yaml
 		 * 
 		 * @param config The configuration node
 		 */ 
-		virtual int configure(const YAML::Node& config) = 0;
+		int configure(const YAML::Node& config) {
+			config_ = config;
+			return 1;
+		}
 
 
-		/**
-		 * @brief Set descripion, name and 
-		 */
 	protected:
+	
 		/**
 		 * @brief Helper method to print plugin specific debug information.
 		 *
@@ -105,9 +101,21 @@ namespace thunder_ns{
 	 * @brief Base class for plugins that populate symbolic functions.
 	 * Their 'build' method reads parameters from the Robot object,
 	 * performs symbolic calculations (e.g., kinematics, dynamics),
-	 * and adds new functions to the Robot using `robot.add_function()`.
+	 * and adds new functions to the Robot using `registrer_function`.
 	 */
 	class BaseBuilder : public BasePlugin {
+		
+  		protected:
+		// Check if the function f_name has to be ignored
+		bool should_ignore(std::string f_name) {
+			if (config_["functions"] && config_["functions"][f_name]) {
+				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
+					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
+					return false;
+				}
+			}
+		}
+
 		public:
 
 		/**
@@ -119,6 +127,8 @@ namespace thunder_ns{
 		virtual void build(std::shared_ptr<Robot> robot) = 0;
 
 		BaseBuilder(std::string name, std::string desc): BasePlugin(name, desc) {}
+
+
 
 	};
 
@@ -144,3 +154,5 @@ namespace thunder_ns{
 
 
 } // namespace thunder
+
+#endif

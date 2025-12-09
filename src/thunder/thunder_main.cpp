@@ -14,7 +14,7 @@ Command line interface for Thunder, it can generate code for robots
 
 #include "plugin_interfaces.h"
 #include "plugin_registry.h"
-
+#include "plugin_manager.h" 
 
 using namespace thunder_ns;
 using namespace std::chrono;
@@ -29,34 +29,11 @@ bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
 #define VERSION "0.8.19-plugin"
 
-template <typename PluginType>
-void print_plugin_group(const std::string& title, const std::map<std::string, std::shared_ptr<PluginType>>& plugins, bool verbosity){
-	cout << title << ":" << endl;
-	if (plugins.empty()) {
-		cout << "  (none)" << endl;
-		return;
-	}
-	for (const auto& plugin : plugins) {
-		// cout << "  - " << plugin.first << endl;
-		cout << " - '" << plugin.first << "' ";
-		if(verbosity) 
-			plugin.second->print_info();
-		cout<<endl;
-	}
-}
-
-void print_available_plugins(bool verbosity) {
-	cout << "Available Thunder plugins" << endl;
-	print_plugin_group("Loaders", LOADERS, verbosity);
-	print_plugin_group("Builders", POPULATORS, verbosity);
-	print_plugin_group("Generators", GENERATORS, verbosity);
-}
 
 // --- paths and files (default) --- //
 std::string robot_name = "robot";
 std::string path_robot = "../robots/";
 std::string config_file = path_robot + robot_name + "/robot.yaml";
-std::string robot_name_gen = robot_name + "_gen";
 
 
 int main(int argc, char* argv[]){
@@ -101,16 +78,22 @@ int main(int argc, char* argv[]){
 		std::cout << thunder_cli;
 		return 0;
 	}
+	
+	// ----------------------------- //
+	// ------- PLUGIN MANAGER ------- //
+	// ----------------------------- //
+	PluginManager manager;
 
 	if (thunder_cli.is_subcommand_used("plugin")) {
 		if (plugin_command.is_subcommand_used("list")) {
-			print_available_plugins(plugin_list_command.get<bool>("--verbose"));
+			manager.print_available_plugins(plugin_list_command.get<bool>("--verbose"));
 		} else {
 			std::cout << plugin_command;
 		}
 		return 0;
 	}
 
+	// return if no command is used
 	if (!thunder_cli.is_subcommand_used("gen")) {
 		std::cout << thunder_cli;
 		return 0;
@@ -143,65 +126,23 @@ int main(int argc, char* argv[]){
 	cout<<"Robot name: "<<robot_name<<endl;
 	// cout<<"robot_path: "<<path_robot<<endl;
 	auto time_start = high_resolution_clock::now();
-	robot_name_gen = robot_name + "_gen";
-
-    // PARSE YAML 
-    YAML::Node config_node = YAML::LoadFile(config_file);
-
-	std::vector<std::string> loaders;
-	std::vector<std::string> builders;
-	std::vector<std::string> generators;
-
-	if (config_node["pipeline"]){
-		loaders = config_node["pipeline"]["loaders"].as<std::vector<std::string>>();
-		builders = config_node["pipeline"]["builders"].as<std::vector<std::string>>();
-		generators = config_node["pipeline"]["generators"].as<std::vector<std::string>>();
-	} else {
-		loaders = std::vector<std::string>({"legacy_loader"});
-		builders = std::vector<std::string>({"legacy_builder"});
-		generators = std::vector<std::string>({"legacy_generator"});
-	}
-
-    // execute loaders
-	auto robot_ptr = std::make_shared<Robot>(robot_name);
-	// robot_ptr->robotName = robot_name;
-
 	auto verbosity = gen_command.get<bool>("--verbose");
 
-    for(auto loader : loaders){
-		cout << "Executing Loader: " << loader << endl;
-        std::shared_ptr<BaseLoader> loader_plugin = find_loader(loader);
+	try {
+		// Load YAML
+		YAML::Node config_node = YAML::LoadFile(config_file);
 
-		loader_plugin->set_debug_flag(verbosity);
-		if (loader == "legacy_loader") loader_plugin->configure(config_node);
-		else loader_plugin->configure(config_node[loader]);
+		// Configure Manager
+		manager.set_verbose(verbosity);
+		manager.configure_pipeline(config_node);
 
-        robot_ptr = loader_plugin->load(robot_ptr);
-    }
+		// Run Pipeline
+		manager.execute(robot_name);
 
-    // execute builders
-    for(auto builder : builders){
-		cout << "Executing Builder: " << builder << endl;
-        std::shared_ptr<BaseBuilder> builder_plugin = find_builder(builder);
-		
-		builder_plugin->set_debug_flag(verbosity);
-		if (builder == "legacy_builder") builder_plugin->configure(config_node);
-		else builder_plugin->configure(config_node[builder]);
-
-        builder_plugin->build(robot_ptr);
-    }
-
-    // execute generators
-    for(auto generator : generators){
-		cout << "Executing generator: " << generator << endl;
-        
-		std::shared_ptr<BaseGenerator> generator_plugin = find_generator(generator);
-		generator_plugin->set_debug_flag(verbosity);
-		if (generator == "legacy_generator") generator_plugin->configure(config_node);
-		else generator_plugin->configure(config_node[generator]);
-        
-		generator_plugin->generate(robot_ptr);
-    }
+	} catch (const std::exception& e) {
+		std::cerr << "[ERROR] " << e.what() << std::endl;
+		return 1;
+	}
 
 	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();

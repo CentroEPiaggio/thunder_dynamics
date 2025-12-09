@@ -1,5 +1,5 @@
-
-#pragma once
+#ifndef PLUGINREGISTRY_H
+#define PLUGINREGISTRY_H
 
 #include "plugin_interfaces.h"
 #include <map>
@@ -56,7 +56,6 @@ inline const std::map<std::string, std::shared_ptr<BaseGenerator>> GENERATORS = 
 
 
 
-
 /**
  * @brief Helper function to find a loader by name.
  * It searches all three maps and returns the first match.
@@ -70,7 +69,6 @@ inline std::shared_ptr<BaseLoader> find_loader(const std::string& plugin_type) {
 	}
 	return nullptr;
 }
-
 
 /**
  * @brief Helper function to find a builder by name.
@@ -102,3 +100,5 @@ inline std::shared_ptr<BaseGenerator> find_generator(const std::string& plugin_t
 
 
 } // namespace thunder_ns
+
+#endif
