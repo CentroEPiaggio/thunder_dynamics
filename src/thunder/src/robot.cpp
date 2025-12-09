@@ -1,11 +1,11 @@
 #include <filesystem>
 
 #include "../include/robot.h"
-#include "../include/kinematics.h"
-#include "../include/dynamics.h"
-#include "../include/regressors.h"
 #include "../include/utils.h"
-#include "../include/userDefined.h"
+#include "../include/plugins/builders/common/kinematics.h"
+#include "../include/plugins/builders/common/dynamics.h"
+#include "../include/plugins/builders/common/regressors.h"
+#include "../include/plugins/builders/common/userDefined.h"
 
 using std::string;
 using std::vector;
@@ -42,8 +42,6 @@ namespace thunder_ns{
 			std::cerr << name + " not recognised" << endl;
 			return DM::zeros(1,1);
 		}
-		
-		// return result_num;
 	}
 
 	SX Robot::get_model(string name){
@@ -82,26 +80,59 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	const par_obj Robot::get_par(string par){
-		return parameters[par];
+	const vector<Property> Robot::get_properties(vector<string> prop_list) {
+		vector<Property> prop_vect;
+		int i=0;
+		if (prop_list.size() != 0){
+			prop_vect.resize(prop_list.size());
+			for (string& p : prop_list){
+				prop_vect[i] = properties[p];
+				i++;
+			}
+		} else {
+			prop_vect.resize(properties.size());
+			for (auto &prop : properties){
+				prop_vect[i] = prop.second;
+				i++;
+			}
+		}
+		return prop_vect;
 	}
 
-	vector<fun_obj> Robot::get_functions(bool onlyNames) {
-		vector<fun_obj> fun_vect;
-		int sz = functions.size();
-		fun_vect.resize(sz);
+	const vector<Parameter> Robot::get_parameters(vector<string> par_list) {
+		vector<Parameter> par_vect;
 		int i=0;
-		for (auto &f : functions){
-			string name = f.first;
-			fun_vect[i].name = f.first;
-			fun_vect[i].description = f.second.description;
-			fun_vect[i].args = f.second.args;
-			fun_vect[i].out_size = f.second.out_size;
-			if (!onlyNames){
-				fun_vect[i].expr = f.second.expr;
-				fun_vect[i].fun = f.second.fun;
+		if (par_list.size() != 0){
+			par_vect.resize(par_list.size());
+			for (string& p : par_list){
+				par_vect[i] = parameters[p];
+				i++;
 			}
-			i++;
+		} else {
+			par_vect.resize(parameters.size());
+			for (auto &par : parameters){
+				par_vect[i] = par.second;
+				i++;
+			}
+		}
+		return par_vect;
+	}
+
+	const vector<Function> Robot::get_functions(vector<string> fun_list) {
+		vector<Function> fun_vect;
+		int i=0;
+		if (fun_list.size() != 0){
+			fun_vect.resize(fun_list.size());
+			for (string& f : fun_list){
+				fun_vect[i] = functions[f];
+				i++;
+			}
+		} else {
+			fun_vect.resize(functions.size());
+			for (auto &fun : functions){
+				fun_vect[i] = fun.second;
+				i++;
+			}
 		}
 		return fun_vect;
 	}
@@ -143,23 +174,19 @@ namespace thunder_ns{
 
 			if (par_list.size() == 0){
 				for (auto& par : parameters){
-					string par_name = par.first;
-					vector<double> vect_std = par.second.get_value_resized().get_elements();
-					yamlFile[par.first] = vect_std;
+					if (par.second.symb_size() != 0){
+						string par_name = par.first;
+						vector<double> vect_std = par.second.get_value_resized().get_elements();
+						yamlFile[par.first] = vect_std;
+					}
 				}
 			} else {
 				for (auto& par : par_list){
-					// YAML::Node par_node;
-					// par_node[par] = args[par];
-					// emitter << par_node << YAML::Newline;
-					// yamlFile[par] = args[par];
-
-					// std::cout << par + "_sx: " << args[par] << endl;
-					// Eigen::VectorXd vect_eig = get_arg(par);
-					// std::cout << par + "_eig: " << vect_eig << endl;
 					if (parameters.count(par)){
-						vector<double> vect_std = parameters[par].get_value_resized().get_elements();
-						yamlFile[par] = vect_std;
+						if (parameters[par].symb_size() != 0){
+							vector<double> vect_std = parameters[par].get_value_resized().get_elements();
+							yamlFile[par] = vect_std;
+						}
 					} else {
 						std::cerr << "Parameter does not exist: " << par << std::endl;
 					}
@@ -188,7 +215,7 @@ namespace thunder_ns{
 			// key already exists
 			return 0;
 		} else {
-			par_obj param;
+			Parameter param;
 			param.name = p_name;
 			param.description = descr;
 			param.symb = symb;
@@ -264,10 +291,11 @@ namespace thunder_ns{
 			}
 
 			// - creating fun object
-			fun_obj fun_struct;
-			fun_struct.expr = expr;
-			fun_struct.args = arg_list;
-			fun_struct.description = descr;
+			Function function;
+			function.name = f_name;
+			function.expr = expr;
+			function.args = arg_list;
+			function.description = descr;
 
 			// - only symbolic parameters as arguments - //
 			casadi::SXVector inputs(arg_list.size());
@@ -298,8 +326,8 @@ namespace thunder_ns{
 
 			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
 			// cout<<"fun: "<<fun<<endl;
-			fun_struct.fun = fun;
-			functions[f_name] = fun_struct;
+			function.fun = fun;
+			functions[f_name] = function;
 		}
 
 		return 1;

@@ -40,7 +40,6 @@ std::string config_file = path_robot + robot_name + "/robot.yaml";
 int main(int argc, char* argv[]){
 	// --- Variables --- //
 	int nj;
-	bool LEGACY = false;
 
 	// ----------------------------- //
 	// ---------- CONSOLE ---------- //

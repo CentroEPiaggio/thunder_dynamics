@@ -1,8 +1,7 @@
-#include "../include/regressors.h"
-#include "../include/utils.h"
-#include "../include/robot.h"
-#include "../include/kinematics.h"
-#include "../include/dynamics.h"
+#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/common/kinematics.h"
+#include "plugins/builders/common/dynamics.h"
+#include "utils.h"
 
 using std::string;
 using std::vector;

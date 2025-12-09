@@ -10,13 +10,13 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-#include "include/robot.h"
-#include "include/kinematics.h"
-#include "include/dynamics.h"
-#include "include/regressors.h"
-#include "include/userDefined.h"
-#include "../include/plugins/loaders/legacy_loader.h"
-#include "../include/plugins/builders/legacy_builder.h"
+#include "robot.h"
+#include "plugins/builders/common/kinematics.h"
+#include "plugins/builders/common/dynamics.h"
+#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/common/userDefined.h"
+#include "plugins/loaders/legacy_loader.h"
+#include "plugins/builders/legacy_builder.h"
 
 using std::string;
 using std::vector;

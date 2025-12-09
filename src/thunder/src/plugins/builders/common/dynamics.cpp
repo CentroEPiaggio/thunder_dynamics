@@ -1,7 +1,6 @@
-#include "../include/dynamics.h"
-#include "../include/utils.h"
-#include "../include/robot.h"
-#include "../include/kinematics.h"
+#include "plugins/builders/common/dynamics.h"
+#include "plugins/builders/common/kinematics.h"
+#include "utils.h"
 
 using std::string;
 using std::vector;

@@ -16,10 +16,6 @@ using casadi::DM;
 
 namespace thunder_ns{
 	
-	class Property;
-	typedef struct par_obj par_obj;
-	typedef struct fun_obj fun_obj;
-	
 	// contain everything related to a robot, uses the other classes to obtain functions
 	class Robot{
 		public:
@@ -53,10 +49,10 @@ namespace thunder_ns{
 			std::map<string, Property> properties;
 
 			// Parameter map, contains robot variables and parameters
-			std::map<string, par_obj> parameters;
+			std::map<string, Parameter> parameters;
 
 			// Function map, contains robot expressions and functions
-			std::map<string, fun_obj> functions;
+			std::map<string, Function> functions;
 
 
 			// --------------------------- //
@@ -71,17 +67,20 @@ namespace thunder_ns{
 				return std::any_cast<T>(properties.at(key).value);
 			}
 
-			// Return the parameter struct of parameter <key>
-			const par_obj get_par(string par);
-
 			// Return the model (casadi::SX) of <key>
 			SX get_model(string key);
 
 			// Return the value (casadi::DM) of <key>
 			DM get(string key);
 
-			// Return a vector of function structs (casadi::Function)
-			vector<fun_obj> get_functions(bool onlyNames = 1);
+			// Return a vector of Property elements
+			const vector<Property> get_properties(vector<string> prop_list = {});
+
+			// Return a vector of Parameter elements
+			const vector<Parameter> get_parameters(vector<string> par_list = {});
+
+			// Return a vector of Function elements
+			const vector<Function> get_functions(vector<string> fun_list = {});
 
 			// Set the value of parameter <name> to <value>
 			int set(string name, DM value);
@@ -98,7 +97,7 @@ namespace thunder_ns{
 			// ------------------------ //
 
 			// Add the property <name> of type <T> to the property map
-			template<class T> int add_property(string name, T value, string type, string descr = "", bool overwrite = true){
+			template<class T> int add_property(string name, T value, string type_str, string descr = "", bool overwrite = true){
 				if ((!overwrite) && properties.count(name)){
 					// key already exists
 					return 0;
@@ -106,7 +105,7 @@ namespace thunder_ns{
 					Property prop;
 					prop.name = name;
 					prop.value = value;
-					prop.type = type;
+					prop.type_str = type_str;
 					prop.description = descr;
 					properties[name] = prop;
 				}

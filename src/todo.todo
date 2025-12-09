@@ -1,37 +1,43 @@
-✔ add function description in Robot @done (11/28/2025, 4:08:23 PM)
-☐ create from zero thunder_robot
-☐ add function description in thunder_robot_template (or create from zero)
-☐ improve structure of the todo file
+☐ doxigen function documentation in bindings?
+☐ problem in thunder_robot_test when bindings are created
 ☐ update readme
-improvings:
-	plugins:
-		☐ create plugin manager
-		☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
-	Console parser:
+
+general:
+	☐ robot_name is important, check the entire pipeline of generations and use of Robot
+	☐ robot_name not handled properly in legacy_loader, yaml have priority
+	☐ move templates to thunder/data/templates (for example the cmakelists)
+	☐ generic utils.spatial and generic wrt robot and thunder_robot
+	☐ add verbosity levels (not bool)
+	☐ substitute cout with errors or info
+	☐ decrease the dimension of generated files
+	☐ explain better stiffness and friction in readme (maybe create sections for it)
+	☐ example and robot cleaning
+	☐ better test system for thunder_robot tests. Have to handle non-existing functions! (C++ 20 and templates)
+	☐ only one folder for robots! not a big problem (experimental robots are into thunder src)
+	☐ add version control for config file
+	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
+
+thunder:
+	console parser:
 		☐ automatically set version?
 		☐ problem if robot_name contains special characters
 		☐ not possible to insert path in robot_name
-	Paramaters:
+		☐ have to work also if there is not .yaml in the name of file (thunder gen /../a.yaml)
+	parameters:
 		☐ numeric par_REG are computed only after building dynamics (because now the conversion is a function), problems?
 		☐ saved parameters are not ordered, solve?
 		☐ saved parameters have only symbolic ones, change?
-		☐ change template to add automatically every parameter to the members (thunder_robot)
-		☐ thunder_robot should have the numerical parameters inside when created (no need to load conf)
 		☐ rename base parameters in casadi model expressions? (e.g. par_DYM->DYN)
 		☐ add_variable() is using add_parameter(), change?
 		☐ allow different type for parameters
-		☐ if parameter is not symbolic, also regressor have to be resized!
 		☐ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..)
-		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
-		☐ set_arg_<model>() function that sets only the arguments used by <model>? ,maybe old
-		☐ save_conf and load_conf not ready (works but not update parameters, use update_conf() for that), for now there are save_par, load_par in thunder
-		☐ save and load par in thunder_robot as generic functions
-		☐ not use fillInertialYaml, ore improve it
-		☐ check if LinkProp is usefull or not, will be used for internal representation of kinematics?
-		☐ thunder_utils with LinkProp and other classes needed both by thunder and thunder_robot?
-		☐ FrameOffset part of linkProp? maybe into utils?
-		☐ FrameOffset not so general, use T as internal transformation and provide conversions
-	Elasticity:
+	kinematics:
+		☐ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention!
+		☐ check consistency with parametrization, write down parametrization, urdf differences?
+		☐ make a general kinematic parametrization
+		☐ maybe T_0_0 better to be T_w_o?
+	dynamics:
+	elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
 		☐ obtain orders directly from size of elastic parameters arrays
@@ -43,59 +49,43 @@ improvings:
 		☐ check everything, k, d, dl, dm are vectors, K, D, Dl, Dm are matrices
 		☐ selection matrix for elastic joints
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
-	Kinematics:
-		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, pay attention! @done (12/13/2024, 10:45:04 PM)
-		☐ check consistency with parametrization, write down parametrization, urdf differences?
-		☐ make a general kinematic parametrization
-		☐ maybe T_0_0 better to be T_w_o?
-	Symbolic selectivity:
-		- if symb is not present default is 0 for parameters and 1 for variables
-		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
-		☐ load symbolics selectivity from conf in thunder_robot, now only on world_frame, ee_frame and gravity
-	Regressors:
+	regressors:
 		- for now, the regressors (not slotine or dynamics) are computed only if there is at least one simbolic parameter.
 		☐ change dimension of the regressor dependently on the symbolic parameters, now is full size always (Yr).
 		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
-	General:
-		☐ robot_name is important, check the entire pipeline of generations and use of Robot
-		☐ robot_name not handled properly in legacy_loader, yaml have priority
-		☐ plugin manager
-		☐ move thunder_robot_template to thunder/data/thunder_robot_template
-		✔ not using FrameOffset @done (11/20/2025, 2:51:47 PM)
-		☐ generic utils.spatial and generic wrt robot and thunder_robot
-		☐ delete Robot::model? instead use get_model("expr") that internally uses the functions
-		☐ add verbosity levels (not bool)
-		✔ add map for properties? @done (11/26/2025, 10:24:25 PM)
-		✔ create operator [] to have access to the properties? (like robot["numJoints"]) @done (11/26/2025, 10:24:21 PM)
-		☐ substitute cout with errors or info
-		☐ decrease the dimension of generated files
-		☐ explain better stiffness and friction in readme (maybe create sections for it)
-		☐ example and robot cleaning
-		☐ better test system for thunder_robot tests. Have to handle non-existing functions! (C++ 20 and templates)
-		☐ have to work also if there is not .yaml in the name of file (thunder gen /../a.yaml)
-		☐ only one folder for robots! not a big problem (experimental robots are into thunder src)
-		☐ variables used as const and references, every .model[]
-		☐ SX to MX?
-		☐ delete par_REG from model, maybe not, check
-		☐ add version control for config file
-		☐ add integrity checks and validity of robot reason about it
-		☐ robotName in config file? Needed for creation of library without the command './thunder gen', problems in name of generated functions
-		☐ gravity not in base frame class
-		☐ generalize path with absolute_path
-		☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
-	Performances:
-		- thread_local used in generated functions, could it lead to problems for parallel code?
-		- Symbolic or not parameters does not change so much the performances
-		- Eigen is faster than for cycles
-		- compiler optimization could slow down significantly the building process
-		☐ is alignas useful? removed for now (e.g. "thread_local alignas(size) double buffer[size];")
-		☐ optimizing code generated by casadi?
-		☐ symbol duplications in robot model (e.g. @1=sin(q_1), @2=sin(q_1)...)
-	Docker:
-		☐ problem on debug, sometimes
+	symbolic selectivity:
+		- if symb is not present default is 0 for parameters and 1 for variables
+		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
 
-will be in Thunder_dynamics:
+thunder_robot:
+	☐ save and load par in thunder_robot as generic functions
+
+plugins:
+	☐ create plugin manager
+	☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
+	loaders:
+		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
+		☐ save conf that does the inverse of load? maybe it is a generator
+	builders:
+	generators:
+		☐ yaml generator, from a robot it recreates the initial configuration
+
+Performances:
+	- thread_local used in generated functions, could it lead to problems for parallel code?
+	- Symbolic or not parameters does not change so much the performances
+	- Eigen is faster than for cycles
+	- compiler optimization could slow down significantly the building process
+	☐ is alignas useful? removed for now (e.g. "thread_local alignas(size) double buffer[size];")
+	☐ optimizing code generated by casadi?
+	☐ symbol duplications in robot model (e.g. @1=sin(q_1), @2=sin(q_1)...)
+	☐ SX to MX?
+	☐ multithreading?
+
+Docker:
+	☐ problem on debug?, sometimes
+
+possible features::
 	thunder:
 		☐ linearized system
 		☐ better friction
@@ -103,7 +93,7 @@ will be in Thunder_dynamics:
 		☐ command line for create_robot
 		☐ better elasticity
 	thunder_robot:
-		☐ manage inertial_DYN
+		☐ spatial class, with geometric useful functions
 	☐ thunder_control: basic controllers that uses thunder_robot
 	☐ generalize kinematics: not DH or URDF, parameters enter directly into the Transform matrix
 	☐ analytic Jacobian: choose a parametrization and provide conversions
@@ -117,18 +107,6 @@ INFO:
 	- thunder generates the <robot>_inertial_REG.yaml from the config file 
 	- elastic and friction regressors implemented with jacobian
 
-General:
-	☐ multithreading
-
-Program:
-	☐ 'thunder gen robot.yaml' generates a folder 'generatedFiles' and put inside
-		✔ 'robot_gen.h', 'robot_gen.cpp' that are the generated library from casadi @done (3/24/2024, 9:57:11 AM)
-		✔ 'thunder_robot.h', 'thunder_robot.cpp', that is the wrapper class for the casadi generated generatedFiles @done (4/3/2024, 7:56:35 AM)
-		✔ 'robot_inertial_REG.yaml' that contains parameters in which the dynamics is linear @done (4/7/2024, 4:15:36 PM)
-		☐ 'thunder_utils.h/cpp' that contain everything useful both on thunder and thunder_robot, and is not autogenerated
-	☐ there is a copy of utils functions from urdf2dh_inertial to thunder_robot. Another way is to add another library with general methods, or to add functions on thunder_robot creation (bad). Maybe the better choice is to create a folder with all files of the library inside(thunder_robot, robot_gen, thunder_utils)
-	
 issues:
-	☐ error on first column of jacobian? K is always [0;0;1]?
+	☐ error on first column of jacobian? K is always [0;0;1]? (to check)
 	☐ simplify some casadi expression?
-	☐ test base_to_L0

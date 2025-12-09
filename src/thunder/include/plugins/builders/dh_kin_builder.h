@@ -3,13 +3,13 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "../../plugin_interfaces.h"
-#include "../../robot.h"
-#include "../../kinematics.h"
-#include "../../dynamics.h"
-#include "../../regressors.h"
-#include "../../utils.h"
-#include "../../userDefined.h"
+#include "plugin_interfaces.h"
+#include "robot.h"
+#include "utils.h"
+#include "plugins/builders/common/kinematics.h"
+#include "plugins/builders/common/dynamics.h"
+#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/common/userDefined.h"
 
 namespace thunder_ns {
 

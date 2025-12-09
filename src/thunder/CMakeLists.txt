@@ -17,7 +17,15 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add all source files in the "src" directory to the SOURCES variable
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB SOURCES 
+  ${CMAKE_SOURCE_DIR}/src/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/loaders/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/builders/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/builders/common/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/generators/*.cpp
+  ${CMAKE_SOURCE_DIR}/src/plugins/generators/common/*.cpp
+)
 
 # Define the library target with the collected source files
 add_library(library ${SOURCES})
@@ -98,4 +106,4 @@ set_target_properties(thunder_test_chrono PROPERTIES
 set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
 # Install the executable and the template directory
 install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/thunder_robot_template DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)

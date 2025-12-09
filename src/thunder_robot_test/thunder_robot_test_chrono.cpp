@@ -10,12 +10,12 @@
 #include <chrono>
 // #include <yaml-cpp/yaml.h>
 
-#include "library/thunder_R3.h"
-// #include "library/thunder_R5.h"
-// #include "library/thunder_R7.h"
-// #include "library/thunder_R9.h"
-// #include "library/thunder_R15.h"
-// #include "library/thunder_R30.h"
+// #include "include/thunder_R3.h"
+// #include "include/thunder_R5.h"
+// #include "include/thunder_R7.h"
+#include "include/thunder_R9.h"
+// #include "include/thunder_R15.h"
+// #include "include/thunder_R30.h"
 
 // #define NJ 3
 // #define N_PAR 30
@@ -29,9 +29,9 @@ int main(){
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
 
-	std::string config_file = "../robots/R3_conf.yaml";
-	thunder_R3 robot;
-	cout<<"Robot: R3"<<endl;
+	// std::string config_file = "../robots/R3_conf.yaml";
+	thunder_R9 robot;
+	cout<<"Robot: R9"<<endl;
 
 	int n_rep = 10000;
 	int min_dur = 999999999;
@@ -39,9 +39,9 @@ int main(){
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 
-	robot.load_conf(config_file);
-	const int NJ = robot.get_numJoints();
-	const int N_PAR = robot.get_numParDYN();
+	// robot.load_conf(config_file);
+	const int NJ = robot.numJoints;
+	const int N_PAR = robot.get_par_DYN().size();
 
 	Eigen::MatrixXd myKin(4, 4);
 	Eigen::MatrixXd myJac(6,NJ);
@@ -59,7 +59,10 @@ int main(){
 	dqr = dqr.setOnes();
 	ddqr = ddqr.setOnes();
 
-	robot.setArguments(q, dq, dqr, ddqr);
+	robot.set_q(q);
+	robot.set_dq(dq);
+	robot.set_dqr(dqr);
+	robot.set_ddqr(ddqr);
 
 	// time_start = high_resolution_clock::now();
 	// for(int i=0; i<n_rep; i++){myKin = robot.getKin();};
