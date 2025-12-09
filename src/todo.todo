@@ -1,8 +1,6 @@
-☐ doxigen function documentation in bindings?
-☐ problem in thunder_robot_test when bindings are created
-☐ update readme
-
 general:
+	☐ doxigen function documentation in bindings?
+	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot
 	☐ robot_name not handled properly in legacy_loader, yaml have priority
 	☐ move templates to thunder/data/templates (for example the cmakelists)
@@ -36,7 +34,6 @@ thunder:
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization
 		☐ maybe T_0_0 better to be T_w_o?
-	dynamics:
 	elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
@@ -62,7 +59,8 @@ thunder_robot:
 	☐ save and load par in thunder_robot as generic functions
 
 plugins:
-	☐ create plugin manager
+	☐ avoid default initialization in plugin constructor (use an init function with default values. Problem if more than one robot is generated in the same test because constructors are called just the first time)
+	✔ create plugin manager @done (12/9/2025, 11:01:37 AM)
 	☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
 	loaders:
 		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
@@ -83,7 +81,8 @@ Performances:
 	☐ multithreading?
 
 Docker:
-	☐ problem on debug?, sometimes
+	☐ no man in the docker image
+	☐ problem in thunder_robot_test when bindings are created (no Python in docker)
 
 possible features::
 	thunder:
@@ -95,7 +94,6 @@ possible features::
 	thunder_robot:
 		☐ spatial class, with geometric useful functions
 	☐ thunder_control: basic controllers that uses thunder_robot
-	☐ generalize kinematics: not DH or URDF, parameters enter directly into the Transform matrix
 	☐ analytic Jacobian: choose a parametrization and provide conversions
 	☐ handling of different joint structure, fixed, defined by user
 	
