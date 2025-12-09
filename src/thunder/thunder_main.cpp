@@ -12,9 +12,9 @@ Command line interface for Thunder, it can generate code for robots
 
 #include <argparse/argparse.hpp>
 
-#include "include/plugin_interfaces.h"
-#include "include/plugin_registry.h"
-#include "include/plugin_manager.h" 
+#include "plugin_interfaces.h"
+#include "plugin_registry.h"
+#include "plugin_manager.h" 
 
 using namespace thunder_ns;
 using namespace std::chrono;
@@ -28,7 +28,6 @@ bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
 bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
 #define VERSION "0.8.19-plugin"
-
 
 
 // --- paths and files (default) --- //

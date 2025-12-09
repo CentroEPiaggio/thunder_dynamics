@@ -11,7 +11,9 @@
 namespace thunder_ns {
 
     class PluginManager {
+
     private:
+
         // The active pipeline for the current run
         std::vector<std::shared_ptr<BaseLoader>> active_loaders_;
         std::vector<std::shared_ptr<BaseBuilder>> active_builders_;
@@ -39,6 +41,7 @@ namespace thunder_ns {
         }
 
     public:
+    
         PluginManager() = default;
 
         // Sets verbosity for all plugins

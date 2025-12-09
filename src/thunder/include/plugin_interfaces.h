@@ -19,6 +19,7 @@ namespace thunder_ns{
 	class BasePlugin {
 
 	private:
+
 		std::string name_;
 		std::string description_;
 		int debug_flag_ = 0;
@@ -55,6 +56,7 @@ namespace thunder_ns{
 
 
 	protected:
+	
 		/**
 		 * @brief Helper method to print plugin specific debug information.
 		 *

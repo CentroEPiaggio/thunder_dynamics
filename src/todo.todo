@@ -56,9 +56,11 @@ thunder:
 		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
 
 thunder_robot:
+		☐ problem in thunder_robot_test when bindings are created (to add in cmakelist)
 	☐ save and load par in thunder_robot as generic functions
 
 plugins:
+	☐ init function for plugins?
 	☐ avoid default initialization in plugin constructor (use an init function with default values. Problem if more than one robot is generated in the same test because constructors are called just the first time)
 	✔ create plugin manager @done (12/9/2025, 11:01:37 AM)
 	☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
@@ -82,7 +84,6 @@ Performances:
 
 Docker:
 	☐ no man in the docker image
-	☐ problem in thunder_robot_test when bindings are created (no Python in docker)
 
 possible features::
 	thunder:
