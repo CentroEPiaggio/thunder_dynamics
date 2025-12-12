@@ -205,6 +205,25 @@ namespace thunder_ns{
 		return 1;
 	}
 
+	int Robot::save_conf(string conf_file){
+		try {
+			YAML::Emitter emitter;
+			emitter.SetIndent(2);
+			emitter.SetSeqFormat(YAML::Flow);
+
+			emitter << this->config_yaml << YAML::Newline;
+
+			std::ofstream fout(conf_file);
+			fout << emitter.c_str();
+			fout.close();
+
+		} catch (const YAML::Exception& e) {
+			std::cerr << "Error while generating YAML: " << e.what() << std::endl;
+			return 0;
+		}
+		return 1;
+	}
+
 	int Robot::add_variable(string v_name, SX symb, vector<double> num, vector<short> is_symbolic, string descr, bool overwrite){
 		int ret = add_parameter(v_name, symb, num, is_symbolic, descr, overwrite);
 		return ret;

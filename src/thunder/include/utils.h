@@ -11,6 +11,8 @@ using std::vector;
 
 namespace thunder_ns{
 
+	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
+
 	class Robot;
 
 	class Property{
@@ -159,8 +161,13 @@ namespace thunder_ns{
 	void replace_all(string& str, const string& from_str, const string& to_str);
 
 	casadi::SX hat(const casadi::SX& v);
-	Eigen::Matrix3d hat(const Eigen::Vector3d& v);
+	casadi::SX ZIS(const casadi::SX& x, double tol = EPSILON);
+	casadi::SX R_x(const casadi::SX& angle);
+	casadi::SX R_y(const casadi::SX& angle);
+	casadi::SX R_z(const casadi::SX& angle);
+	casadi::SX get_transform_rpy(casadi::SX frame_rpy);
+	casadi::SX get_transform_ypr(casadi::SX frame_ypr);
 
-}
+} // namespace thunder_ns
 
 #endif

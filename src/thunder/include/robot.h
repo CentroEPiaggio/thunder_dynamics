@@ -91,6 +91,9 @@ namespace thunder_ns{
 			// Save parameters from file, {} save all
 			int save_par(string par_file, vector<string> par_list = {});
 
+			// Save the initial robot configuration
+			int save_conf(string conf_file);
+
 
 			// ------------------------ //
 			// --- Robot populators --- //
