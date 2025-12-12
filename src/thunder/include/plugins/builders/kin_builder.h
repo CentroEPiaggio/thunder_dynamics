@@ -7,10 +7,10 @@
 
 namespace thunder_ns {
 
-	class DHKinBuilder : public BaseBuilder {
+	class KinBuilder : public BaseBuilder {
 
 		public:
-			DHKinBuilder() : BaseBuilder("DH Kinematic Builder", "Build kinematics and differential kinematics expressions, like Jacobians and Transform matrixes T, using DH.") {}
+			KinBuilder() : BaseBuilder("Kinematic Builder", "Build kinematics and differential kinematics expressions, like Jacobians and Transform matrixes T.") {}
 
 			void build(std::shared_ptr<Robot> robot) override {
 				debug_log("Starting kinematic computations", VERB_INFO);
