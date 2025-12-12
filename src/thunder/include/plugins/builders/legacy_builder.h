@@ -2,9 +2,9 @@
 #define LEGACY_BUILDER_H
 
 #include "plugin_interfaces.h"
-#include "plugins/builders/common/kinematics.h"
-#include "plugins/builders/common/dynamics.h"
-#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/legacy_builder/legacy_kinematics.h"
+#include "plugins/builders/legacy_builder/legacy_dynamics.h"
+#include "plugins/builders/legacy_builder/legacy_regressors.h"
 #include "plugins/builders/common/userDefined.h"
 
 
@@ -19,7 +19,7 @@ namespace thunder_ns {
 
 	};
 
-	
+
 } // namespace thunder_ns
 
 #endif // LEGACY_BUILDER_H

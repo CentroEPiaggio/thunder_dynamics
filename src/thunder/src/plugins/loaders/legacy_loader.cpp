@@ -2,6 +2,7 @@
 
 
 namespace thunder_ns {
+	// using namespace legacy;
 
 	// --- Load function --- //
 	std::shared_ptr<Robot> LegacyLoader::load(std::shared_ptr<Robot> robot){

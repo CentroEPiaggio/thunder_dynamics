@@ -18,7 +18,7 @@ namespace thunder_ns {
 
 	};
 
-	
+
 } // namespace thunder_ns
 
 #endif // LEGACY_LOADER_H

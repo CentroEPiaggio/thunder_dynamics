@@ -11,9 +11,9 @@
 #include <yaml-cpp/yaml.h>
 
 #include "robot.h"
-#include "plugins/builders/common/kinematics.h"
-#include "plugins/builders/common/dynamics.h"
-#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/legacy_builder/legacy_kinematics.h"
+#include "plugins/builders/legacy_builder/legacy_dynamics.h"
+#include "plugins/builders/legacy_builder/legacy_regressors.h"
 #include "plugins/builders/common/userDefined.h"
 #include "plugins/loaders/legacy_loader.h"
 #include "plugins/builders/legacy_builder.h"
@@ -31,11 +31,11 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 	YAML::Node config = YAML::LoadFile(file);
 
-	auto loader = std::make_shared<LegacyLoader>();
+	auto loader = std::make_shared<thunder_ns::LegacyLoader>();
 	loader->configure(config);
 	loader->load(robot);
 
-	auto builder = std::make_shared<LegacyBuilder>();
+	auto builder = std::make_shared<thunder_ns::LegacyBuilder>();
 	builder->configure(config);
 	builder->build(robot);
 
@@ -44,7 +44,7 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
-	std::string config_file = "../robots/RRR/RRR.yaml";
+	std::string config_file = "../robots/debug/legacyRRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";

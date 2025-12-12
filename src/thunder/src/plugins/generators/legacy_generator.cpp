@@ -16,6 +16,7 @@ using std::to_string;
 
 
 namespace thunder_ns {
+	// using namespace legacy;
 
     void LegacyGenerator::init(){
         GEN_CASADI = false;		// generate casadi functions
@@ -85,8 +86,6 @@ namespace thunder_ns {
 		// --- Write thunder_robot into generatedFiles --- //
 		std::filesystem::path sourcePath;
 		std::filesystem::path destPath;
-		// string thunder_robot_cpp_path;
-		// string thunder_robot_h_path;
 		string python_cmake_file;
 
 		// Get home/.local/share directory
@@ -119,6 +118,8 @@ namespace thunder_ns {
 
 		// --- generate parameters files --- //
 		string par_file = absolutePath + robot_name + "_par.yaml";
+		string conf_file = absolutePath + robot_name + "_conf.yaml";
+		robot->save_conf(conf_file);
 		robot->save_par(par_file);
 
 		debug_log("Library generated", VERB_INFO);
@@ -167,7 +168,7 @@ namespace thunder_ns {
 			sourcePath = path_from + robot_name + "_par.yaml";
 			destPath = path_par + robot_name + "_par.yaml";
 			std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
-			sourcePath = path_from + "../" + robot_name + ".yaml";
+			sourcePath = path_from + robot_name + "_conf.yaml";
 			destPath = path_conf + robot_name + "_conf.yaml";
 			std::filesystem::copy_file(sourcePath, destPath, std::filesystem::copy_options::overwrite_existing);
 
