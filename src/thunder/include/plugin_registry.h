@@ -13,7 +13,8 @@
 #include "plugins/loaders/dh_loader.h"
 #include "plugins/loaders/legacy_loader.h"
 // - Builders - //
-#include "plugins/builders/dh_kin_builder.h"
+#include "plugins/builders/std_joint_builder.h"
+#include "plugins/builders/kin_builder.h"
 #include "plugins/builders/legacy_builder.h"
 // - Generators - //
 #include "plugins/generators/c_generator.h"
@@ -38,7 +39,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	// TODO: ADD NEW POPULATORS HERE
 	{"legacy_builder", std::make_shared<LegacyBuilder>()},
-	{"dh_kin_builder", std::make_shared<DHKinBuilder>()},
+	{"kin_builder", std::make_shared<KinBuilder>()},
 
 };
 
