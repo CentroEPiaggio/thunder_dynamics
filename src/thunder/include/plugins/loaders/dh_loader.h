@@ -6,8 +6,6 @@
 
 namespace thunder_ns {
 
-	casadi::SX DHTemplate(const casadi::SX& rowDHTable, const casadi::SX& qi, std::string jointType);
-
 	class DHLoader : public BaseLoader {
 
 		private:

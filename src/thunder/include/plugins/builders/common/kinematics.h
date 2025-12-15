@@ -5,10 +5,7 @@
 
 namespace thunder_ns{
 
-	casadi::SX R_x(const casadi::SX& angle);
-	casadi::SX R_y(const casadi::SX& angle);
-	casadi::SX R_z(const casadi::SX& angle);
-	casadi::SX get_transform(casadi::SX frame);
+	// casadi::SX get_T_Joint(int i, vector<string> jointsType);
 	int compute_chain(Robot& robot);
 	int compute_jacobians(Robot& robot);
 	int compute_kin_adv(Robot& robot);
