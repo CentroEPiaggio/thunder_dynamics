@@ -161,6 +161,7 @@ namespace thunder_ns{
 	void replace_all(string& str, const string& from_str, const string& to_str);
 
 	casadi::SX hat(const casadi::SX& v);
+	casadi::SX vect(const casadi::SX& S);
 	casadi::SX ZIS(const casadi::SX& x, double tol = EPSILON);
 	casadi::SX R_x(const casadi::SX& angle);
 	casadi::SX R_y(const casadi::SX& angle);

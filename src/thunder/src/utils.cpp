@@ -34,7 +34,7 @@ namespace thunder_ns{
 
 	casadi::SX hat(const casadi::SX& v) {
 		
-		casadi::SX skew = casadi::SX::zeros(3,3);
+		casadi::SX skew(3,3);
 		
 		skew(0, 1) = -v(2);
 		skew(0, 2) = v(1);
@@ -44,6 +44,16 @@ namespace thunder_ns{
 		skew(2, 1) = v(0);
 		
 		return skew;
+	}
+
+	casadi::SX vect(const casadi::SX& S) {
+		
+		casadi::SX v(3,1);
+		v(0) = S(2,1);   // v_x = S32
+		v(1) = S(0,2);   // v_y = S13
+		v(2) = S(1,0);   // v_z = S21
+		
+		return v;
 	}
 
 	// - set to zero small values (Zero If Small) - //
