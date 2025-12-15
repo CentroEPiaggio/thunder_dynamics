@@ -34,23 +34,20 @@ namespace thunder_ns {
 
 			// --- Basic Robot properties --- //
 
-			// - numJoints - //
-			if (config_["num_joints"]) {
-				numJoints = config_["num_joints"].as<int>();
-				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
-			} else {
-				throw std::runtime_error("No num_joints in yaml file.");
-			}
-			// - jointsType - //
+			// - numJoints and jointsType - //
 			if (config_["type_joints"]) {
 				jointsType = config_["type_joints"].as<vector<string>>();
+				numJoints = (config_["num_joints"]) ? (config_["num_joints"].as<int>()) : jointsType.size();
 				if (jointsType.size() != numJoints) {
 					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
 				} else {
+					robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 					robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Number of joints", true);
 				}
 			} else {
-				throw std::runtime_error("No joints type specified in yaml file.");
+				debug_log("No joints type specified in yaml file, using from other plugins", VERB_INFO);
+				numJoints = robot->get<int>("numJoints");
+				jointsType = robot->get<vector<string>>("jointsType");
 			}
 			// --- Elastic model properties (defaults to false) --- //
 			YAML::Node elastic_node;
@@ -105,17 +102,19 @@ namespace thunder_ns {
 
 
 			// --- Denavit-Hartenberg --- //
-			YAML::Node kinematics = config_["kinematics"];
-			vector<double> dh_num = kinematics["DH"].as<vector<double>>();
-			int dh_size = dh_num.size();
-			// - Symbolic selectivity - //
-			vector<short> dh_isSymb;
-			if (kinematics["symb"]) dh_isSymb = kinematics["symb"].as<vector<short>>();
-			else dh_isSymb.assign(dh_size, 0);
-			// - Model - //
-			SX dh_symb = SX::sym("DHtable", numJoints * 4);
-			// - Add to parameters - //
-			robot->add_parameter("par_DHtable", dh_symb, dh_num, dh_isSymb, "DH parameters", true);
+			if (config_["kinematics"]){
+				YAML::Node kinematics = config_["kinematics"];
+				vector<double> dh_num = kinematics["DH"].as<vector<double>>();
+				int dh_size = dh_num.size();
+				// - Symbolic selectivity - //
+				vector<short> dh_isSymb;
+				if (kinematics["symb"]) dh_isSymb = kinematics["symb"].as<vector<short>>();
+				else dh_isSymb.assign(dh_size, 0);
+				// - Model - //
+				SX dh_symb = SX::sym("DHtable", numJoints * 4);
+				// - Add to parameters - //
+				robot->add_parameter("par_DHtable", dh_symb, dh_num, dh_isSymb, "DH parameters", true);
+			}
 
 
 			// --- Gravity --- //
