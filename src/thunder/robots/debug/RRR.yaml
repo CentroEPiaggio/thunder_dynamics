@@ -1,17 +1,36 @@
 pipeline:
-  loaders:    ["std_joint_loader", "legacy_loader", "dh_loader"]
-  builders:   ["std_joint_builder", "kin_builder"]
+  loaders:    ["kin_loader", "dh_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder"]
   generators: ["legacy_generator"]
 
 ############################################
-legacy_loader:
-  robot_name: "testRRR"
+kin_loader:
+
   # --- Constants --- #
   PI_2: &PI_2           1.5707963267948966
   PI_2_neg: &PI_2_neg  -1.5707963267948966
 
+  # --- Hyperparameters --- #
+  num_joints: 3
+
+  # joint types: 'R': rotoidal, 'P': prismatic
+  type_joints: ['R', 'R', 'R']
+
+  # world to link_0
+  Base_to_L0:
+    symb: [0,0,0, 0,0,0]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [0,0,0, 0,0,0]
+    tr: [1, 0, 0]
+    ypr: [0, 0, *PI_2_neg]
+
 ############################################
 dh_loader:
+
   # --- Constants --- #
   PI_2: &PI_2           1.5707963267948966
   PI_2_neg: &PI_2_neg  -1.5707963267948966
@@ -24,6 +43,7 @@ dh_loader:
 
 ############################################
 std_joint_loader:
+
   # --- Hyperparameters --- #
   num_joints: 3
 
@@ -31,86 +51,63 @@ std_joint_loader:
   type_joints: ['R', 'R', 'R']
 
 ############################################
+dyn_loader:
 
-# ----------------------------------------- #
-## ----- Legacy_loader and generator ----- ##
-# ----------------------------------------- #
-version: 0.3
-gen_python:   true
-gen_casadi:   true
-copy_gen:     true
+  # gravity vector
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
 
-# gravity vector
-gravity:
-  symb: [0,0,0]
-  value: [0, 0, -9.81]
+  # inertial parameters expressed w.r.t. DH frames
+  dynamics:
+    link1:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 5.0
+        CoM_x: 2.0
+        CoM_y: 2.0
+        CoM_z: 2.0
+        Ixx: 2.0
+        Ixy: 2.0
+        Ixz: 2.0
+        Iyy: 2.0
+        Iyz: 2.0
+        Izz: 2.0
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
-# world to link_0
-Base_to_L0:
-  symb: [0,0,0, 0,0,0]
-  tr: [0, 0, 0]
-  ypr: [0, 0, 0]
+    link2:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 3.0
+        CoM_x: 2.0
+        CoM_y: 2.0
+        CoM_z: 2.0
+        Ixx: 2.0
+        Ixy: 2.0
+        Ixz: 2.0
+        Iyy: 2.0
+        Iyz: 2.0
+        Izz: 2.0
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
-# Link_n to EE
-Ln_to_EE:
-  symb: [0,0,0, 0,0,0]
-  tr: [1, 0, 0]
-  ypr: [0, 0, *PI_2_neg]
+    link3:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 2.0
+        CoM_y: 0.3
+        CoM_z: 2.0
+        Ixx: 2.0
+        Ixy: 2.0
+        Ixz: 2.0
+        Iyy: 2.0
+        Iyz: 2.0
+        Izz: 2.0
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
-
-# -------------------------------- #
-## ----- Dynamic Parameters ----- ##
-# -------------------------------- #
-
-# inertial parameters expressed w.r.t. DH frames
-dynamics:
-  link1:
-    inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 5.0
-      CoM_x: 2.0
-      CoM_y: 2.0
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]
-
-  link2:
-    inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 3.0
-      CoM_x: 2.0
-      CoM_y: 2.0
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]
-
-  link3:
-    inertial:
-      symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 1.0
-      CoM_x: 2.0
-      CoM_y: 0.3
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]

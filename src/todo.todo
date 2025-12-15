@@ -4,11 +4,17 @@
 ✔ chain is working @done (12/15/2025, 2:04:46 PM)
 ✔ jacobian in position is working @done (12/15/2025, 2:05:00 PM)
 ✔ orientation jacobian is not working @done (12/15/2025, 9:02:13 PM)
-☐ bring the jacobian computation to M
+☐ move elasticity outside of dynamics
+☐ remove elastic from properties, too much redundancy
+✔ create kin_loader with all the kinematics @done (12/15/2025, 11:39:38 PM)
+✔ create dynamics_loader @done (12/15/2025, 11:39:42 PM)
+✔ bring the jacobian computation to M @done (12/15/2025, 11:39:48 PM)
+✔ delete std_joint_loader and builder and put standard joints in kin_loader @done (12/15/2025, 11:52:04 PM)
 ✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
 ☐ use only par_KIN instead of DHtable in all the code (regressors)
 ☐ kinematic builder have to apply the joints to the transformations.
 ☐ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions))
+✔ kinematic loader have to create standard joints function @done (12/15/2025, 11:52:44 PM)
 ☐ add expricit arguments to functions (maybe optional to not break compatibility)
 ☐ get_Ti(6x1 frame) should take internal transformation (xyz,rpy) and returns T_i that is only link?
 
@@ -85,6 +91,7 @@ plugins:
 		☐ is the function .execute(robot_name) autoexplicative?
 		☐ system to deactivate generators after loading the configuration (needed in tests)
 	loaders:
+		☐ kin_loader wants world and ee frames, robustify!
 		☐ delete numJoints in the config. The std joint loader have to set it from joints type.
 		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
 		☐ save conf that does the inverse of load? maybe it is a generator
