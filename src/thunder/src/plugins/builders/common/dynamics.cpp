@@ -101,7 +101,7 @@ namespace thunder_ns{
 
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot){
 		// parameters from robot
-		int numJoints = robot.get<int>("numJoints");
+		int nj = robot.get<int>("numJoints");
 		const int _nParLink_ = robot.get<const int>("STD_PAR_LINK");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		// const auto& q = robot.model["q"];
@@ -111,72 +111,42 @@ namespace thunder_ns{
 		auto par_world2L0 = robot.get_model("par_world2L0");
 		auto par_DYN = robot.get_model("par_DYN");
 
-		auto par_inertial = createInertialParameters(numJoints, _nParLink_, par_DYN);
+		auto par_inertial = createInertialParameters(nj, _nParLink_, par_DYN);
 		// casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		casadi::SXVector _distCM_ = std::get<1>(par_inertial);
 		// casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 
-		casadi::SX Jci_pos(3, numJoints); // matrix of velocity jacobian
-		casadi::SX Ji_or(3, numJoints);   // matrix of omega jacobian
-		casadi::SXVector Ji_v(numJoints); // vector of matrix Ji_v
-		casadi::SXVector Ji_w(numJoints); // vector of matrix Ji_w
-		casadi::SXVector Ji(numJoints);		// complete jacobian
+		casadi::SXVector Ji_v(nj); // vector of matrix Ji_v
+		casadi::SXVector Ji_w(nj); // vector of matrix Ji_w
+		casadi::SXVector Ji(nj);		// complete jacobian
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform(par_world2L0)(r_rot_idx, r_rot_idx);
+		auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
 
-		for (int i = 0; i < numJoints; i++) {
-			casadi::SX k0(3,1);             // versor of joint i
-			casadi::SX O_0i(3,1);           // distance of joint i from joint 0
-			casadi::SX T_0i(4,4);           // matrix tranformation of joint i from joint 0
-			
-			casadi::SX O_Ci(3,1);
-			casadi::SX R0i;
-			
-			T_0i = robot.get_model("T_0_"+std::to_string(i+1));
-			k0 = T_0i(r_rot_idx, 2);
-			O_0i = T_0i(r_tra_idx, 3);
-			
-			R0i = T_0i(r_rot_idx,r_rot_idx);
-			O_Ci = O_0i + mtimes(R0i,_distCM_[i]);
-			
-			// // First column of jacobian
-			// if ((jointsType[0] == "P")||(jointsType[0] == "P_SEA")) {
-			// 	Jci_pos(allRows,0) = k0;
-			// } else if ((jointsType[0] == "R")||(jointsType[0] == "R_SEA")) {
-			// 	Jci_pos(allRows,0) = mtimes(hat(k0),O_Ci);
-			// 	Ji_or(allRows,0) = k0;
-			// } else {
-			// 	throw std::runtime_error("DHJac: Error joint type");
-			// }
+		for (int i = 0; i < nj; i++) {
+			SX T_0i = robot.get_model("T_0_"+std::to_string(i+1));
 
-			// Rest of columns of jacobian
-			for (int j = 0; j <= i; j++) {
-				// Init variables of column j-th of jacobian each cycle
-				casadi::SX kj(3,1);             // versor of joint j-1
-				casadi::SX O_jCi(3,1);          // distance of joint i from joint j-1
-				casadi::SX T_0j(4,4);           // matrix tranformation of joint i from joint j-1
+			SX R0i = T_0i(r_rot_idx, r_rot_idx);
+			SX d_Ci = T_0i(r_tra_idx, 3) + mtimes(R0i,_distCM_[i]);		// center of mass distance
+			SX Jci_pos = SX::jacobian(d_Ci, q); 	// matrix of velocity jacobian
+			SX Ji_or(3, nj);   				// matrix of omega jacobian
 
-				T_0j = robot.get_model("T_0_"+std::to_string(j+1));
-				kj = T_0j(r_rot_idx, 2);
-				O_jCi = O_Ci - T_0j(r_tra_idx, 3);
+			// Loop over joints and build columns
+			for (int j=0; j<nj; ++j) {
+				// Partial derivative dR/dq_j  (3x3)
+				SX dR_dqj = SX::jacobian(SX::reshape(R0i, 9, 1), q(j));
+				dR_dqj = SX::reshape(dR_dqj, 3, 3);
 
-				if ((jointsType[j] == "P")||(jointsType[j] == "P_SEA")) {
-					Jci_pos(allRows, j) = kj;
-				} else if ((jointsType[j] == "R")||(jointsType[j] == "R_SEA")) {
-					Jci_pos(allRows, j) = mtimes(hat(kj),O_jCi);
-					Ji_or(allRows, j) = kj;
-				} else {
-					throw std::runtime_error("DHJac: Error joint type");
-				}
+				// S_j = dR/dq_j * R^T  (3x3 skew-symmetric)
+				SX Sj = SX::mtimes(dR_dqj, R0i.T());
+
+				// Extract angular velocity vector from skew matrix
+				SX wj = vect(Sj);
+
+				// Set column j
+				Ji_or(allRows, j) = wj;
 			}
-
-			// Add offset from world-frame transformation
-			// Jci_pos = mtimes(par_world2L0.get_rotation(),Jci_pos);
-			// Ji_or = mtimes(par_world2L0.get_rotation(),Ji_or);
-			// Jci_pos = mtimes(world_rot,Jci_pos);
-			// Ji_or = mtimes(world_rot,Ji_or);
 			
 			Ji_v[i] = Jci_pos;
 			Ji_w[i] = Ji_or;
@@ -267,7 +237,7 @@ namespace thunder_ns{
 	int compute_elastic(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		bool ELASTIC = robot.get<bool>("ELASTIC");
+		bool ELASTIC = (robot.properties.count("ELASTIC")) ? robot.get<bool>("ELASTIC") : 0;
 
 		if (ELASTIC > 0){
 			int numElasticJoints = robot.get<int>("numElasticJoints");
