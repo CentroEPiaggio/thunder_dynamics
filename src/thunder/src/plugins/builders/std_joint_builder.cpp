@@ -10,17 +10,17 @@ namespace thunder_ns {
 	void StdJointBuilder::build(std::shared_ptr<Robot> robot) {
         // --- get properties --- //
 		auto numJoints = robot->get<int>("numJoints");
-        auto jointType = robot->get<vector<string>>("jointType");
+        auto jointsType = robot->get<vector<string>>("jointsType");
 		auto q = robot->get_model("q");
 		casadi::Slice rot(0, 3);      // [0,1,2] indexes
 
 		for (int i=0; i<numJoints; i++){
 			casadi::SX Ti = casadi::SX::eye(4);
 			
-			if ((jointType[i] == "P")||(jointType[i] == "P_SEA")) {
+			if ((jointsType[i] == "P")||(jointsType[i] == "P_SEA")) {
 				Ti(2,3) = q(i);
 			}
-			else if ((jointType[i] == "R")||(jointType[i] == "R_SEA")) {
+			else if ((jointsType[i] == "R")||(jointsType[i] == "R_SEA")) {
 				Ti(rot,rot) = R_z(q(i));
 			}
 			else {

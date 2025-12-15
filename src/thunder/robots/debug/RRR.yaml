@@ -1,28 +1,44 @@
-# -------------------------- #
-## ----- Robot Config ----- ##
-# -------------------------- #
-version: 0.3
-gen_python:   true
-gen_casadi:   false
-copy_gen:     true
+pipeline:
+  loaders:    ["std_joint_loader", "legacy_loader", "dh_loader"]
+  builders:   ["std_joint_builder", "kin_builder"]
+  generators: ["legacy_generator"]
 
-# --- Constants --- #
-PI_2: &PI_2           1.5707963267948966
-PI_2_neg: &PI_2_neg  -1.5707963267948966
+############################################
+legacy_loader:
+  robot_name: "testRRR"
+  # --- Constants --- #
+  PI_2: &PI_2           1.5707963267948966
+  PI_2_neg: &PI_2_neg  -1.5707963267948966
 
+############################################
+dh_loader:
+  # --- Constants --- #
+  PI_2: &PI_2           1.5707963267948966
+  PI_2_neg: &PI_2_neg  -1.5707963267948966
 
-# --- Hyperparameters --- #
-num_joints: 3
-
-# joint types: 'R': rotoidal, 'P': prismatic
-type_joints: ['R', 'R', 'R']
-
-# DH convention: a -> alpha -> d -> theta
-kinematics:
+  # DH convention: a -> alpha -> d -> theta
   symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
   DH: [0,   0,      1, 0,
-       1,  *PI_2,   0, 0,
-       1,   0,      0, 0]
+      1,  *PI_2,   0, 0,
+      1,   0,      0, 0]
+
+############################################
+std_joint_loader:
+  # --- Hyperparameters --- #
+  num_joints: 3
+
+  # joint types: 'R': rotoidal, 'P': prismatic
+  type_joints: ['R', 'R', 'R']
+
+############################################
+
+# ----------------------------------------- #
+## ----- Legacy_loader and generator ----- ##
+# ----------------------------------------- #
+version: 0.3
+gen_python:   true
+gen_casadi:   true
+copy_gen:     true
 
 # gravity vector
 gravity:

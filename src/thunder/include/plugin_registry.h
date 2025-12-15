@@ -10,6 +10,7 @@
 // TODO: ADD ALL NEW PLUGIN HEADERS HERE //
 //---------------------------------------//
 // - Loaders - //
+#include "plugins/loaders/std_joint_loader.h"
 #include "plugins/loaders/dh_loader.h"
 #include "plugins/loaders/legacy_loader.h"
 // - Builders - //
@@ -30,6 +31,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	// TODO: ADD NEW LOADERS HERE
 	{"legacy_loader", std::make_shared<LegacyLoader>()},
 	{"dh_loader", std::make_shared<DHLoader>()},
+	{"std_joint_loader", std::make_shared<StdJointLoader>()},
 
 };
 
@@ -40,6 +42,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	// TODO: ADD NEW POPULATORS HERE
 	{"legacy_builder", std::make_shared<LegacyBuilder>()},
 	{"kin_builder", std::make_shared<KinBuilder>()},
+	{"std_joint_builder", std::make_shared<StdJointBuilder>()},
 
 };
 

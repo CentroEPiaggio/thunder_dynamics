@@ -1,41 +1,36 @@
-#include "plugins/loaders/dh_loader.h"
+#include "plugins/loaders/std_joint_loader.h"
 #include "utils.h"
 
 
 namespace thunder_ns {
 
 	// --- Load function --- //
-	std::shared_ptr<Robot> DHLoader::load(std::shared_ptr<Robot> robot){
+	std::shared_ptr<Robot> StdJointLoader::load(std::shared_ptr<Robot> robot){
 		debug_log("Loading started", VERB_INFO);
 
 		// ----- Parsing YAML File ----- //
 		try {
 			// Local properties for parsing
-			int numJoints = 0;
+			int numJoints;
 			vector<string> jointsType;
 
 
 			// --- Basic Robot properties --- //
 
-			// - numJoints - //
-			if (config_["num_joints"]) {
-				numJoints = config_["num_joints"].as<int>();
-				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
-			} else {
-				throw std::runtime_error("No num_joints in yaml file.");
-			}
 			// - jointsType - //
 			if (config_["type_joints"]) {
 				jointsType = config_["type_joints"].as<vector<string>>();
+				numJoints = (config_["num_joints"]) ? (config_["num_joints"].as<int>()) : jointsType.size();
 				if (jointsType.size() != numJoints) {
 					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
 				} else {
+					robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 					robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Number of joints", true);
 				}
 			} else {
 				throw std::runtime_error("No joints type specified in yaml file.");
 			}
-			
+
 
 			// --- Variables --- //
 			// - Normal joints - //
