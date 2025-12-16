@@ -68,10 +68,10 @@ namespace thunder_ns{
 			}
 
 			// Return the model (casadi::SX) of <key>
-			SX get_model(string key);
+			SX get_model(string key, vector<SX> explicit_args = {});
 
 			// Return the value (casadi::DM) of <key>
-			DM get(string key);
+			DM get(string key, vector<DM> explicit_args = {});
 
 			// Return a vector of Property elements
 			const vector<Property> get_properties(vector<string> prop_list = {});
@@ -122,7 +122,7 @@ namespace thunder_ns{
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
 			
 			// Add the function <name> to the function map
-			int add_function(string name, SX expr, vector<string> f_args, string descr = "", bool overwrite = true);
+			int add_function(string name, SX expr, vector<string> f_args, string descr = "", vector<SX> explicit_args = {}, bool overwrite = true);
 			
 	};
 

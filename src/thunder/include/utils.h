@@ -80,7 +80,7 @@ namespace thunder_ns{
 		}
 		int symb_size(){
 			int sz = 0;
-			for (short x : is_symbolic) sz = (x)?sz+1:sz;
+			for (short x : is_symbolic) sz = (x) ? sz+1 : sz;
 			return sz;
 		}
 		casadi::DM get_value_resized(){	// returns DM containing the current value of symbolic parameters
@@ -131,6 +131,7 @@ namespace thunder_ns{
 		string name;
 		string description;
 		std::vector<string> args;
+		std::vector<casadi::SX> explicit_args;
 		casadi::SX expr;
 		casadi::Function fun;
 
@@ -149,6 +150,17 @@ namespace thunder_ns{
 				return res;
 			} else return "{}";
 		}
+
+		// std::string get_explicit_args_str(){
+		// 	if (explicit_args.size() != 0){
+		// 		std::string res = "(" + explicit_args[0];
+		// 		for (int i=1; i<explicit_args.size(); i++){
+		// 			res.append(", " + explicit_args[i]);
+		// 		}
+		// 		res.append("}");
+		// 		return res;
+		// 	} else return "()";
+		// }
 
 		std::string get_ret_type_str(){
 			std::vector<long> out_size = get_out_size();

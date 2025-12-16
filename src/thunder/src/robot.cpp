@@ -15,14 +15,14 @@ using casadi::SX;
 
 namespace thunder_ns{
 
-	DM Robot::get(string name){
+	DM Robot::get(string name, vector<DM> explicit_args){
 		if (parameters.count(name)){					// parameter exists
 			return parameters[name].get_value_resized();
 		} else if (functions.count(name)){				// function exists
 			vector<DM> result;
 			// cout<<"name: "<<name<<endl;
 			auto f_args = functions[name].args;
-			int sz = f_args.size();
+			int sz = f_args.size() + explicit_args.size();
 			// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
 			casadi::DMVector inputs(sz);
 			// cout << "arg_names: ";
@@ -30,6 +30,11 @@ namespace thunder_ns{
 			for (const auto& arg : f_args) {
 				// cout << arg << ", ";
 				inputs[i] = parameters[arg].get_value_resized();
+				i++;
+			}
+			for (const auto& arg : explicit_args) {
+				// cout << arg << ", ";
+				inputs[i] = explicit_args[i-f_args.size()];
 				i++;
 			}
 			// cout<<"args: "<<inputs<<endl;
@@ -44,11 +49,38 @@ namespace thunder_ns{
 		}
 	}
 
-	SX Robot::get_model(string name){
+	SX Robot::get_model(string name, vector<SX> explicit_args){
 		if (parameters.count(name)){					// parameter exists
 			return parameters[name].get_model();
 		} else if (functions.count(name)){				// function exists
-			return functions[name].expr;
+			if (explicit_args.size() == 0) return functions[name].expr;
+			else {
+				// use the function to compute the expression adding the explicit args
+				vector<SX> result;
+				// cout<<"name: "<<name<<endl;
+				auto f_args = functions[name].args;
+				int sz = f_args.size() + explicit_args.size();
+				// cout<<"f_args:"<<f_args<<", size: "<<sz<<endl;
+				casadi::SXVector inputs(sz);
+				// cout << "arg_names: ";
+				int i=0;
+				for (const auto& arg : f_args) {
+					// cout << arg << ", ";
+					inputs[i] = parameters[arg].get_symb_resized();
+					i++;
+				}
+				for (const auto& arg : explicit_args) {
+					// cout << arg << ", ";
+					inputs[i] = explicit_args[i-f_args.size()];
+					i++;
+				}
+				// cout<<"args: "<<inputs<<endl;
+				casadi::Function fun = functions[name].fun;
+				// cout<<"fun: "<<fun<<endl;
+				functions[name].fun.call(inputs, result);
+				// cout<<"result: "<<result<<endl;
+				return SX::vertcat(result);
+			}
 		} else {
 			std::cerr << name + " not recognised" << endl;
 			return SX::zeros(1,1);
@@ -265,7 +297,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, bool overwrite){
+	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, vector<SX> explicit_args, bool overwrite){
 		if ((!overwrite) && functions.count(f_name)){
 			std::cerr << "Function already exist! set flag for overwrite " << std::endl;
 			return 0;
@@ -314,10 +346,11 @@ namespace thunder_ns{
 			function.name = f_name;
 			function.expr = expr;
 			function.args = arg_list;
+			function.explicit_args = explicit_args;
 			function.description = descr;
 
 			// - only symbolic parameters as arguments - //
-			casadi::SXVector inputs(arg_list.size());
+			casadi::SXVector inputs(arg_list.size() + explicit_args.size());
 			int arg_index=0;
 			for (const auto& arg : arg_list) {
 				// - resize parameters - //
@@ -340,6 +373,10 @@ namespace thunder_ns{
 				// cout << "par_symb_new: " << par_symb_new << endl;
 
 				inputs[arg_index] = par_symb_new;
+				arg_index++;
+			}
+			for (const auto& arg: explicit_args){
+				inputs[arg_index] = arg;
 				arg_index++;
 			}
 

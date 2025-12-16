@@ -4,6 +4,10 @@
 ✔ chain is working @done (12/15/2025, 2:04:46 PM)
 ✔ jacobian in position is working @done (12/15/2025, 2:05:00 PM)
 ✔ orientation jacobian is not working @done (12/15/2025, 9:02:13 PM)
+☐ finish kin_loader joint functions
+☐ add explicit_args in thunder_robot
+✔ create explicit arguments for functions @done (12/16/2025, 5:29:06 PM)
+☐ use function with explicit argument for joint functions
 ☐ move elasticity outside of dynamics
 ☐ remove elastic from properties, too much redundancy
 ✔ create kin_loader with all the kinematics @done (12/15/2025, 11:39:38 PM)
@@ -11,11 +15,13 @@
 ✔ bring the jacobian computation to M @done (12/15/2025, 11:39:48 PM)
 ✔ delete std_joint_loader and builder and put standard joints in kin_loader @done (12/15/2025, 11:52:04 PM)
 ✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
+☐ delete par_DHtable where not necessary
 ☐ use only par_KIN instead of DHtable in all the code (regressors)
 ☐ kinematic builder have to apply the joints to the transformations.
 ☐ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions))
 ✔ kinematic loader have to create standard joints function @done (12/15/2025, 11:52:44 PM)
 ☐ add expricit arguments to functions (maybe optional to not break compatibility)
+☐ add kinematic parameter loading in kin_loader
 ☐ get_Ti(6x1 frame) should take internal transformation (xyz,rpy) and returns T_i that is only link?
 
 general:
