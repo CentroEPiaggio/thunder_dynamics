@@ -15,7 +15,7 @@
 ✔ bring the jacobian computation to M @done (12/15/2025, 11:39:48 PM)
 ✔ delete std_joint_loader and builder and put standard joints in kin_loader @done (12/15/2025, 11:52:04 PM)
 ✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
-☐ delete par_DHtable where not necessary
+✔ delete par_DHtable where not necessary @done (12/16/2025, 5:41:54 PM)
 ☐ use only par_KIN instead of DHtable in all the code (regressors)
 ✔ kinematic builder have to apply the joints to the transformations. @done (12/16/2025, 5:30:27 PM)
 ✔ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions)) @done (12/16/2025, 5:30:44 PM)

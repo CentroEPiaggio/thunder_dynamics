@@ -153,7 +153,7 @@ namespace thunder_ns{
 
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
-			std::vector<std::string> arg_list = {"q", "par_DHtable", "par_world2L0", "par_DYN"};
+			std::vector<std::string> arg_list = {"q", "par_KIN", "par_world2L0", "par_DYN"};
 			robot.add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
 		}
 
@@ -222,13 +222,13 @@ namespace thunder_ns{
 		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
 		std::vector<std::string> arg_list;
-		arg_list = {"q", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("M", M, arg_list, "Manipulator mass matrix");
-		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("C", C, arg_list, "Manipulator Coriolis matrix");
-		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("C_std", C_std, arg_list, "Classic formulation of the manipulator Coriolis matrix");
-		arg_list = {"q", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G", G, arg_list, "Manipulator gravity terms");
 
 		return 1;
@@ -385,25 +385,25 @@ namespace thunder_ns{
 		// - Mass derivatives - //
 		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
 		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
-		std::vector<std::string> arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_DYN"};
+		std::vector<std::string> arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
-		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
 
 		// - Coriolis derivatives - //
 		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
 		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
-		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
-		arg_list = {"q", "dq", "ddq", "d3q", "par_DHtable", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "d3q", "par_KIN", "par_world2L0", "par_DYN"};
 		robot.add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
 
 		// - Gravity derivatives - //
 		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
 		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
-		arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
-		arg_list = {"q", "dq", "ddq", "par_DHtable", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
 		robot.add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
 
 		return 1;

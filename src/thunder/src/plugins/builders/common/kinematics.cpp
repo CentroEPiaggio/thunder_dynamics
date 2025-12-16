@@ -22,7 +22,6 @@ namespace thunder_ns{
 		auto numJoints = robot.get<int>("numJoints");
 		vector<string> jointsType = robot.get<vector<string>>("jointsType");
 		auto q = robot.get_model("q");
-		// auto par_DHtable = robot.get_model("par_DHtable");
 		auto par_KIN = robot.get_model("par_KIN");
 		auto par_world2L0 = robot.get_model("par_world2L0");
 		auto par_Ln2EE = robot.get_model("par_Ln2EE");
@@ -45,10 +44,7 @@ namespace thunder_ns{
 		for (int i = 0; i < numJoints; i++) {
 			// casadi::Slice row_i(i*4, i*4+4);
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
-			// Ti[i+1] = DHTemplate(par_DHtable(row_i), q(i), jointsType[i]);
-			// Ti[i+1] = get_T_Joint(i, jointsType[i]);
 			Ti[i+1] = apply_joint(robot, frame, jointsType[i], q(i));
-			// Ti[i+1] = casadi::SX::mtimes(get_transform_rpy(frame), robot.get_model("T_JOINT_"+std::to_string(i)));
 			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
 			
 			arg_list = {"q", "par_KIN"};

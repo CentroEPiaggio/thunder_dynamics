@@ -175,13 +175,13 @@ namespace thunder_ns{
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 		std::vector<std::string> arg_list;
-		arg_list = {"q", "dq", "dqr", "ddqr", "par_DHtable", "par_world2L0", "par_gravity"};
+		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
-		arg_list = {"q", "ddqr", "par_DHtable", "par_world2L0"};
+		arg_list = {"q", "ddqr", "par_KIN", "par_world2L0"};
 		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = {"q", "dq", "dqr", "par_DHtable", "par_world2L0"};
+		arg_list = {"q", "dq", "dqr", "par_KIN", "par_world2L0"};
 		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = {"q", "par_DHtable", "par_world2L0", "par_gravity"};
+		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity"};
 		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
