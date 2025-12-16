@@ -84,22 +84,24 @@ namespace thunder_ns {
 		// --- Standard joint functions --- //
 		auto numJoints = robot->get<int>("numJoints");
         auto jointsType = robot->get<vector<string>>("jointsType");
-		auto q = robot->get_model("q");
+		SX q_joint;
 		casadi::Slice rot(0, 3);      // [0,1,2] indexes
+		SX Ti = SX::eye(4);
 
-		for (int i=0; i<numJoints; i++){
-			casadi::SX Ti = casadi::SX::eye(4);
-			
-			if ((jointsType[i] == "P")||(jointsType[i] == "P_SEA")) {
-				Ti(2,3) = q(i);
-			}
-			else if ((jointsType[i] == "R")||(jointsType[i] == "R_SEA")) {
-				Ti(rot,rot) = R_z(q(i));
-			}
+		// Prismatic classical joint
+		Ti = SX::eye(4);
+		q_joint = SX::sym("q_joint");
+		Ti(2,3) = q_joint;
+		if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of joint P", {q_joint})) {
+			std::cerr << "Error adding joint function: T_JOINT_P" << std::endl;
+		}
 
-			if (!robot->add_function("T_JOINT_"+std::to_string(i), Ti, {"q"}, "Joint "+std::to_string(i)+" transformation.")) {
-				std::cerr << "Error adding joint function: " << "T_JOINT_"+std::to_string(i) << std::endl;
-			}
+		// Rotoidal classical joint
+		Ti = SX::eye(4);
+		q_joint = SX::sym("q_joint");
+		Ti(rot,rot) = R_z(q_joint);
+		if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of joint R", {q_joint})) {
+			std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
 		}
 
 		debug_log("Loading finished", VERB_INFO);

@@ -4,10 +4,10 @@
 ✔ chain is working @done (12/15/2025, 2:04:46 PM)
 ✔ jacobian in position is working @done (12/15/2025, 2:05:00 PM)
 ✔ orientation jacobian is not working @done (12/15/2025, 9:02:13 PM)
-☐ finish kin_loader joint functions
+✔ finish kin_loader joint functions @done (12/16/2025, 5:29:53 PM)
 ☐ add explicit_args in thunder_robot
 ✔ create explicit arguments for functions @done (12/16/2025, 5:29:06 PM)
-☐ use function with explicit argument for joint functions
+✔ use function with explicit argument for joint functions @done (12/16/2025, 5:30:03 PM)
 ☐ move elasticity outside of dynamics
 ☐ remove elastic from properties, too much redundancy
 ✔ create kin_loader with all the kinematics @done (12/15/2025, 11:39:38 PM)
@@ -17,14 +17,15 @@
 ✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
 ☐ delete par_DHtable where not necessary
 ☐ use only par_KIN instead of DHtable in all the code (regressors)
-☐ kinematic builder have to apply the joints to the transformations.
-☐ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions))
+✔ kinematic builder have to apply the joints to the transformations. @done (12/16/2025, 5:30:27 PM)
+✔ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions)) @done (12/16/2025, 5:30:44 PM)
 ✔ kinematic loader have to create standard joints function @done (12/15/2025, 11:52:44 PM)
-☐ add expricit arguments to functions (maybe optional to not break compatibility)
+✔ add expricit arguments to functions (maybe optional to not break compatibility) @done (12/16/2025, 5:31:46 PM)
 ☐ add kinematic parameter loading in kin_loader
 ☐ get_Ti(6x1 frame) should take internal transformation (xyz,rpy) and returns T_i that is only link?
 
 general:
+	☐ joints with more that one dof?
 	☐ choose better names for config ("type_joints", ...)
 	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot

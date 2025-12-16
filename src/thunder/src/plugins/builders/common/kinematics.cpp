@@ -9,6 +9,12 @@ using casadi::SX;
 namespace thunder_ns{
 
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
+
+	SX apply_joint(Robot& robot, const SX& frame, string joint_type, const SX& qi){
+		SX T(4,4);
+		T = casadi::SX::mtimes(get_transform_rpy(frame), robot.get_model("T_JOINT_"+joint_type, {qi}));
+		return T;
+	}
 	
 	int compute_chain(Robot& robot) {
 
@@ -41,7 +47,8 @@ namespace thunder_ns{
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
 			// Ti[i+1] = DHTemplate(par_DHtable(row_i), q(i), jointsType[i]);
 			// Ti[i+1] = get_T_Joint(i, jointsType[i]);
-			Ti[i+1] = casadi::SX::mtimes(get_transform_rpy(frame), robot.get_model("T_JOINT_"+std::to_string(i)));
+			Ti[i+1] = apply_joint(robot, frame, jointsType[i], q(i));
+			// Ti[i+1] = casadi::SX::mtimes(get_transform_rpy(frame), robot.get_model("T_JOINT_"+std::to_string(i)));
 			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
 			
 			arg_list = {"q", "par_KIN"};
