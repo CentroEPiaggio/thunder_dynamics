@@ -1,3 +1,5 @@
+✔ finish to create reg_loader @done (12/17/2025, 9:04:38 AM)
+✔ test Dl @done (12/17/2025, 3:47:15 PM)
 ✔ load in dh_loader should add the function "par_KIN": the kinematic internal parametrization without the joint variables @done (12/10/2025, 9:34:16 AM)
 ✔ implement std_joint_loader that creates functions "T_Ji" @done (12/15/2025, 8:33:08 AM)
 ✔ std_joint_builder to make joint functions? @done (12/15/2025, 8:33:51 AM)
@@ -16,13 +18,12 @@
 ✔ delete std_joint_loader and builder and put standard joints in kin_loader @done (12/15/2025, 11:52:04 PM)
 ✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
 ✔ delete par_DHtable where not necessary @done (12/16/2025, 5:41:54 PM)
-☐ use only par_KIN instead of DHtable in all the code (regressors)
+✔ use only par_KIN instead of DHtable in all the code (regressors) @done (12/17/2025, 3:47:38 PM)
 ✔ kinematic builder have to apply the joints to the transformations. @done (12/16/2025, 5:30:27 PM)
 ✔ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions)) @done (12/16/2025, 5:30:44 PM)
 ✔ kinematic loader have to create standard joints function @done (12/15/2025, 11:52:44 PM)
 ✔ add expricit arguments to functions (maybe optional to not break compatibility) @done (12/16/2025, 5:31:46 PM)
 ☐ add kinematic parameter loading in kin_loader
-☐ get_Ti(6x1 frame) should take internal transformation (xyz,rpy) and returns T_i that is only link?
 
 general:
 	☐ joints with more that one dof?

@@ -191,7 +191,7 @@ namespace thunder_ns{
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
 		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		int Dl_order = robot.get<int>("Dl_order");
+		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 		auto dq = robot.get_model("dq");
 		if (Dl_order==0) return 0;
 		auto par_Dl = robot.get_model("par_Dl");
@@ -298,13 +298,12 @@ namespace thunder_ns{
 	int compute_reg_J(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		auto par_DHtable = robot.get_model("par_DHtable");
-		auto par_world2L0 = robot.get_model("par_world2L0");
-		auto par_Ln2EE = robot.get_model("par_Ln2EE");
-		auto DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
-		auto world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
-		auto Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
+		// auto par_DHtable = robot.get_model("par_DHtable");
+		// auto par_world2L0 = robot.get_model("par_world2L0");
+		// auto par_Ln2EE = robot.get_model("par_Ln2EE");
+		// auto DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
+		// auto world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
+		// auto Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
 		auto q = robot.get_model("q");
 		auto dq = robot.get_model("dq");
 		auto w = robot.get_model("w");
@@ -320,23 +319,30 @@ namespace thunder_ns{
 		// casadi::SX par = casadi::SX::vertcat({DH_vect, par_world2L0, par_Ln2EE});
 		// int sz = 0;
 		// parse DH
-		for (int i=0; i<par_DHtable.size1(); i++){
-			if (DHtable_isSymb[i]){
-				par_symb.push_back(par_DHtable(i));
+		// for (int i=0; i<par_DHtable.size1(); i++){
+		// 	if (DHtable_isSymb[i]){
+		// 		par_symb.push_back(par_DHtable(i));
+		// 	}
+		// }
+		// // parse world2L0
+		// for (int i=0; i<par_world2L0.size1(); i++){
+		// 	if (world2L0_isSymb[i]){
+		// 		par_symb.push_back(par_world2L0(i));
+		// 	}
+		// }
+		// // parse Ln2EE
+		// for (int i=0; i<par_Ln2EE.size1(); i++){
+		// 	if (Ln2EE_isSymb[i]){
+		// 		par_symb.push_back(par_Ln2EE(i));
+		// 	}
+		// }
+
+		for (const auto& arg : robot.functions["J_ee"].args){
+			if (arg != "q"){
+				par_symb.push_back(robot.parameters[arg].get_symb_resized());
 			}
 		}
-		// parse world2L0
-		for (int i=0; i<par_world2L0.size1(); i++){
-			if (world2L0_isSymb[i]){
-				par_symb.push_back(par_world2L0(i));
-			}
-		}
-		// parse Ln2EE
-		for (int i=0; i<par_Ln2EE.size1(); i++){
-			if (Ln2EE_isSymb[i]){
-				par_symb.push_back(par_Ln2EE(i));
-			}
-		}
+
 		// par.resize(sz,1);
 		casadi::SX par = casadi::SX::vertcat(par_symb);
 		// std::cout <<"par: " << par << std::endl;
@@ -354,11 +360,11 @@ namespace thunder_ns{
 			// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 			std::vector<std::string> arg_list;
-			arg_list = {"q", "dq", "par_DHtable", "par_world2L0", "par_Ln2EE"};
+			arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_Ln2EE"};
 			// std::cout << "par_list: " << par_symb << std::endl;
 			if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
-			arg_list = {"q", "w", "par_DHtable", "par_world2L0", "par_Ln2EE"};
+			arg_list = {"q", "w", "par_KIN", "par_world2L0", "par_Ln2EE"};
 			if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 		}
 		
@@ -368,8 +374,8 @@ namespace thunder_ns{
 
     int compute_regressors(Robot& robot, bool advanced){
 		int ret = 1;
-		bool ELASTIC = robot.get<bool>("ELASTIC");
-		int Dl_order = robot.get<int>("Dl_order");
+		bool ELASTIC = (robot.properties.count("ELASTIC")) ? robot.get<bool>("ELASTIC") : 0;
+		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 
 		if (!compute_Yr(robot)) ret=0;
 		if (!compute_reg_J(robot)) ret=0;

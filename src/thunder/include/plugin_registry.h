@@ -19,6 +19,7 @@
 #include "plugins/builders/legacy_builder.h"
 #include "plugins/builders/kin_builder.h"
 #include "plugins/builders/dyn_builder.h"
+#include "plugins/builders/reg_builder.h"
 
 // - Generators - //
 #include "plugins/generators/legacy_generator.h"
@@ -47,6 +48,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"legacy_builder", std::make_shared<LegacyBuilder>()},
 	{"kin_builder", std::make_shared<KinBuilder>()},
 	{"dyn_builder", std::make_shared<DynBuilder>()},
+	{"reg_builder", std::make_shared<RegBuilder>()},
 
 };
 

@@ -1,10 +1,10 @@
 pipeline:
-  loaders:    ["kin_loader", "dh_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder"]
+  loaders:    ["dh_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["legacy_generator"]
 
 ############################################
-kin_loader:
+dh_loader:
 
   # --- Constants --- #
   PI_2: &PI_2           1.5707963267948966
@@ -16,6 +16,13 @@ kin_loader:
   # joint types: 'R': rotoidal, 'P': prismatic
   type_joints: ['R', 'R', 'R']
 
+  # DH convention: a -> alpha -> d -> theta
+  DH:
+    symb: [1,0,1,0, 1,0,1,0, 1,0,1,0]
+    value: [0,   0,      1, 0,
+            1,  *PI_2,   0, 0,
+            1,   0,      0, 0]
+  
   # world to link_0
   Base_to_L0:
     symb: [0,0,0, 0,0,0]
@@ -29,29 +36,35 @@ kin_loader:
     ypr: [0, 0, *PI_2_neg]
 
 ############################################
-dh_loader:
+# kin_loader:
 
-  # --- Constants --- #
-  PI_2: &PI_2           1.5707963267948966
-  PI_2_neg: &PI_2_neg  -1.5707963267948966
+#   # --- Constants --- #
+#   PI_2: &PI_2           1.5707963267948966
+#   PI_2_neg: &PI_2_neg  -1.5707963267948966
 
-  # DH convention: a -> alpha -> d -> theta
-  symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
-  DH: [0,   0,      1, 0,
-      1,  *PI_2,   0, 0,
-      1,   0,      0, 0]
+#   # --- Hyperparameters --- #
+#   num_joints: 3
 
-############################################
-std_joint_loader:
+#   # joint types: 'R': rotoidal, 'P': prismatic
+#   type_joints: ['R', 'R', 'R']
 
-  # --- Hyperparameters --- #
-  num_joints: 3
+#   # world to link_0
+#   Base_to_L0:
+#     symb: [0,0,0, 0,0,0]
+#     tr: [0, 0, 0]
+#     ypr: [0, 0, 0]
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  type_joints: ['R', 'R', 'R']
+#   # Link_n to EE
+#   Ln_to_EE:
+#     symb: [0,0,0, 0,0,0]
+#     tr: [1, 0, 0]
+#     ypr: [0, 0, *PI_2_neg]
 
 ############################################
 dyn_loader:
+
+  # link friction
+  Dl_order: 2
 
   # gravity vector
   gravity:

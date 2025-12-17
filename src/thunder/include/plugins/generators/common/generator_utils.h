@@ -26,8 +26,8 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	// --- get everything from robot --- //
 	string robotName = robot.robotName;
 	int n_joints = robot.get<int>("numJoints");
-	int Dl_order = robot.get<int>("Dl_order");
-	bool ELASTIC = robot.get<bool>("ELASTIC");
+	bool ELASTIC = (robot.properties.count("ELASTIC")) ? robot.get<bool>("ELASTIC") : 0;
+	int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 
 	int numElasticJoints = 0;
 	std::vector<short> isElasticJoint = {0};
