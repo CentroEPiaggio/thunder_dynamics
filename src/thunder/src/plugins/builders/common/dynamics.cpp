@@ -341,7 +341,7 @@ namespace thunder_ns{
 
 	int compute_Dl(Robot& robot){
 		// parameters from robot
-		int Dl_order = robot.get<int>("Dl_order");
+		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 
 		if (Dl_order > 0){
 			int nj = robot.get<int>("numJoints");

@@ -15,7 +15,11 @@ namespace thunder_ns {
 
 			// --- Basic robot properties --- //
 			int STD_PAR_LINK = 10;
-			robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
+			if (robot->properties.count("STD_PAR_LINK")){
+				STD_PAR_LINK = robot->get<int>("STD_PAR_LINK");
+			} else {
+				robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
+			}
 
 
 			// --- Gravity --- //
