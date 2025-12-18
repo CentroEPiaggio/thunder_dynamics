@@ -220,7 +220,7 @@ namespace thunder_ns{
 	int compute_reg_elastic(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		int nej = robot.get<int>("numElasticJoints");
+		int nej = robot.get<int>("numSoftJoints");
 		int K_order = robot.get<int>("K_order");
 		int D_order = robot.get<int>("D_order");
 		int Dm_order = robot.get<int>("Dm_order");
@@ -236,9 +236,9 @@ namespace thunder_ns{
 		auto par_Dm_isSymb = robot.parameters["par_Dm"].is_symbolic;
 		auto par_Mm_isSymb = robot.parameters["par_Mm"].is_symbolic;
 
-		auto K = robot.get_model("k");
-		auto D = robot.get_model("d");
-		auto Dm = robot.get_model("dm");
+		auto K = K_order ? robot.get_model("k") : 0;
+		auto D = D_order ? robot.get_model("d") : 0;
+		auto Dm = Dm_order ? robot.get_model("dm") : 0;
 		auto Mm = robot.get_model("Mm");
 
 		// - symbolic par construction - //
@@ -374,7 +374,7 @@ namespace thunder_ns{
 
     int compute_regressors(Robot& robot, bool advanced){
 		int ret = 1;
-		bool ELASTIC = (robot.properties.count("ELASTIC")) ? robot.get<bool>("ELASTIC") : 0;
+		int numSoftJoints = (robot.properties.count("numSoftJoints")) ? robot.get<int>("numSoftJoints") : 0;
 		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 
 		if (!compute_Yr(robot)) ret=0;
@@ -382,7 +382,7 @@ namespace thunder_ns{
 		if (Dl_order>0){
 			if (!compute_reg_Dl(robot)) ret=0;
 		}
-		if (ELASTIC){
+		if (numSoftJoints){
 			if (!compute_reg_elastic(robot)) ret=0;
 		}
 		

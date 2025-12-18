@@ -271,8 +271,8 @@ namespace legacy {
 		bool ELASTIC = robot.get<bool>("ELASTIC");
 
 		if (ELASTIC > 0){
-			int numElasticJoints = robot.get<int>("numElasticJoints");
-			vector<short> isElasticJoint = robot.get<vector<short>>("isElasticJoint");
+			int numSoftJoints = robot.get<int>("numSoftJoints");
+			vector<short> isSoftJoint = robot.get<vector<short>>("isSoftJoint");
 			int K_order = robot.get<int>("K_order");
 			int D_order = robot.get<int>("D_order");
 			int Dm_order = robot.get<int>("Dm_order");
@@ -285,11 +285,11 @@ namespace legacy {
 			const auto& par_Dm = robot.get_model("par_Dm");
 			const auto& par_Mm = robot.get_model("par_Mm");
 
-			// casadi::SX K(numElasticJoints,1);
-			// casadi::SX D(numElasticJoints,1);
-			// casadi::SX Dm(numElasticJoints,1);
-			// casadi::SX Mm(numElasticJoints,1);
-			// for (int i=0; i<numElasticJoints; i++){
+			// casadi::SX K(numSoftJoints,1);
+			// casadi::SX D(numSoftJoints,1);
+			// casadi::SX Dm(numSoftJoints,1);
+			// casadi::SX Mm(numSoftJoints,1);
+			// for (int i=0; i<numSoftJoints; i++){
 			// 	for (int ord=0; ord<K_order; ord++){
 			// 		K(i) += pow(x(i)-q(i), ord+1) * par_K(i*K_order+ord);
 			// 	}
@@ -301,21 +301,21 @@ namespace legacy {
 			// 	}
 			// }
 			// function vectors
-			casadi::SX k(numElasticJoints,1);
-			casadi::SX d(numElasticJoints,1);
-			casadi::SX dm(numElasticJoints,1);
+			casadi::SX k(numSoftJoints,1);
+			casadi::SX d(numSoftJoints,1);
+			casadi::SX dm(numSoftJoints,1);
 			// matrixes
 			std::vector<casadi::SX> K_vec(K_order);
 			std::vector<casadi::SX> D_vec(D_order);
 			std::vector<casadi::SX> Dm_vec(Dm_order);
-			// casadi::SX K(numElasticJoints,numElasticJoints);
-			// casadi::SX D(numElasticJoints,numElasticJoints);
-			// casadi::SX Dm(numElasticJoints,numElasticJoints);
-			casadi::SX Mm(numElasticJoints,numElasticJoints);
-			for (int i=0; i<numElasticJoints; i++){
+			// casadi::SX K(numSoftJoints,numSoftJoints);
+			// casadi::SX D(numSoftJoints,numSoftJoints);
+			// casadi::SX Dm(numSoftJoints,numSoftJoints);
+			casadi::SX Mm(numSoftJoints,numSoftJoints);
+			for (int i=0; i<numSoftJoints; i++){
 				for (int ord=0; ord<K_order; ord++){
 					k(i) += pow(x(i)-q(i), 2*ord+1) * par_K(i*K_order+ord);	// ^1,3,5...
-					K_vec[ord].resize(numElasticJoints,numElasticJoints);
+					K_vec[ord].resize(numSoftJoints,numSoftJoints);
 					K_vec[ord](i,i) = par_K(i*K_order + ord);
 				}
 				for (int ord=0; ord<D_order; ord++){
@@ -324,7 +324,7 @@ namespace legacy {
 					} else {
 						d(i) += sqrt(pow(dx(i)-dq(i), 2)) * pow(dx(i)-dq(i), ord) * par_D(i*D_order+ord);
 					}
-					D_vec[ord].resize(numElasticJoints,numElasticJoints);
+					D_vec[ord].resize(numSoftJoints,numSoftJoints);
 					D_vec[ord](i,i) = par_D(i*D_order + ord);
 				}
 				for (int ord=0; ord<Dm_order; ord++){
@@ -333,7 +333,7 @@ namespace legacy {
 					} else {
 						dm(i) += sqrt(pow(dx(i), 2)) * pow(dx(i), ord) * par_Dm(i*Dm_order+ord);
 					}
-					Dm_vec[ord].resize(numElasticJoints,numElasticJoints);
+					Dm_vec[ord].resize(numSoftJoints,numSoftJoints);
 					Dm_vec[ord](i,i) = par_Dm(i*Dm_order + ord);
 				}
 				Mm(i,i) = par_Mm(i);

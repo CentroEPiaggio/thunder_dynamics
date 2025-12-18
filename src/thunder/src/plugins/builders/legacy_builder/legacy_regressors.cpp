@@ -221,7 +221,7 @@ namespace legacy {
 	int compute_reg_elastic(Robot& robot){
 		// parameters from robot
 		int nj = robot.get<int>("numJoints");
-		int nej = robot.get<int>("numElasticJoints");
+		int nej = robot.get<int>("numSoftJoints");
 		int K_order = robot.get<int>("K_order");
 		int D_order = robot.get<int>("D_order");
 		int Dm_order = robot.get<int>("Dm_order");

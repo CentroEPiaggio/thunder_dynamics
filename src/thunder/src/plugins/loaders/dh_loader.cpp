@@ -15,10 +15,10 @@ namespace thunder_ns {
 
 			// --- Basic Robot properties --- //
 			// - numJoints and jointsType - //
-			if (config_["type_joints"]) {
-				vector<string> jointsType = config_["type_joints"].as<vector<string>>();
+			if (config_["joints_type"]) {
+				vector<string> jointsType = config_["joints_type"].as<vector<string>>();
 				if ((config_["num_joints"]) && (config_["num_joints"].as<int>() != jointsType.size()))
-					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'type_joints' vector.");
+					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'joints_type' vector.");
 				numJoints = jointsType.size();
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);

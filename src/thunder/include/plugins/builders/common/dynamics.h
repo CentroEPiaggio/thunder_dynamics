@@ -10,7 +10,6 @@ namespace thunder_ns{
 	casadi::SX stdCmatrix(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
 	std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(Robot& robot);
 	int compute_MCG(Robot& robot);
-	int compute_elastic(Robot& robot);
 	int compute_Dl(Robot& robot);
 	int compute_dyn_derivatives(Robot& robot);
 	int compute_reg_dyn_conversions(Robot& robot);

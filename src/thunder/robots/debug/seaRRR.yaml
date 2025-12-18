@@ -1,11 +1,7 @@
 pipeline:
-  loaders:    ["dh_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  loaders:    ["dh_loader", "dyn_loader", "soft_loader"]
+  builders:   ["kin_builder", "dyn_builder", "soft_builder", "reg_builder"]
   generators: ["legacy_generator"]
-
-gen_python:   true
-gen_casadi:   true
-copy_gen:     true
 
 ############################################
 dh_loader:
@@ -18,7 +14,7 @@ dh_loader:
   num_joints: 3
 
   # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R', 'R', 'R']
+  joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
 
   # DH convention: a -> alpha -> d -> theta
   DH:
@@ -50,7 +46,7 @@ dh_loader:
 #   num_joints: 3
 
 #   # joint types: 'R': rotoidal, 'P': prismatic
-#   joints_type: ['R', 'R', 'R']
+#   joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
 
 #   # world to link_0
 #   Base_to_L0:
@@ -128,3 +124,39 @@ dyn_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
+############################################
+soft_loader:
+  K_order: 1
+  D_order: 0
+  Dm_order: 1
+  joints:
+    joint1:
+      # index: 0
+      K: [1.0]
+      D: []
+      Dm: [0.1]
+      Mm: 1.0
+      K_symb: [1]
+      D_symb: []
+      Dm_symb: [0]
+      Mm_symb: 0
+    joint2:
+      # index: 1
+      K: [1.0]
+      D: []
+      Dm: [0.1]
+      Mm: 1.0
+      K_symb: [1]
+      D_symb: []
+      Dm_symb: [0]
+      Mm_symb: 0
+    joint3:
+      # index: 2
+      K: [1.0]
+      D: []
+      Dm: [0.1]
+      Mm: 1.0
+      K_symb: [1]
+      D_symb: []
+      Dm_symb: [0]
+      Mm_symb: 0

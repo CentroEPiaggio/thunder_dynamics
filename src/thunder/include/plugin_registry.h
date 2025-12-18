@@ -14,12 +14,14 @@
 #include "plugins/loaders/dh_loader.h"
 #include "plugins/loaders/kin_loader.h"
 #include "plugins/loaders/dyn_loader.h"
+#include "plugins/loaders/soft_loader.h"
 
 // - Builders - //
 #include "plugins/builders/legacy_builder.h"
 #include "plugins/builders/kin_builder.h"
 #include "plugins/builders/dyn_builder.h"
 #include "plugins/builders/reg_builder.h"
+#include "plugins/builders/soft_builder.h"
 
 // - Generators - //
 #include "plugins/generators/legacy_generator.h"
@@ -37,6 +39,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	{"dh_loader", std::make_shared<DHLoader>()},
 	{"kin_loader", std::make_shared<KinLoader>()},
 	{"dyn_loader", std::make_shared<DynLoader>()},
+	{"soft_loader", std::make_shared<SoftLoader>()},
 
 };
 
@@ -49,6 +52,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"kin_builder", std::make_shared<KinBuilder>()},
 	{"dyn_builder", std::make_shared<DynBuilder>()},
 	{"reg_builder", std::make_shared<RegBuilder>()},
+	{"soft_builder", std::make_shared<SoftBuilder>()},
 
 };
 

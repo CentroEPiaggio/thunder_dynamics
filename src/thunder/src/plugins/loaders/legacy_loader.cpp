@@ -25,8 +25,8 @@ namespace thunder_ns {
 			int D_order = 0;
 			int Dm_order = 0;
 			int Dl_order = 0;
-			int numElasticJoints = 0;
-			vector<short> isElasticJoint;
+			int numSoftJoints = 0;
+			vector<short> isSoftJoint;
 
 			int STD_PAR_LINK = 10;
 			robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
@@ -49,37 +49,34 @@ namespace thunder_ns {
 				numJoints = robot->get<int>("numJoints");
 				jointsType = robot->get<vector<string>>("jointsType");
 			}
+			// - identify elastic joints - //
+			numSoftJoints = 0;
+			isSoftJoint.resize(numJoints);
+			for (int i = 0; i < numJoints; i++) {
+				if ((jointsType[i] == "R_SEA") || (jointsType[i] == "P_SEA")) {
+					isSoftJoint[i] = 1;
+					numSoftJoints++;
+				} else {
+					isSoftJoint[i] = 0;
+				}
+			}
+			robot->add_property<int>("numSoftJoints", numSoftJoints, "int", "Number of elastic joints", true);
+			robot->add_property<vector<short>>("isSoftJoint", isSoftJoint, "vector<short>", "Vector of elastic joint flags", true);
 			// --- Elastic model properties (defaults to false) --- //
-			YAML::Node elastic_node;
-			ELASTIC = config_["ELASTIC_MODEL"] && config_["ELASTIC_MODEL"].as<bool>();
+			YAML::Node elastic_node = config_["elastic"];
+			ELASTIC = numSoftJoints ? true : false;
 			robot->add_property<bool>("ELASTIC", ELASTIC, "bool", "Elastic flag", true);
 			if (ELASTIC) {
 				// - setup elastic properties - //
-				if (!config_["K_order"]) throw std::runtime_error("K_order property not present.");
-				if (!config_["D_order"]) throw std::runtime_error("D_order property not present.");
-				if (!config_["Dm_order"]) throw std::runtime_error("Dm_order property not present.");
-				if (!config_["elastic"]) throw std::runtime_error("elastic parameters not present.");
-				elastic_node = config_["elastic"];
+				if (!elastic_node["K_order"]) throw std::runtime_error("K_order property not present.");
+				if (!elastic_node["D_order"]) throw std::runtime_error("D_order property not present.");
+				if (!elastic_node["Dm_order"]) throw std::runtime_error("Dm_order property not present.");
 				K_order = elastic_node["K_order"].as<int>();
 				D_order = elastic_node["D_order"].as<int>();
 				Dm_order = elastic_node["Dm_order"].as<int>();
 				robot->add_property<int>("K_order", K_order, "int", "Order of the coupling stiffness model", true);
 				robot->add_property<int>("D_order", D_order, "int", "Order of the coupling friction model", true);
 				robot->add_property<int>("Dm_order", Dm_order, "int", "Order of the motor stiffness model", true);
-
-				// - identify elastic joints - //
-				numElasticJoints = 0;
-				isElasticJoint.resize(numJoints);
-				for (int i = 0; i < numJoints; i++) {
-					if ((jointsType[i] == "R_SEA") || (jointsType[i] == "P_SEA")) {
-						isElasticJoint[i] = 1;
-						numElasticJoints++;
-					} else {
-						isElasticJoint[i] = 0;
-					}
-				}
-				robot->add_property<int>("numElasticJoints", numElasticJoints, "int", "Number of elastic joints", true);
-				robot->add_property<vector<short>>("isElasticJoint", isElasticJoint, "vector<short>", "Vector of elastic joint flags", true);
 			}
 
 
@@ -93,10 +90,10 @@ namespace thunder_ns {
 			robot->add_variable("d3q", SX::sym("d3q",numJoints,1), vector<double>(numJoints,0), {1}, "Jerk", true);
 			robot->add_variable("d4q", SX::sym("d4q",numJoints,1), vector<double>(numJoints,0), {1}, "Snap", true);
 			// - Elastic joints - //
-			robot->add_variable("x", SX::sym("x",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor angle", true);
-			robot->add_variable("dx", SX::sym("dx",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor velocity", true);
-			robot->add_variable("ddx", SX::sym("ddx",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration", true);
-			robot->add_variable("ddxr", SX::sym("ddxr",numElasticJoints,1), vector<double>(numElasticJoints,0), {1}, "Motor acceleration reference", true);
+			robot->add_variable("x", SX::sym("x",numSoftJoints,1), vector<double>(numSoftJoints,0), {1}, "Motor angle", true);
+			robot->add_variable("dx", SX::sym("dx",numSoftJoints,1), vector<double>(numSoftJoints,0), {1}, "Motor velocity", true);
+			robot->add_variable("ddx", SX::sym("ddx",numSoftJoints,1), vector<double>(numSoftJoints,0), {1}, "Motor acceleration", true);
+			robot->add_variable("ddxr", SX::sym("ddxr",numSoftJoints,1), vector<double>(numSoftJoints,0), {1}, "Motor acceleration reference", true);
 			// - Regressors - //
 			robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,0), {1}, "Wrench", true);
 
@@ -244,14 +241,14 @@ namespace thunder_ns {
 			vector<double> par_K_num, par_D_num, par_Dm_num, par_Mm_num;
 			vector<short> par_K_isSymb, par_D_isSymb, par_Dm_isSymb, par_Mm_isSymb;
 			if (ELASTIC) {
-				par_K_num.resize(numElasticJoints*K_order);
-				par_D_num.resize(numElasticJoints*D_order);
-				par_Dm_num.resize(numElasticJoints*Dm_order);
-				par_Mm_num.resize(numElasticJoints);
+				par_K_num.resize(numSoftJoints*K_order);
+				par_D_num.resize(numSoftJoints*D_order);
+				par_Dm_num.resize(numSoftJoints*Dm_order);
+				par_Mm_num.resize(numSoftJoints);
 				YAML::Node elastic_joints = config_["elastic"]["joints"];
 				int i = 0;
 				for (const auto& node : elastic_joints) {
-					if (i==numElasticJoints) break; // break if nore joints defined
+					if (i==numSoftJoints) break; // break if nore joints defined
 					string jointName = node.first.as<string>();
 
 					// Helper lambda to parse a symbolic vector
@@ -295,10 +292,10 @@ namespace thunder_ns {
 					i++;
 				}
 				// - Models - //
-				SX par_K_symb = SX::sym("par_K", numElasticJoints*K_order,1);
-				SX par_D_symb = SX::sym("par_D", numElasticJoints*D_order,1);
-				SX par_Dm_symb = SX::sym("par_Dm", numElasticJoints*Dm_order,1);
-				SX par_Mm_symb = SX::sym("par_Mm", numElasticJoints,1);
+				SX par_K_symb = SX::sym("par_K", numSoftJoints*K_order,1);
+				SX par_D_symb = SX::sym("par_D", numSoftJoints*D_order,1);
+				SX par_Dm_symb = SX::sym("par_Dm", numSoftJoints*Dm_order,1);
+				SX par_Mm_symb = SX::sym("par_Mm", numSoftJoints,1);
 				// - Add to parameters - //
 				robot->add_parameter("par_K", par_K_symb, par_K_num, par_K_isSymb, "Coupling stiffness parameters", true);
 				robot->add_parameter("par_D", par_D_symb, par_D_num, par_D_isSymb, "Coupling friction parameters", true);
