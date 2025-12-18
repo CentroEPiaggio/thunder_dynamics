@@ -1,28 +1,10 @@
-✔ finish to create reg_loader @done (12/17/2025, 9:04:38 AM)
-✔ test Dl @done (12/17/2025, 3:47:15 PM)
-✔ load in dh_loader should add the function "par_KIN": the kinematic internal parametrization without the joint variables @done (12/10/2025, 9:34:16 AM)
-✔ implement std_joint_loader that creates functions "T_Ji" @done (12/15/2025, 8:33:08 AM)
-✔ std_joint_builder to make joint functions? @done (12/15/2025, 8:33:51 AM)
-✔ chain is working @done (12/15/2025, 2:04:46 PM)
-✔ jacobian in position is working @done (12/15/2025, 2:05:00 PM)
-✔ orientation jacobian is not working @done (12/15/2025, 9:02:13 PM)
-✔ finish kin_loader joint functions @done (12/16/2025, 5:29:53 PM)
+✔ loader does not recognise elastic joints, follow debug @done (12/18/2025, 7:49:09 AM)
+✔ finish soft_loader @done (12/17/2025, 5:41:44 PM)
+✔ remove ELASTIC and use numSoftJoints @done (12/18/2025, 8:00:36 AM)
 ☐ add explicit_args in thunder_robot
-✔ create explicit arguments for functions @done (12/16/2025, 5:29:06 PM)
-✔ use function with explicit argument for joint functions @done (12/16/2025, 5:30:03 PM)
-☐ move elasticity outside of dynamics
-☐ remove elastic from properties, too much redundancy
-✔ create kin_loader with all the kinematics @done (12/15/2025, 11:39:38 PM)
-✔ create dynamics_loader @done (12/15/2025, 11:39:42 PM)
-✔ bring the jacobian computation to M @done (12/15/2025, 11:39:48 PM)
-✔ delete std_joint_loader and builder and put standard joints in kin_loader @done (12/15/2025, 11:52:04 PM)
-✔ use only par_KIN to compute the kinematics, test if the result is the same @done (12/15/2025, 9:02:25 PM)
-✔ delete par_DHtable where not necessary @done (12/16/2025, 5:41:54 PM)
-✔ use only par_KIN instead of DHtable in all the code (regressors) @done (12/17/2025, 3:47:38 PM)
-✔ kinematic builder have to apply the joints to the transformations. @done (12/16/2025, 5:30:27 PM)
-✔ joint of type "M" has to create the fuction T_JOINT_M() that depends on a generic q (could be also dimension >1). The kinematic builder substitute q with the actual joint variables (taking also the dimension(from robot.functions)) @done (12/16/2025, 5:30:44 PM)
-✔ kinematic loader have to create standard joints function @done (12/15/2025, 11:52:44 PM)
-✔ add expricit arguments to functions (maybe optional to not break compatibility) @done (12/16/2025, 5:31:46 PM)
+✔ remove ELASTIC from thunder_robot @done (12/18/2025, 8:00:38 AM)
+✔ move elasticity outside of dynamics @done (12/18/2025, 8:02:27 AM)
+✔ remove elastic from properties, too much redundancy @done (12/18/2025, 8:02:32 AM)
 ☐ add kinematic parameter loading in kin_loader
 
 general:
@@ -50,6 +32,7 @@ thunder:
 		☐ not possible to insert path in robot_name
 		☐ have to work also if there is not .yaml in the name of file (thunder gen /../a.yaml)
 	parameters:
+		☐ most of parameters stored in yaml in the same way, use a function to load (num, model, symb...)
 		☐ possibility to store vector of expressions as functions (example T_0(i), usefull for cycles)
 		☐ numeric par_REG are computed only after building dynamics (because now the conversion is a function), problems?
 		☐ saved parameters are not ordered, solve?
@@ -96,6 +79,7 @@ plugins:
 	✔ create plugin manager @done (12/9/2025, 11:01:37 AM)
 	☐ list of available functions in builder (fun_list) and possibility to select only the interested ones
 	manager:
+		☐ plugin takes all the config if the plugin section is missing (ideally it is possible to remove the legacy distinction)
 		☐ is the function .execute(robot_name) autoexplicative?
 		☐ system to deactivate generators after loading the configuration (needed in tests)
 	loaders:

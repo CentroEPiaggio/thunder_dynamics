@@ -85,7 +85,7 @@ namespace thunder_ns {
 				if (name == "legacy_loader") plugin->configure(config);
 				else {
 					if (config[name]) plugin->configure(config[name]);
-					else std::cerr << "Nothing to load" << std::endl; 
+					else plugin->configure(config);
 				}
 				
 				active_loaders_.push_back(plugin);
@@ -100,7 +100,7 @@ namespace thunder_ns {
 				if (name == "legacy_builder") plugin->configure(config);
 				else {
                     if (config[name]) plugin->configure(config[name]);
-                    else std::cerr << "Nothing to load" << std::endl; 
+                    else plugin->configure(config);
                 }
 
 				active_builders_.push_back(plugin);
@@ -115,7 +115,7 @@ namespace thunder_ns {
 				if (name == "legacy_generator") plugin->configure(config);
 				else {
                     if (config[name]) plugin->configure(config[name]);
-                    else std::cerr << "Nothing to load" << std::endl; 
+                    else plugin->configure(config);
                 }
 				if (!NO_GENERATION){
 					active_generators_.push_back(plugin);
