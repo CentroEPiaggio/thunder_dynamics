@@ -94,7 +94,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		if (par.second.symb_size() != 0){
 			parameters_str.append(
 				"\t\t// " + par.second.description + "\n"
-				"\t\tVector<double," + std::to_string(par.second.size()) + "> " + par.second.name + " = " + par.second.get_value_str() + ";\n");
+				"\t\tVector<double," + std::to_string(par.second.symb_size()) + "> " + par.second.name + " = " + par.second.get_value_str() + ";\n");
 			}
 		}
 	file_content_h.append(parameters_str + "\n");
