@@ -90,11 +90,11 @@ namespace thunder_ns {
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
 				YAML::Node frame_base = config_["Base_to_L0"];
-				vector<double> world2L0_tr = frame_base["tr"].as<vector<double>>();
+				vector<double> world2L0_xyz = frame_base["xyz"].as<vector<double>>();
 				vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
 				vector<double> world2L0_num(6,1);
 				for (int i = 0; i < 3; i++) {
-					world2L0_num[i] = world2L0_tr[i];
+					world2L0_num[i] = world2L0_xyz[i];
 					world2L0_num[i + 3] = world2L0_ypr[i];
 				}
 				// - Symbolic selectivity - //
@@ -110,11 +110,11 @@ namespace thunder_ns {
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
 				YAML::Node frame_ee = config_["Ln_to_EE"];
-				vector<double> Ln2EE_tr = frame_ee["tr"].as<vector<double>>();
+				vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
 				vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
 				vector<double> Ln2EE_num(6, 0);
 				for (int i = 0; i < 3; i++) {
-					Ln2EE_num[i] = Ln2EE_tr[i];
+					Ln2EE_num[i] = Ln2EE_xyz[i];
 					Ln2EE_num[i + 3] = Ln2EE_ypr[i];
 				}
 				// - Symbolic selectivity - //

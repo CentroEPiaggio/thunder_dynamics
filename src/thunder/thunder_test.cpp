@@ -45,8 +45,10 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
-	std::string legacy_robot_conf = "../robots/debug/legacyRRR.yaml";
-	std::string new_robot_conf = "../robots/debug/RRR.yaml";
+	// std::string legacy_robot_conf = "../robots/debug/legacy_RRR.yaml";
+	// std::string new_robot_conf = "../robots/debug/RRR.yaml";
+	std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
+	std::string new_robot_conf = "../robots/debug/seaRRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
@@ -59,11 +61,11 @@ int main(){
 	int NJ = legacyRobot->get<int>("numJoints");
 
 	legacyRobot->set("q", std::vector<double>(NJ,0));
-	legacyRobot->set("dq", std::vector<double>(NJ,0));
+	legacyRobot->set("dq", std::vector<double>(NJ,1));
 	legacyRobot->set("dqr", std::vector<double>(NJ,0));
 	legacyRobot->set("ddqr", std::vector<double>(NJ,0));
 	newRobot->set("q", std::vector<double>(NJ,0));
-	newRobot->set("dq", std::vector<double>(NJ,0));
+	newRobot->set("dq", std::vector<double>(NJ,1));
 	newRobot->set("dqr", std::vector<double>(NJ,0));
 	newRobot->set("ddqr", std::vector<double>(NJ,0));
 
@@ -74,8 +76,8 @@ int main(){
 		cout << "new robot T_0_"+std::to_string(i)+": " << new_fun << endl << endl;
 	}
 
-	// cout << "legacy robot J_ee: " << legacyRobot->get("J_ee") << endl << endl;
-	// cout << "new robot J_ee: " << newRobot->get("J_ee") << endl << endl;
+	cout << "legacy robot T_0_ee: " << legacyRobot->get("T_0_ee") << endl << endl;
+	cout << "new robot T_0_ee: " << newRobot->get("T_0_ee") << endl << endl;
 
 	// for (int i=0; i<=NJ; i++){
 	// 	auto legacy_fun = legacyRobot->get("T_0_"+std::to_string(i));
@@ -108,7 +110,7 @@ int main(){
 
 	// bool ELASTIC = robot->get<bool>("ELASTIC");
 	// if (ELASTIC){
-	// 	NEJ = robot->get<int>("numElasticJoints");
+	// 	NEJ = robot->get<int>("numSoftJoints");
 	// 	N_PARAM_K = NEJ*robot->get<int>("K_order");
 	// 	N_PARAM_D = NEJ*robot->get<int>("D_order");
 	// 	N_PARAM_DM = NEJ*robot->get<int>("Dm_order");

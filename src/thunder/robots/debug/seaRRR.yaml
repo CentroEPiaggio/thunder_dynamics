@@ -1,7 +1,11 @@
 pipeline:
-  loaders:    ["dh_loader", "dyn_loader", "soft_loader"]
+  loaders:    ["kin_loader", "dyn_loader", "soft_loader"]
   builders:   ["kin_builder", "dyn_builder", "soft_builder", "reg_builder"]
   generators: ["legacy_generator"]
+
+gen_python:   false
+gen_casadi:   true
+copy_gen:     true
 
 ############################################
 dh_loader:
@@ -26,39 +30,51 @@ dh_loader:
   # world to link_0
   Base_to_L0:
     symb: [0,0,0, 0,0,0]
-    tr: [0, 0, 0]
+    xyz: [0, 0, 0]
     ypr: [0, 0, 0]
 
   # Link_n to EE
   Ln_to_EE:
     symb: [0,0,0, 0,0,0]
-    tr: [1, 0, 0]
+    xyz: [1, 0, 0]
     ypr: [0, 0, *PI_2_neg]
 
 ############################################
-# kin_loader:
+kin_loader:
 
-#   # --- Constants --- #
-#   PI_2: &PI_2           1.5707963267948966
-#   PI_2_neg: &PI_2_neg  -1.5707963267948966
+  # --- Constants --- #
+  PI_2: &PI_2           1.5707963267948966
+  PI_2_neg: &PI_2_neg  -1.5707963267948966
 
-#   # --- Hyperparameters --- #
-#   num_joints: 3
+  # --- Hyperparameters --- #
+  num_joints: 3
 
-#   # joint types: 'R': rotoidal, 'P': prismatic
-#   joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
+  # joint types: 'R': rotoidal, 'P': prismatic
+  joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
 
-#   # world to link_0
-#   Base_to_L0:
-#     symb: [0,0,0, 0,0,0]
-#     tr: [0, 0, 0]
-#     ypr: [0, 0, 0]
+  # joint positions (xyz-rpy)
+  kinematics:
+    joint1:
+      xyzrpy: [0,0,1, 0,0,0]
+      symb: [0,0,0,0,0,0]
+    joint2:
+      xyzrpy: [1,0,0, *PI_2,0,0]
+      symb: [0,0,0,0,0,0]
+    joint3:
+      xyzrpy: [1,0,0, 0,0,0]
+      symb: [0,0,0,0,0,0]
 
-#   # Link_n to EE
-#   Ln_to_EE:
-#     symb: [0,0,0, 0,0,0]
-#     tr: [1, 0, 0]
-#     ypr: [0, 0, *PI_2_neg]
+  # world to link_0
+  Base_to_L0:
+    symb: [0,0,0, 0,0,0]
+    xyz: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [0,0,0, 0,0,0]
+    xyz: [1, 0, 0]
+    ypr: [0, 0, *PI_2_neg]
 
 ############################################
 dyn_loader:

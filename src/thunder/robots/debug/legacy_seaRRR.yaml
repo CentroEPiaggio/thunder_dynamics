@@ -21,7 +21,7 @@ type_joints: ['R_SEA', 'R_SEA', 'R_SEA']
 kinematics:
   symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
   DH: [0,  0,      1, 0,
-       0,  *PI_2,  0, 0,
+       1,  *PI_2,  0, 0,
        1,  0,      0, 0]
 
 # gravity vector

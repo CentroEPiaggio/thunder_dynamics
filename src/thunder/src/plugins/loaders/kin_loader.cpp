@@ -36,8 +36,36 @@ namespace thunder_ns {
 
 
 			// --- Kinematics parameters --- //
-			if (config_["par_KIN"]){
-				// add the kinematics parameters from yaml directly
+			if (config_["kinematics"]){
+				vector<double> par_KIN_num(6 * numJoints,0);
+				vector<short> par_KIN_isSymb(6 * numJoints);
+				YAML::Node kinematics = config_["kinematics"];
+				
+				int idx = 0;
+				for (const auto& joint : kinematics) {
+					if (idx==numJoints) break;	// termination on link number
+					string jointName = joint.first.as<string>();
+					
+					// - Numeric - //
+					vector<double> xyzrpy = joint.second["xyzrpy"].as<vector<double>>();
+					for (int i=0; i<6; i++){
+						par_KIN_num[6*idx + i] = xyzrpy[i];
+					}
+
+					// - Symbolic selectivity - //
+					vector<short> joint_isSymb;
+					if (joint.second["symb"]) {
+						joint_isSymb = joint.second["symb"].as<vector<short>>();
+					} else {
+						joint_isSymb.assign(6, 0); // Default to non-symbolic
+					}
+					std::copy(joint_isSymb.begin(), joint_isSymb.end(), par_KIN_isSymb.begin() + 6*idx);
+					idx++;
+				}
+				// - Model - //
+				SX par_KIN_symb = SX::sym("par_KIN", 6*numJoints,1);
+				// - Add to parameters - //
+				robot->add_parameter("par_KIN", par_KIN_symb, par_KIN_num, par_KIN_isSymb, "Kinematic parameters", true);
 			}
 
 
@@ -45,11 +73,11 @@ namespace thunder_ns {
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
 			YAML::Node frame_base = config_["Base_to_L0"];
-			vector<double> world2L0_tr = frame_base["tr"].as<vector<double>>();
+			vector<double> world2L0_xyz = frame_base["xyz"].as<vector<double>>();
 			vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
 			vector<double> world2L0_num(6,1);
 			for (int i = 0; i < 3; i++) {
-				world2L0_num[i] = world2L0_tr[i];
+				world2L0_num[i] = world2L0_xyz[i];
 				world2L0_num[i + 3] = world2L0_ypr[i];
 				}
 				// - Symbolic selectivity - //
@@ -65,11 +93,11 @@ namespace thunder_ns {
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
 				YAML::Node frame_ee = config_["Ln_to_EE"];
-				vector<double> Ln2EE_tr = frame_ee["tr"].as<vector<double>>();
+				vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
 				vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
 				vector<double> Ln2EE_num(6, 0);
 				for (int i = 0; i < 3; i++) {
-				Ln2EE_num[i] = Ln2EE_tr[i];
+				Ln2EE_num[i] = Ln2EE_xyz[i];
 				Ln2EE_num[i + 3] = Ln2EE_ypr[i];
 			}
 			// - Symbolic selectivity - //
