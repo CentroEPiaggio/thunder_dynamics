@@ -1,13 +1,8 @@
-✔ loader does not recognise elastic joints, follow debug @done (12/18/2025, 7:49:09 AM)
-✔ finish soft_loader @done (12/17/2025, 5:41:44 PM)
-✔ remove ELASTIC and use numSoftJoints @done (12/18/2025, 8:00:36 AM)
-☐ add explicit_args in thunder_robot
-✔ remove ELASTIC from thunder_robot @done (12/18/2025, 8:00:38 AM)
-✔ move elasticity outside of dynamics @done (12/18/2025, 8:02:27 AM)
-✔ remove elastic from properties, too much redundancy @done (12/18/2025, 8:02:32 AM)
 ☐ add kinematic parameter loading in kin_loader
+☐ clean thunder_test
 
 general:
+	☐ add description for function explicit parameters
 	☐ joints with more that one dof?
 	☐ choose better names for config ("type_joints", ...)
 	☐ update readme

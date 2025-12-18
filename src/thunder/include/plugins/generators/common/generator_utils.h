@@ -178,14 +178,30 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	// - robot functions - //
 	functions_str.append("\n");
 	for (auto fun : functions){
+		// - function explicit arguments - //
+		vector<SX> fun_expl_args = fun.second.explicit_args; 
+		string args_string = "(";
+		if (fun_expl_args.size()){
+			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size1())+"> " + fun_expl_args[0].get_str());
+			for (int j=1; j<fun_expl_args.size(); j++){
+				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size1())+"> " + fun_expl_args[j].get_str());
+			}
+		}
+		args_string.append(")");
 		// - description - //
 		functions_str.append(
 			"\t\t/**\n\t\t * @brief " + fun.second.description + "\n"
-			"\t\t * \n"
+			"\t\t * \n");
+		for(int i=0; i<fun_expl_args.size(); i++){
+			functions_str.append(
+			"\t\t * @param " + fun_expl_args[i].get_str() + " Explicit parameter\n"
+			"\t\t * \n");
+		}
+		functions_str.append(
 			"\t\t * - depends on: " + fun.second.get_args_str() + "\n"
 			"\t\t */ \n");
 		// - declaration - //
-		functions_str.append("\t\t"+fun.second.get_ret_type_str()+" get_" + fun.second.name + "();\n\n");
+		functions_str.append("\t\t"+fun.second.get_ret_type_str()+" get_" + fun.second.name + args_string + ";\n\n");
 	}
 	file_content_h.append(functions_str + "};\n"
 	"#endif\n");
@@ -352,16 +368,21 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		string fun_name = "get_" + fun.second.name;
 		string fun_name_gen = robotName + "_" + fun.second.name;
 		std::vector<string> fun_args = fun.second.args;
+		std::vector<casadi::SX> fun_expl_args = fun.second.explicit_args;
 		std::vector<long> out_size = fun.second.get_out_size();
-		// // function arguments
-		// string args_string = "(" + fun_args[0];
-		// for (int j=1; j<fun_args.size(); j++){
-		// 	args_string.append(", " + fun_args[j]);
-		// }
+		// explicit function arguments
+		string args_string = "(";
+		if (fun_expl_args.size()){
+			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size1())+"> " + fun_expl_args[0].get_str());
+			for (int j=1; j<fun_expl_args.size(); j++){
+				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size1())+"> " + fun_expl_args[j].get_str());
+			}
+		}
+		args_string.append(")");
 		// other parts
 		string ret_type = fun.second.get_ret_type_str();
 		functions_str.append("// " + fun.second.description + "\n");
-		functions_str.append(ret_type + " thunder_" + robot_name + "::" + fun_name + "(){\n");
+		functions_str.append(ret_type + " thunder_" + robot_name + "::" + fun_name + args_string + " {\n");
 		// functions_str.append("\tEigen::MatrixXd out;\n");
 		// functions_str.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
 		string size_str = std::to_string(out_size[0]*out_size[1]);
@@ -369,12 +390,23 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		functions_str.append("\tthread_local long long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
 		functions_str.append("\tthread_local double p4[" + fun_name_gen + "_fun_SZ_W];\n");
 		// inputs
-		if (fun_args.size() == 0){
+		if ((fun_args.size() == 0) && (fun_expl_args.size() == 0)){
 			functions_str.append("\tconst double** input_ = nullptr;\n");
 		} else {
-			functions_str.append("\tconst double* input_[] = {" + fun_args[0]+".data()");
-			for (int j=1; j<fun_args.size(); j++){
-				functions_str.append(", " + fun_args[j]+".data()");
+			string first_arg = fun_args.size() ? fun_args[0] : fun_expl_args[0].get_str();
+			if (fun_args.size()) {
+				functions_str.append("\tconst double* input_[] = {" + fun_args[0] + ".data()");
+				for (int j=1; j<fun_args.size(); j++){
+					functions_str.append(", " + fun_args[j]+".data()");
+				}
+				for (int j=0; j<fun_expl_args.size(); j++){
+					args_string.append(", " + fun_expl_args[j].get_str()+".data()");
+				}
+			} else {
+				functions_str.append("\tconst double* input_[] = {" + fun_expl_args[0].get_str() + ".data()");
+				for (int j=1; j<fun_expl_args.size(); j++){
+					args_string.append(", " + fun_expl_args[j].get_str()+".data()");
+				}
 			}
 			functions_str.append("};\n");
 		}
