@@ -14,6 +14,9 @@ namespace thunder_ns {
 
 	private:
 
+		// the yaml configuration (needed to copy into robot)
+		YAML::Node config_yaml;
+
 		// The active pipeline for the current run
 		std::vector<std::shared_ptr<BaseLoader>> active_loaders_;
 		std::vector<std::shared_ptr<BaseBuilder>> active_builders_;
@@ -57,6 +60,8 @@ namespace thunder_ns {
 
 		// Clears current pipeline and sets up plugins based on YAML config
 		void configure_pipeline(const YAML::Node &config, int NO_GENERATION = 0) {
+			config_yaml = config;
+
 			active_loaders_.clear();
 			active_builders_.clear();
 			active_generators_.clear();
@@ -132,6 +137,7 @@ namespace thunder_ns {
 		 */
 		std::shared_ptr<Robot> execute(std::string robot_name) {
 			auto robot = std::make_shared<Robot>(robot_name);
+			robot->config_yaml = config_yaml;
 
 			if (verbose_)
 				std::cout << "--- Starting Loaders ---" << std::endl;
