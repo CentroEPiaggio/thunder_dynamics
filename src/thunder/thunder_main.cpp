@@ -22,10 +22,6 @@ using namespace std::chrono;
 using std::cout;
 using std::endl;
 
-bool COPY_GEN_FLAG = false; 		// used to copy generated files into thunder_robot project
-bool COPY_GEN_CHRONO_FLAG = false; 	// used to copy generated files into thunder_robot_chrono project
-bool GEN_PYTHON_FLAG = false; 		// used to generate python binding
-bool GEN_CASADI = false;			// used to generate casadi functions
 #define MU_JACOB 0.0
 #define VERSION "0.8.19-plugin"
 
