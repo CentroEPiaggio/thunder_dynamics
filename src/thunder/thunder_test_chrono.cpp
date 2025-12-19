@@ -11,36 +11,41 @@
 #include <yaml-cpp/yaml.h>
 
 #include "robot.h"
-#include "plugins/builders/legacy_builder/legacy_kinematics.h"
-#include "plugins/builders/legacy_builder/legacy_dynamics.h"
-#include "plugins/builders/legacy_builder/legacy_regressors.h"
-#include "plugins/builders/common/userDefined.h"
-#include "plugins/loaders/legacy_loader.h"
-#include "plugins/builders/legacy_builder.h"
+#include "plugin_manager.h"
+
+using std::cout;
+using std::endl;
+using std::string;
+using std::vector;
 
 // #define nj 3
 #define N_PAR_LINK 10
 
 using namespace thunder_ns;
 using namespace std::chrono;
-using std::cout;
-using std::endl;
+
 
 bool use_gripper = false;
 
 std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
-	auto robot = std::make_shared<Robot>(robot_name);
+	std::shared_ptr<Robot> robot;
 
-	YAML::Node config = YAML::LoadFile(file);
+	try {
+		// Load YAML
+		YAML::Node config_node = YAML::LoadFile(file);
 
-	auto loader = std::make_shared<thunder_ns::LegacyLoader>();
-	loader->configure(config);
-	loader->load(robot);
+		// Configure Manager
+		PluginManager manager;
+		manager.set_verbose(1);
+		manager.configure_pipeline(config_node, 1);
 
-	auto builder = std::make_shared<thunder_ns::LegacyBuilder>();
-	builder->configure(config);
-	builder->build(robot);
+		// Run Pipeline
+		robot = manager.execute(robot_name);
+
+	} catch (const std::exception& e) {
+		std::cerr << "[ERROR] " << e.what() << std::endl;
+	}
 
 	return robot;
 }

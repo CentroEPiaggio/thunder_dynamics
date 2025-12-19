@@ -13,11 +13,12 @@
 #include "robot.h"
 #include "plugin_manager.h"
 
+using std::cout;
+using std::endl;
 using std::string;
 using std::vector;
 using namespace thunder_ns;
-using std::cout;
-using std::endl;
+
 
 
 std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
@@ -47,54 +48,46 @@ int main(){
 
 	// std::string legacy_robot_conf = "../robots/debug/legacy_RRR.yaml";
 	// std::string new_robot_conf = "../robots/debug/RRR.yaml";
-	std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
+	// std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
 	std::string new_robot_conf = "../robots/debug/seaRRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
 	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
 	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
-	auto legacyRobot = legacy_robot_from_file("legacyRobot", legacy_robot_conf);
-	auto newRobot = legacy_robot_from_file("newRobot", new_robot_conf);
+	auto robot = legacy_robot_from_file("robot", new_robot_conf);
 
 
-	int NJ = legacyRobot->get<int>("numJoints");
+	int NJ = robot->get<int>("numJoints");
 
-	legacyRobot->set("q", std::vector<double>(NJ,0));
-	legacyRobot->set("dq", std::vector<double>(NJ,1));
-	legacyRobot->set("dqr", std::vector<double>(NJ,0));
-	legacyRobot->set("ddqr", std::vector<double>(NJ,0));
-	newRobot->set("q", std::vector<double>(NJ,0));
-	newRobot->set("dq", std::vector<double>(NJ,1));
-	newRobot->set("dqr", std::vector<double>(NJ,0));
-	newRobot->set("ddqr", std::vector<double>(NJ,0));
+	robot->set("q", std::vector<double>(NJ,0));
+	robot->set("dq", std::vector<double>(NJ,1));
+	robot->set("dqr", std::vector<double>(NJ,0));
+	robot->set("ddqr", std::vector<double>(NJ,0));
 
 	for (int i=0; i<=NJ; i++){
-		auto legacy_fun = legacyRobot->get("T_0_"+std::to_string(i));
-		auto new_fun = newRobot->get("T_0_"+std::to_string(i));
-		cout << "legacy robot T_0_"+std::to_string(i)+": " << legacy_fun << endl << endl;
+		auto new_fun = robot->get("T_0_"+std::to_string(i));
 		cout << "new robot T_0_"+std::to_string(i)+": " << new_fun << endl << endl;
 	}
 
-	cout << "legacy robot T_0_ee: " << legacyRobot->get("T_0_ee") << endl << endl;
-	cout << "new robot T_0_ee: " << newRobot->get("T_0_ee") << endl << endl;
+	cout << "new robot T_0_ee: " << robot->get("T_0_ee") << endl << endl;
 
 	// for (int i=0; i<=NJ; i++){
 	// 	auto legacy_fun = legacyRobot->get("T_0_"+std::to_string(i));
-	// 	auto new_fun = newRobot->get("T_0_"+std::to_string(i));
+	// 	auto new_fun = robot->get("T_0_"+std::to_string(i));
 	// 	cout << "legacy robot T_0_"+std::to_string(i)+": " << legacy_fun << endl << endl;
 	// 	cout << "new robot T_0_"+std::to_string(i)+": " << new_fun << endl << endl;
 	// }
 
 	// for (int i=0; i<=NJ; i++){
 	// 	auto legacy_fun = legacyRobot->get_model("T_0_"+std::to_string(i));
-	// 	auto new_fun = newRobot->get_model("T_0_"+std::to_string(i));
+	// 	auto new_fun = robot->get_model("T_0_"+std::to_string(i));
 	// 	cout << "legacy robot T_0_"+std::to_string(i)+": " << legacy_fun << endl << endl;
 	// 	cout << "new robot T_0_"+std::to_string(i)+": " << new_fun << endl << endl;
 	// }
 
-	// cout << "new robot par_DHtable: " << newRobot->get_model("par_DHtable") << endl << endl;
-	// cout << "new robot par_KIN: " << newRobot->get_model("par_KIN") << endl << endl;
+	// cout << "new robot par_DHtable: " << robot->get_model("par_DHtable") << endl << endl;
+	// cout << "new robot par_KIN: " << robot->get_model("par_KIN") << endl << endl;
 
 	// // ---------------------------------------------------------------------------------//
 	// // ------------------------------TEST CLASSES---------------------------------------//
