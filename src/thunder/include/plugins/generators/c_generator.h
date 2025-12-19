@@ -8,6 +8,10 @@ namespace thunder_ns {
 
 	class CGenerator : public BaseGenerator {
 
+		private:
+			bool GEN_CASADI;		// generate casadi functions
+			bool COPY_GEN;			// used to copy generated files into thunder_robot project
+
 		public:
 			CGenerator() : BaseGenerator("C Generator", "Generates a plain C library for Robot") {}
 		

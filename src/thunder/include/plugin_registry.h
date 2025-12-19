@@ -24,8 +24,8 @@
 #include "plugins/builders/soft_builder.h"
 
 // - Generators - //
-#include "plugins/generators/legacy_generator.h"
 #include "plugins/generators/c_generator.h"
+#include "plugins/generators/robot_generator.h"
 
 
 namespace thunder_ns {
@@ -61,8 +61,8 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
  */
 inline const std::map<std::string, std::shared_ptr<BaseGenerator>> GENERATORS = {
 	// TODO: ADD NEW GENERATORS HERE
-	{"legacy_generator", std::make_shared<LegacyGenerator>()},
 	{"c_generator", std::make_shared<CGenerator>()},
+	{"robot_generator", std::make_shared<RobotGenerator>()},
 	
 };
 
