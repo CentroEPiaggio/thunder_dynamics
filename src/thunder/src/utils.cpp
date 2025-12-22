@@ -142,4 +142,40 @@ namespace thunder_ns{
 		return T;
 	}
 
+	// Get euler angles from transform matrix T
+	casadi::SX get_euler_angles(casadi::SX T){
+		casadi::SX euler(3,1);
+		casadi::SX R = T(casadi::Slice(0,3), casadi::Slice(0,3));
+
+		// Assuming ZYX convention (yaw-pitch-roll)
+		casadi::SX theta = atan2(-R(2,0), sqrt(pow(R(0,0), 2) + pow(R(1,0), 2)));
+		casadi::SX psi = atan2(R(1,0), R(0,0));
+		casadi::SX phi = atan2(R(2,1), R(2,2));
+
+		euler(0) = phi;   // roll
+		euler(1) = theta; // pitch
+		euler(2) = psi;   // yaw
+
+		return euler;
+	}
+
+	// Get euler angles from transform matrix T (numerical version)
+	Eigen::Vector3d get_euler_angles(const Eigen::Matrix4d& T){
+		Eigen::Matrix3d R = T.block<3,3>(0,0);
+
+		// Assuming ZYX convention (yaw-pitch-roll)
+		double theta = atan2(-R(2,0), sqrt(pow(R(0,0), 2) + pow(R(1,0), 2)));
+		double psi = atan2(R(1,0), R(0,0));
+		double phi = atan2(R(2,1), R(2,2));
+
+		Eigen::Vector3d euler;
+		euler(0) = phi;   // roll
+		euler(1) = theta; // pitch
+		euler(2) = psi;   // yaw
+
+		return euler;
+	}
+
+	
+
 }
