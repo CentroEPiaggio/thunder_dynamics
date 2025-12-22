@@ -14,6 +14,9 @@ namespace thunder_ns {
 
 	private:
 
+		// the yaml configuration (needed to copy into robot)
+		YAML::Node config_yaml;
+
 		// The active pipeline for the current run
 		std::vector<std::shared_ptr<BaseLoader>> active_loaders_;
 		std::vector<std::shared_ptr<BaseBuilder>> active_builders_;
@@ -44,6 +47,10 @@ namespace thunder_ns {
 	
 		PluginManager() = default;
 
+		const std::vector<std::string> default_loaders = {"kin_loader", "dyn_loader", "soft_loader"};
+		const std::vector<std::string> default_builders = {"kin_builder", "dyn_builder", "soft_builder", "reg_builder"};
+		const std::vector<std::string> default_generators = {"robot_generator"};
+
 		// Sets verbosity for all plugins
 		void set_verbose(bool v) { verbose_ = v; }
 
@@ -57,6 +64,8 @@ namespace thunder_ns {
 
 		// Clears current pipeline and sets up plugins based on YAML config
 		void configure_pipeline(const YAML::Node &config, int NO_GENERATION = 0) {
+			config_yaml = config;
+
 			active_loaders_.clear();
 			active_builders_.clear();
 			active_generators_.clear();
@@ -66,14 +75,29 @@ namespace thunder_ns {
 			std::vector<std::string> generator_names;
 
 			if (config["pipeline"]) {
-				loader_names = config["pipeline"]["loaders"].as<std::vector<std::string>>();
-				builder_names = config["pipeline"]["builders"].as<std::vector<std::string>>();
-				generator_names = config["pipeline"]["generators"].as<std::vector<std::string>>();
+				if (config["pipeline"]["loaders"]) {
+					loader_names = config["pipeline"]["loaders"].as<std::vector<std::string>>();
+				} else {
+					loader_names = default_loaders;
+					std::cout << "[PluginManager] No loaders defined, using defaults." << std::endl;
+				}
+				if (config["pipeline"]["builders"]) {
+					builder_names = config["pipeline"]["builders"].as<std::vector<std::string>>();
+				} else {
+					builder_names = default_builders;
+					std::cout << "[PluginManager] No builders defined, using defaults." << std::endl;
+				}
+				if (config["pipeline"]["generators"]) {
+					generator_names = config["pipeline"]["generators"].as<std::vector<std::string>>();
+				} else {
+					generator_names = default_generators;
+					std::cout << "[PluginManager] No generators defined, using defaults." << std::endl;
+				}
 			} else {
-				loader_names = {"legacy_loader"};
-				builder_names = {"legacy_builder"};
-				generator_names = {"legacy_generator"};
-				std::cout << "[PluginManager] No pipeline defined, using Legacy mode." << std::endl;
+				loader_names = default_loaders;
+				builder_names = default_builders;
+				generator_names = default_generators;
+				std::cout << "[PluginManager] No pipeline defined, using default." << std::endl;
 			}
 
 			for (const auto &name : loader_names) {
@@ -82,11 +106,11 @@ namespace thunder_ns {
 					throw std::runtime_error("Loader not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				if (name == "legacy_loader") plugin->configure(config);
-				else {
-					if (config[name]) plugin->configure(config[name]);
-					else plugin->configure(config);
-				}
+				// if (name == "legacy_loader") plugin->configure(config);
+				// else {
+				if (config[name]) plugin->configure(config[name]);
+				else plugin->configure(config);
+				// }
 				
 				active_loaders_.push_back(plugin);
 			}
@@ -97,11 +121,11 @@ namespace thunder_ns {
 					throw std::runtime_error("Builder not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				if (name == "legacy_builder") plugin->configure(config);
-				else {
-                    if (config[name]) plugin->configure(config[name]);
-                    else plugin->configure(config);
-                }
+				// if (name == "legacy_builder") plugin->configure(config);
+				// else {
+				if (config[name]) plugin->configure(config[name]);
+				else plugin->configure(config);
+                // }
 
 				active_builders_.push_back(plugin);
 			}
@@ -112,11 +136,11 @@ namespace thunder_ns {
 					throw std::runtime_error("Generator not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				if (name == "legacy_generator") plugin->configure(config);
-				else {
-                    if (config[name]) plugin->configure(config[name]);
-                    else plugin->configure(config);
-                }
+				// if (name == "legacy_generator") plugin->configure(config);
+				// else {
+				if (config[name]) plugin->configure(config[name]);
+				else plugin->configure(config);
+                // }
 				if (!NO_GENERATION){
 					active_generators_.push_back(plugin);
 				}
@@ -132,6 +156,7 @@ namespace thunder_ns {
 		 */
 		std::shared_ptr<Robot> execute(std::string robot_name) {
 			auto robot = std::make_shared<Robot>(robot_name);
+			robot->config_yaml = config_yaml;
 
 			if (verbose_)
 				std::cout << "--- Starting Loaders ---" << std::endl;

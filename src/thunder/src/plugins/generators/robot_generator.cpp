@@ -1,4 +1,4 @@
-#include "plugins/generators/legacy_generator.h"
+#include "plugins/generators/robot_generator.h"
 
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
@@ -16,23 +16,23 @@ using std::to_string;
 
 
 namespace thunder_ns {
-	// using namespace legacy;
 
-    void LegacyGenerator::init(){
+    void RobotGenerator::init(){
         GEN_CASADI = false;		// generate casadi functions
         GEN_PYTHON = false;		// generate python bindings
-        COPY_GEN = false;			// used to copy generated files into thunder_robot project
+		GEN_ROBOT = true;		// generate thunder_<robot> class
+        COPY_GEN = false;		// used to copy generated files into thunder_robot project
     }
 
 	// ----- GENERATE ----- //
-	void LegacyGenerator::generate(const std::shared_ptr<Robot> robot){
-		init();
-        
+	void RobotGenerator::generate(const std::shared_ptr<Robot> robot){
+
         int nj = robot->get<int>("numJoints");
 		// --- Generate merge code --- //
 
 		if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
 		if (config_["gen_python"]) GEN_PYTHON = config_["gen_python"].as<bool>();
+		if (config_["gen_robot"]) GEN_ROBOT = config_["gen_robot"].as<bool>();
 		if (config_["copy_gen"]) COPY_GEN = config_["copy_gen"].as<bool>();
 
 		string robot_name = robot->robotName;
@@ -66,6 +66,7 @@ namespace thunder_ns {
 			// cout<<"fun: "<<f.second<<endl<<endl;
 		}
 		myCodeGen.generate(absolutePath);
+		debug_log("C library generated", VERB_INFO);
 
 		// --- Casadi functions generation --- //
 		if (GEN_CASADI){
@@ -83,64 +84,64 @@ namespace thunder_ns {
 			debug_log("Casadi functions generated", VERB_INFO);
 		}
 
-		// --- Write thunder_robot into generatedFiles --- //
-		std::filesystem::path sourcePath;
-		std::filesystem::path destPath;
-		string python_cmake_file;
+		// --- Write thunder_<robot> into generatedFiles --- //
+		if (GEN_ROBOT) {
+			std::filesystem::path sourcePath;
+			std::filesystem::path destPath;
+			string python_cmake_file;
 
-		// Get home/.local/share directory
-		string home = std::getenv("HOME");
-		string template_path = "/usr/local/share/thunder_dynamics/templates/";
+			// Get home/.local/share directory
+			string home = std::getenv("HOME");
+			string template_path = "/usr/local/share/thunder_dynamics/templates/";
 
-		if (std::filesystem::is_directory(template_path)){
-			python_cmake_file = template_path + "CMakeLists.txt";
-		}else{
-			std::cerr<<"Template path not found: "<<template_path<<std::endl;
-		}
+			if (std::filesystem::is_directory(template_path)){
+				python_cmake_file = template_path + "CMakeLists.txt";
+			}else{
+				std::cerr<<"Template path not found: "<<template_path<<std::endl;
+			}
 
-		if (GEN_PYTHON){
-			// --- Generate python binding --- //
-			std::filesystem::copy_file(python_cmake_file, absolutePath +  "CMakeLists.txt", std::filesystem::copy_options::overwrite_existing);
-			int changed = update_cmake("robot", robot_name, absolutePath +  "CMakeLists.txt");
-			if (!changed) {
-				cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
+			if (GEN_PYTHON){
+				// --- Generate python binding --- //
+				std::filesystem::copy_file(python_cmake_file, absolutePath +  "CMakeLists.txt", std::filesystem::copy_options::overwrite_existing);
+				int changed = update_cmake("robot", robot_name, absolutePath +  "CMakeLists.txt");
+				if (!changed) {
+					cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
+					return;
+				}
+				debug_log("Python bindings generated", VERB_INFO);
+			}
+
+			// --- Create thunder_<robot> --- //
+			int robot_generated = create_thunder_robot(robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
+			if (!robot_generated) {
+				debug_log("Problem on creating thunder_robot", VERB_INFO);
 				return;
 			}
-			debug_log("Python bindings generated", VERB_INFO);
+			debug_log("Thunder_"+robot_name+" generated", VERB_INFO);
+
+			// --- generate parameters files --- //
+			string par_file = absolutePath + robot_name + "_par.yaml";
+			string conf_file = absolutePath + robot_name + "_conf.yaml";
+			robot->save_conf(conf_file);
+			robot->save_par(par_file);
+
+			// thunder_robot path
+			string COPY_PREFIX;
+			if (currentPath.filename() == "build") { // last directory name
+				COPY_PREFIX = currentPath/"../../../";
+			} else {
+				COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
+			}
+			string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot_test/include/";
+			string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot_test/src/";
+			string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot_test/robots/";
+			
+			// --- copy generated files in thunder_robot project --- //
+			if(COPY_GEN){
+				copy_to(robot_name, absolutePath, PATH_COPY_YAML, PATH_COPY_YAML, PATH_COPY_H, PATH_COPY_CPP);
+				debug_log("Copied to thunder_robot_test", VERB_INFO);
+			}
 		}
-
-		// --- change the necessary into thunder_robot --- //
-		int robot_generated = create_thunder_robot(robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
-		if (!robot_generated) {
-			debug_log("Problem on creating thunder_robot", VERB_INFO);
-			return;
-		}
-
-		// --- generate parameters files --- //
-		string par_file = absolutePath + robot_name + "_par.yaml";
-		string conf_file = absolutePath + robot_name + "_conf.yaml";
-		robot->save_conf(conf_file);
-		robot->save_par(par_file);
-
-		debug_log("Library generated", VERB_INFO);
-
-		// thunder_robot path
-		string COPY_PREFIX;
-		if (currentPath.filename() == "build") { // last directory name
-			COPY_PREFIX = currentPath/"../../../";
-		} else {
-			COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
-		}
-		string PATH_COPY_H = COPY_PREFIX + "src/thunder_robot_test/include/";
-		string PATH_COPY_CPP = COPY_PREFIX + "src/thunder_robot_test/src/";
-		string PATH_COPY_YAML = COPY_PREFIX + "src/thunder_robot_test/robots/";
-		
-		// --- copy generated files in thunder_robot project --- //
-		if(COPY_GEN){
-			copy_to(robot_name, absolutePath, PATH_COPY_YAML, PATH_COPY_YAML, PATH_COPY_H, PATH_COPY_CPP);
-			debug_log("Copied to thunder_robot_test", VERB_INFO);
-		}
-
 	}
 
 	// ------------------------- //
@@ -148,7 +149,7 @@ namespace thunder_ns {
 	// ------------------------- //
 
 	// --- COPY_TO --- //
-	int LegacyGenerator::copy_to(string robot_name, string path_from, string path_conf, string path_par, string path_h, string path_cpp){
+	int RobotGenerator::copy_to(string robot_name, string path_from, string path_conf, string path_par, string path_h, string path_cpp){
 		// --- copy generated files --- //
 		try{
 			std::filesystem::path sourcePath;
@@ -188,7 +189,7 @@ namespace thunder_ns {
 	}
 
 	// --- UPDATE_CMAKE --- //
-	int LegacyGenerator::update_cmake(const string from_robot, const string to_robot, const string file_path){
+	int RobotGenerator::update_cmake(const string from_robot, const string to_robot, const string file_path){
 		std::ifstream file_cmake(file_path); // open in reading mode
 		if (!file_cmake.is_open()) {
 			std::cerr << "error in CMakeLists.txt template opening:" << file_path << endl;

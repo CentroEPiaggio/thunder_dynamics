@@ -1,4 +1,5 @@
-☐ add kinematic parameter loading in kin_loader
+☐ delete legacy
+☐ update all robots
 ☐ clean thunder_test
 
 general:
@@ -69,7 +70,7 @@ thunder_robot:
 
 plugins:
 	☐ plugin should takes all the config if there is no section with the plugin name?
-	☐ init function for plugins?
+	☐ init function for plugins, needed because plugin constructors are called only once in a static map
 	☐ avoid default initialization in plugin constructor (use an init function with default values. Problem if more than one robot is generated in the same test because constructors are called just the first time)
 	✔ create plugin manager @done (12/9/2025, 11:01:37 AM)
 	☐ list of available functions in builder (fun_list) and possibility to select only the interested ones

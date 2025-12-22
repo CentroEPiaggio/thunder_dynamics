@@ -1,43 +1,14 @@
 pipeline:
   loaders:    ["kin_loader", "dyn_loader", "soft_loader"]
   builders:   ["kin_builder", "dyn_builder", "soft_builder", "reg_builder"]
-  generators: ["legacy_generator"]
-
-gen_python:   false
-gen_casadi:   true
-copy_gen:     true
+  generators: ["robot_generator"]
 
 ############################################
-dh_loader:
-
-  # --- Constants --- #
-  PI_2: &PI_2           1.5707963267948966
-  PI_2_neg: &PI_2_neg  -1.5707963267948966
-
-  # --- Hyperparameters --- #
-  num_joints: 3
-
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
-
-  # DH convention: a -> alpha -> d -> theta
-  DH:
-    symb: [1,0,1,0, 1,0,1,0, 1,0,1,0]
-    value: [0,   0,      1, 0,
-            1,  *PI_2,   0, 0,
-            1,   0,      0, 0]
-  
-  # world to link_0
-  Base_to_L0:
-    symb: [0,0,0, 0,0,0]
-    xyz: [0, 0, 0]
-    ypr: [0, 0, 0]
-
-  # Link_n to EE
-  Ln_to_EE:
-    symb: [0,0,0, 0,0,0]
-    xyz: [1, 0, 0]
-    ypr: [0, 0, *PI_2_neg]
+robot_generator:
+  gen_python:   false
+  gen_casadi:   true
+  gen_robot:    true
+  copy_gen:     true
 
 ############################################
 kin_loader:
@@ -147,7 +118,6 @@ soft_loader:
   Dm_order: 1
   joints:
     joint1:
-      # index: 0
       K: [1.0]
       D: []
       Dm: [0.1]
@@ -157,7 +127,6 @@ soft_loader:
       Dm_symb: [0]
       Mm_symb: 0
     joint2:
-      # index: 1
       K: [1.0]
       D: []
       Dm: [0.1]
@@ -167,7 +136,6 @@ soft_loader:
       Dm_symb: [0]
       Mm_symb: 0
     joint3:
-      # index: 2
       K: [1.0]
       D: []
       Dm: [0.1]

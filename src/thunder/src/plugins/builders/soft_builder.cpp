@@ -109,7 +109,7 @@ namespace thunder_ns {
     void SoftBuilder::build(std::shared_ptr<Robot> robot) {
         debug_log("Starting soft-robotics computations", VERB_INFO);
         compute_elastic(robot);
-        debug_log("soft-robotics computed", VERB_INFO);
+        debug_log("Soft-robotics computed", VERB_INFO);
     }
 
 }

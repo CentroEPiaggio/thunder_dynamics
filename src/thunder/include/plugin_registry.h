@@ -10,7 +10,6 @@
 // TODO: ADD ALL NEW PLUGIN HEADERS HERE //
 //---------------------------------------//
 // - Loaders - //
-#include "plugins/loaders/legacy_loader.h"
 #include "plugins/loaders/dh_loader.h"
 #include "plugins/loaders/kin_loader.h"
 #include "plugins/loaders/dyn_loader.h"
@@ -18,15 +17,13 @@
 #include "plugins/loaders/urdf_loader.h"
 
 // - Builders - //
-#include "plugins/builders/legacy_builder.h"
 #include "plugins/builders/kin_builder.h"
 #include "plugins/builders/dyn_builder.h"
 #include "plugins/builders/reg_builder.h"
 #include "plugins/builders/soft_builder.h"
 
 // - Generators - //
-#include "plugins/generators/legacy_generator.h"
-#include "plugins/generators/c_generator.h"
+#include "plugins/generators/robot_generator.h"
 
 
 namespace thunder_ns {
@@ -36,7 +33,6 @@ namespace thunder_ns {
  */
 inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	// TODO: ADD NEW LOADERS HERE
-	{"legacy_loader", std::make_shared<LegacyLoader>()},
 	{"dh_loader", std::make_shared<DHLoader>()},
 	{"kin_loader", std::make_shared<KinLoader>()},
 	{"dyn_loader", std::make_shared<DynLoader>()},
@@ -50,7 +46,6 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
  */
 inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	// TODO: ADD NEW POPULATORS HERE
-	{"legacy_builder", std::make_shared<LegacyBuilder>()},
 	{"kin_builder", std::make_shared<KinBuilder>()},
 	{"dyn_builder", std::make_shared<DynBuilder>()},
 	{"reg_builder", std::make_shared<RegBuilder>()},
@@ -63,8 +58,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
  */
 inline const std::map<std::string, std::shared_ptr<BaseGenerator>> GENERATORS = {
 	// TODO: ADD NEW GENERATORS HERE
-	{"legacy_generator", std::make_shared<LegacyGenerator>()},
-	{"c_generator", std::make_shared<CGenerator>()},
+	{"robot_generator", std::make_shared<RobotGenerator>()},
 	
 };
 
