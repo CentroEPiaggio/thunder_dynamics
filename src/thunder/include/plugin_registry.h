@@ -15,6 +15,7 @@
 #include "plugins/loaders/kin_loader.h"
 #include "plugins/loaders/dyn_loader.h"
 #include "plugins/loaders/soft_loader.h"
+#include "plugins/loaders/urdf_loader.h"
 
 // - Builders - //
 #include "plugins/builders/legacy_builder.h"
@@ -40,6 +41,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	{"kin_loader", std::make_shared<KinLoader>()},
 	{"dyn_loader", std::make_shared<DynLoader>()},
 	{"soft_loader", std::make_shared<SoftLoader>()},
+	{"urdf_loader", std::make_shared<UrdfLoader>()}
 
 };
 
