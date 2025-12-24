@@ -3,6 +3,12 @@ pipeline:
   builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
+version: 1.0
+
+# --- Constants --- #
+PI_2: &PI_2           1.5707963267948966
+PI_2_neg: &PI_2_neg  -1.5707963267948966
+
 ############################################
 robot_generator:
   gen_python:   false
@@ -13,10 +19,6 @@ robot_generator:
 ############################################
 kin_loader:
 
-  # --- Constants --- #
-  PI_2: &PI_2           1.5707963267948966
-  PI_2_neg: &PI_2_neg  -1.5707963267948966
-
   # --- Hyperparameters --- #
   num_joints: 3
 
@@ -26,14 +28,14 @@ kin_loader:
   # joint positions (xyz-rpy)
   kinematics:
     joint1:
+      symb: [0,0,0,0,0,0]
       xyzrpy: [0,0,1, 0,0,0]
-      symb: [0,0,0,0,0,0]
     joint2:
+      symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, *PI_2,0,0]
-      symb: [0,0,0,0,0,0]
     joint3:
-      xyzrpy: [1,0,0, 0,0,0]
       symb: [0,0,0,0,0,0]
+      xyzrpy: [1,0,0, 0,0,0]
 
   # world to link_0
   Base_to_L0:
@@ -58,21 +60,21 @@ dyn_loader:
     symb: [0,0,0]
     value: [0, 0, -9.81]
 
-  # inertial parameters expressed w.r.t. DH frames
+  # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
     link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 5.0
-        CoM_x: 2.0
-        CoM_y: 2.0
-        CoM_z: 2.0
-        Ixx: 2.0
-        Ixy: 2.0
-        Ixz: 2.0
-        Iyy: 2.0
-        Iyz: 2.0
-        Izz: 2.0
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
       friction:
         symb: [0,0]
         Dl: [0.1, 0.01]
@@ -80,16 +82,16 @@ dyn_loader:
     link2:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 3.0
-        CoM_x: 2.0
-        CoM_y: 2.0
-        CoM_z: 2.0
-        Ixx: 2.0
-        Ixy: 2.0
-        Ixz: 2.0
-        Iyy: 2.0
-        Iyz: 2.0
-        Izz: 2.0
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
       friction:
         symb: [0,0]
         Dl: [0.1, 0.01]
@@ -98,15 +100,15 @@ dyn_loader:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
-        CoM_x: 2.0
-        CoM_y: 0.3
-        CoM_z: 2.0
-        Ixx: 2.0
-        Ixy: 2.0
-        Ixz: 2.0
-        Iyy: 2.0
-        Iyz: 2.0
-        Izz: 2.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
       friction:
         symb: [0,0]
         Dl: [0.1, 0.01]

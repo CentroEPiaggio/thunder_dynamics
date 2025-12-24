@@ -1,11 +1,13 @@
-☐ delete legacy
+✔ delete legacy @done (12/19/2025, 5:13:17 PM)
+☐ dh_RRR does not work because the standard pipeline have kinematics
 ☐ update all robots
 ☐ clean thunder_test
 
 general:
+	☐ update robots from dh to internal kinematics
 	☐ add description for function explicit parameters
 	☐ joints with more that one dof?
-	☐ choose better names for config ("type_joints", ...)
+	☐ choose better names for config ("joints_type", ...)
 	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot
 	☐ robot_name not handled properly in legacy_loader, yaml have priority
@@ -20,7 +22,8 @@ general:
 	☐ only one folder for robots! not a big problem (experimental robots are into thunder src)
 	☐ add version control for config file
 	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
-
+	☐ test inertials of franka robots
+	
 thunder:
 	console parser:
 		☐ automatically set version?
