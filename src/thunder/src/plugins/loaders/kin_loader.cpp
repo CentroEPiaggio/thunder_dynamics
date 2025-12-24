@@ -90,8 +90,8 @@ namespace thunder_ns {
 				robot->add_parameter("par_world2L0", world2L0_symb, world2L0_num, world2L0_isSymb, "World to base frame", true);
 			}
 			
-			// - Base_to_L0 - //
-			if (config_["Base_to_L0"]) {
+			// - Ln_to_EE - //
+			if (config_["Ln_to_EE"]) {
 				YAML::Node frame_ee = config_["Ln_to_EE"];
 				vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
 				vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
