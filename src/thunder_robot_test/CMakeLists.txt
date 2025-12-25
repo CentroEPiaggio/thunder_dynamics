@@ -1,6 +1,6 @@
 # cmake and c++ version
 cmake_minimum_required(VERSION 3.14)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
@@ -31,6 +31,8 @@ set_target_properties(thunder_robot PROPERTIES OUTPUT_NAME "thunder_robot")
 target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 find_package(yaml-cpp REQUIRED)
+find_package(Python 3.7 COMPONENTS Interpreter Development REQUIRED)
+find_package(pybind11 REQUIRED)
 target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
 
 # Puoi aggiungere altre impostazioni di compilazione qui, se necessario

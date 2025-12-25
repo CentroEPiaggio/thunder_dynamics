@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <chrono>
+#include <concepts>
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
@@ -28,62 +29,193 @@ using namespace std::chrono;
 using std::cout;
 using std::endl;
 
+template <typename T>
+struct Tester {
+	T& robot;
+	Tester() : robot(*(new T())) {}
+
+	void set_q(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_q(value); }) robot.set_q(value);
+	}
+	void set_dq(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_dq(value); }) robot.set_dq(value);
+	}
+	void set_ddq(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_ddq(value); }) robot.set_ddq(value);
+	}
+	void set_d3q(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_d3q(value); }) robot.set_d3q(value);
+	}
+	void set_d4q(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_d4q(value); }) robot.set_d4q(value);
+	}
+	void set_dqr(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_dqr(value); }) robot.set_dqr(value);
+	}
+	void set_ddqr(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_ddqr(value); }) robot.set_ddqr(value);
+	}
+	void set_w(const Eigen::VectorXd& value) {
+		if constexpr (requires (T& x) { x.set_w(value); }) robot.set_w(value);
+	}
+
+	string get_name() {
+		if constexpr (requires (T& x) { x.name; }) {
+			return robot.name;
+		} else {
+			return "not defined!";
+		}
+	}
+
+	int get_numJoints() {
+		if constexpr (requires (T& x) { x.numJoints; }) {
+			return robot.numJoints;
+		} else {
+			return 0;
+		}
+	}
+
+	string get_T_0_ee() {
+		if constexpr (requires (T& x) { x.get_T_0_ee(); }) {
+			std::stringstream ss;
+			ss << robot.get_T_0_ee();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+	}
+
+	string get_J_ee() {
+		if constexpr (requires (T& x) { x.get_J_ee(); }) {
+			std::stringstream ss;
+			ss << robot.get_J_ee();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+	}
+
+	string get_MCGY() {
+		std::stringstream ss;
+		VectorXd tau_diff;
+		if constexpr (requires (T& x) { x.get_M(); }) {
+			ss << "M: " << endl << robot.get_M() << endl << endl;
+			tau_diff = robot.get_M() * robot.get_ddqr();
+		} else {
+			ss << "M: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_C(); }) {
+			ss << "C: " << endl << robot.get_C() << endl << endl;
+			tau_diff += robot.get_C() * robot.get_dqr();
+		} else {
+			ss << "C: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_G(); }) {
+			ss << "G: " << endl << robot.get_G().transpose() << endl << endl;
+			tau_diff += robot.get_G();
+		} else {
+			ss << "G: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_Yr(); }) {
+			ss << "Yr: " << endl << robot.get_Yr() << endl << endl;
+			tau_diff -= robot.get_Yr() * robot.get_par_REG();
+		} else {
+			ss << "Yr: not defined!" << endl << endl;
+		}
+		ss << "tau difference: " << endl << tau_diff.transpose() << endl << endl;
+		return ss.str();
+	}
+
+	string get_parameters() {
+		std::stringstream ss;
+		if constexpr (requires (T& x) { x.get_par_KIN(); }) {
+			ss << "par_KIN: " << endl << robot.get_par_KIN().transpose() << endl << endl;
+		} else {
+			ss << "par_KIN: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_DYN(); }) {
+			ss << "par_DYN: " << endl << robot.get_par_DYN().transpose() << endl << endl;
+		} else {
+			ss << "par_DYN: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_REG(); }) {
+			ss << "par_REG: " << endl << robot.get_par_REG().transpose() << endl << endl;
+		} else {
+			ss << "par_REG: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_Dl(); }) {
+			ss << "par_Dl: " << endl << robot.get_par_Dl().transpose() << endl << endl;
+		} else {
+			ss << "par_Dl: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_K(); }) {
+			ss << "par_K: " << endl << robot.get_par_K().transpose() << endl << endl;
+		} else {
+			ss << "par_K: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_D(); }) {
+			ss << "par_D: " << endl << robot.get_par_D().transpose() << endl << endl;
+		} else {
+			ss << "par_D: not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_par_Dm(); }) {
+			ss << "par_Dm: " << endl << robot.get_par_Dm().transpose() << endl << endl;
+		} else {
+			ss << "par_Dm: not defined!" << endl << endl;
+		}
+		return ss.str();
+	}
+
+	// bar returns bool: true if call was forwarded, false otherwise
+	bool bar(int v) {
+		if constexpr (requires (T& x) { x.bar(v); }) {
+			robot.bar(v);
+			return true;
+		} else {
+			return false;
+		}
+	}
+};
+
 int main(){
 
-	int n_rep = 10;
-	auto time_start = high_resolution_clock::now();
-	auto time_stop = high_resolution_clock::now();
-	auto duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+	Tester<thunder_RRR> robot;
+	cout << "Robot: " << robot.get_name() << endl;
 
-	thunder_RRR robot;
+	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
+
+	// std::string config_file = "../robots/R3_conf.yaml";
+	// thunder_RRR robot;
+	// cout<<"Robot: R9"<<endl;
+
+	// thunder_RRR robot;
 
 	// robot.load_par(par_file);
-	const int NJ = robot.numJoints;
+	const int NJ = robot.get_numJoints();
 
 	/* Test */
-	VectorXd q = robot.get_q();
-	VectorXd dq = robot.get_dq();
-	VectorXd dqr = robot.get_dqr();
-	VectorXd ddqr = robot.get_ddqr();
+	VectorXd q(NJ);
+	VectorXd dq(NJ);
+	VectorXd dqr(NJ);
+	VectorXd ddqr(NJ);
 
 	q.setRandom();
+	dq.setRandom();
 	robot.set_q(q);
+	robot.set_dq(dq);
 
-	// get parameters
-	auto par_REG = robot.get_par_REG();
-	auto par_DYN = robot.get_par_DYN();
-	// auto par_Dl = robot.get_par_Dl();
-	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
-	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
-	// cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
+	cout << "##################" << endl <<
+			"### Parameters ###" << endl <<
+			"##################" << endl << endl << robot.get_parameters() << endl;
 
-	// kinematics and dynamics
-	auto myKin = robot.get_T_0_ee();
-	cout<<"\n\nKin\n"<<myKin;
-	auto myJac = robot.get_J_ee();
-	cout<<"\n\nJac\n"<<myJac;
-	auto myM = robot.get_M();
-	cout<<"\n\nM\n"<<myM;
-	auto myC = robot.get_C();
-	cout<<"\n\nC\n"<<myC;
-	auto myG = robot.get_G();
-	cout<<"\n\nG\n"<<myG;
-	// --- Should be commented if Dl does not exists, Uncomment for link friction --- //
-	// if (robot.Dl_order){
-	// 	Dl = robot.get_Dl();
-	// 	cout<<"\n\nD_link\n"<<Dl;
-	// }
-	// --- end --- //
-	auto Yr = robot.get_Yr();
-	cout<<"\n\nYr\n"<<Yr;
+	cout << "#################" << endl <<
+			"### Functions ###" << endl <<
+			"#################" << endl << endl << robot.get_MCGY() << endl;
 
-	auto tau_cmd_dyn = myM*ddqr + myC*dqr + myG;
-	
-	auto tau_cmd_reg = Yr*par_REG;
-
-	cout<<"\ntau_cmd_dyn:\n"<<tau_cmd_dyn<<endl;
-	cout<<"\ntau_cmd_reg:\n"<<tau_cmd_reg<<endl;
-	cout<<"\ndiff tau_cmd:\n"<<tau_cmd_dyn-tau_cmd_reg<<endl<<endl;
+	// Vector<double,1> q_joint;
+	// q_joint << 1.5;
+	// auto T_joint_R = robot.get_T_JOINT_R(q_joint);
+	// cout << "T_joint_R: " << T_joint_R << endl;
 
 	// // - save par test - //
 	// robot.save_par(saved_inertial_file);
@@ -115,7 +247,7 @@ int main(){
 
 	// --- Should be commented if ELASTIC = 0, Uncomment for elastic behavior --- //
 	// if (robot.ELASTIC){
-	// 	int NEJ = robot.numElasticJoints;
+	// 	int NEJ = robot.numSoftJoints;
 	// 	cout<<endl<<"num elastic joints: "<< NEJ<<endl;
 	// 	// robot.load_par_(elastic_file);
 
