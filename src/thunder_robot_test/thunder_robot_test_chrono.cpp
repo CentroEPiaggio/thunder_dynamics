@@ -10,10 +10,11 @@
 #include <chrono>
 // #include <yaml-cpp/yaml.h>
 
+#include "thunder_RRR.h"
 // #include "include/thunder_R3.h"
 // #include "include/thunder_R5.h"
 // #include "include/thunder_R7.h"
-#include "include/thunder_R9.h"
+// #include "include/thunder_R9.h"
 // #include "include/thunder_R15.h"
 // #include "include/thunder_R30.h"
 
@@ -30,8 +31,8 @@ int main(){
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
 
 	// std::string config_file = "../robots/R3_conf.yaml";
-	thunder_R9 robot;
-	cout<<"Robot: R9"<<endl;
+	thunder_RRR robot;
+	// cout<<"Robot: R9"<<endl;
 
 	int n_rep = 10000;
 	int min_dur = 999999999;
@@ -72,7 +73,7 @@ int main(){
 	min_dur = 999999999;
 	for (int i=0; i<n_rep; i++){
 		time_start = high_resolution_clock::now();
-		myKin = robot.get_T_0_ee();
+		myKin = robot.get_T_w_ee();
 		time_stop = high_resolution_clock::now();
 		duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 		min_dur = ((duration<min_dur)&&(duration>0)) ? duration : min_dur;

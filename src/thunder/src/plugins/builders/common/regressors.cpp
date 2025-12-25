@@ -70,7 +70,7 @@ namespace thunder_ns{
 		casadi::SXVector Q_ = createQ();
 		casadi::SX dq_sel_ = dq_select(dq);
 		
-		casadi::SX T0i(4,4);
+		casadi::SX Twi(4,4);
 		casadi::SX Ji(6,nj);
 		casadi::SX Jvi(3, nj);
 		casadi::SX Jwi(3, nj);
@@ -89,27 +89,27 @@ namespace thunder_ns{
 		casadi::Slice sel_w(3,6);
 
 		// T_tuple = DHFwKinJoints();
-		// T0i = std::get<0>(T_tuple);
+		// Twi = std::get<0>(T_tuple);
 		// //Ti  = std::get<1>(T_tuple);
 
-		// J_tuple = DHJacJoints(T0i);
+		// J_tuple = DHJacJoints(Twi);
 		// Jvi = std::get<0>(J_tuple);
 		// Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
 			
-			T0i = robot.get_model("T_0_"+std::to_string(i+1));
+			Twi = robot.get_model("T_w_"+std::to_string(i+1));
 			Ji = robot.get_model("J_"+std::to_string(i+1));
-			casadi::SX R0i = T0i(selR,selR);
+			casadi::SX Rwi = Twi(selR,selR);
 			Jvi = Ji(sel_v, allCols);
 			Jwi = Ji(sel_w, allCols);
-			// world transform is included in T0i
+			// world transform is included in Twi
 			// // if(i==(nj-1)){	// end-effector
-			// // 	R0i = mtimes(R0i,ee_frame.get_rotation());
+			// // 	Rwi = mtimes(Rwi,ee_frame.get_rotation());
 			// // } else {
-			// // 	R0i = casadi::SX::mtimes({_world2L0_.get_rotation(),R0i,_world2L0_.get_rotation().T()});
+			// // 	Rwi = casadi::SX::mtimes({_world2L0_.get_rotation(),Rwi,_world2L0_.get_rotation().T()});
 			// // }
-			// R0i = casadi::SX::mtimes({_world2L0_.get_rotation(),R0i,_world2L0_.get_rotation().T()});
+			// Rwi = casadi::SX::mtimes({_world2L0_.get_rotation(),Rwi,_world2L0_.get_rotation().T()});
 
 			// ------------------------- Y0r_i -------------------------- //
 			
@@ -130,14 +130,14 @@ namespace thunder_ns{
 			for (int l=0; l<3; l++) {
 
 				casadi::SX Ql = Q_[l];
-				casadi::SX M1l_i = casadi::SX::mtimes({Jwi.T(),R0i,Ql,R0i.T(),Jvi}) - 
-								   casadi::SX::mtimes({Jvi.T(),R0i,Ql,R0i.T(),Jwi});
+				casadi::SX M1l_i = casadi::SX::mtimes({Jwi.T(),Rwi,Ql,Rwi.T(),Jvi}) - 
+								   casadi::SX::mtimes({Jvi.T(),Rwi,Ql,Rwi.T(),Jwi});
 				casadi::SX C = stdCmatrix(M1l_i, q, dq, dq_sel_);
 
 				dX1r_i(allRows,l) = mtimes(M1l_i, ddqr);
 				W1r_i(allRows,l) = -mtimes(C, dqr);
 			}
-			casadi::SX Z1r_i= -(jacobian(mtimes(R0i.T(),g),q)).T();
+			casadi::SX Z1r_i= -(jacobian(mtimes(Rwi.T(),g),q)).T();
 			
 			casadi::SX Y1r_i = dX1r_i - W1r_i + Z1r_i;
 
@@ -149,7 +149,7 @@ namespace thunder_ns{
 			for (int l=0; l<6; l++) {
 
 				casadi::SX El = E_[l];
-				casadi::SX M2l_i = casadi::SX::mtimes({Jwi.T(),R0i,El,R0i.T(),Jwi});
+				casadi::SX M2l_i = casadi::SX::mtimes({Jwi.T(),Rwi,El,Rwi.T(),Jwi});
 				casadi::SX C = stdCmatrix(M2l_i, q, dq, dq_sel_);
 
 				dX2r_i(allRows,l) = mtimes(M2l_i, ddqr);

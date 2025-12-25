@@ -75,10 +75,10 @@ struct Tester {
 		}
 	}
 
-	string get_T_0_ee() {
-		if constexpr (requires (T& x) { x.get_T_0_ee(); }) {
+	string get_T_w_ee() {
+		if constexpr (requires (T& x) { x.get_T_w_ee(); }) {
 			std::stringstream ss;
-			ss << robot.get_T_0_ee();
+			ss << robot.get_T_w_ee();
 			return ss.str();
 		} else {
 			return "not defined!";

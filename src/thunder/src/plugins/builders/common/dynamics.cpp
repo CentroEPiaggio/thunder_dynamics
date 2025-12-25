@@ -125,21 +125,21 @@ namespace thunder_ns{
 		auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < nj; i++) {
-			SX T_0i = robot.get_model("T_0_"+std::to_string(i+1));
+			SX T_wi = robot.get_model("T_w_"+std::to_string(i+1));
 
-			SX R0i = T_0i(r_rot_idx, r_rot_idx);
-			SX d_Ci = T_0i(r_tra_idx, 3) + mtimes(R0i,_distCM_[i]);		// center of mass distance
+			SX Rwi = T_wi(r_rot_idx, r_rot_idx);
+			SX d_Ci = T_wi(r_tra_idx, 3) + mtimes(Rwi,_distCM_[i]);		// center of mass distance
 			SX Jci_pos = SX::jacobian(d_Ci, q); 	// matrix of velocity jacobian
 			SX Ji_or(3, nj);   				// matrix of omega jacobian
 
 			// Loop over joints and build columns
 			for (int j=0; j<nj; ++j) {
 				// Partial derivative dR/dq_j  (3x3)
-				SX dR_dqj = SX::jacobian(SX::reshape(R0i, 9, 1), q(j));
+				SX dR_dqj = SX::jacobian(SX::reshape(Rwi, 9, 1), q(j));
 				dR_dqj = SX::reshape(dR_dqj, 3, 3);
 
 				// S_j = dR/dq_j * R^T  (3x3 skew-symmetric)
-				SX Sj = SX::mtimes(dR_dqj, R0i.T());
+				SX Sj = SX::mtimes(dR_dqj, Rwi.T());
 
 				// Extract angular velocity vector from skew matrix
 				SX wj = vect(Sj);
@@ -175,7 +175,7 @@ namespace thunder_ns{
 		casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 		
 		casadi::SX dq_sel_ = dq_select(dq);
-		casadi::SX T0i;
+		casadi::SX Twi;
 		std::tuple<casadi::SXVector, casadi::SXVector> T_tuple;
 
 		casadi::SXVector Jci(nj);
@@ -200,16 +200,16 @@ namespace thunder_ns{
 		Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
-			T0i = robot.get_model("T_0_"+std::to_string(i+1));
-			// std::cout<<"T0i: "<<T0i<<std::endl;
-			casadi::SX R0i = T0i(selR,selR);
-			// std::cout<<"R0i: "<<R0i<<std::endl;
+			Twi = robot.get_model("T_w_"+std::to_string(i+1));
+			// std::cout<<"Twi: "<<Twi<<std::endl;
+			casadi::SX Rwi = Twi(selR,selR);
+			// std::cout<<"Rwi: "<<Rwi<<std::endl;
 
 			mi = _mass_vec_[i];
 			// std::cout<<"mi: "<<mi<<std::endl;
 			Ii = _J_3x3_[i];
 			// std::cout<<"Ii: "<<Ii<<std::endl;
-			Mi = mi * casadi::SX::mtimes({Jci[i].T(), Jci[i]}) + casadi::SX::mtimes({Jwi[i].T(),R0i,Ii,R0i.T(),Jwi[i]});
+			Mi = mi * casadi::SX::mtimes({Jci[i].T(), Jci[i]}) + casadi::SX::mtimes({Jwi[i].T(),Rwi,Ii,Rwi.T(),Jwi[i]});
 			// std::cout<<"Mi: "<<Mi<<std::endl;
 			M = M + Mi;
 			// std::cout<<"M: "<<M<<std::endl;

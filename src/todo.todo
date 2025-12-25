@@ -41,10 +41,10 @@ thunder:
 		☐ allow different type for parameters
 		☐ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..)
 	kinematics:
-		☐ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention!
+		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention! @done (12/25/2025, 9:52:12 PM)
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization
-		☐ maybe T_0_0 better to be T_w_o?
+		✔ maybe T_0_0 better to be T_w_o? @done (12/25/2025, 9:52:17 PM)
 	elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
@@ -127,6 +127,16 @@ INFO:
 	- thunder take thunder_robot and rename it to thunder_<robot>, changing inside the necessary. Then copy it to generatedFiles
 	- thunder generates the <robot>_inertial_REG.yaml from the config file 
 	- elastic and friction regressors implemented with jacobian
+	kinematic convention:
+		- T_w_0: Transformation from world to base
+		- T_w_i: Transformation from world to link i
+		- Links are numbered from 0 to n where n is the number of joints
+		- Joints are numbered from 1 to n
+		- Joint i connects link i-1 to link i
+		- Link i is solidal to joint i
+		- Link n is the end-effector
+		- Link 0 is considered only in case of moving base robot (not ready)
+
 
 issues:
 	☐ error on first column of jacobian? K is always [0;0;1]? (to check)

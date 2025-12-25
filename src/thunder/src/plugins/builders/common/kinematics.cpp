@@ -28,37 +28,37 @@ namespace thunder_ns{
 
 		// computing chain
 		casadi::SXVector Ti(numJoints+1);    // Output
-		casadi::SXVector T0i(numJoints+2);   // Output
+		casadi::SXVector Twi(numJoints+2);   // Output
 		casadi::Slice allCols(0,4);   
 	   
 		// Ti is transformation from link i-1 to link i
 		Ti[0] = get_transform_ypr(par_world2L0);
-		// T0i is transformation from link 0 to link i
-		T0i[0] = Ti[0];
+		// Twi is transformation from world 0 to link i
+		Twi[0] = Ti[0];
 
 		std::vector<std::string> arg_list = {"par_world2L0"};
-		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame base to frame 1")) return 0;
+		if (!robot.add_function("T_0", Ti[0], arg_list, "relative transformation from frame world to base")) return 0;
 		arg_list = {"par_world2L0"};
-		if (!robot.add_function("T_0_0", T0i[0], arg_list, "absolute transformation from frame base to frame 1")) return 0;
+		if (!robot.add_function("T_w_0", Twi[0], arg_list, "absolute transformation from frame world to base")) return 0;
 
 		for (int i = 0; i < numJoints; i++) {
 			// casadi::Slice row_i(i*4, i*4+4);
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
 			Ti[i+1] = apply_joint(robot, frame, jointsType[i], q(i));
-			T0i[i+1] = casadi::SX::mtimes({T0i[i], Ti[i+1]});
+			Twi[i+1] = casadi::SX::mtimes({Twi[i], Ti[i+1]});
 			
 			arg_list = {"q", "par_KIN"};
 			if (!robot.add_function("T_"+std::to_string(i+1), Ti[i+1], arg_list, "relative transformation from frame"+ std::to_string(i) +"to frame "+std::to_string(i+1))) return 0;
 			arg_list = {"q", "par_KIN", "par_world2L0"};
-			if (!robot.add_function("T_0_"+std::to_string(i+1), T0i[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
+			if (!robot.add_function("T_w_"+std::to_string(i+1), Twi[i+1], arg_list, "absolute transformation from frame base to frame "+std::to_string(i+1))) return 0;
 		}
 
 		// end-effector transform
-		T0i[numJoints+1] = casadi::SX::mtimes({T0i[numJoints], get_transform_ypr(par_Ln2EE)});
+		Twi[numJoints+1] = casadi::SX::mtimes({Twi[numJoints], get_transform_ypr(par_Ln2EE)});
 
 		arg_list = {"q", "par_KIN", "par_world2L0", "par_Ln2EE"};
-		if (!robot.add_function("T_0_"+std::to_string(numJoints+1), T0i[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
-		if (!robot.add_function("T_0_ee", T0i[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
+		if (!robot.add_function("T_w_"+std::to_string(numJoints+1), Twi[numJoints+1], arg_list, "absolute transformation from frame base to end_effector")) return 0;
+		if (!robot.add_function("T_w_ee", Twi[numJoints+1], arg_list, "absolute transformation from frame 0 to end_effector")) return 0;
 		// std::cout<<"functions created"<<std::endl;
 
 		return 1;
@@ -86,10 +86,10 @@ namespace thunder_ns{
 		for (int i = 0; i <= nj; i++) {
 			int i_mod = (i<nj)?i:(nj-1);
 
-			SX T_0i = robot.get_model("T_0_"+std::to_string(i_mod+1));
+			SX T_wi = robot.get_model("T_w_"+std::to_string(i_mod+1));
 			
-			SX d_0_i = T_0i(r_tra_idx, 3);
-			SX R_0_i = T_0i(r_rot_idx, r_rot_idx);
+			SX d_0_i = T_wi(r_tra_idx, 3);
+			SX R_0_i = T_wi(r_rot_idx, r_rot_idx);
 			SX Ji_pos = SX::jacobian(d_0_i, q);
 			SX Ji_or(3, nj);
 
@@ -111,7 +111,7 @@ namespace thunder_ns{
 			
 			// Add end-effector transformation (only in the EE Jacobian)
 			if(i==nj){
-				casadi::SX R0i = T_0i(r_rot_idx,r_rot_idx);
+				casadi::SX R0i = T_wi(r_rot_idx,r_rot_idx);
 				casadi::SX ee_tr = get_transform_ypr(par_Ln2EE)(r_tra_idx,3);
 				Ji_pos = Ji_pos - casadi::SX::mtimes({R0i,hat(ee_tr),R0i.T(),Ji_or});
 				// Ji_pos = Ji_pos - casadi::SX::mtimes(hat(ee_tr), Ji_or);
