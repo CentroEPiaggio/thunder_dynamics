@@ -2,7 +2,10 @@ FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN	apt-get update && apt-get install -y \
+RUN mkdir -p .local/bin
+
+RUN	apt-get update 
+RUN apt-get install --no-install-recommends --assume-yes \
 	git \
 	nano \
 	wget \
@@ -14,6 +17,7 @@ RUN	apt-get update && apt-get install -y \
 	python3	\
 	python3-pip \
 	&& rm -rf /var/lib/apt/lists/*
+
 
 # Create a new user
 ARG USERNAME=thunder_dev
@@ -35,59 +39,13 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
     && chown -R $USERNAME /commandhistory \
     && echo "${SNIPPET}" >> "/home/$USERNAME/.bashrc"
 
-# Install casadi and yaml-cpp
-WORKDIR ${HOME}
+# scripts setup
+RUN mkdir -p ${HOME}/scripts
+COPY .devcontainer/scripts/bootstrap.sh ${HOME}/scripts/bootstrap.sh
 
-# yaml-cpp installation
-RUN git clone https://github.com/jbeder/yaml-cpp.git yaml_cpp
-WORKDIR ${HOME}/yaml_cpp
-RUN mkdir -p build && \
-	cd build && \
-	cmake .. && \
-	cmake --build . && \
-	make && \
-	make install
+RUN chown -R ${USERNAME}:${USERNAME} ${HOME} \
+    && chmod +x ${HOME}/scripts/bootstrap.sh
 
-# CasADi installation
-WORKDIR ${HOME}
-RUN git clone https://github.com/casadi/casadi.git casadi
-WORKDIR ${HOME}/casadi
-RUN mkdir -p build && \
-	cd build && \
-	cmake .. && \
-	make && \
-	make install
-
-# Pybind11 installation (https://pybind11.readthedocs.io/en/stable/compiling.html#find-package-vs-add-subdirectory)
-WORKDIR ${HOME}
-RUN git clone https://github.com/pybind/pybind11.git pybind11
-WORKDIR ${HOME}/pybind11
-RUN pip install pytest && \
-	cmake -S . -B build && \
-	cmake --build build -j 2  && \
-	cmake --install build
-
-# Thunder built from sources
-WORKDIR ${HOME}/..
-RUN mkdir -p thunder_dynamics_tmp
-COPY ../. ${HOME}/../thunder_dynamics_tmp
-WORKDIR ${HOME}/../thunder_dynamics_tmp/src/thunder
-RUN rm -r -f build && \
-	mkdir -p build && \
-	cd build && \
-	cmake .. && \
-	make && \
-	make install
-
-# # copy thunder binary and auxiliary files on the root folder, not possible here, made by postCreateCommand in devcontainer.json
-# WORKDIR ${HOME}/thunder_dev/thunder_dynamics
-# RUN mkdir -p bin && \
-# 	mkdir -p bin/neededFiles && \
-# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder/build/thunder bin/thunder && \
-# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/library/thunder_robot.h bin/neededFiles/thunder_robot.h && \
-# 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/src/thunder_robot.cpp bin/neededFiles/thunder_robot.cpp
-
-# [Optional] Set the default user. Omit if you want to keep the default as root.
 USER ${USERNAME}
 WORKDIR ${HOME}
 

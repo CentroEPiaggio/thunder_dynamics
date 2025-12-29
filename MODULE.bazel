@@ -1,0 +1,7 @@
+"""
+this makes bazel linter happy
+"""
+
+module(
+    name = "thunder-dev",
+)

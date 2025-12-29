@@ -6,25 +6,30 @@
 	"build": {
 		"context": "..",
 		"dockerfile": "Dockerfile",
-		"args": { "USERNAME": "thunder_dev", "UBUNTUVERSION": "22.04" }
+		"args": {
+			"USERNAME": "thunder_dev",
+			"UBUNTUVERSION": "22.04"
+		}
 	},
-
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/${localWorkspaceFolderBasename},type=bind,consistency=cached", 
+	"features": {
+		"ghcr.io/balazs23/devcontainers-features/bazel:1": {},
+	},
+	// "initializeCommand": "mkdir -p ${localEnv:HOME}/.cache && chmod 777 ${localEnv:HOME}/.cache",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/${localWorkspaceFolderBasename},type=bind,consistency=cached",
 	"workspaceFolder": "/home/thunder_dev/${localWorkspaceFolderBasename}",
-
 	"mounts": [
-		{"source":"${localWorkspaceFolder}/.devcontainer","target":"/commandhistory","type":"bind"}
+		{
+			"source": "${localWorkspaceFolder}/.devcontainer",
+			"target": "/commandhistory",
+			"type": "bind"
+		}
 	],
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo chmod 777 -R . && cd .devcontainer && touch .bash_history",
-
+	"postCreateCommand": "/home/thunder_dev/scripts/bootstrap.sh ${containerWorkspaceFolder}",
+	"updateContentCommand": "/home/thunder_dev/scripts/bootstrap.sh ${containerWorkspaceFolder}",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
@@ -34,18 +39,21 @@
 				"eamodio.gitlens",
 				"vscode-icons-team.vscode-icons",
 				"sandy081.todotasks",
+				"BazelBuild.vscode-bazel",
 				"twxs.cmake"
 			]
 		}
 	},
-
 	"remoteUser": "thunder_dev",
 	"containerUser": "thunder_dev",
 	"updateRemoteUserUID": true,
-
 	"containerEnv": {
 		"SHELL": "/bin/bash"
 	},
-
-	"runArgs": ["--name","thunder_ws", "--user=thunder_dev", "--network=host"]
+	"runArgs": [
+		"--name",
+		"thunder_ws",
+		"--user=thunder_dev",
+		"--network=host"
+	]
 }
