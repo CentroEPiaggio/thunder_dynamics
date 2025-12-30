@@ -27,7 +27,7 @@ Generate two yaml files of inertial parameters (only for arm + hand) to use stan
 #include <random>
 
 #include <yaml-cpp/yaml.h>
-#include "library/urdf2dh_inertial.h"
+#include "src/genYAML/library/urdf2dh_inertial.h"
 
 #define NUMLINKS 7 // 7 links + hand
 

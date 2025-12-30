@@ -11,16 +11,16 @@ Command line interface for Thunder, it can generate code for robots
 #include <stdexcept>
 #include <chrono>
 
-#include "utils.h"
-#include "robot.h"
-#include "kinematics.h"
-#include "dynamics.h"
-#include "regressors.h"
-#include "userDefined.h"
+#include "src/thunder/library/utils.h"
+#include "src/thunder/library/robot.h"
+#include "src/thunder/library/kinematics.h"
+#include "src/thunder/library/dynamics.h"
+#include "src/thunder/library/regressors.h"
+#include "src/thunder/library/userDefined.h"
 
 #include <yaml-cpp/yaml.h>
 // #include "urdf2dh_inertial.h"
-#include "genYaml.h"
+#include "src/thunder/library/genYaml.h"
 
 #include <argparse/argparse.hpp>
 

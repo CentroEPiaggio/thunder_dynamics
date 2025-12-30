@@ -1,0 +1,11 @@
+cc_library(
+    name = "genYAML",
+    srcs = [
+        "library/urdf2dh_inertial.h",
+        "main_YAML.cpp",
+        "src/urdf2dh_inertial.cpp",
+    ],
+    data = ["yaml/inertial.yaml"],
+    visibility = ["//src:__subpackages__"],
+    deps = ["@yaml-cpp"],
+)

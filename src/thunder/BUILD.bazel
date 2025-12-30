@@ -1,0 +1,14 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "main",
+    srcs = [
+        "thunder_main.cpp",
+    ],
+    deps = [
+        "//src/genYAML",
+        "//src/thunder/library:thunder_lib",
+        "//third_party/casadi",
+        "@argparse",
+    ],
+)

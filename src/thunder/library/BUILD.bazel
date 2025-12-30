@@ -1,0 +1,14 @@
+cc_library(
+    name = "thunder_lib",
+    hdrs = [
+        "FrameOffset.h",
+        "dynamics.h",
+        "genYaml.h",
+        "kinematics.h",
+        "regressors.h",
+        "robot.h",
+        "userDefined.h",
+        "utils.h",
+    ],
+    visibility = ["//src/thunder:__subpackages__"],
+)
