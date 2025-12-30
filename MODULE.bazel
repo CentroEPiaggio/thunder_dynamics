@@ -5,3 +5,58 @@ this makes bazel linter happy
 module(
     name = "thunder-dev",
 )
+
+# bazel tools
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+
+git_repository = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:git.bzl",
+    "git_repository",
+)
+
+# rules C++
+bazel_dep(name = "googletest", version = "1.17.0")
+bazel_dep(name = "yaml-cpp", version = "0.8.0")
+bazel_dep(name = "rules_cc", version = "0.1.5")
+bazel_dep(name = "rules_foreign_cc", version = "0.15.1")
+
+# casadi
+# casadi
+git_repository(
+    name = "casadi",
+    build_file_content = """
+filegroup(
+    name = "src",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+""",
+    commit = "24fd524bb54c77de4f0e45532666d72c182063e3",
+    patch_strip = 1,
+    patches = ["//third_party/casadi:bazel_safe_casadi_flags.patch"],
+    remote = "https://github.com/casadi/casadi.git",
+)
+
+# bazel_dep(name = "casadi")
+# git_override(
+#     module_name = "casadi",
+#     commit = "24fd524bb54c77de4f0e45532666d72c182063e3",
+#     remote = "https://github.com/casadi/casadi.git",
+# )
+
+# # rules python
+# bazel_dep(name = "rules_python", version = "1.7.0")
+
+# python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+# python.toolchain(
+#     is_default = True,
+#     python_version = "3.12.0",
+# )
+
+# pip_requirements = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+# pip_requirements.parse(
+#     hub_name = "pip_requirements",
+#     python_version = "3.12",
+#     requirements_lock = "//ai/requirements:requirements.txt",
+# )
+# use_repo(pip_requirements, "pip_requirements")

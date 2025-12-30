@@ -1,0 +1,25 @@
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
+
+cmake(
+    name = "casadi",
+    cache_entries = {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_POSITION_INDEPENDENT_CODE": "ON",
+
+        # Disable bindings
+        "WITH_PYTHON": "OFF",
+        "WITH_MATLAB": "OFF",
+        "WITH_OCTAVE": "OFF",
+        "WITH_JULIA": "OFF",
+
+        # Disable extras
+        "BUILD_TESTING": "OFF",
+        "WITH_EXAMPLES": "OFF",
+
+        # Libraries
+        "ENABLE_SHARED": "ON",
+    },
+    lib_source = "@casadi//:src",
+    out_shared_libs = ["libcasadi.so"],
+    visibility = ["//visibility:public"],
+)
