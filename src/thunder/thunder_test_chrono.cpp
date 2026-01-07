@@ -92,7 +92,7 @@ int main(){
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){
 			time_start = high_resolution_clock::now();
-			myKin = robot->get("T_0_ee");
+			myKin = robot->get("T_w_ee");
 			time_stop = high_resolution_clock::now();
 			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
 			min_dur = (duration<min_dur) ? duration : min_dur;

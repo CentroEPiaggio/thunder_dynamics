@@ -1,8 +1,14 @@
+pipeline:
+  loaders:    ["dh_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  generators: ["robot_generator"]
+
+version: 0.3
+copy_gen: true
+
 # -------------------------- #
 ## ----- Robot Config ----- ##
 # -------------------------- #
-version: 0.3
-copy_gen: true
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
@@ -13,17 +19,17 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 num_joints: 7
 
 # joint types: 'R' or 'P'
-type_joints: ['R', 'R', 'R', 'R', 'R', 'R', 'R']
+joints_type: ['R', 'R', 'R', 'R', 'R', 'R', 'R']
 
 # DH convention: a -> alpha -> d -> theta
-kinematics:
-  DH: [0,  0,         1, 0,
-      0,  *PI_2,     0, 0,
-      0,  *PI_2_neg, 0, 0,
-      0,  *PI_2,     2, 0,
-      0,  *PI_2_neg, 0, 0,
-      0,  *PI_2,     2, 0,
-      1,  0,         0, 0]
+DH:
+  value: [0,  0,         1, 0,
+          0,  *PI_2,     0, 0,
+          0,  *PI_2_neg, 0, 0,
+          0,  *PI_2,     2, 0,
+          0,  *PI_2_neg, 0, 0,
+          0,  *PI_2,     2, 0,
+          1,  0,         0, 0]
 
 # gravity vector
 gravity:
@@ -31,12 +37,12 @@ gravity:
 
 # world to link_0
 Base_to_L0:
-  tr: [0, 0, 0]
+  xyz: [0, 0, 0]
   ypr: [0, 0, 0]
 
 # Link_n to EE
 Ln_to_EE:
-  tr: [1, 0, 0]
+  xyz: [1, 0, 0]
   ypr: [0, 0, *PI_2_neg]
 
 

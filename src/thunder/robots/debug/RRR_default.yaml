@@ -19,12 +19,17 @@ num_joints: 3
 # joint types: 'R': rotoidal, 'P': prismatic
 joints_type: ['R', 'R', 'R']
 
-# DH convention: a -> alpha -> d -> theta
-DH:
-  symb: [1,0,1,0, 1,0,1,0, 1,0,1,0]
-  value: [0,   0,      1, 0,
-          1,  *PI_2,   0, 0,
-          1,   0,      0, 0]
+# joint positions (xyz-rpy)
+kinematics:
+  joint1:
+    symb: [0,0,0,0,0,0]
+    xyzrpy: [0,0,1, 0,0,0]
+  joint2:
+    symb: [0,0,0,0,0,0]
+    xyzrpy: [1,0,0, *PI_2,0,0]
+  joint3:
+    symb: [0,0,0,0,0,0]
+    xyzrpy: [1,0,0, 0,0,0]
 
 # gravity vector
 gravity:
@@ -51,21 +56,21 @@ Ln_to_EE:
 # link friction
 Dl_order: 2
 
-# inertial parameters expressed w.r.t. DH frames
+# inertial parameters expressed w.r.t. kinematic frames
 dynamics:
   link1:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 5.0
-      CoM_x: 2.0
-      CoM_y: 2.0
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
+      mass: 1.0
+      CoM_x: 0.5
+      CoM_y: 0.0
+      CoM_z: 0.0
+      Ixx: 0.01
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.3
+      Iyz: 0.0
+      Izz: 0.3
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]
@@ -73,16 +78,16 @@ dynamics:
   link2:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
-      mass: 3.0
-      CoM_x: 2.0
-      CoM_y: 2.0
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
+      mass: 1.0
+      CoM_x: 0.5
+      CoM_y: 0.0
+      CoM_z: 0.0
+      Ixx: 0.01
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.3
+      Iyz: 0.0
+      Izz: 0.3
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]
@@ -91,15 +96,15 @@ dynamics:
     inertial:
       symb: [1,1,1,1,1,1,1,1,1,1]
       mass: 1.0
-      CoM_x: 2.0
-      CoM_y: 0.3
-      CoM_z: 2.0
-      Ixx: 2.0
-      Ixy: 2.0
-      Ixz: 2.0
-      Iyy: 2.0
-      Iyz: 2.0
-      Izz: 2.0
+      CoM_x: 0.5
+      CoM_y: 0.0
+      CoM_z: 0.0
+      Ixx: 0.01
+      Ixy: 0.0
+      Ixz: 0.0
+      Iyy: 0.3
+      Iyz: 0.0
+      Izz: 0.3
     friction:
       symb: [0,0]
       Dl: [0.1, 0.01]

@@ -152,7 +152,7 @@ int main(){
 	my_robot.set_par_DYN(params); // or set_par_REG(), or set_par_<par>()
 
 	// - compute standard quantities - //
-	Eigen::MatrixXd T = my_robot.get_T_0_ee(); // end-effector kinematics
+	Eigen::MatrixXd T = my_robot.get_T_w_ee(); // end-effector kinematics
 	Eigen::MatrixXd J = my_robot.get_J_ee(); // end-effector Jacobian matrix
 	Eigen::MatrixXd M = my_robot.get_M(); // Mass matrix
 	Eigen::MatrixXd C = my_robot.get_C(); // Coriolis matrix
@@ -202,7 +202,7 @@ robot.load_conf("path/to/robot_conf.yaml")
 robot.set_q(np.zeros(robot.get<int>("numJoints")))
 robot.set_dq(np.random.rand(robot.get<int>("numJoints")))
 
-T = robot.get_T_0_ee()
+T = robot.get_T_w_ee()
 J = robot.get_J_ee()
 M = robot.get_M()
 C = robot.get_C()
@@ -227,7 +227,7 @@ The main classes contained in `thunder` are:
    - with the function `add_function()` is possible to add expressions to the internal robot functions
    - following modules permits to expand the robot functionalities by adding functions
 * `kinematics`: contain standard kinematic functions:
-   - T_0_i: return the transformation 0->Li
+   - T_w_i: return the transformation world->Li
    - J_i: jacobian of the frame i
    - J_ee_dot: jacobian derivative
    - J_ee_ddot: jacobian second derivative

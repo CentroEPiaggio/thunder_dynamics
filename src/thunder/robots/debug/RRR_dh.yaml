@@ -1,5 +1,5 @@
 pipeline:
-  loaders:    ["kin_loader", "dyn_loader"]
+  loaders:    ["dh_loader", "dyn_loader"]
   builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
@@ -17,7 +17,7 @@ robot_generator:
   copy_gen:     true
 
 ############################################
-kin_loader:
+dh_loader:
 
   # --- Hyperparameters --- #
   num_joints: 3
@@ -25,27 +25,22 @@ kin_loader:
   # joint types: 'R': rotoidal, 'P': prismatic
   joints_type: ['R', 'R', 'R']
 
-  # joint positions (xyz-rpy)
-  kinematics:
-    joint1:
-      symb: [1,1,1, 1,1,1]
-      xyzrpy: [0,0,1, 0,0,0]
-    joint2:
-      symb: [1,1,1, 1,1,1]
-      xyzrpy: [1,0,0, *PI_2,0,0]
-    joint3:
-      symb: [1,1,1, 1,1,1]
-      xyzrpy: [1,0,0, 0,0,0]
+  # DH convention: a -> alpha -> d -> theta
+  DH:
+    symb: [1,0,1,0, 1,0,1,0, 1,0,1,0]
+    value: [0,   0,      1, 0,
+            1,  *PI_2,   0, 0,
+            1,   0,      0, 0]
 
   # world to link_0
   Base_to_L0:
-    symb: [1,1,1, 1,1,1]
+    symb: [0,0,0, 0,0,0]
     xyz: [0, 0, 0]
     ypr: [0, 0, 0]
 
   # Link_n to EE
   Ln_to_EE:
-    symb: [1,1,1, 1,1,1]
+    symb: [0,0,0, 0,0,0]
     xyz: [1, 0, 0]
     ypr: [0, 0, *PI_2_neg]
 
@@ -60,7 +55,7 @@ dyn_loader:
     symb: [0,0,0]
     value: [0, 0, -9.81]
 
-  # inertial parameters expressed w.r.t. kinematic frames
+  # inertial parameters expressed w.r.t. DH frames
   dynamics:
     link1:
       inertial:
@@ -76,7 +71,7 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [1,1]
+        symb: [0,0]
         Dl: [0.1, 0.01]
 
     link2:
@@ -93,7 +88,7 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [1,1]
+        symb: [0,0]
         Dl: [0.1, 0.01]
 
     link3:
@@ -110,6 +105,6 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [1,1]
+        symb: [0,0]
         Dl: [0.1, 0.01]
 

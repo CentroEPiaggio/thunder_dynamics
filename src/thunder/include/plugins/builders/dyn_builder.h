@@ -2,7 +2,6 @@
 #define DYN_BUILDER_H
 
 #include "plugin_interfaces.h"
-#include "plugins/builders/common/dynamics.h"
 
 
 namespace thunder_ns {
@@ -12,11 +11,17 @@ namespace thunder_ns {
 		public:
 			DynBuilder() : BaseBuilder("Dynamics Builder", "Build the robot dynamics.") {}
 
-			void build(std::shared_ptr<Robot> robot) override {
-				debug_log("Starting dynamic computations", VERB_INFO);
-				compute_dynamics(*robot, 1);
-				debug_log("Dynamics computed", VERB_INFO);
-			}
+			std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX);
+			casadi::SX dq_select(const casadi::SX& dq_);
+			casadi::SX stdCmatrix(const casadi::SX& B, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
+			casadi::SX stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
+			std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(std::shared_ptr<Robot> robot);
+			int compute_MCG(std::shared_ptr<Robot> robot);
+			int compute_Dl(std::shared_ptr<Robot> robot);
+			int compute_dyn_derivatives(std::shared_ptr<Robot> robot);
+			int compute_reg_dyn_conversions(std::shared_ptr<Robot> robot);
+
+			void build(std::shared_ptr<Robot> robot) override;
 			
 	};
 
