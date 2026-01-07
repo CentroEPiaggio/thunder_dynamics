@@ -62,6 +62,17 @@ namespace thunder_ns {
 			print_plugin_group("Generators", GENERATORS, verbose);
 		}
 
+		// Clears current pipeline and sets up plugins based on a yaml file. Additionally saves file path in config
+		void configure_pipeline(const std::string &config_path, int NO_GENERATION = 0) {
+
+			// make the path absolute wrt current working directory
+			std::filesystem::path absolute_path = std::filesystem::absolute(config_path);
+
+			YAML::Node config = YAML::LoadFile(absolute_path.string());
+			config["config_path"] = absolute_path.string();
+			configure_pipeline(config, NO_GENERATION);
+		}
+
 		// Clears current pipeline and sets up plugins based on YAML config
 		void configure_pipeline(const YAML::Node &config, int NO_GENERATION = 0) {
 			config_yaml = config;
