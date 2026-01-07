@@ -131,10 +131,20 @@ namespace thunder_ns {
 			}
 			auto urdf_path_str = config_["urdf_path"].as<std::string>();
 			std::filesystem::path urdf_path(urdf_path_str);
+			
 
+			// if the path is relative, we try to resolve it using the config file directory
 			if (!urdf_path.is_absolute()) {
-				debug_log("URDF path is relative: " + urdf_path_str + ". Resolving against current working directory.", VERB_INFO);
-				urdf_path = std::filesystem::absolute(urdf_path);
+				if (config_["config_path"]) {
+					// strip the filename, as this ends with the .yaml file
+					auto config_dir = std::filesystem::path(config_["config_path"].as<std::string>()).parent_path();
+					// resolve wrt config dir	
+					urdf_path = config_dir / urdf_path;
+					debug_log("Relative URDF path resolved to: " + urdf_path.string(), VERB_DEBUG);
+				} else {
+					debug_log("URDF path is relative: " + urdf_path_str + " but no config path found. Using current working directory.", VERB_INFO);
+					urdf_path = std::filesystem::absolute(urdf_path);
+				}
 			}
 
 			if (!std::filesystem::exists(urdf_path)) {
