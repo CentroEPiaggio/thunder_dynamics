@@ -2,10 +2,6 @@
 
 #include "../include/robot.h"
 #include "../include/utils.h"
-#include "../include/plugins/builders/common/kinematics.h"
-#include "../include/plugins/builders/common/dynamics.h"
-#include "../include/plugins/builders/common/regressors.h"
-#include "../include/plugins/builders/common/userDefined.h"
 
 using std::string;
 using std::vector;

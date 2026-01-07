@@ -1,15 +1,34 @@
-#include "plugins/builders/common/regressors.h"
+#include "plugins/builders/reg_builder.h"
 #include "plugins/builders/dyn_builder.h"
 #include "utils.h"
 
 using std::string;
 using std::vector;
+using casadi::SX;
 
-namespace thunder_ns{
+namespace thunder_ns {
 
-	// extern constexpr int nParLink = 10;
+    void RegBuilder::init(std::shared_ptr<Robot> robot){
+		// --- Basic Robot properties --- //
+		int numJoints = robot->get<int>("numJoints");
 
-    casadi::SXVector createQ() {
+		// - Parameters per link
+		int STD_PAR_LINK = 10;
+		if (robot->properties.count("STD_PAR_LINK")){
+			STD_PAR_LINK = robot->get<int>("STD_PAR_LINK");
+		} else {
+			robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
+		}
+
+		// --- Variables --- //
+		// - Slotine regressor - //
+		robot->add_variable("dqr", SX::sym("dqr",numJoints,1), vector<double>(numJoints,0), {1}, "Velocity reference", true);
+		robot->add_variable("ddqr", SX::sym("ddqr",numJoints,1), vector<double>(numJoints,0), {1}, "Acceleration reference", true);
+		// - Kinematic regressor - //
+		robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,0), {1}, "Wrench", true);
+	}
+
+	casadi::SXVector RegBuilder::createQ() {
 
 		casadi::SXVector Q_(3);
 
@@ -29,7 +48,7 @@ namespace thunder_ns{
 		return Q_;
 	}
 	
-	casadi::SXVector createE() {
+	casadi::SXVector RegBuilder::createE() {
 		
 		casadi::SXVector E_(6);
 
@@ -54,15 +73,15 @@ namespace thunder_ns{
 		return E_;
 	}
 
-	int compute_Yr(Robot& robot){
+	int RegBuilder::compute_Yr(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot.get<int>("numJoints");
-		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		auto q = robot.get_model("q");
-		auto dq = robot.get_model("dq");
-		auto dqr = robot.get_model("dqr");
-		auto ddqr = robot.get_model("ddqr");
-		auto par_gravity = robot.get_model("par_gravity");
+		int nj = robot->get<int>("numJoints");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		auto q = robot->get_model("q");
+		auto dq = robot->get_model("dq");
+		auto dqr = robot->get_model("dqr");
+		auto ddqr = robot->get_model("ddqr");
+		auto par_gravity = robot->get_model("par_gravity");
 		DynBuilder dyn;
 		
 		// regressor computation
@@ -98,8 +117,8 @@ namespace thunder_ns{
 		
 		for (int i=0; i<nj; i++) {
 			
-			Twi = robot.get_model("T_w_"+std::to_string(i+1));
-			Ji = robot.get_model("J_"+std::to_string(i+1));
+			Twi = robot->get_model("T_w_"+std::to_string(i+1));
+			Ji = robot->get_model("J_"+std::to_string(i+1));
 			casadi::SX Rwi = Twi(selR,selR);
 			Jvi = Ji(sel_v, allCols);
 			Jwi = Ji(sel_w, allCols);
@@ -176,27 +195,27 @@ namespace thunder_ns{
 		}
 		std::vector<std::string> arg_list;
 		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_world2L0", "par_gravity"};
-		if (!robot.add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
 		arg_list = {"q", "ddqr", "par_KIN", "par_world2L0"};
-		if (!robot.add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
+		if (!robot->add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
 		arg_list = {"q", "dq", "dqr", "par_KIN", "par_world2L0"};
-		if (!robot.add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
+		if (!robot->add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
 		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity"};
-		if (!robot.add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
+		if (!robot->add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
 	}
 
-	int compute_reg_Dl(Robot& robot){
+	int RegBuilder::compute_reg_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot.get<int>("numJoints");
-		const int nParLink = robot.get<const int>("STD_PAR_LINK");
-		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
-		auto dq = robot.get_model("dq");
+		int nj = robot->get<int>("numJoints");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
+		auto dq = robot->get_model("dq");
 		if (Dl_order==0) return 0;
-		auto par_Dl = robot.get_model("par_Dl");
-		auto par_Dl_isSymb = robot.parameters["par_Dl"].is_symbolic;
-		auto Dl = robot.get_model("dl");
+		auto par_Dl = robot->get_model("par_Dl");
+		auto par_Dl_isSymb = robot->parameters["par_Dl"].is_symbolic;
+		auto Dl = robot->get_model("dl");
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb;
@@ -210,36 +229,36 @@ namespace thunder_ns{
 
 		if (par.size1() != 0){
 			casadi::SX reg_Dl = casadi::SX::jacobian(Dl, par);
-			if (!robot.add_function("reg_dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
+			if (!robot->add_function("reg_dl", reg_Dl, {"dq"}, "Regressor matrix of the link friction")) return 0;
 
 		}
 		
 		return 1;
 	}
 
-	int compute_reg_elastic(Robot& robot){
+	int RegBuilder::compute_reg_elastic(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot.get<int>("numJoints");
-		int nej = robot.get<int>("numSoftJoints");
-		int K_order = robot.get<int>("K_order");
-		int D_order = robot.get<int>("D_order");
-		int Dm_order = robot.get<int>("Dm_order");
-		auto dq = robot.get_model("dq");
-		auto dx = robot.get_model("dx");
-		auto ddx = robot.get_model("ddx");
-		auto par_K = robot.get_model("par_K");
-		auto par_D = robot.get_model("par_D");
-		auto par_Dm = robot.get_model("par_Dm");
-		auto par_Mm = robot.get_model("par_Mm");
-		auto par_K_isSymb = robot.parameters["par_K"].is_symbolic;
-		auto par_D_isSymb = robot.parameters["par_D"].is_symbolic;
-		auto par_Dm_isSymb = robot.parameters["par_Dm"].is_symbolic;
-		auto par_Mm_isSymb = robot.parameters["par_Mm"].is_symbolic;
+		int nj = robot->get<int>("numJoints");
+		int nej = robot->get<int>("numSoftJoints");
+		int K_order = robot->get<int>("K_order");
+		int D_order = robot->get<int>("D_order");
+		int Dm_order = robot->get<int>("Dm_order");
+		auto dq = robot->get_model("dq");
+		auto dx = robot->get_model("dx");
+		auto ddx = robot->get_model("ddx");
+		auto par_K = robot->get_model("par_K");
+		auto par_D = robot->get_model("par_D");
+		auto par_Dm = robot->get_model("par_Dm");
+		auto par_Mm = robot->get_model("par_Mm");
+		auto par_K_isSymb = robot->parameters["par_K"].is_symbolic;
+		auto par_D_isSymb = robot->parameters["par_D"].is_symbolic;
+		auto par_Dm_isSymb = robot->parameters["par_Dm"].is_symbolic;
+		auto par_Mm_isSymb = robot->parameters["par_Mm"].is_symbolic;
 
-		auto K = K_order ? robot.get_model("k") : 0;
-		auto D = D_order ? robot.get_model("d") : 0;
-		auto Dm = Dm_order ? robot.get_model("dm") : 0;
-		auto Mm = robot.get_model("Mm");
+		auto K = K_order ? robot->get_model("k") : 0;
+		auto D = D_order ? robot->get_model("d") : 0;
+		auto Dm = Dm_order ? robot->get_model("dm") : 0;
+		auto Mm = robot->get_model("Mm");
 
 		// - symbolic par construction - //
 		std::vector<casadi::SX> par_symb_K;
@@ -277,41 +296,41 @@ namespace thunder_ns{
 
 		if (par_K_tmp.size1() != 0){
 			casadi::SX reg_K = casadi::SX::jacobian(K, par_K_tmp);
-			if (!robot.add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
+			if (!robot->add_function("reg_k", reg_K, {"q", "x"}, "Regressor matrix of the coupling stiffness")) return 0;
 		}
 		if (par_D_tmp.size1() != 0){
 			casadi::SX reg_D = casadi::SX::jacobian(D, par_D_tmp);
-			if (!robot.add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
+			if (!robot->add_function("reg_d", reg_D, {"dq", "dx"}, "Regressor matrix of the coupling damping")) return 0;
 		}
 		if (par_Dm_tmp.size1() != 0){
 			casadi::SX reg_Dm = casadi::SX::jacobian(Dm, par_Dm_tmp);
-			if (!robot.add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
+			if (!robot->add_function("reg_dm", reg_Dm, {"dx"}, "Regressor matrix of the motor friction")) return 0;
 		}
 		if (par_Mm_tmp.size1() != 0){
 			casadi::SX reg_Mm = casadi::SX::jacobian(mtimes(Mm,ddx), par_Mm_tmp);
-			if (!robot.add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
+			if (!robot->add_function("reg_Mm", reg_Mm, {"ddx"}, "Regressor matrix of the motor friction")) return 0;
 		}
 		
 		return 1;
 	}
 
-	int compute_reg_J(Robot& robot){
+	int RegBuilder::compute_reg_J(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot.get<int>("numJoints");
-		// auto par_DHtable = robot.get_model("par_DHtable");
-		// auto par_world2L0 = robot.get_model("par_world2L0");
-		// auto par_Ln2EE = robot.get_model("par_Ln2EE");
-		// auto DHtable_isSymb = robot.parameters["par_DHtable"].is_symbolic;
-		// auto world2L0_isSymb = robot.parameters["par_world2L0"].is_symbolic;
-		// auto Ln2EE_isSymb = robot.parameters["par_Ln2EE"].is_symbolic;
-		auto q = robot.get_model("q");
-		auto dq = robot.get_model("dq");
-		auto w = robot.get_model("w");
+		int nj = robot->get<int>("numJoints");
+		// auto par_DHtable = robot->get_model("par_DHtable");
+		// auto par_world2L0 = robot->get_model("par_world2L0");
+		// auto par_Ln2EE = robot->get_model("par_Ln2EE");
+		// auto DHtable_isSymb = robot->parameters["par_DHtable"].is_symbolic;
+		// auto world2L0_isSymb = robot->parameters["par_world2L0"].is_symbolic;
+		// auto Ln2EE_isSymb = robot->parameters["par_Ln2EE"].is_symbolic;
+		auto q = robot->get_model("q");
+		auto dq = robot->get_model("dq");
+		auto w = robot->get_model("w");
 
 		// auto dims = par_DHtable.size();
 		// casadi::SX DH_vect = casadi::SX::reshape(par_DHtable, dims.first*dims.second, 1);
 
-		casadi::SX J = robot.get_model("J_ee");
+		casadi::SX J = robot->get_model("J_ee");
 		// std::cout <<"J: " << J << std::endl;
 
 		// - symbolic par construction of par - //
@@ -337,9 +356,9 @@ namespace thunder_ns{
 		// 	}
 		// }
 
-		for (const auto& arg : robot.functions["J_ee"].args){
+		for (const auto& arg : robot->functions["J_ee"].args){
 			if (arg != "q"){
-				par_symb.push_back(robot.parameters[arg].get_symb_resized());
+				par_symb.push_back(robot->parameters[arg].get_symb_resized());
 			}
 		}
 
@@ -362,20 +381,20 @@ namespace thunder_ns{
 			std::vector<std::string> arg_list;
 			arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_Ln2EE"};
 			// std::cout << "par_list: " << par_symb << std::endl;
-			if (!robot.add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
+			if (!robot->add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
 
 			arg_list = {"q", "w", "par_KIN", "par_world2L0", "par_Ln2EE"};
-			if (!robot.add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
+			if (!robot->add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
 		}
 		
 
 		return 1;
 	}
 
-    int compute_regressors(Robot& robot, bool advanced){
+	int RegBuilder::compute_regressors(std::shared_ptr<Robot> robot, bool advanced){
 		int ret = 1;
-		int numSoftJoints = (robot.properties.count("numSoftJoints")) ? robot.get<int>("numSoftJoints") : 0;
-		int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
+		int numSoftJoints = (robot->properties.count("numSoftJoints")) ? robot->get<int>("numSoftJoints") : 0;
+		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 
 		if (!compute_Yr(robot)) ret=0;
 		if (!compute_reg_J(robot)) ret=0;
@@ -389,6 +408,11 @@ namespace thunder_ns{
 		return ret;
 	}
 
-    
+	void RegBuilder::build(std::shared_ptr<Robot> robot) {
+		init(robot);
+		debug_log("Starting regressor computations", VERB_INFO);
+		compute_regressors(robot);
+		debug_log("Regressors computed", VERB_INFO);
+	}
 
 }

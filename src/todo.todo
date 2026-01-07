@@ -1,6 +1,11 @@
 ✔ delete legacy @done (12/19/2025, 5:13:17 PM)
-☐ dh_RRR does not work because the standard pipeline have kinematics
-☐ update all robots
+☐ & to shared pointers in existing plugins
+	✔ kinematics @done (12/25/2025, 10:29:22 PM)
+	✔ dynamics @done (12/25/2025, 11:03:34 PM)
+	✔ regressors @done (1/7/2026, 9:49:59 AM)
+	☐ example_builder
+✔ dh_RRR does not work because the standard pipeline have kinematics @done (12/25/2025, 10:12:07 PM)
+✔ update all robots @done (12/25/2025, 10:12:09 PM)
 ☐ clean thunder_test
 
 general:
@@ -72,6 +77,7 @@ thunder_robot:
 	☐ save and load par in thunder_robot as generic functions
 
 plugins:
+	☐ avoid create a plugin istance to use function outside of plugin (example 'dq_select' in regressors)
 	☐ plugin should takes all the config if there is no section with the plugin name?
 	☐ init function for plugins, needed because plugin constructors are called only once in a static map
 	☐ avoid default initialization in plugin constructor (use an init function with default values. Problem if more than one robot is generated in the same test because constructors are called just the first time)
