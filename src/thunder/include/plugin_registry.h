@@ -20,6 +20,7 @@
 #include "plugins/builders/dyn_builder.h"
 #include "plugins/builders/reg_builder.h"
 #include "plugins/builders/soft_builder.h"
+#include "plugins/builders/example_builder.h"
 
 // - Generators - //
 #include "plugins/generators/robot_generator.h"
@@ -48,6 +49,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"dyn_builder", std::make_shared<DynBuilder>()},
 	{"reg_builder", std::make_shared<RegBuilder>()},
 	{"soft_builder", std::make_shared<SoftBuilder>()},
+	{"example_builder", std::make_shared<ExampleBuilder>()},
 
 };
 
