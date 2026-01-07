@@ -1,6 +1,5 @@
 #include "plugins/builders/common/regressors.h"
-#include "plugins/builders/common/kinematics.h"
-#include "plugins/builders/common/dynamics.h"
+#include "plugins/builders/dyn_builder.h"
 #include "utils.h"
 
 using std::string;
@@ -64,11 +63,12 @@ namespace thunder_ns{
 		auto dqr = robot.get_model("dqr");
 		auto ddqr = robot.get_model("ddqr");
 		auto par_gravity = robot.get_model("par_gravity");
+		DynBuilder dyn;
 		
 		// regressor computation
 		casadi::SXVector E_ = createE();
 		casadi::SXVector Q_ = createQ();
-		casadi::SX dq_sel_ = dq_select(dq);
+		casadi::SX dq_sel_ = dyn.dq_select(dq);
 		
 		casadi::SX Twi(4,4);
 		casadi::SX Ji(6,nj);
@@ -114,7 +114,7 @@ namespace thunder_ns{
 			// ------------------------- Y0r_i -------------------------- //
 			
 			casadi::SX M0_i = mtimes(Jvi.T(),Jvi);
-			casadi::SX C = stdCmatrix(M0_i, q, dq, dq_sel_);
+			casadi::SX C = dyn.stdCmatrix(M0_i, q, dq, dq_sel_);
 
 			casadi::SX dX0r_i = mtimes(M0_i, ddqr);
 			casadi::SX W0r_i = -mtimes(C, dqr);
@@ -132,7 +132,7 @@ namespace thunder_ns{
 				casadi::SX Ql = Q_[l];
 				casadi::SX M1l_i = casadi::SX::mtimes({Jwi.T(),Rwi,Ql,Rwi.T(),Jvi}) - 
 								   casadi::SX::mtimes({Jvi.T(),Rwi,Ql,Rwi.T(),Jwi});
-				casadi::SX C = stdCmatrix(M1l_i, q, dq, dq_sel_);
+				casadi::SX C = dyn.stdCmatrix(M1l_i, q, dq, dq_sel_);
 
 				dX1r_i(allRows,l) = mtimes(M1l_i, ddqr);
 				W1r_i(allRows,l) = -mtimes(C, dqr);
@@ -150,7 +150,7 @@ namespace thunder_ns{
 
 				casadi::SX El = E_[l];
 				casadi::SX M2l_i = casadi::SX::mtimes({Jwi.T(),Rwi,El,Rwi.T(),Jwi});
-				casadi::SX C = stdCmatrix(M2l_i, q, dq, dq_sel_);
+				casadi::SX C = dyn.stdCmatrix(M2l_i, q, dq, dq_sel_);
 
 				dX2r_i(allRows,l) = mtimes(M2l_i, ddqr);
 				W2r_i(allRows,l) = -mtimes(C, dqr);
