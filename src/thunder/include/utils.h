@@ -180,7 +180,8 @@ namespace thunder_ns{
 	casadi::SX R_z(const casadi::SX& angle);
 	casadi::SX get_transform_rpy(casadi::SX frame_rpy);
 	casadi::SX get_transform_ypr(casadi::SX frame_ypr);
-
+	casadi::SX get_euler_angles(casadi::SX T);
+	
 } // namespace thunder_ns
 
 #endif

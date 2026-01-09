@@ -125,12 +125,9 @@ int main(int argc, char* argv[]){
 	auto verbosity = gen_command.get<bool>("--verbose");
 
 	try {
-		// Load YAML
-		YAML::Node config_node = YAML::LoadFile(config_file);
-
 		// Configure Manager
 		manager.set_verbose(verbosity);
-		manager.configure_pipeline(config_node);
+		manager.configure_pipeline(config_file);
 
 		// Run Pipeline
 		manager.execute(robot_name);

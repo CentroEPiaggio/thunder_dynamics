@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "plugin_interfaces.h"
 #include "plugin_registry.h"
@@ -43,6 +44,32 @@ namespace thunder_ns {
 			std::cout << "--------------------------------------------------------------------------------\n";
 		}
 
+		/**
+		 * @brief Merges global config into a plugin's specific node.
+		 * Private keys (under the plugin name) always take precedence.
+		 */
+		YAML::Node get_plugin_config(const YAML::Node& root, 
+                                    const std::string& plugin_name, 
+                                    const std::vector<std::string>& all_plugins) const {
+			
+			// Take plugin block (or empty map)
+			YAML::Node plugin_conf = root[plugin_name] ? YAML::Clone(root[plugin_name]) : YAML::Node(YAML::NodeType::Map);
+
+			// Iterate global config
+			for (auto it = root.begin(); it != root.end(); ++it) {
+				std::string key = it->first.as<std::string>();
+
+				// Check if this key is another plugin
+				bool is_other_plugin = std::find(all_plugins.begin(), all_plugins.end(), key) != all_plugins.end();
+
+				// Add to plugin_conf if it's NOT a plugin AND doesn't already exist (private wins)
+				if (!is_other_plugin && !plugin_conf[key]) {
+					plugin_conf[key] = YAML::Clone(it->second);
+				}
+			}
+			return plugin_conf;
+		}
+
 	public:
 	
 		PluginManager() = default;
@@ -60,6 +87,17 @@ namespace thunder_ns {
 			print_plugin_group("Loaders", LOADERS, verbose);
 			print_plugin_group("Builders", POPULATORS, verbose);
 			print_plugin_group("Generators", GENERATORS, verbose);
+		}
+
+		// Clears current pipeline and sets up plugins based on a yaml file. Additionally saves file path in config
+		void configure_pipeline(const std::string &config_path, int NO_GENERATION = 0) {
+
+			// make the path absolute wrt current working directory
+			std::filesystem::path absolute_path = std::filesystem::absolute(config_path);
+
+			YAML::Node config = YAML::LoadFile(absolute_path.string());
+			config["config_path"] = absolute_path.string();
+			configure_pipeline(config, NO_GENERATION);
 		}
 
 		// Clears current pipeline and sets up plugins based on YAML config
@@ -100,18 +138,18 @@ namespace thunder_ns {
 				std::cout << "[PluginManager] No pipeline defined, using default." << std::endl;
 			}
 
+			// List of all plugins in the pipeline
+			std::vector<std::string> all_plugins = loader_names;
+			all_plugins.insert(all_plugins.end(), builder_names.begin(), builder_names.end());
+			all_plugins.insert(all_plugins.end(), generator_names.begin(), generator_names.end());
+
 			for (const auto &name : loader_names) {
 				auto plugin = find_loader(name);
 				if (!plugin)
 					throw std::runtime_error("Loader not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				// if (name == "legacy_loader") plugin->configure(config);
-				// else {
-				if (config[name]) plugin->configure(config[name]);
-				else plugin->configure(config);
-				// }
-				
+				plugin->configure(get_plugin_config(config, name, all_plugins));
 				active_loaders_.push_back(plugin);
 			}
 
@@ -121,12 +159,7 @@ namespace thunder_ns {
 					throw std::runtime_error("Builder not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				// if (name == "legacy_builder") plugin->configure(config);
-				// else {
-				if (config[name]) plugin->configure(config[name]);
-				else plugin->configure(config);
-                // }
-
+				plugin->configure(get_plugin_config(config, name, all_plugins));
 				active_builders_.push_back(plugin);
 			}
 
@@ -136,11 +169,7 @@ namespace thunder_ns {
 					throw std::runtime_error("Generator not found: " + name);
 
 				plugin->set_debug_flag(verbose_);
-				// if (name == "legacy_generator") plugin->configure(config);
-				// else {
-				if (config[name]) plugin->configure(config[name]);
-				else plugin->configure(config);
-                // }
+				plugin->configure(get_plugin_config(config, name, all_plugins));
 				if (!NO_GENERATION){
 					active_generators_.push_back(plugin);
 				}

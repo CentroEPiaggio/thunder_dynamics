@@ -1,0 +1,26 @@
+pipeline:
+  loaders:    ["urdf_loader"]
+  builders:   ["kin_builder", "dyn_builder"]
+  generators: ["robot_generator"]
+
+
+
+urdf_loader:
+  urdf_path: "franka.urdf"
+  base_link: "panda_link0"
+  ee_link: "panda_link8"
+
+  # world to link_0
+  Base_to_L0:
+    symb: [0,0,0, 0,0,0]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [0,0,0, 0,0,0]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+robot_generator:
+  gen_python: true
