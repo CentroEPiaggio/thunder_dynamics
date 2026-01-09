@@ -282,7 +282,7 @@ namespace thunder_ns {
 						break;
 					default:
 						debug_log("Detected non-standard joint type for joint '" + j->name + "'", VERB_INFO);
-+						jointsType.push_back("UNKNOWN");
+						jointsType.push_back("UNKNOWN");
 						break;
 				}
 			}
