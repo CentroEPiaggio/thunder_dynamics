@@ -30,40 +30,33 @@ namespace thunder_ns {
 		return R;
 	}
 
-	inline Eigen::Matrix3d skew(const Eigen::Vector3d& v) {
-		Eigen::Matrix3d s;
-		s << 0, -v(2), v(1),
-			 v(2), 0, -v(0),
-			 -v(1), v(0), 0;
-		return s;
-	}
-
 	struct InertialData {
-		double mass = 0.0;
-		Eigen::Vector3d mass_moment = Eigen::Vector3d::Zero(); // mc: Mass * Center of Mass
-		Eigen::Matrix3d inertia_at_origin = Eigen::Matrix3d::Zero(); // Io: Inertia with respect to link origin
+		casadi::SX mass = casadi::SX(0); // scalar
+		casadi::SX mass_moment = casadi::SX::zeros(3, 1); // mc: Mass * Center of Mass
+		casadi::SX inertia_at_origin = casadi::SX::zeros(3, 3); // Io: Inertia with respect to link origin
 
 		InertialData() = default;
 
 		// Create inertial data from standard URDF properties (CoM and Inertia at CoM)
-		static InertialData FromUrdf(double m, const Eigen::Vector3d& com, const Eigen::Matrix3d& I_com) {
+		static InertialData FromUrdf(double m, const casadi::SX& com, const casadi::SX& I_com) {
 			InertialData d;
-			d.mass = m;
-			d.mass_moment = m * com;
+			d.mass = casadi::SX(m);
+			d.mass_moment = d.mass * com;
 			
 			// Parallel Axis Theorem: Shift from Center of Mass to Link Origin
 			// Io = I_com + m * ([c] * [c]^T) where [c] is the skew matrix of CoM
-			Eigen::Matrix3d skew_c = skew(com);
-			d.inertia_at_origin = I_com + m * (skew_c * skew_c.transpose());
+			casadi::SX skew_c = hat(com);
+			d.inertia_at_origin = I_com + d.mass * casadi::SX::mtimes(skew_c, skew_c.T());
 			return d;
 		}
 	};
 
 	// Transform inertia of a body to another reference frame T (arbitrary frames)
-	InertialData transformInertia(const InertialData& original, const Eigen::Matrix4d& T) {
-		Eigen::Matrix3d R = T.block<3, 3>(0, 0);
-		Eigen::Vector3d p = T.block<3, 1>(0, 3);
-		Eigen::Matrix3d skew_p = skew(p);
+	InertialData transformInertia(const InertialData& original, const casadi::SX& T) {
+		casadi::Slice first3(0, 3);
+		casadi::SX R = T(first3, first3);
+		casadi::SX p = T(first3, 3);
+		casadi::SX skew_p = hat(p);
 
 		InertialData transformed;
 		
@@ -72,22 +65,22 @@ namespace thunder_ns {
 
 		// Transform Mass Moment (mc)
 		// mc_new = R * mc_old + m * p
-		transformed.mass_moment = R * original.mass_moment + original.mass * p;
+		transformed.mass_moment = casadi::SX::mtimes(R, original.mass_moment) + original.mass * p;
 
 		// Transform Inertia Tensor (Io)
 		// We are moving between two arbitrary frames, we need the Generalized Steiner theorem
 		// from https://doi.org/10.1119/1.4994835
 		// This is physically equivalent to: [Child Origin -> Child CoM -> Parent Origin]
 		// rotate inertia to the new frame 
-		Eigen::Matrix3d rotated_I = R * original.inertia_at_origin * R.transpose();
+		casadi::SX rotated_I = casadi::SX::mtimes(R, casadi::SX::mtimes(original.inertia_at_origin, R.T()));
 		// compute cross terms in skew
-		Eigen::Matrix3d skew_Rmc = skew(R * original.mass_moment);
-		Eigen::Matrix3d cross_terms = skew_p * skew_Rmc.transpose();
+		casadi::SX skew_Rmc = hat(casadi::SX::mtimes(R, original.mass_moment));
+		casadi::SX cross_terms = casadi::SX::mtimes(skew_p, skew_Rmc.T());
 		// the pure steiner term M(x^2 + y^2)
-		Eigen::Matrix3d steiner_pure = original.mass * (skew_p * skew_p.transpose());
+		casadi::SX steiner_pure = original.mass * casadi::SX::mtimes(skew_p, skew_p.T());
 
 		// Io_new = I_rotated + (Coupling + Coupling^T) + Steiner_Point_Mass
-		transformed.inertia_at_origin = rotated_I + (cross_terms + cross_terms.transpose()) + steiner_pure;
+		transformed.inertia_at_origin = rotated_I + (cross_terms + cross_terms.T()) + steiner_pure;
 
 		return transformed;
 	}
@@ -103,20 +96,32 @@ namespace thunder_ns {
 
 	// Extract inertia from a link
 	InertialData extractInertiaFromLink(std::shared_ptr<urdf::Link> link) {
-		if (!link->inertial) return InertialData();
+
+		//! This is a bit fragile
+		//! It's fine as long the massless links are rigidly attached to a proper link
+		//! Which is reasonable for valid urdf models. 
+		//! But we should check and if that's not the case we should panic
+		if (!link->inertial) return InertialData(); // Zero inertia
 
 		double m = link->inertial->mass;
-		Eigen::Matrix4d T_li = link->inertial->origin.matrix();
-		Eigen::Vector3d com = T_li.block<3, 1>(0, 3);
-		Eigen::Matrix3d R_li = T_li.block<3, 3>(0, 0);
+		casadi::SX T_li = to_casadi_sx(link->inertial->origin);
+		casadi::Slice first3(0, 3);
+		casadi::SX com = T_li(first3, 3);
+		casadi::SX R_li = T_li(first3, first3);
 
-		Eigen::Matrix3d I_com_i;
-		I_com_i << link->inertial->ixx, link->inertial->ixy, link->inertial->ixz,
-				   link->inertial->ixy, link->inertial->iyy, link->inertial->iyz,
-				   link->inertial->ixz, link->inertial->iyz, link->inertial->izz;
+		casadi::SX I_com_i = casadi::SX::zeros(3, 3);
+		I_com_i(0, 0) = link->inertial->ixx;
+		I_com_i(0, 1) = link->inertial->ixy;
+		I_com_i(0, 2) = link->inertial->ixz;
+		I_com_i(1, 0) = link->inertial->ixy;
+		I_com_i(1, 1) = link->inertial->iyy;
+		I_com_i(1, 2) = link->inertial->iyz;
+		I_com_i(2, 0) = link->inertial->ixz;
+		I_com_i(2, 1) = link->inertial->iyz;
+		I_com_i(2, 2) = link->inertial->izz;
 
 		// Rotate inertia from inertial frame to link frame
-		Eigen::Matrix3d I_com_l = R_li * I_com_i * R_li.transpose();
+		casadi::SX I_com_l = casadi::SX::mtimes(R_li, casadi::SX::mtimes(I_com_i, R_li.T()));
 
 		return InertialData::FromUrdf(m, com, I_com_l);
 	}
@@ -198,10 +203,10 @@ namespace thunder_ns {
 
 			// --- Identify joints and links --- //
 			std::vector<std::shared_ptr<urdf::Joint>> active_joints;
-			std::vector<Eigen::Matrix4d> static_transforms; // Transform from parent joint to current joint
+			std::vector<casadi::SX> static_transforms; // Transform from parent joint to current joint
 			std::vector<InertialData> active_bodies;
 			
-			Eigen::Matrix4d current_cumulative_transform = Eigen::Matrix4d::Identity();
+			casadi::SX current_cumulative_transform = casadi::SX::eye(4);
 			
 			debug_log("Chain size: " + std::to_string(chain.size()), VERB_DEBUG);
 
@@ -224,11 +229,12 @@ namespace thunder_ns {
 
 				// Extract inertia of the child link (relative to its origin)
 				InertialData child_raw_inertia = extractInertiaFromLink(child);
+				casadi::SX joint_transform = to_casadi_sx(joint->parent_to_joint_transform);
 
 				if (joint->type == urdf::JointType::FIXED) {
 					// --- ACCUMULATION (FIXED JOINT) ---
 					// Accumulate kinematic transformation
-					current_cumulative_transform = current_cumulative_transform * joint->parent_to_joint_transform.matrix();
+					current_cumulative_transform = casadi::SX::mtimes(current_cumulative_transform, joint_transform);
 					
 					// Transform child inertia to the current "rigid block" frame
 					InertialData child_transformed = transformInertia(child_raw_inertia, current_cumulative_transform);
@@ -242,11 +248,12 @@ namespace thunder_ns {
 					active_joints.push_back(joint);
 					
 					// Save joint kinematics
-					static_transforms.push_back(current_cumulative_transform * joint->parent_to_joint_transform.matrix());
+					static_transforms.push_back(casadi::SX::mtimes(current_cumulative_transform, joint_transform));
 					
 					// Reset: next active link starts with "clean" inertia
-					current_cumulative_transform = Eigen::Matrix4d::Identity();
+					current_cumulative_transform = casadi::SX::eye(4);
 					active_bodies.push_back(child_raw_inertia);
+					
 				}
 			}
 
@@ -274,9 +281,8 @@ namespace thunder_ns {
 						jointsType.push_back("XY");
 						break;
 					default:
-						debug_log("Detected non-standard joint type for joint '" + j->name + "'", VERB_DEBUG);
-						// search for map from joint type to 
-						jointsType.push_back("UNKNOWN");
+						debug_log("Detected non-standard joint type for joint '" + j->name + "'", VERB_INFO);
++						jointsType.push_back("UNKNOWN");
 						break;
 				}
 			}
@@ -301,15 +307,15 @@ namespace thunder_ns {
 				const auto& T = static_transforms[i];
 
 				// Translation
-				par_KIN_num[6 * i + 0] = T(0, 3);
-				par_KIN_num[6 * i + 1] = T(1, 3);
-				par_KIN_num[6 * i + 2] = T(2, 3);
+				par_KIN_num[6 * i + 0] = static_cast<double>(T(0, 3));
+				par_KIN_num[6 * i + 1] = static_cast<double>(T(1, 3));
+				par_KIN_num[6 * i + 2] = static_cast<double>(T(2, 3));
 				
 				// Rotation (YPR)
-				Eigen::Vector3d ypr = get_euler_angles(T);
-				par_KIN_num[6 * i + 3] = ypr(0);
-				par_KIN_num[6 * i + 4] = ypr(1);
-				par_KIN_num[6 * i + 5] = ypr(2);
+				casadi::SX ypr = get_euler_angles(T);
+				par_KIN_num[6 * i + 3] = static_cast<double>(ypr(0));
+				par_KIN_num[6 * i + 4] = static_cast<double>(ypr(1));
+				par_KIN_num[6 * i + 5] = static_cast<double>(ypr(2));
 			}
 			robot->add_parameter("par_KIN", casadi::SX::sym("par_KIN", 6 * numJoints, 1), par_KIN_num, par_KIN_isSymb, "Kinematic parameters", true);
 
@@ -352,16 +358,16 @@ namespace thunder_ns {
 
 			for (int i = 0; i < numJoints; ++i) {
 				const auto& b = active_bodies[i];
-				par_DYN_num[STD_PAR_LINK * i + 0] = b.mass;
-				par_DYN_num[STD_PAR_LINK * i + 1] = b.mass_moment(0);
-				par_DYN_num[STD_PAR_LINK * i + 2] = b.mass_moment(1);
-				par_DYN_num[STD_PAR_LINK * i + 3] = b.mass_moment(2);
-				par_DYN_num[STD_PAR_LINK * i + 4] = b.inertia_at_origin(0, 0); // Ixx
-				par_DYN_num[STD_PAR_LINK * i + 5] = b.inertia_at_origin(0, 1); // Ixy
-				par_DYN_num[STD_PAR_LINK * i + 6] = b.inertia_at_origin(0, 2); // Ixz
-				par_DYN_num[STD_PAR_LINK * i + 7] = b.inertia_at_origin(1, 1); // Iyy
-				par_DYN_num[STD_PAR_LINK * i + 8] = b.inertia_at_origin(1, 2); // Iyz
-				par_DYN_num[STD_PAR_LINK * i + 9] = b.inertia_at_origin(2, 2); // Izz
+				par_DYN_num[STD_PAR_LINK * i + 0] = static_cast<double>(b.mass);
+				par_DYN_num[STD_PAR_LINK * i + 1] = static_cast<double>(b.mass_moment(0));
+				par_DYN_num[STD_PAR_LINK * i + 2] = static_cast<double>(b.mass_moment(1));
+				par_DYN_num[STD_PAR_LINK * i + 3] = static_cast<double>(b.mass_moment(2));
+				par_DYN_num[STD_PAR_LINK * i + 4] = static_cast<double>(b.inertia_at_origin(0, 0)); // Ixx
+				par_DYN_num[STD_PAR_LINK * i + 5] = static_cast<double>(b.inertia_at_origin(0, 1)); // Ixy
+				par_DYN_num[STD_PAR_LINK * i + 6] = static_cast<double>(b.inertia_at_origin(0, 2)); // Ixz
+				par_DYN_num[STD_PAR_LINK * i + 7] = static_cast<double>(b.inertia_at_origin(1, 1)); // Iyy
+				par_DYN_num[STD_PAR_LINK * i + 8] = static_cast<double>(b.inertia_at_origin(1, 2)); // Iyz
+				par_DYN_num[STD_PAR_LINK * i + 9] = static_cast<double>(b.inertia_at_origin(2, 2)); // Izz
 			}
 
 			robot->add_parameter("par_DYN", casadi::SX::sym("par_DYN", STD_PAR_LINK * numJoints, 1), par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
