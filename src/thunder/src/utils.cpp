@@ -159,23 +159,5 @@ namespace thunder_ns{
 		return euler;
 	}
 
-	// Get euler angles from transform matrix T (numerical version)
-	Eigen::Vector3d get_euler_angles(const Eigen::Matrix4d& T){
-		Eigen::Matrix3d R = T.block<3,3>(0,0);
-
-		// Assuming ZYX convention (yaw-pitch-roll)
-		double theta = atan2(-R(2,0), sqrt(pow(R(0,0), 2) + pow(R(1,0), 2)));
-		double psi = atan2(R(1,0), R(0,0));
-		double phi = atan2(R(2,1), R(2,2));
-
-		Eigen::Vector3d euler;
-		euler(0) = phi;   // roll
-		euler(1) = theta; // pitch
-		euler(2) = psi;   // yaw
-
-		return euler;
-	}
-
-	
 
 }
