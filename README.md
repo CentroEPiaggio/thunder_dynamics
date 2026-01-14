@@ -1,4 +1,92 @@
-# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.8.18
+# Thunder - [thunder_dynamics](https://github.com/CentroEPiaggio/thunder_dynamics) - v0.9.19 - legacy
+
+
+## Experimental plugin-based infrastructure
+
+Thunder is now built using a plugin-based infrastructure.
+This implementation works with the older yaml structure.
+
+Example config file, for a RR
+
+```yaml
+pipeline:
+  loaders: ["legacy_loader"]
+  builders: ["legacy_builder"]
+  generators: ["legacy_generator"]
+
+
+#########################
+legacy_generator:
+  gen_casadi: True
+  python: True
+
+#########################
+legacy_loader:
+  robot_name: "test_robot"
+  # --- Constants --- #
+  PI_2: &PI_2           1.5707963267948966
+  PI_2_neg: &PI_2_neg  -1.5707963267948966
+
+
+   ... old config
+```
+
+To see the list of plugin, together with the descriptions:
+
+	thunder plugin list --verbose
+
+The names displayed in this command are the same used in the `pipeline` parameter.
+
+
+To write a new builder, minimal template:
+
+```CPP
+
+#ifndef MY_BUILDER_H
+#define MY_BUILDER_H
+
+#include <yaml-cpp/yaml.h>
+
+#include "../plugin_interfaces.h"
+#include "../../library/robot.h"
+
+namespace thunder_ns {
+
+
+    class MyBuilder : public BaseBuilder {
+        public:
+        MyBuilder() : BaseBuilder("My custom builder", "My amazing new builder that adds a lot of useful functions.") {}
+        
+        int configure(const YAML::Node& config) override{
+			// CONFIGURE MY STUFF!
+            debug_log("Configured", VERB_INFO);
+            return 0;
+        }
+
+        void build(std::shared_ptr<Robot> robot) override{
+            debug_log("Starting my amazing builder", VERB_INFO);
+			// COMPUTING MY STUFF!
+			//If I want to debug something:			
+            debug_log("This info is useful for debug porpose", VERB_DEBUG);
+			//robot.add_function("my_stuff");
+        }
+
+    };
+
+} // namespace thunder_ns
+
+#endif // MY_BUILDER_H
+```
+
+
+Then include your file and add the plugin to the map in `src/thunder/library/plugin_registry.h`
+
+Done!
+
+---
+
+
+
 
 The aim of `thunder_dynamics` is to generate code useful for robot's dynamics and control.
 
@@ -64,7 +152,7 @@ int main(){
 	my_robot.set_par_DYN(params); // or set_par_REG(), or set_par_<par>()
 
 	// - compute standard quantities - //
-	Eigen::MatrixXd T = my_robot.get_T_0_ee(); // end-effector kinematics
+	Eigen::MatrixXd T = my_robot.get_T_w_ee(); // end-effector kinematics
 	Eigen::MatrixXd J = my_robot.get_J_ee(); // end-effector Jacobian matrix
 	Eigen::MatrixXd M = my_robot.get_M(); // Mass matrix
 	Eigen::MatrixXd C = my_robot.get_C(); // Coriolis matrix
@@ -111,10 +199,10 @@ from thunder_<robot>_py import thunder_<robot>
 robot = thunder_<robot>()
 robot.load_conf("path/to/robot_conf.yaml")
 
-robot.set_q(np.zeros(robot.get_numJoints()))
-robot.set_dq(np.random.rand(robot.get_numJoints()))
+robot.set_q(np.zeros(robot.get<int>("numJoints")))
+robot.set_dq(np.random.rand(robot.get<int>("numJoints")))
 
-T = robot.get_T_0_ee()
+T = robot.get_T_w_ee()
 J = robot.get_J_ee()
 M = robot.get_M()
 C = robot.get_C()
@@ -139,7 +227,7 @@ The main classes contained in `thunder` are:
    - with the function `add_function()` is possible to add expressions to the internal robot functions
    - following modules permits to expand the robot functionalities by adding functions
 * `kinematics`: contain standard kinematic functions:
-   - T_0_i: return the transformation 0->Li
+   - T_w_i: return the transformation world->Li
    - J_i: jacobian of the frame i
    - J_ee_dot: jacobian derivative
    - J_ee_ddot: jacobian second derivative

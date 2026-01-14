@@ -14,10 +14,18 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
 
 # Include the "library" directory for header file search
-include_directories(${CMAKE_SOURCE_DIR}/library)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add all source files in the "src" directory to the SOURCES variable
-file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE SOURCES 
+  ${CMAKE_SOURCE_DIR}/src/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/loaders/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/builders/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/builders/common/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/generators/*.cpp
+  # ${CMAKE_SOURCE_DIR}/src/plugins/generators/common/*.cpp
+)
 
 # Define the library target with the collected source files
 add_library(library ${SOURCES})
@@ -26,7 +34,7 @@ add_library(library ${SOURCES})
 set_target_properties(library PROPERTIES OUTPUT_NAME "library")
 
 # Make the library's headers available to other projects
-target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/library)
+target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # Find and link the CasADi library
 find_package(casadi REQUIRED)
@@ -41,7 +49,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-target_link_libraries(library casadi yaml-cpp::yaml-cpp)
+# Fetch URDF parser
+FetchContent_Declare(
+    urdfparser
+    GIT_REPOSITORY https://github.com/tolomeis/URDF_Parser.git
+    GIT_TAG dev/eigen
+)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
+
+FetchContent_MakeAvailable(urdfparser)
+
+target_link_libraries(library casadi yaml-cpp::yaml-cpp urdfparser)
+
+
 
 # Add executables and link them with the library
 add_executable(thunder_test ${CMAKE_SOURCE_DIR}/thunder_test.cpp)
@@ -52,7 +72,6 @@ target_link_libraries(thunder_test_chrono library)
 
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
-
 
 # fetch latest argparse
 FetchContent_Declare(
@@ -99,4 +118,4 @@ set_target_properties(thunder_test_chrono PROPERTIES
 set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
 # Install the executable and the template directory
 install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/thunder_robot_template DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)

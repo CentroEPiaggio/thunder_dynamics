@@ -1,0 +1,158 @@
+#ifndef PLUGININTERFACES_H
+#define PLUGININTERFACES_H
+
+#include <iostream>
+#include <string>
+#include <yaml-cpp/yaml.h>
+#include "robot.h"
+
+#define VERB_INFO 0
+#define VERB_DEBUG 1
+#define VERB_ERROR 2
+
+
+namespace thunder_ns{ 
+
+	/**
+	 * @brief The absolute base class for all plugins.
+	 */
+	class BasePlugin {
+
+	private:
+
+		std::string name_;
+		std::string description_;
+		int debug_flag_ = 0;
+
+	public:
+
+		YAML::Node config_; 
+		
+		BasePlugin(std::string name, std::string desc) : name_(name), description_(desc) {}
+
+		~BasePlugin() = default;
+
+		// Enables verbose output when set to 1, otherwise prints only essential logs.
+		void set_debug_flag(int flag) {debug_flag_ = flag ? 1 : 0;}
+
+		// Returns the currently selected debug flag value.
+		int get_debug_flag() const { return debug_flag_; } 
+		
+		// Returns plugin description
+		const std::string& get_description() const { return description_; }
+
+		// Returns plugin name
+		const std::string& get_name() const { return name_; }
+
+		/**
+		 * @brief Load configuration from yaml
+		 * 
+		 * @param config The configuration node
+		 */ 
+		int configure(const YAML::Node& config) {
+			config_ = config;
+			return 1;
+		}
+
+
+	protected:
+	
+		/**
+		 * @brief Helper method to print plugin specific debug information.
+		 *
+		 * @param message The message to print
+		 * @param verbosity Verbosity level (0-basic, 1-detailed)
+		 */
+		void debug_log(const std::string& message, int verbosity) const {
+			if (verbosity == VERB_INFO || debug_flag_ == 1) {
+				std::cout << "    [" << name_ << "] [" << (verbosity == VERB_DEBUG ? "DEBUG" : "INFO") << "]: "
+						  << message << std::endl;
+			}
+		}
+
+	};
+
+
+
+
+
+
+
+	/**
+	 * @brief Base class for plugins that load initial robot data (e.g., from URDF, DH).
+	 * Their 'load' method is responsible for initializing the Robot object.
+	 */
+	class BaseLoader : public BasePlugin {
+		public:
+
+		/**
+		 * @brief Create and initialize a Robot object from configuration
+		 * 
+		 * @return A unique pointer to the newly created Robot object
+		 * 
+		 * @throws std::runtime_error if loading fails
+		 */
+		virtual std::shared_ptr<Robot> load(std::shared_ptr<Robot>) = 0;
+
+		BaseLoader(std::string name, std::string desc): BasePlugin(name, desc) {}
+	};
+
+	/**
+	 * @brief Base class for plugins that populate symbolic functions.
+	 * Their 'build' method reads parameters from the Robot object,
+	 * performs symbolic calculations (e.g., kinematics, dynamics),
+	 * and adds new functions to the Robot using `registrer_function`.
+	 */
+	class BaseBuilder : public BasePlugin {
+		
+  		protected:
+		// Check if the function f_name has to be ignored
+		bool should_ignore(std::string f_name) {
+			if (config_["functions"] && config_["functions"][f_name]) {
+				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
+					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
+					return false;
+				}
+			}
+		}
+
+		public:
+
+		/**
+		 * @brief Executes the plugin's logic.
+		 *
+		 *
+		 * @param robot The Robot instance
+		 */
+		virtual void build(std::shared_ptr<Robot> robot) = 0;
+
+		BaseBuilder(std::string name, std::string desc): BasePlugin(name, desc) {}
+
+
+
+	};
+
+	/**
+	 * @brief Base class for plugins that generate code.
+	 * Their 'generate' method should treat the Robot object as read-only.
+	 * It reads functions and generates output files
+	 */
+	class BaseGenerator : public BasePlugin {
+		public:
+
+		/**
+		 * @brief Executes the plugin's logic.
+		 *
+		 * @param robot The Robot instance
+		 */
+		virtual void generate(const std::shared_ptr<Robot> robot) = 0;
+
+		BaseGenerator(std::string name, std::string desc): BasePlugin(name, desc) {}
+
+
+	};
+
+
+} // namespace thunder
+
+#endif
