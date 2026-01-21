@@ -11,8 +11,6 @@ csv_path = '/home/thunder_dev/thunder_dynamics/src/thunder_control/build/simulat
 # csv_path = 'simulation_data.csv'
 
 # Passo di campionamento (Time Step)
-# NOTA: Nel CSV fornito non c'è la colonna 't', quindi ricostruiamo l'asse temporale.
-# Modifica questo valore se la tua simulazione gira a una frequenza diversa (es. 0.001 = 1kHz)
 DT = 0.001 
 
 # --- CONTROLLI PRELIMINARI ---

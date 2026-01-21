@@ -16,14 +16,18 @@ public:
      * @param q0 Posizione iniziale (rad)
      * @param qf Posizione finale (rad)
      * @param v0 Velocità iniziale (rad/s)
-     * @param vf Velocità finale (rad/s) 
+     * @param vf Velocità finale (rad/s)
+     * @param a0 Accelerazione iniziale (rad/s^2)
+     * @param af Accelerazione finale (rad/s^2)
      * @param t0 Tempo iniziale assoluto (s)
      * @param tf Tempo finale assoluto (s)
      */
-    void init(const VectorXd& q0, const VectorXd& qf, 
-              const VectorXd& v0, const VectorXd& vf, 
-              double t0, double tf) {
-        
+    void init(const VectorXd &q0, const VectorXd &qf,
+              const VectorXd &v0, const VectorXd &vf,
+              const VectorXd &a0, const VectorXd &af,
+              double t0, double tf)
+    {
+
         this->t0 = t0;
         this->tf = tf;
         this->T = tf - t0;
@@ -31,10 +35,6 @@ public:
         this->qf = qf;
         
         int n_joints = q0.size();
-        
-        // Assumiamo accelerazioni iniziali e finali nulle per semplicità
-        VectorXd a0 = VectorXd::Zero(n_joints);
-        VectorXd af = VectorXd::Zero(n_joints);
 
         // Calcolo coefficienti (Vettorizzato)
         c0 = q0;
@@ -54,6 +54,7 @@ public:
         VectorXd pos;
         VectorXd vel;
         VectorXd acc;
+        VectorXd jerk;
     };
 
     State evaluate(double t) {
@@ -72,9 +73,10 @@ public:
         double dt5 = dt4 * dt;
 
         State s;
-        s.pos = c0 + c1*dt + c2*dt2 + c3*dt3 + c4*dt4 + c5*dt5;
-        s.vel = c1 + 2*c2*dt + 3*c3*dt2 + 4*c4*dt3 + 5*c5*dt4;
-        s.acc = 2*c2 + 6*c3*dt + 12*c4*dt2 + 20*c5*dt3;
+        s.pos = c0 + c1 * dt + c2 * dt2 + c3 * dt3 + c4 * dt4 + c5 * dt5;
+        s.vel = c1 + 2 * c2 * dt + 3 * c3 * dt2 + 4 * c4 * dt3 + 5 * c5 * dt4;
+        s.acc = 2 * c2 + 6 * c3 * dt + 12 * c4 * dt2 + 20 * c5 * dt3;
+        s.jerk = 6*c3 + 24*c4*dt + 60*c5*dt2;
 
         // 2. LOGICA FOLLOW THROUGH (Estrapolazione lineare)
         // Se il tempo richiesto è oltre la fine (t > tf), continuiamo a muoverci
@@ -84,6 +86,7 @@ public:
             double dt_extra = t - tf;
             s.pos += s.vel * dt_extra; // Posizione avanza: q = q_f + v_f * delta_t
             s.acc.setZero();           // Accelerazione nulla dopo il lancio
+            s.jerk.setZero();
         }
 
         return s;

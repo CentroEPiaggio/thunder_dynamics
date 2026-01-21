@@ -10,41 +10,38 @@ path_to_files = (
 if not os.path.exists(path_to_files):
     raise FileNotFoundError(f"Path non trovato: {path_to_files}")
 
+# Carichiamo solo la dinamica necessaria per calcolare le coppie
 get_M = ca.Function.load(os.path.join(path_to_files, "M.casadi"))
 get_C = ca.Function.load(os.path.join(path_to_files, "C.casadi"))
 get_G = ca.Function.load(os.path.join(path_to_files, "G.casadi"))
-get_T_0_0 = ca.Function.load(os.path.join(path_to_files, "T_0_0.casadi"))
-get_T_0_1 = ca.Function.load(os.path.join(path_to_files, "T_0_1.casadi"))
-get_T_0_2 = ca.Function.load(os.path.join(path_to_files, "T_0_2.casadi"))
-get_T_0_3 = ca.Function.load(os.path.join(path_to_files, "T_0_3.casadi"))
-get_T_0_4 = ca.Function.load(os.path.join(path_to_files, "T_0_4.casadi"))
-get_T_0_5 = ca.Function.load(os.path.join(path_to_files, "T_0_5.casadi"))
-get_T_0_6 = ca.Function.load(os.path.join(path_to_files, "T_0_6.casadi"))
-get_T_0_7 = ca.Function.load(os.path.join(path_to_files, "T_0_7.casadi"))
-get_T_0_8 = ca.Function.load(os.path.join(path_to_files, "T_0_8.casadi"))
 
-
-def export_tracking_model():
+def export_clean_model():
     model = AcadosModel()
     model.name = "frankino_tracking_mpc"
 
     # --- SIMBOLI ---
+    # Stato: x = [q, dq] (14 elementi)
     q = ca.SX.sym("q", 7)
     dq = ca.SX.sym("dq", 7)
     x = ca.vertcat(q, dq)
 
+    # Input: u = ddq (7 elementi)
     ddq = ca.SX.sym("ddq", 7)
     u = ddq
-
-    p_obs = ca.SX.sym("p_obs", 3)
-    model.p = p_obs
+    
+    # x_final = ca.SX.sym("p_obs", x.size1())
+    # model.p = x_final
 
     # --- DINAMICA ---
     model.x = x
     model.u = u
-    model.f_expl_expr = ca.vertcat(dq, ddq)
+    # x_dot = [dq, u]
+    model.f_expl_expr = ca.vertcat(dq, u)
+    
+    
 
-    # --- CALCOLO COPPIA ---
+    # --- CALCOLO COPPIA (Vincolo Fisico) ---
+    # Tau = M(q)*u + C(q,dq)*dq + G(q)
     M_val = get_M(q)
     G_val = get_G(q)
     C_temp = get_C(q, dq)
@@ -53,186 +50,128 @@ def export_tracking_model():
     )
     tau_expr = ca.mtimes(M_val, u) + coriolis + G_val
 
-    # --- VINCOLI ---
-    res_T0 = get_T_0_0()
+    # Aggiungiamo la coppia ai vincoli algebrici (h)
+    model.con_h_expr = tau_expr
     
-    # Se è un dizionario, prendiamo il primo valore (la matrice), altrimenti usiamo il risultato diretto
-    T_0_0_val = res_T0["o0"] if isinstance(res_T0, dict) else res_T0
+    # error = ca.SX.sym("error", x.size1())
+    # error[0] = x[0] - x_final[0]
+    # error[1] = x[1] - x_final[1]
+    # error[2] = x[2] - x_final[2]
+    # error[3] = x[3] - x_final[3]
+    # error[4] = x[4] - x_final[4]
+    # error[5] = x[5] - x_final[5]
+    # error[6] = x[6] - x_final[6]
+    # error[7] = x[7] - x_final[7]
+    # error[8] = x[8] - x_final[8]
+    # error[9] = x[9] - x_final[9]
+    # error[10] = x[10] - x_final[10]
+    # error[11] = x[11] - x_final[11]
+    # error[12] = x[12] - x_final[12]
+    # error[13] = x[13] - x_final[13]
+    # Nessun vincolo h terminale (la coppia a fine traiettoria è determinata dallo stato finale, di solito fermo)
+    # model.con_h_expr_e = ca.SX.zeros(14)
 
-    p_0 = T_0_0_val[0:3, 3]
-    p_1 = get_T_0_1(q)[0:3, 3]
-    p_2 = get_T_0_2(q)[0:3, 3]
-    p_3 = get_T_0_3(q)[0:3, 3]
-    p_4 = get_T_0_4(q)[0:3, 3]
-    p_5 = get_T_0_5(q)[0:3, 3]
-    p_6 = get_T_0_6(q)[0:3, 3]
-    p_7 = get_T_0_7(q)[0:3, 3]
-    p_8 = get_T_0_8(q)[0:3, 3]
-
-    # Distanza al quadrato tra link e ostacolo
-    dist_sq_0 = ca.sumsqr(p_0 - p_obs)
-    dist_sq_1 = ca.sumsqr(p_1 - p_obs)
-    dist_sq_2 = ca.sumsqr(p_2 - p_obs)
-    dist_sq_3 = ca.sumsqr(p_3 - p_obs)
-    dist_sq_4 = ca.sumsqr(p_4 - p_obs)
-    dist_sq_5 = ca.sumsqr(p_5 - p_obs)
-    dist_sq_6 = ca.sumsqr(p_6 - p_obs)
-    dist_sq_7 = ca.sumsqr(p_7 - p_obs)
-    dist_sq_8 = ca.sumsqr(p_8 - p_obs)
-    model.con_h_expr = ca.vertcat(
-        tau_expr,
-        dist_sq_0,
-        dist_sq_1,
-        dist_sq_2,
-        dist_sq_3,
-        dist_sq_4,
-        dist_sq_5,
-        dist_sq_6,
-        dist_sq_7,
-        dist_sq_8,
-    )
-    model.con_h_expr_e = ca.vertcat(
-        dist_sq_0,
-        dist_sq_1,
-        dist_sq_2,
-        dist_sq_3,
-        dist_sq_4,
-        dist_sq_5,
-        dist_sq_6,
-        dist_sq_7,
-        dist_sq_8,
-    )
-
-    # --- VETTORE COSTO (y) ---
-    # MODIFICA IMPORTANTE: Includiamo 'u' in y per pesarlo con NONLINEAR_LS
-    # y = [q, dq, u] -> Dimensione 14 + 7 = 21
-    model.cost_y_expr = ca.vertcat(q, dq, u)
-
-    # Costo terminale: solo stato (u non esiste all'ultimo step)
-    # y_e = [q, dq] -> Dimensione 14
-    model.cost_y_expr_e = ca.vertcat(q, dq)
+    # --- FUNZIONE DI COSTO ---
+    # y = [u] -> Minimizziamo accelerazione (u)
+    model.cost_y_expr = u
+    
+    # # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
+    # model.cost_y_expr_e = ca.vertcat(q, dq)
 
     return model
 
-
 def create_solver():
-    model = export_tracking_model()
+    model = export_clean_model()
     ocp = AcadosOcp()
     ocp.model = model
     ocp.code_export_directory = "c_generated_code_tracking"
 
     # --- SETUP ORARIO ---
     N = 20
-    Tf = 1.0
+    Tf = 5.0 # Verrà sovrascritto dal tuo Shrinking Horizon in C++
     ocp.dims.N = N
     ocp.solver_options.tf = Tf
 
-    # --- COSTI: RIMANIAMO IN NONLINEAR_LS ---
+    # --- COSTI ---
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.cost_type_e = "NONLINEAR_LS"
+    ocp.cost.cost_type_e = "NONLINEAR_LS"  
 
-    # Pesi
-    W_q = 500.0  # Tracking posizione
-    W_dq = 50.0  # Tracking velocità
-    W_u = 0.01  # Penalità accelerazione (smoothness)
+    # Pesi Stage Cost
+    # y =  u (7)
+    # Obiettivo: Minima accelerazione (W_u alto)
+    W_u = 1e-3  
+    
+    # Matrice W (7x7) per y = u
+    ocp.cost.W = np.diag(np.full(7, W_u))
+   
+    ocp.cost.yref = np.zeros(7) # Target zero accelerazione
 
-    # Matrice W (21x21): [q (7), dq (7), u (7)]
-    # Diagonalizziamo i tre blocchi
-    W_diag = np.concatenate([np.full(7, W_q), np.full(7, W_dq), np.full(7, W_u)])
-    ocp.cost.W = np.diag(W_diag)
-
-    # Reference placeholder (Dimensione 21)
-    # Il C++ riempirà i primi 14. Gli ultimi 7 (u_ref) restano 0 per minimizzare l'accelerazione.
-    ocp.cost.yref = np.zeros(21)
-
-    # Costo Terminale (Dimensione 14)
-    ocp.cost.W_e = np.diag(np.concatenate([np.full(7, 500.0), np.full(7, 50.0)]))
-    ocp.cost.yref_e = np.zeros(14)
+    # # Pesi Terminal Cost
+    # # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver
+    # ocp.cost.W_e = np.eye(14) * 1000.0 # Peso alto su tutto lo stato finale
+    # ocp.cost.yref_e = np.zeros(14) # Verrà aggiornato in C++
 
     # --- VINCOLI ---
     
-    #Definiamo quanti vincoli ci sono in totale
-    n_tau = 7
-    n_dist = 9
-    n_h = n_tau + n_dist  # 16
-    
+    # Limiti Fisici Giunti
     q_max = np.array([2.89, 1.76, 2.89, -0.06, 2.89, 3.75, 2.89])
     q_min = np.array([-2.89, -1.76, -2.89, -3.07, -2.89, -0.01, -2.89])
     dq_min = np.array([-2.175, -2.175, -2.175, -2.175, -2.61, -2.61, -2.61])
     dq_max = np.array([2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61])
     ddq_min = np.array([-15, -7.5, -10, -12.5, -15, -20, -20])
     ddq_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])
+    tau_lim = 87.0
 
+    # 1. State Bounds (x)
     ocp.constraints.idxbx = np.arange(14)
     ocp.constraints.lbx = np.concatenate([q_min, dq_min])
     ocp.constraints.ubx = np.concatenate([q_max, dq_max])
 
+    # 2. Input Bounds (u)
     ocp.constraints.idxbu = np.arange(7)
     ocp.constraints.lbu = ddq_min
     ocp.constraints.ubu = ddq_max
 
-    # Vincoli h (Torque + Collisione)
-    tau_lim = 87.0
-    lh_tau = np.full(7, -tau_lim)
-    uh_tau = np.full(7, +tau_lim)
-    # Link 1 e 2 sono grossi, Link 7 è piccolo
-    # Ordine: [L1, L2, L3, L4, L5, L6, L7]
-    raggi_robot = np.array([0.10, 0.09, 0.09, 0.07, 0.07, 0.06, 0.06, 0.05, 0.05])
-    r_obs = 0.10  # Raggio sfera ostacolo
-    raggi = (raggi_robot + r_obs) ** 2  # Somma dei raggi
+    # 3. Torque Bounds (h) - Solo Stage Constraints
+    ocp.constraints.lh = np.full(7, -tau_lim)
+    ocp.constraints.uh = np.full(7, +tau_lim)
+    
+    # 4. HARD CONSTRAINTS TERMINALI (Cruciale per la tua richiesta)
+    # Definiamo che all'ultimo nodo (N), TUTTI gli stati (q, dq) sono vincolati.
+    # In Python mettiamo dummy values. In C++ aggiornerai lbx_e e ubx_e con il target.
+    ocp.constraints.idxbx_e = np.arange(14) 
+    ocp.constraints.lbx_e = np.zeros(14)
+    ocp.constraints.ubx_e = np.zeros(14)
+    
+    # ocp.constraints.lh_e = np.zeros(14)
+    # ocp.constraints.uh_e = np.zeros(14)
 
-    # Lower bound = raggio^2 (la distanza minima al quadrato)
-    lh_dist = raggi
-    # Upper bound = infinito (nessun limite massimo alla distanza)
-    uh_dist = np.full(n_dist, 1e9)
-
-    # Unione
-    ocp.constraints.lh = np.concatenate([lh_tau, lh_dist])
-    ocp.constraints.uh = np.concatenate([uh_tau, uh_dist])
-    ocp.constraints.lh_e = lh_dist
-    ocp.constraints.uh_e = uh_dist
-    ocp.dims.nh_e = n_dist
-
-    # Slacks
-    # Numero di slack attive
-    n_sh = n_dist  # 9
-    # Vogliamo le slack SOLO sugli ultimi 9 vincoli (quelli di distanza)
-    # np.arange(start, stop) -> crea array [7, 8, 9, 10, 11, 12, 13, 14, 15]
-    ocp.constraints.idxsh = np.arange(n_tau, n_h)
-    ocp.constraints.Jsh = np.eye(n_sh)
-    ocp.dims.nsh = n_sh
-
-    # I pesi devono avere la dimensione delle slack attive (n_sh), non di n_h!
-    # Z = peso quadratico (L2), z = peso lineare (L1)
-
-    # Lower slack weights (zl, Zl): penalizzano la violazione del limite inferiore.
-    ocp.cost.zl = np.full(n_sh, 1e2)  # Costo lineare
-    ocp.cost.Zl = np.full(n_sh, 1e3)  # Costo quadratico
-
-    # Non verrà mai violato. Mettiamo comunque valori per coerenza, ma sono ininfluenti.
-    ocp.cost.zu = np.full(n_sh, 0.0)
-    ocp.cost.Zu = np.full(n_sh, 0.0)
-    # Solver opts
-    ocp.solver_options.qp_solver = "PARTIAL_CONDENSING_HPIPM"
+    # --- OPZIONI SOLVER ---
+    ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM"
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP_RTI"  # 1 solo iterazione per RTI
-    ocp.solver_options.tol = 1e-3
+    ocp.solver_options.nlp_solver_type = "SQP" # SQP standard o SQP_RTI
+    
+    # Per Hard Constraints terminali, a volte serve più iterazioni o tolleranze diverse
     ocp.solver_options.qp_solver_iter_max = 50
-    ocp.solver_options.qp_solver_cond_N = N
+    ocp.solver_options.nlp_solver_max_iter = 100
+    ocp.solver_options.tol = 1e-4
 
-    # Regolarizzazione per migliorare condizionamento
-    ocp.solver_options.levenberg_marquardt = 1e-1 # Aggiungi regolarizzazione
-
-    # Imposta passo di integrazione
+    # Levenberg-Marquardt aiuta se l'Hessiana diventa singolare
+    ocp.solver_options.levenberg_marquardt = 1e-3
+    
     ocp.solver_options.sim_method_num_stages = 4
     ocp.solver_options.sim_method_num_steps = 5
 
-    ocp.parameter_values = np.array([10.0, 10.0, 10.0])
+    # Parametri iniziali (nessuno ora, ma Acados li vuole se definiti nel model)
+    # Nota: nel model clean non ho definito model.p, quindi non serve parameter_values
+    # ocp.parameter_values = np.zeros(14)
     ocp.constraints.x0 = np.zeros(14)
 
+    # Crea JSON e genera codice
     AcadosOcpSolver(ocp, json_file="acados_track.json")
-
+    print("Codice generato con successo in c_generated_code_tracking")
 
 if __name__ == "__main__":
     create_solver()
+    
