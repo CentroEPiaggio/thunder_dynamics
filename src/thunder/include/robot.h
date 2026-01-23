@@ -121,7 +121,14 @@ namespace thunder_ns{
 			// Add the parameter <name> to the parameters map
 			int add_parameter(string name, SX symb, vector<double> num, vector<short> is_symbolic = {0}, string descr = "", bool overwrite = true);
 			
-			// Add the function <name> to the function map
+			/// @brief Adds a symbolic function to the robot model.
+			/// @param f_name Name of the function.
+			/// @param expr CasADi symbolic expression defining the function.
+			/// @param args_raw List of parameter or function names that the expression depends on.
+			/// @param descr Description of the function.
+			/// @param explicit_args Optional list of explicit symbolic variables as arguments.
+			/// @param overwrite If true, overwrites an existing function with the same name.
+			/// @return 1 if successful, 0 otherwise.
 			int add_function(string name, SX expr, vector<string> f_args, string descr = "", vector<SX> explicit_args = {}, bool overwrite = true);
 			
 	};
