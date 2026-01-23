@@ -147,11 +147,10 @@ namespace thunder_ns{
 		casadi::SX euler(3,1);
 		casadi::SX R = T(casadi::Slice(0,3), casadi::Slice(0,3));
 
-		// Assuming ZYX convention (yaw-pitch-roll)
-		casadi::SX theta = atan2(-R(2,0), sqrt(pow(R(0,0), 2) + pow(R(1,0), 2)));
-		casadi::SX psi = atan2(R(1,0), R(0,0));
-		casadi::SX phi = atan2(R(2,1), R(2,2));
-
+		// PAR_KIN use XYZ convention (roll-pitch-yaw)
+		casadi::SX theta = asin(R(0,2));
+        casadi::SX phi   = atan2(-R(1,2), R(2,2));
+        casadi::SX psi   = atan2(-R(0,1), R(0,0));
 		euler(0) = phi;   // roll
 		euler(1) = theta; // pitch
 		euler(2) = psi;   // yaw
