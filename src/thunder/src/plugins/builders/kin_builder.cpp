@@ -11,33 +11,49 @@ namespace thunder_ns {
 
     int KinBuilder::create_std_joints(std::shared_ptr<Robot> robot){
 		// --- Standard joint functions --- //
-		SX q_joint;
+		SX q_joint = SX::sym("q_joint");
+		SX axis = SX::sym("axis",3,1);
 		casadi::Slice rot(0, 3);      // [0,1,2] indexes
 		SX Ti = SX::eye(4);
 
-		// Prismatic classical joint
-		Ti = SX::eye(4);
-		q_joint = SX::sym("q_joint");
-		Ti(2,3) = q_joint;
-		if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of joint P", {q_joint})) {
-			std::cerr << "Error adding joint function: T_JOINT_P" << std::endl;
-			return 0;
-		}
+		// // Prismatic classical joint
+		// Ti = SX::eye(4);
+		// Ti(2,3) = q_joint;
+		// if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of joint P", {q_joint})) {
+		// 	std::cerr << "Error adding joint function: T_JOINT_P" << std::endl;
+		// 	return 0;
+		// }
 
-		// Rotoidal classical joint
+		// // Rotoidal classical joint
+		// Ti = SX::eye(4);
+		// Ti(rot,rot) = R_z(q_joint);
+		// if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of joint R", {q_joint})) {
+		// 	std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
+		// 	return 0;
+		// }
+
+		// Rotoidal general axis joint
 		Ti = SX::eye(4);
-		q_joint = SX::sym("q_joint");
-		Ti(rot,rot) = R_z(q_joint);
-		if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of joint R", {q_joint})) {
+		Ti(rot,rot) = R_aa(axis, q_joint);
+		if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of general rotoidal joint R", {q_joint, axis})) {
 			std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
 			return 0;
 		}
+
+		// Prismatic general axis joint
+		Ti = SX::eye(4);
+		Ti(casadi::Slice(0,3),3) = casadi::SX::mtimes(axis, q_joint);
+		if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of general prismatic joint R", {q_joint, axis})) {
+			std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
+			return 0;
+		}
+
 		return 1;
 	}
 
-	SX KinBuilder::apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi){
+	SX KinBuilder::apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi, const SX& axis){
 		SX T(4,4);
-		T = casadi::SX::mtimes(get_transform_rpy(frame), robot->get_model("T_JOINT_"+joint_type, {qi}));
+		T = casadi::SX::mtimes(get_transform_rpy(frame), robot->get_model("T_JOINT_"+joint_type, {qi, axis}));
 		return T;
 	}
 	
@@ -46,6 +62,16 @@ namespace thunder_ns {
 		// parameters from robot
 		auto numJoints = robot->get<int>("numJoints");
 		vector<string> jointsType = robot->get<vector<string>>("jointsType");
+		if (!robot->parameters.count("par_jointsAxis")){
+			debug_log("par_jointsAxis not defined in robot parameters, using Z axis for all joints", VERB_INFO);
+			vector<double> jointsAxis(3* numJoints);
+			for (int i=0; i<numJoints; i++){
+				jointsAxis[3*i + 2] = 1.0;
+			}
+			robot->add_parameter("par_jointsAxis", casadi::SX::sym("jointsAxis", 3*numJoints), jointsAxis, {0}, "Joint axes", true);
+		}
+		auto jointsAxis = robot->get_model("par_jointsAxis");
+
 		auto q = robot->get_model("q");
 		auto par_KIN = robot->get_model("par_KIN");
 		auto par_world2L0 = robot->get_model("par_world2L0");
@@ -69,7 +95,8 @@ namespace thunder_ns {
 		for (int i = 0; i < numJoints; i++) {
 			// casadi::Slice row_i(i*4, i*4+4);
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
-			Ti[i+1] = apply_joint(robot, frame, jointsType[i], q(i));
+			auto axis = jointsAxis(casadi::Slice(i*3, i*3+3)); 
+			Ti[i+1] = apply_joint(robot, frame, jointsType[i], q(i), axis);
 			Twi[i+1] = casadi::SX::mtimes({Twi[i], Ti[i+1]});
 			
 			arg_list = {"q", "par_KIN"};

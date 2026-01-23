@@ -262,31 +262,46 @@ namespace thunder_ns {
 			debug_log("Detected " + std::to_string(numJoints) + " active joints", VERB_DEBUG); 
 
 			std::vector<std::string> jointsType;
+			std::vector<double> jointsAxis;
+			int j_idx = 0;
 			for (auto& j : active_joints) {
 
 				switch (j->type) {
 					case urdf::JointType::REVOLUTE:
 						jointsType.push_back("R");
+						jointsAxis.push_back(j->axis.x());
+						jointsAxis.push_back(j->axis.y());
+						jointsAxis.push_back(j->axis.z());
 						break;
 					case urdf::JointType::CONTINUOUS:
 						jointsType.push_back("R");
+						jointsAxis.push_back(j->axis.x());
+						jointsAxis.push_back(j->axis.y());
+						jointsAxis.push_back(j->axis.z());
 						break;
 					case urdf::JointType::PRISMATIC:
 						jointsType.push_back("P");
+						jointsAxis.push_back(j->axis.x());
+						jointsAxis.push_back(j->axis.y());
+						jointsAxis.push_back(j->axis.z());
 						break;
 					case urdf::JointType::FLOATING:
 						jointsType.push_back("F");
+						// panic
 						break;
 					case urdf::JointType::PLANAR:
 						jointsType.push_back("XY");
+						// panic
 						break;
 					default:
 						debug_log("Detected non-standard joint type for joint '" + j->name + "'", VERB_INFO);
 						jointsType.push_back("UNKNOWN");
 						break;
 				}
+				j_idx++;
 			}
 			robot->add_property<std::vector<std::string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
+			robot->add_parameter("par_jointsAxis", casadi::SX::sym("jointsAxis", 3*numJoints), jointsAxis, std::vector<short>(3 * numJoints, 0), "Joint axes", true);	
 			debug_log("Joints types: ", VERB_DEBUG);
 			for (auto& t : jointsType) {
 				debug_log(" - " + t, VERB_DEBUG);
