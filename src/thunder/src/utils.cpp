@@ -100,6 +100,37 @@ namespace thunder_ns{
 		return R;
 	}
 
+	/// @brief Returns the rotation matrix for a rotation of 'angle' radians about an arbitrary 'axis'.
+	/// @param axis rotation axis (3x1 casadi::SX), normalization is performed inside the function.
+	/// @param angle representing (casadi::SX) the rotation angle in radians.
+	/// @return The rotation matrix as a casadi::SX (3x3 matrix).
+	casadi::SX R_aa(const casadi::SX& axis, const casadi::SX& angle) {
+		casadi::SX axis_norm = casadi::SX::sqrt(casadi::SX::mtimes(axis.T(), axis));
+		casadi::SX axis_unit = axis / axis_norm;
+		casadi::SX ux = axis_unit(0);
+		casadi::SX uy = axis_unit(1);
+		casadi::SX uz = axis_unit(2);
+		casadi::SX costheta = ZIS(cos(angle));
+		casadi::SX s = ZIS(sin(angle));
+		casadi::SX one_cos = ZIS(1 - costheta);
+
+		casadi::SX R = casadi::SX::zeros(3, 3);
+
+		R(0, 0) = ux * ux * one_cos + costheta;		
+		R(0, 1) = ux * uy * one_cos - uz * s;
+		R(0, 2) = ux * uz * one_cos + uy * s;
+
+		R(1, 0) = uy * ux * one_cos + uz * s;
+		R(1, 1) = costheta + uy * uy * one_cos;
+		R(1, 2) = uy * uz * one_cos - ux * s;
+
+		R(2, 0) = uz * ux * one_cos - uy * s;
+		R(2, 1) = uz * uy * one_cos + ux * s;
+		R(2, 2) = costheta + uz * uz * one_cos;
+
+		return R;
+	}
+
 	// Get the transformation matrix from frame parameters (xyz rpy)
 	casadi::SX get_transform_rpy(casadi::SX frame_rpy){
 		// traslation -> xyz, rotation -> yaw-pitch-roll
