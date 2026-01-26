@@ -85,10 +85,11 @@ namespace thunder_ns {
 		}
 
 		// --- Write thunder_<robot> into generatedFiles --- //
-		if (GEN_ROBOT) {
+		if (GEN_ROBOT or GEN_PYTHON) {
 			std::filesystem::path sourcePath;
 			std::filesystem::path destPath;
 			string python_cmake_file;
+			string pyproject_file_path;
 
 			// Get home/.local/share directory
 			string home = std::getenv("HOME");
@@ -96,6 +97,7 @@ namespace thunder_ns {
 
 			if (std::filesystem::is_directory(template_path)){
 				python_cmake_file = template_path + "CMakeLists.txt";
+				pyproject_file_path = template_path + "pyproject.toml";
 			}else{
 				std::cerr<<"Template path not found: "<<template_path<<std::endl;
 			}
@@ -103,9 +105,28 @@ namespace thunder_ns {
 			if (GEN_PYTHON){
 				// --- Generate python binding --- //
 				std::filesystem::copy_file(python_cmake_file, absolutePath +  "CMakeLists.txt", std::filesystem::copy_options::overwrite_existing);
-				int changed = update_cmake("robot", robot_name, absolutePath +  "CMakeLists.txt");
+				int changed = update_template("robot", robot_name, absolutePath +  "CMakeLists.txt");
 				if (!changed) {
 					cout<<"problem on changing robot name in the CMakeLists.txt:"<<endl;
+					return;
+				}
+
+				std::filesystem::copy_file(pyproject_file_path, absolutePath +  "pyproject.toml", std::filesystem::copy_options::overwrite_existing);
+				changed = update_template("<ROBOT>", robot_name, absolutePath +  "pyproject.toml");
+				if (!changed) {
+					cout<<"problem on changing robot name in the pyproject.toml:"<<endl;
+					return;
+				}
+
+				// Creating directory and __init__ file.
+				try {
+					std::filesystem::create_directory(absolutePath + "/thunder_" + robot_name + "_py");
+					std::ofstream init_file(absolutePath + "/thunder_"+robot_name+"_py/__init__.py");
+					init_file << "# Init file for thunder_" + robot_name + " python module" << std::endl;
+					init_file << "from .thunder_" + robot_name + " import *" << std::endl;
+					init_file.close();
+				} catch(std::exception & e){
+					std::cout<<"Problem creating directory thunder_" + robot_name + "_py/"<<std::endl;
 					return;
 				}
 				debug_log("Python bindings generated", VERB_INFO);
@@ -188,26 +209,26 @@ namespace thunder_ns {
 		return 1;
 	}
 
-	// --- UPDATE_CMAKE --- //
-	int RobotGenerator::update_cmake(const string from_robot, const string to_robot, const string file_path){
-		std::ifstream file_cmake(file_path); // open in reading mode
-		if (!file_cmake.is_open()) {
+	// --- UPDATE_TEMPLATE --- //
+	int RobotGenerator::update_template(const string from_robot, const string to_robot, const string file_path){
+		std::ifstream file_template(file_path); // open in reading mode
+		if (!file_template.is_open()) {
 			std::cerr << "error in CMakeLists.txt template opening:" << file_path << endl;
 			return 0;
 		} else {
-			std::stringstream buffer_cmake;
-			buffer_cmake << file_cmake.rdbuf(); // read file_cmake on buffer_cmake
-			string file_content_cmake = buffer_cmake.str(); // file_cmake as string
+			std::stringstream buffer_template;
+			buffer_template << file_template.rdbuf(); // read file_template on buffer_template
+			string file_content_template = buffer_template.str(); // file_template as string
 
-			file_cmake.close(); // close the file_cmake
+			file_template.close(); // close the file_template
 
 			// - substitute 'from_robot' wiht 'to_robot' - //
-			replace_all(file_content_cmake, from_robot, to_robot);
+			replace_all(file_content_template, from_robot, to_robot);
 
-			// - overwrite file_cmake - //
-			std::ofstream out_cmake(file_path);
-			out_cmake << file_content_cmake;
-			out_cmake.close();
+			// - overwrite file_template - //
+			std::ofstream out_template(file_path);
+			out_template << file_content_template;
+			out_template.close();
 		}
 		return 1;
 	}
