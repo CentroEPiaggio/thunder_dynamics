@@ -223,6 +223,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	// --- insert python bindings --- //
 	if(gen_python){
 		string bindings_str = 
+			"#ifdef ENABLE_PYBIND11\n"
 			"#include <pybind11/pybind11.h>\n"
 			"#include <pybind11/eigen.h>\n"
 			"\n"
@@ -230,7 +231,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			"// ----- Python bindings ----- //\n"
 			"// --------------------------- //\n"
 			"namespace py = pybind11;\n"
-			"PYBIND11_MODULE("+thunder_robot_name+"_py, m) {\n"
+			"PYBIND11_MODULE("+thunder_robot_name+", m) {\n"
 			"\tpy::class_<"+thunder_robot_name+">(m, \""+thunder_robot_name+"\")\n"
 			"\t\t.def(py::init<>())\n";
 		// --- pybind properties --- //
@@ -260,7 +261,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			string fun_name = "get_" + fun.second.name;
 			bindings_str.append("\n\t\t.def(\"" + fun_name + "\", &" + thunder_robot_name + "::" + fun_name + ", \""+ fun.second.description +"\")");
 		}
-		file_content_cpp.append(bindings_str + ";\n}\n");
+		file_content_cpp.append(bindings_str + ";\n}\n#endif\n");
 	}
 
 	// --- insert functions --- //
