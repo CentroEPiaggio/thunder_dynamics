@@ -90,6 +90,7 @@ namespace thunder_ns {
 			std::filesystem::path destPath;
 			string python_cmake_file;
 			string pyproject_file_path;
+			string readme_file_path;
 
 			// Get home/.local/share directory
 			string home = std::getenv("HOME");
@@ -98,6 +99,7 @@ namespace thunder_ns {
 			if (std::filesystem::is_directory(template_path)){
 				python_cmake_file = template_path + "CMakeLists.txt";
 				pyproject_file_path = template_path + "pyproject.toml";
+				readme_file_path = template_path + "README.md";
 			}else{
 				std::cerr<<"Template path not found: "<<template_path<<std::endl;
 			}
@@ -115,6 +117,13 @@ namespace thunder_ns {
 				changed = update_template("<ROBOT>", robot_name, absolutePath +  "pyproject.toml");
 				if (!changed) {
 					cout<<"problem on changing robot name in the pyproject.toml:"<<endl;
+					return;
+				}
+
+				std::filesystem::copy_file(readme_file_path, absolutePath +  "README.md", std::filesystem::copy_options::overwrite_existing);
+				changed = update_template("<ROBOT>", robot_name, absolutePath +  "README.md");
+				if (!changed) {
+					cout<<"problem on changing robot name in the README.md:"<<endl;
 					return;
 				}
 
