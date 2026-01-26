@@ -13,6 +13,7 @@ RUN	apt-get update && apt-get install -y \
 	libeigen3-dev \
 	python3	\
 	python3-pip \
+	libboost-all-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Create a new user
@@ -58,14 +59,14 @@ RUN mkdir -p build && \
 	make && \
 	make install
 
-# Pybind11 installation (https://pybind11.readthedocs.io/en/stable/compiling.html#find-package-vs-add-subdirectory)
-WORKDIR ${HOME}
-RUN git clone https://github.com/pybind/pybind11.git pybind11
-WORKDIR ${HOME}/pybind11
-RUN pip install pytest && \
-	cmake -S . -B build && \
-	cmake --build build -j 2  && \
-	cmake --install build
+# # Pybind11 installation (https://pybind11.readthedocs.io/en/stable/compiling.html#find-package-vs-add-subdirectory)
+# WORKDIR ${HOME}
+# RUN git clone https://github.com/pybind/pybind11.git pybind11
+# WORKDIR ${HOME}/pybind11
+# RUN pip install pytest && \
+# 	cmake -S . -B build && \
+# 	cmake --build build -j 2  && \
+# 	cmake --install build
 
 # Thunder built from sources
 WORKDIR ${HOME}/..
