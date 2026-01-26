@@ -6,25 +6,27 @@ namespace thunder_ns {
 
 	void SoftLoader::create_elastic_joints(std::shared_ptr<Robot> robot){
 		// --- Standard joint functions --- //
-		SX q_joint;
+		SX q_joint = SX::sym("q_joint");
+		SX axis = SX::sym("axis",3,1);
+		FunArg q_joint_arg("q_joint", q_joint);
+		FunArg axis_arg("axis", axis);
 		casadi::Slice rot(0, 3);      // [0,1,2] indexes
 		SX Ti = SX::eye(4);
 
+		// Rotoidal classical joint
+		Ti = SX::eye(4);
+		Ti(rot,rot) = R_aa(axis, q_joint);
+		if (!robot->add_function("T_JOINT_R_SEA", Ti, {}, "Template transformation of rotoidal joint with elasticity", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: T_JOINT_R_SEA" << std::endl;
+		}
+
 		// Prismatic classical joint
 		Ti = SX::eye(4);
-		q_joint = SX::sym("q_joint");
-		Ti(2,3) = q_joint;
-		if (!robot->add_function("T_JOINT_P_SEA", Ti, {}, "Template transformation of prismatic joint with elasticity", {q_joint})) {
+		Ti(casadi::Slice(0,3),3) = casadi::SX::mtimes(axis, q_joint);
+		if (!robot->add_function("T_JOINT_P_SEA", Ti, {}, "Template transformation of prismatic joint with elasticity", {q_joint_arg, axis_arg})) {
 			std::cerr << "Error adding joint function: T_JOINT_P_SEA" << std::endl;
 		}
 
-		// Rotoidal classical joint
-		Ti = SX::eye(4);
-		q_joint = SX::sym("q_joint");
-		Ti(rot,rot) = R_z(q_joint);
-		if (!robot->add_function("T_JOINT_R_SEA", Ti, {}, "Template transformation of rotoidal joint with elasticity", {q_joint})) {
-			std::cerr << "Error adding joint function: T_JOINT_R_SEA" << std::endl;
-		}
 	}
 
 	// --- Load function --- //

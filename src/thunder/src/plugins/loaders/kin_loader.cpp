@@ -47,11 +47,30 @@ namespace thunder_ns {
 					string jointName = joint.first.as<string>();
 					
 					// - Numeric - //
-					vector<double> xyzrpy = joint.second["xyzrpy"].as<vector<double>>();
-					for (int i=0; i<6; i++){
-						par_KIN_num[6*idx + i] = xyzrpy[i];
+					if (joint.second["xyzrpy"]){
+						vector<double> xyzrpy = joint.second["xyzrpy"].as<vector<double>>();
+						for (int i=0; i<6; i++){
+							par_KIN_num[6*idx + i] = xyzrpy[i];
+						}
+					} else if(joint.second["xyz"]){
+						vector<double> xyz = joint.second["xyz"].as<vector<double>>();
+						vector<double> rpy;
+						if (joint.second["rpy"]){
+							rpy = joint.second["rpy"].as<vector<double>>();
+						} else if(joint.second["ypr"]){
+							vector<double> ypr = joint.second["ypr"].as<vector<double>>();
+							// conversion from ypr to rpy
+							SX ypr_casadi({0,0,0, ypr[0], ypr[1], ypr[2]});
+							SX T = get_transform_ypr(ypr_casadi);
+							SX rpy_casadi = get_euler_rpy(T);
+							rpy = {static_cast<double>(rpy_casadi(0)), static_cast<double>(rpy_casadi(1)), static_cast<double>(rpy_casadi(2))};
+						}
+						for (int i=0; i<3; i++){
+							par_KIN_num[6*idx + i] = xyz[i];
+							par_KIN_num[6*idx + i + 3] = rpy[i];
+						}
 					}
-
+					
 					// - Symbolic selectivity - //
 					vector<short> joint_isSymb;
 					if (joint.second["symb"]) {

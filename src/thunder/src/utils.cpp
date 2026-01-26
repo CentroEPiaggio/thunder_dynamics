@@ -174,7 +174,7 @@ namespace thunder_ns{
 	}
 
 	// Get euler angles from transform matrix T
-	casadi::SX get_euler_angles(casadi::SX T){
+	casadi::SX get_euler_rpy(casadi::SX T){
 		casadi::SX euler(3,1);
 		casadi::SX R = T(casadi::Slice(0,3), casadi::Slice(0,3));
 

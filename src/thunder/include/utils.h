@@ -126,12 +126,20 @@ namespace thunder_ns{
 		}
 	};
 
+	class FunArg{
+		public:
+		string name;
+		casadi::SX value;
+		int size() { return value.size1()*value.size2(); }
+		FunArg(string name, casadi::SX value) : name(name), value(value) {}
+	};
+
 	class Function{
 		public:
 		string name;
 		string description;
 		std::vector<string> args;
-		std::vector<casadi::SX> explicit_args;
+		std::vector<FunArg> explicit_args;
 		casadi::SX expr;
 		casadi::Function fun;
 
@@ -181,7 +189,7 @@ namespace thunder_ns{
 	casadi::SX R_aa(const casadi::SX& axis, const casadi::SX& angle);
 	casadi::SX get_transform_rpy(casadi::SX frame_rpy);
 	casadi::SX get_transform_ypr(casadi::SX frame_ypr);
-	casadi::SX get_euler_angles(casadi::SX T);
+	casadi::SX get_euler_rpy(casadi::SX T);
 	
 } // namespace thunder_ns
 
