@@ -293,7 +293,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, vector<SX> explicit_args, bool overwrite){
+	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, vector<FunArg> explicit_args, bool overwrite){
 		if ((!overwrite) && functions.count(f_name)){
 			std::cerr << "Function already exist! set flag for overwrite " << std::endl;
 			return 0;
@@ -372,7 +372,7 @@ namespace thunder_ns{
 				arg_index++;
 			}
 			for (const auto& arg: explicit_args){
-				inputs[arg_index] = arg;
+				inputs[arg_index] = arg.value;
 				arg_index++;
 			}
 

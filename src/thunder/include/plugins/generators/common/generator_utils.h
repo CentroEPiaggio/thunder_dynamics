@@ -179,12 +179,12 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	functions_str.append("\n");
 	for (auto fun : functions){
 		// - function explicit arguments - //
-		vector<SX> fun_expl_args = fun.second.explicit_args; 
+		vector<FunArg> fun_expl_args = fun.second.explicit_args; 
 		string args_string = "(";
 		if (fun_expl_args.size()){
-			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size1())+"> " + fun_expl_args[0].get_str());
+			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size())+"> " + fun_expl_args[0].name);
 			for (int j=1; j<fun_expl_args.size(); j++){
-				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size1())+"> " + fun_expl_args[j].get_str());
+				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size())+"> " + fun_expl_args[j].name);
 			}
 		}
 		args_string.append(")");
@@ -194,7 +194,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			"\t\t * \n");
 		for(int i=0; i<fun_expl_args.size(); i++){
 			functions_str.append(
-			"\t\t * @param " + fun_expl_args[i].get_str() + " Explicit parameter\n"
+			"\t\t * @param " + fun_expl_args[i].name + " Explicit parameter\n"
 			"\t\t * \n");
 		}
 		functions_str.append(
@@ -368,14 +368,14 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		string fun_name = "get_" + fun.second.name;
 		string fun_name_gen = robotName + "_" + fun.second.name;
 		std::vector<string> fun_args = fun.second.args;
-		std::vector<casadi::SX> fun_expl_args = fun.second.explicit_args;
+		std::vector<FunArg> fun_expl_args = fun.second.explicit_args;
 		std::vector<long> out_size = fun.second.get_out_size();
 		// explicit function arguments
 		string args_string = "(";
 		if (fun_expl_args.size()){
-			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size1())+"> " + fun_expl_args[0].get_str());
+			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size())+"> " + fun_expl_args[0].name);
 			for (int j=1; j<fun_expl_args.size(); j++){
-				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size1())+"> " + fun_expl_args[j].get_str());
+				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size())+"> " + fun_expl_args[j].name);
 			}
 		}
 		args_string.append(")");
@@ -393,19 +393,19 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		if ((fun_args.size() == 0) && (fun_expl_args.size() == 0)){
 			functions_str.append("\tconst double** input_ = nullptr;\n");
 		} else {
-			string first_arg = fun_args.size() ? fun_args[0] : fun_expl_args[0].get_str();
+			string first_arg = fun_args.size() ? fun_args[0] : fun_expl_args[0].name;
 			if (fun_args.size()) {
 				functions_str.append("\tconst double* input_[] = {" + fun_args[0] + ".data()");
 				for (int j=1; j<fun_args.size(); j++){
 					functions_str.append(", " + fun_args[j]+".data()");
 				}
 				for (int j=0; j<fun_expl_args.size(); j++){
-					args_string.append(", " + fun_expl_args[j].get_str()+".data()");
+					functions_str.append(", " + fun_expl_args[j].name+".data()");
 				}
 			} else {
-				functions_str.append("\tconst double* input_[] = {" + fun_expl_args[0].get_str() + ".data()");
+				functions_str.append("\tconst double* input_[] = {" + fun_expl_args[0].name+".data()");
 				for (int j=1; j<fun_expl_args.size(); j++){
-					args_string.append(", " + fun_expl_args[j].get_str()+".data()");
+					functions_str.append(", " + fun_expl_args[j].name+".data()");
 				}
 			}
 			functions_str.append("};\n");

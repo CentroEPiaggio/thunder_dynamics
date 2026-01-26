@@ -126,12 +126,20 @@ namespace thunder_ns{
 		}
 	};
 
+	class FunArg{
+		public:
+		string name;
+		casadi::SX value;
+		int size() { return value.size1()*value.size2(); }
+		FunArg(string name, casadi::SX value) : name(name), value(value) {}
+	};
+
 	class Function{
 		public:
 		string name;
 		string description;
 		std::vector<string> args;
-		std::vector<casadi::SX> explicit_args;
+		std::vector<FunArg> explicit_args;
 		casadi::SX expr;
 		casadi::Function fun;
 
