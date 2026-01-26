@@ -326,11 +326,11 @@ namespace thunder_ns {
 				par_KIN_num[6 * i + 1] = static_cast<double>(T(1, 3));
 				par_KIN_num[6 * i + 2] = static_cast<double>(T(2, 3));
 				
-				// Rotation (YPR)
-				casadi::SX ypr = get_euler_angles(T);
-				par_KIN_num[6 * i + 3] = static_cast<double>(ypr(0));
-				par_KIN_num[6 * i + 4] = static_cast<double>(ypr(1));
-				par_KIN_num[6 * i + 5] = static_cast<double>(ypr(2));
+				// Rotation (RPY)
+				casadi::SX rpy = get_euler_rpy(T);
+				par_KIN_num[6 * i + 3] = static_cast<double>(rpy(0));
+				par_KIN_num[6 * i + 4] = static_cast<double>(rpy(1));
+				par_KIN_num[6 * i + 5] = static_cast<double>(rpy(2));
 			}
 			robot->add_parameter("par_KIN", casadi::SX::sym("par_KIN", 6 * numJoints, 1), par_KIN_num, par_KIN_isSymb, "Kinematic parameters", true);
 
