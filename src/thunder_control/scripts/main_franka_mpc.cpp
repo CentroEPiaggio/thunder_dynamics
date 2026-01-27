@@ -19,11 +19,39 @@ using namespace Eigen;
 #define N_HORIZON 20
 #define NX 14  // [q, dq]
 #define NU 7   // [ddq]
-#define NY 7   // [u] <-- MODIFICATO: Minimizzi solo accelerazione nello stage
+#define NY 14  // [q, u] <-- MODIFICATO: Minimizzi posizione e accelerazione nello stage
 #define NYN 14 // [q, dq] nel cost terminale
 #define NP 0   // Nessun parametro ostacoli <-- MODIFICATO
 
 const std::string conf_file = "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/frankino_conf.yaml";
+
+double simulate_prediction(
+    const VectorXd &q_start,
+    const VectorXd &dq_start,
+    const MatrixXd &U_sequence,
+    const VectorXd &q_target,
+    double dt_step,
+    int horizon_len)
+{
+    VectorXd q_corrente = q_start;
+    VectorXd dq_corrente = dq_start;
+
+    VectorXd ddq(7);
+
+    for (int k = 0; k < horizon_len; ++k)
+    {
+
+        VectorXd u_k = U_sequence.col(k);
+
+        ddq = u_k;
+        q_corrente += dq_corrente * dt_step + 0.5 * ddq * std::pow(dt_step, 2);
+        dq_corrente += ddq * dt_step;
+    }
+
+    // Calculate error from target at the end of prediction
+    double final_error = (q_corrente - q_target).norm();
+    return final_error;
+}
 
 int main()
 {
@@ -35,15 +63,21 @@ int main()
     int NJ = robot_sim.get_numJoints();
 
     // Logger
-    std::ofstream data_file("simulation_data.csv");
+    std::ofstream data_file("simulation_data.csv"), data_file_mpc_only("simulation_data_mpc_only.csv"), data_file_mpc_sim("simulation_data_mpc_full.csv"), pred_file("prediction_error.csv");
     data_file << "q1,q2,q3,q4,q5,q6,q7,"
                  "dq1,dq2,dq3,dq4,dq5,dq6,dq7,"
                  "ddq1,ddq2,ddq3,ddq4,ddq5,ddq6,ddq7,t_solve\n";
+    data_file_mpc_sim << "q1,q2,q3,q4,q5,q6,q7,"
+                         "dq1,dq2,dq3,dq4,dq5,dq6,dq7,"
+                         "ddq1,ddq2,ddq3,ddq4,ddq5,ddq6,ddq7\n";
+    data_file_mpc_only << "ddq1,ddq2,ddq3,ddq4,ddq5,ddq6,ddq7\n";
+    pred_file << "time,prediction_error,dt_mpc_node\n";
 
     // Vettori di stato
     VectorXd q_curr = VectorXd::Zero(NJ);
     VectorXd dq_curr = VectorXd::Zero(NJ);
     VectorXd ddq_opt = VectorXd::Zero(NJ);
+    MatrixXd ddq_prev = MatrixXd::Zero(NJ, N_HORIZON);
     VectorXd tau_cmd = VectorXd::Zero(NJ);
     double eps = 1e-4; // Tolleranza per i vincoli
 
@@ -79,6 +113,7 @@ int main()
     double t_start = 0.0;
     double t_duration = 5.0;
     double t_end = t_start + t_duration;
+    double t_hor_lim = 0.02; // Horizon minimo per replanning
 
     // Stato iniziale
     VectorXd q_start = q_curr;
@@ -90,7 +125,8 @@ int main()
     VectorXd dq_final = VectorXd::Zero(NJ);
     VectorXd ddq_final = VectorXd::Zero(NJ);
 
-    q_final << -0.157, -0.504, -0.623, -2.258, -0.332, 1.637, -1.728;
+    q_final << -1.25962, -0.663669, -0.692637, -2.17138, -0.264125, 1.50759, 0.0630972;
+    q_final(0) += 0.5; // Spostiamo il primo giunto di 0.5 rad
     dq_final << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
     ddq_final << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
@@ -140,7 +176,7 @@ int main()
         // 1. REPLANNING TRAIETTORIA
         // ------------------------------------------------------------
 
-        if (time_to_go > 0.02)
+        if (time_to_go > t_hor_lim) // > 0.02
         {
             // Start: Stato corrente del robot (reale o stimato)
             // End: Target fisso
@@ -160,9 +196,9 @@ int main()
             //           << "\n"
             //           << " | ddq_new_minjerk=" << s_new.acc.transpose() << std::endl;
         }
-        else if (time_to_go <= 0.02)
+        else if (time_to_go <= t_hor_lim)
         {
-            time_to_go = 0.02;
+            time_to_go = t_hor_lim;
         }
 
         // Calcolo nuovo dt per nodo MPC
@@ -213,10 +249,11 @@ int main()
         // for(int i=0; i<NX; i++) yref_e[i] = x_target[i];
         // ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N_HORIZON, "yref", yref_e);
 
-        for (int i = 0; i <= N_HORIZON; i++)
+        if (time_to_go > t_hor_lim)
         {
-            if (time_to_go > 0.02)
+            for (int i = 0; i <= N_HORIZON; i++)
             {
+
                 double ti = t_curr + i * dt_mpc_node;
                 auto s = planner.evaluate(ti);
 
@@ -226,6 +263,7 @@ int main()
                     x_guess[j] = s.pos(j);
                     x_guess[NJ + j] = s.vel(j);
                     u_guess[j] = s.acc(j);
+                    yref_stage[j] = s.pos(j);
                 }
                 printf("MPC Node %d | t = %.3f s | q_des = [", i, ti);
                 for (int j = 0; j < NJ; j++)
@@ -237,27 +275,39 @@ int main()
                 if (i < N_HORIZON)
                 {
                     ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u_guess);
+                    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_stage);
+                }
+                else if (i == N_HORIZON)
+                {
+                    double yref_e[NY];
+                    for (int k = 0; k < NX; k++)
+                        yref_e[k] = x_target[k];
+                    ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N_HORIZON, "yref", yref_e);
                 }
             }
-            else
+        }
+        else
+        {
+            int NODO = (int)((t_end - t_curr) / dt_mpc_node);
+            // printf(">>> FINE TRAIETTORIA RAGGIUNTA. Blocco stato al nodo %d\n", NODO);
+            for (int j = 0; j < NODO; j++)
             {
-                int NODO = (int)((t_end - t_curr) / dt_mpc_node);
-                // printf(">>> FINE TRAIETTORIA RAGGIUNTA. Blocco stato al nodo %d\n", NODO);
-                ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, NODO, "lbx", x_target);
-                ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, NODO, "ubx", x_target);
-
-                // double check_lbx[NX]; // Buffer per leggere i Lower Bound
-                // double check_ubx[NX]; // Buffer per leggere gli Upper Bound
-
-                // // Leggiamo indietro dalla struttura di Acados
-                // ocp_nlp_constraints_model_get(nlp_config, nlp_dims, nlp_in, NODO, "lbx", check_lbx);
-                // ocp_nlp_constraints_model_get(nlp_config, nlp_dims, nlp_in, NODO, "ubx", check_ubx);
-                // printf("Lbx Nodo %d: [", NODO);
-                // for (int j = 0; j < NX; j++)
-                // {
-                //     printf("%.3f%s", check_lbx[j], (j == NX - 1 ? "]\n" : ", "));
-                // }
+                ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, j, "yref", x_target);
             }
+            ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, NODO, "lbx", x_target);
+            ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, NODO, "ubx", x_target);
+
+            double check_lbx[NX]; // Buffer per leggere i Lower Bound
+            double check_ubx[NX]; // Buffer per leggere gli Upper Bound
+
+            // // Leggiamo indietro dalla struttura di Acados
+            // ocp_nlp_constraints_model_get(nlp_config, nlp_dims, nlp_in, NODO, "lbx", check_lbx);
+            // ocp_nlp_constraints_model_get(nlp_config, nlp_dims, nlp_in, NODO, "ubx", check_ubx);
+            // printf("Lbx Nodo %d: [", NODO);
+            // for (int j = 0; j < NX; j++)
+            // {
+            //     printf("%.3f%s", check_lbx[j], (j == NX - 1 ? "]\n" : ", "));
+            // }
         }
 
         // ------------------------------------------------------------
@@ -283,6 +333,33 @@ int main()
         for (int j = 0; j < NJ; j++)
             ddq_opt(j) = u0[j];
         // std::cout << "ddq_opt: " << ddq_opt.transpose() << std::endl;
+
+        // ------------------------------------------------------------
+        // Eb. RECUPERO ACCELERAZIONE (ur)
+        // ------------------------------------------------------------
+
+        for (int r = 0; r < N_HORIZON; r++)
+        {
+            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, r, "u", u0);
+            for (int j = 0; j < NJ; j++)
+                ddq_prev(j, r) = u0[j];
+            // // Log accelerazioni MPC-only
+            // data_file_mpc_only << ddq_prev(0, r) << "," << ddq_prev(1, r) << "," << ddq_prev(2, r) << "," << ddq_prev(3, r) << "," << ddq_prev(4, r) << "," << ddq_prev(5, r) << "," << ddq_prev(6, r) << "\n";
+        }
+        data_file_mpc_only.close();
+        // ------------------------------------------------------------
+        // Ec. PREDICTION ERROR
+        // ------------------------------------------------------------
+        double pred_error = simulate_prediction(
+            q_curr,
+            dq_curr,
+            ddq_prev,
+            q_final,
+            dt_mpc_node,
+            N_HORIZON);
+
+        // Log the error. If MPC works, this should remain small or decrease.
+        pred_file << t_curr << "," << pred_error << "," << dt_mpc_node << "\n";
 
         // ------------------------------------------------------------
         // F. INTEGRAZIONE FISICA (Computed Torque + Sim)
@@ -343,13 +420,13 @@ int main()
     std::cout << ">>> Simulazione finita." << std::endl;
 
     // // ----------------------------------------------------------------
-    // // 5. SIMULAZIONE SENZA MPC (Solo MinJerk)
+    // // 6. SIMULAZIONE SENZA MPC (Solo MinJerk)
     // // ----------------------------------------------------------------
     // t_curr = 0.0;
     // q_curr = q_start;
     // dq_curr = dq_start;
 
-    // while (t_curr <= (t_end)) // Margine extra per vedere se stabilizza
+    // while (t_curr <= (t_end))
     // {
     //     double ti = t_curr;
     //     auto s = planner.evaluate(ti);

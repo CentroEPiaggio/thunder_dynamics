@@ -72,8 +72,8 @@ def export_clean_model():
     # model.con_h_expr_e = ca.SX.zeros(14)
 
     # --- FUNZIONE DI COSTO ---
-    # y = [u] -> Minimizziamo accelerazione (u)
-    model.cost_y_expr = u
+    # y = [q, u] -> Minimizziamo posizione e accelerazione
+    model.cost_y_expr = ca.vertcat(q, u)
     
     # # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
     # model.cost_y_expr_e = ca.vertcat(q, dq)
@@ -97,14 +97,15 @@ def create_solver():
     ocp.cost.cost_type_e = "NONLINEAR_LS"  
 
     # Pesi Stage Cost
-    # y =  u (7)
-    # Obiettivo: Minima accelerazione (W_u alto)
-    W_u = 1e-3  
+    # y = [q, u] (14)
+    # Obiettivo: Minima posizione e accelerazione (W_q e W_u)
+    W_q = 1e-6
+    W_u = 1e-1  
     
-    # Matrice W (7x7) per y = u
-    ocp.cost.W = np.diag(np.full(7, W_u))
-   
-    ocp.cost.yref = np.zeros(7) # Target zero accelerazione
+    # Matrice W (14x14) per y = [q, u]
+    ocp.cost.W = np.diag(np.concatenate([np.full(7, W_q), np.full(7, W_u)]))
+
+    ocp.cost.yref = np.zeros(14) # Target zero posizione e accelerazione
 
     # # Pesi Terminal Cost
     # # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver

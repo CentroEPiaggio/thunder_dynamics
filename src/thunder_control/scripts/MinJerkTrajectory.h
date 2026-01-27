@@ -78,16 +78,18 @@ public:
         s.acc = 2 * c2 + 6 * c3 * dt + 12 * c4 * dt2 + 20 * c5 * dt3;
         s.jerk = 6*c3 + 24*c4*dt + 60*c5*dt2;
 
-        // 2. LOGICA FOLLOW THROUGH (Estrapolazione lineare)
-        // Se il tempo richiesto è oltre la fine (t > tf), continuiamo a muoverci
-        // con la velocità finale costante. Questo evita conflitti nel solver MPC
-        // (che altrimenti vedrebbe posizione bloccata ma velocità alta).
-        if (t > tf) {
-            double dt_extra = t - tf;
-            s.pos += s.vel * dt_extra; // Posizione avanza: q = q_f + v_f * delta_t
-            s.acc.setZero();           // Accelerazione nulla dopo il lancio
-            s.jerk.setZero();
-        }
+        // // 2. LOGICA FOLLOW THROUGH (Estrapolazione lineare)
+        // // Se il tempo richiesto è oltre la fine (t > tf), continuiamo a muoverci
+        // // con la velocità finale costante. Questo evita conflitti nel solver MPC
+        // // (che altrimenti vedrebbe posizione bloccata ma velocità alta).
+        // if (t > tf) {
+        //     double dt_extra = t - tf;
+        //     // s.pos += s.vel * dt_extra + 0.5 * s.acc * dt_extra * dt_extra; // Posizione avanza
+        //     // s.vel += s.acc * dt_extra; 
+        //     s.vel = VectorXd::Zero(s.vel.size()); // Velocità costante a zero
+        //     s.acc = VectorXd::Zero(s.acc.size());          
+        //     s.jerk.setZero();
+        // }
 
         return s;
     }
