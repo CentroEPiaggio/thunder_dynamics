@@ -13,6 +13,8 @@ namespace thunder_ns {
 		// --- Standard joint functions --- //
 		SX q_joint = SX::sym("q_joint");
 		SX axis = SX::sym("axis",3,1);
+		FunArg q_joint_arg("q_joint", q_joint);
+		FunArg axis_arg("axis", axis);
 		casadi::Slice rot(0, 3);      // [0,1,2] indexes
 		SX Ti = SX::eye(4);
 
@@ -35,7 +37,7 @@ namespace thunder_ns {
 		// Rotoidal general axis joint
 		Ti = SX::eye(4);
 		Ti(rot,rot) = R_aa(axis, q_joint);
-		if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of general rotoidal joint R", {q_joint, axis})) {
+		if (!robot->add_function("T_JOINT_R", Ti, {}, "Template transformation of general rotoidal joint R", {q_joint_arg, axis_arg})) {
 			std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
 			return 0;
 		}
@@ -43,7 +45,7 @@ namespace thunder_ns {
 		// Prismatic general axis joint
 		Ti = SX::eye(4);
 		Ti(casadi::Slice(0,3),3) = casadi::SX::mtimes(axis, q_joint);
-		if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of general prismatic joint R", {q_joint, axis})) {
+		if (!robot->add_function("T_JOINT_P", Ti, {}, "Template transformation of general prismatic joint R", {q_joint_arg, axis_arg})) {
 			std::cerr << "Error adding joint function: T_JOINT_R" << std::endl;
 			return 0;
 		}

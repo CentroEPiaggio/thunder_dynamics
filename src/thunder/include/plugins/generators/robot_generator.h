@@ -17,7 +17,7 @@ namespace thunder_ns {
 			bool COPY_GEN = false;			// used to copy generated files into thunder_robot project
 
 			int copy_to(string robot_name, string path_from, string path_conf, string path_par, string path_h, string path_cpp);
-			int update_cmake(const string from_robot, const string to_robot, const string file_path);
+			int update_template(const string from_robot, const string to_robot, const string file_path);
 
 		public:
 			RobotGenerator() : BaseGenerator("Robot Generator", "Generates an Eigen C++ library for Robot, with python bindings and casadi optional") {}

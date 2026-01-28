@@ -1,35 +1,27 @@
-✔ delete legacy @done (12/19/2025, 5:13:17 PM)
-☐ & to shared pointers in existing plugins
-	✔ kinematics @done (12/25/2025, 10:29:22 PM)
-	✔ dynamics @done (12/25/2025, 11:03:34 PM)
-	✔ regressors @done (1/7/2026, 9:49:59 AM)
-	☐ example_builder
-✔ dh_RRR does not work because the standard pipeline have kinematics @done (12/25/2025, 10:12:07 PM)
-✔ update all robots @done (12/25/2025, 10:12:09 PM)
-☐ clean thunder_test
-
 general:
+	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics
-	☐ add description for function explicit parameters
 	☐ joints with more that one dof?
 	☐ choose better names for config ("joints_type", ...)
 	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot
 	☐ robot_name not handled properly in legacy_loader, yaml have priority
-	☐ move templates to thunder/data/templates (for example the cmakelists)
+	✔ move templates to thunder/data/templates (for example the cmakelists) @done (1/16/2026, 11:19:53 AM)
 	☐ generic utils.spatial and generic wrt robot and thunder_robot
 	☐ add verbosity levels (not bool)
-	☐ substitute cout with errors or info
+	☐ substitute cout with errors or info in plugins
 	☐ decrease the dimension of generated files
 	☐ explain better stiffness and friction in readme (maybe create sections for it)
 	☐ example and robot cleaning
-	☐ better test system for thunder_robot tests. Have to handle non-existing functions! (C++ 20 and templates)
+	✔ better test system for thunder_robot tests. Have to handle non-existing functions! (C++ 20 and templates) @done (1/16/2026, 11:22:52 AM)
 	☐ only one folder for robots! not a big problem (experimental robots are into thunder src)
 	☐ add version control for config file
-	☐ create library thunder_utils that contain all that cannot be generated, best if it is useful both on thunder and thunder_robot
+	☐ generator for useful functions in thunder_robot (or add a new class <robot>_utils.h) or (read below)
+	☐ add add_C_function to insert custom functions in the generated code, needs a class CFunction to define
 	☐ test inertials of franka robots
 	
 thunder:
+	☐ create structured tests for the robot
 	console parser:
 		☐ automatically set version?
 		☐ problem if robot_name contains special characters
@@ -44,11 +36,13 @@ thunder:
 		☐ rename base parameters in casadi model expressions? (e.g. par_DYM->DYN)
 		☐ add_variable() is using add_parameter(), change?
 		☐ allow different type for parameters
-		☐ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..)
+		✔ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..) @done (1/16/2026, 11:27:18 AM)
 	kinematics:
+		☐ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links)
+		☐ 
 		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention! @done (12/25/2025, 9:52:12 PM)
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
-		☐ make a general kinematic parametrization
+		☐ make a general kinematic parametrization for trees
 		✔ maybe T_0_0 better to be T_w_o? @done (12/25/2025, 9:52:17 PM)
 	elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
@@ -72,6 +66,7 @@ thunder:
 		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
 
 thunder_robot:
+	☐ create structured tests for the generated code
 	☐ possibility to return vector of eigen from a function (example T_0(i), usefull for cycles)
 	☐ problem in thunder_robot_test when bindings are created (to add in cmakelist)
 	☐ save and load par in thunder_robot as generic functions
@@ -93,6 +88,7 @@ plugins:
 		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
 		☐ save conf that does the inverse of load? maybe it is a generator
 	builders:
+		☐ mechanism to add function that have parameters different from casadi (difficult because it is needed the function body!)
 	generators:
 		☐ add file function_arguments.yaml is case of casadi generation that tells the argument of each function
 		☐ yaml generator, from a robot it recreates the initial configuration
@@ -146,4 +142,3 @@ INFO:
 
 issues:
 	☐ error on first column of jacobian? K is always [0;0;1]? (to check)
-	☐ simplify some casadi expression?

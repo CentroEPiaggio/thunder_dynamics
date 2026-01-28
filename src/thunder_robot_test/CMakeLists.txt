@@ -32,7 +32,7 @@ target_include_directories(thunder_robot PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 find_package(yaml-cpp REQUIRED)
 find_package(Python 3.7 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 REQUIRED)
+# find_package(pybind11 REQUIRED)
 target_link_libraries(thunder_robot yaml-cpp::yaml-cpp)
 
 # Puoi aggiungere altre impostazioni di compilazione qui, se necessario

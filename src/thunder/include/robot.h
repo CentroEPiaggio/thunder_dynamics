@@ -129,7 +129,7 @@ namespace thunder_ns{
 			/// @param explicit_args Optional list of explicit symbolic variables as arguments.
 			/// @param overwrite If true, overwrites an existing function with the same name.
 			/// @return 1 if successful, 0 otherwise.
-			int add_function(string name, SX expr, vector<string> f_args, string descr = "", vector<SX> explicit_args = {}, bool overwrite = true);
+			int add_function(string name, SX expr, vector<string> f_args, string descr = "", vector<FunArg> explicit_args = {}, bool overwrite = true);
 			
 	};
 
