@@ -12,8 +12,8 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
-	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/${localWorkspaceFolderBasename},type=bind,consistency=cached", 
-	"workspaceFolder": "/home/thunder_dev/${localWorkspaceFolderBasename}",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/thunder_dynamics,type=bind,consistency=cached", 
+	"workspaceFolder": "/home/thunder_dev/thunder_dynamics",
 
 	"mounts": [
 		{"source":"${localWorkspaceFolder}/.devcontainer","target":"/commandhistory","type":"bind"}
