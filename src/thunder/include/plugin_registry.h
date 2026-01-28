@@ -15,6 +15,7 @@
 #include "plugins/loaders/dyn_loader.h"
 #include "plugins/loaders/soft_loader.h"
 #include "plugins/loaders/urdf_loader.h"
+#include "plugins/loaders/kinTree_loader.h"
 
 // - Builders - //
 #include "plugins/builders/kin_builder.h"
@@ -22,6 +23,7 @@
 #include "plugins/builders/reg_builder.h"
 #include "plugins/builders/soft_builder.h"
 #include "plugins/builders/example_builder.h"
+#include "plugins/builders/kinTree_builder.h"
 
 // - Generators - //
 #include "plugins/generators/robot_generator.h"
@@ -38,7 +40,8 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	{"kin_loader", std::make_shared<KinLoader>()},
 	{"dyn_loader", std::make_shared<DynLoader>()},
 	{"soft_loader", std::make_shared<SoftLoader>()},
-	{"urdf_loader", std::make_shared<UrdfLoader>()}
+	{"urdf_loader", std::make_shared<UrdfLoader>()},
+	{"kinTree_loader", std::make_shared<KinTreeLoader>()},
 
 };
 
@@ -52,7 +55,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"reg_builder", std::make_shared<RegBuilder>()},
 	{"soft_builder", std::make_shared<SoftBuilder>()},
 	{"example_builder", std::make_shared<ExampleBuilder>()},
-
+	{"kinTree_builder", std::make_shared<KinTreeBuilder>()},
 };
 
 /**

@@ -1,3 +1,8 @@
+☐ capisci come gestire i giunti fissi negli alberi
+☐ in casadi possono essere messe le condizioni, guarda come poterle usare.
+☐ salva tutte le trasformate come una lista (temo servano le funzioni custom)
+☐ salva come funzioni singole solo le trasformate che abbiano un flag (tipo save: true)
+
 general:
 	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics
@@ -38,8 +43,9 @@ thunder:
 		☐ allow different type for parameters
 		✔ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..) @done (1/16/2026, 11:27:18 AM)
 	kinematics:
-		☐ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links)
-		☐ 
+		☐ is pinv really usefull to compute simbolically?
+		✔ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links) @done (1/26/2026, 5:28:43 PM)
+		☐ merge joints structure with parameters in kinTree_loader
 		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention! @done (12/25/2025, 9:52:12 PM)
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization for trees
