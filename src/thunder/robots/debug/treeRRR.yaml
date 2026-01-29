@@ -1,6 +1,6 @@
 pipeline:
-  loaders:    ["kinTree_loader", "dyn_loader"]
-  builders:   ["kinTree_builder", "dyn_builder", "reg_builder"]
+  loaders:    ["kinTree_loader"] #, "dyn_loader"]
+  builders:   ["kinTree_builder"] #, "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
 version: 1.0
@@ -19,7 +19,7 @@ robot_generator:
   copy_gen:     true
 
 ############################################
-kin_loader:
+kinTree_loader:
 
   # --- Hyperparameters --- #
   # num_joints: 3
@@ -29,8 +29,8 @@ kin_loader:
 
   # Chain (each element is rigidBody+joint)
   kinematics:
-    world:
-      parent: null
+    # world:
+    #   parent: null
     base:
       parent: 'world'
       joint_type: 'R'
@@ -42,12 +42,12 @@ kin_loader:
       parent: 'base'
       joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,-1,1, *PI_2-*PI_4,0,0]
+      xyzrpy: [0,-1,1, *PI_2,0,0]
     rightArm:
       parent: 'base'
       joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,1,1, *PI_2+*PI_4,0,0]
+      xyzrpy: [0,1,1, *PI_2,0,0]
     leftEE:
       parent: 'leftArm'
       symb: [0,0,0,0,0,0]

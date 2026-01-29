@@ -11,11 +11,14 @@ namespace thunder_ns {
 		try {
 			// Local properties for parsing
 			int numJoints;
+			int ndof;
 			vector<string> jointsName;
 			vector<string> jointsType;
 			vector<string> jointsParent;
 			vector<bool> jointsAvailable;
 			vector<bool> jointsDerivatives;
+			vector<int> jointsDimension;
+			vector<vector<double>> jointsAxis;
 
 			// --- Basic Robot properties --- //
 			// // - numJoints and jointsType - //
@@ -32,24 +35,43 @@ namespace thunder_ns {
 
 			// --- Kinematics structure --- //
 			if (config_["kinematics"]) {
+				std::cout << "into kinematics" << std::endl;
 				auto kinematics = config_["kinematics"];
-				for (const auto& joint : kinematics){
+				int ndof = 0;
+				for (const auto& joint : kinematics) {
 					jointsName.push_back(joint.first.as<string>());
-					jointsType.push_back(joint.second["type"] ? joint.second["type"].as<string>() : "FIXED");
+					jointsType.push_back(joint.second["joint_type"] ? joint.second["joint_type"].as<string>() : "FIXED");
 					jointsParent.push_back(joint.second["parent"] ? joint.second["parent"].as<string>() : "world");
 					jointsAvailable.push_back(joint.second["available"] ? joint.second["available"].as<bool>() : false);
 					jointsDerivatives.push_back(joint.second["derivatives"] ? joint.second["derivatives"].as<bool>() : false);
+					jointsAxis.push_back(joint.second["axis"] ? joint.second["axis"].as<vector<double>>() : vector<double>{0,0,1});
+					int jointDof = 0;
+					if (joint.second["dimension"]) {
+						jointDof = joint.second["dimension"].as<int>();
+					} else {
+						if (jointsType.back() == "FIXED") jointDof = 0;
+						else if (jointsType.back() == "P") jointDof = 1;
+						else if (jointsType.back() == "R") jointDof = 1;
+						else if (jointsType.back() == "P_SEA") jointDof = 1;
+						else if (jointsType.back() == "R_SEA") jointDof = 1;
+						else std::cerr << "Cannot obtain the joint dimension of frame " + jointsName.back() << std::endl;
+					}
+					jointsDimension.push_back(jointDof);
+					ndof += jointDof;
 				}
 				numJoints = jointsType.size();
 				// if derivatives set available
 				for (int i=0; i<numJoints; i++) if(jointsDerivatives[i]) jointsAvailable[i]=true;
 				// add properties
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
+				robot->add_property<int>("ndof", ndof, "int", "Number of degrees of freedom", true);
 				robot->add_property<vector<string>>("jointsName", jointsName, "vector<string>", "Name of joints", true);
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 				robot->add_property<vector<string>>("jointsParent", jointsParent, "vector<string>", "Parent of joints", true);
 				robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
 				robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
+				robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
+				robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			} else {
 				debug_log("No kinematics specified in yaml file, using from other plugins", VERB_INFO);
 			}

@@ -74,6 +74,7 @@ namespace thunder_ns {
 		vector<string> jointsName = robot->get<vector<string>>("jointsName");
 		vector<string> jointsParent = robot->get<vector<string>>("jointsParent");
 		vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
+		vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
 		if (!robot->parameters.count("par_jointsAxis")){
 			debug_log("par_jointsAxis not defined in robot parameters, using Z axis for all joints", VERB_INFO);
 			vector<double> jointsAxis(3* numJoints);
@@ -104,23 +105,32 @@ namespace thunder_ns {
 		// arg_list = {"par_world2L0"};
 		// if (!robot->add_function("T_w_0", Twi[0], arg_list, "absolute transformation from frame world to base")) return 0;
 
-		for (int i = 0; i < numJoints; i++) {
+		for (int i = 0, dof_count=0; i < numJoints; i++) {
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
-			auto axis = jointsAxis(casadi::Slice(i*3, i*3+3)); 
-			Ti[i] = apply_joint(robot, frame, jointsType[i], q(i), axis);
+			auto axis = jointsAxis(casadi::Slice(i*3, i*3+3));
+			int dim = jointsDimension[i];
+			SX q_joint = q(casadi::Slice(dof_count, dof_count+dim));	// if dim == 0 Slice have dimension 1, but it do not interfere
+			dof_count += dim;
+			Ti[i] = apply_joint(robot, frame, jointsType[i], q_joint, axis);
 
-			// apply to parent
 			int parent_id = 0;
 			string parent = jointsParent[i];
-			while(jointsName[parent_id++] != parent);
-			Twi[i] = casadi::SX::mtimes({Twi[parent_id], Ti[i]});
+			if (parent == "world") {
+				Twi[i] = Ti[i];
+			} else {
+				// search parent
+				while(jointsName[parent_id++] != parent);
+				parent_id--;
+				// apply to parent
+				Twi[i] = casadi::SX::mtimes({Twi[parent_id], Ti[i]});
+			}
 			
 			// add functions
 			arg_list = {"q", "par_KIN"};
 			if (!robot->add_function("T_"+std::to_string(i), Ti[i], arg_list, "relative transformation from frame"+ std::to_string(i-1) +"to frame "+std::to_string(i))) return 0;
 			if (!robot->add_function("T_w_"+std::to_string(i), Twi[i], arg_list, "absolute transformation from frame world to frame "+std::to_string(i))) return 0;
 			if (jointsAvailable[i]) {
-				if (!robot->add_function("T_w_"+jointsName[i], Twi[i], arg_list, "absolute transformation from frame world to frame "+std::to_string(i))) return 0;
+				if (!robot->add_function("T_w_"+jointsName[i], Twi[i], arg_list, "absolute transformation from frame world to frame "+jointsName[i])) return 0;
 			}
 		}
 
