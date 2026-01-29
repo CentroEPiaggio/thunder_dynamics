@@ -1,4 +1,5 @@
-☐ test della cinamatica del robot generato
+✔ finisci di aggiustare numJoints in ndof in kinTree_loader @done (1/29/2026, 9:35:55 PM)
+✔ test della cinamatica del robot generato, problema di dimensioni da qualche parte @done (1/29/2026, 9:35:59 PM)
 ☐ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf.
 ☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
 ✔ nonexisting parent mean world @done (1/29/2026, 10:32:04 AM)
@@ -9,7 +10,7 @@
 ☐ capisci come gestire i giunti fissi negli alberi
 ☐ in casadi possono essere messe le condizioni, guarda come poterle usare.
 ☐ salva tutte le trasformate come una lista (temo servano le funzioni custom)
-☐ salva come funzioni singole solo le trasformate che abbiano un flag (tipo save: true)
+✔ salva come funzioni singole solo le trasformate che abbiano un flag (tipo save: true) @done (1/29/2026, 5:34:50 PM)
 
 general:
 	☐ delete boost dependency

@@ -42,12 +42,12 @@ kinTree_loader:
       parent: 'base'
       joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,-1,1, *PI_2,0,0]
+      xyzrpy: [0,1,1, *PI_2,0,0]
     rightArm:
       parent: 'base'
       joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,1,1, *PI_2,0,0]
+      xyzrpy: [0,-1,1, *PI_2,0,0]
     leftEE:
       parent: 'leftArm'
       symb: [0,0,0,0,0,0]

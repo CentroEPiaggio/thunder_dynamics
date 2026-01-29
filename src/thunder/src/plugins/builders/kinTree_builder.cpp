@@ -149,6 +149,7 @@ namespace thunder_ns {
 
 		// parameters from robot
 		int nj = robot->get<int>("numJoints");
+		int ndof = robot->get<int>("ndof");
 		vector<string> jointsName = robot->get<vector<string>>("jointsName");
 		vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
 		
@@ -158,9 +159,9 @@ namespace thunder_ns {
 		// auto par_Ln2EE = robot->get_model("par_Ln2EE");
 		
 		// computing jacobians
-		casadi::SXVector Ji_v(nj+1);   // vector of matrix Ji_v + EE
-		casadi::SXVector Ji_w(nj+1);   // vector of matrix Ji_w + EE
-		casadi::SXVector Ji(nj+1);		// complete jacobian
+		casadi::SXVector Ji_v(nj);   // vector of matrix Ji_v + EE
+		casadi::SXVector Ji_w(nj);   // vector of matrix Ji_w + EE
+		casadi::SXVector Ji(nj);		// complete jacobian
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
@@ -173,10 +174,10 @@ namespace thunder_ns {
 				SX d_0_i = T_wi(r_tra_idx, 3);
 				SX R_0_i = T_wi(r_rot_idx, r_rot_idx);
 				SX Ji_pos = SX::jacobian(d_0_i, q);
-				SX Ji_or(3, nj);
+				SX Ji_or(3, ndof);
 
 				// Loop over joints and build columns
-				for (int j=0; j<nj; ++j) {
+				for (int j=0; j<ndof; ++j) {
 					// Partial derivative dR/dq_j  (3x3)
 					SX dR_dqj = SX::jacobian(SX::reshape(R_0_i, 9, 1), q(j));
 					dR_dqj = SX::reshape(dR_dqj, 3, 3);

@@ -12,13 +12,15 @@
 // #include <yaml-cpp/yaml.h>
 
 // #include "thunder_robot.h"
-#include "thunder_RRR.h"
+// #include "thunder_RRR.h"
+#include "thunder_treeRRR.h"
 // #include "thunder_franka.h"
 // #include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-const std::string par_file = "../robots/RRR_par.yaml";
+// const std::string par_file = "../robots/RRR_par.yaml";
+const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
@@ -75,10 +77,60 @@ struct Tester {
 		}
 	}
 
-	string get_T_w_ee() {
-		if constexpr (requires (T& x) { x.get_T_w_ee(); }) {
+	int get_ndof() {
+		if constexpr (requires (T& x) { x.ndof; }) {
+			return robot.ndof;
+		} else {
+			return 0;
+		}
+	}
+
+	string get_T_w_i() {
+		// if constexpr (requires (T& x) { x.get_T_w_ee(); }) {
+		// 	std::stringstream ss;
+		// 	ss << robot.get_T_w_ee();
+		// 	return ss.str();
+		// } else {
+		// 	return "not defined!";
+		// }
+		if constexpr (requires (T& x) { x.get_T_w_0(); }) {
 			std::stringstream ss;
-			ss << robot.get_T_w_ee();
+			ss << "T_w_0: " << endl << robot.get_T_w_0();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+		if constexpr (requires (T& x) { x.get_T_w_1(); }) {
+			std::stringstream ss;
+			ss << "T_w_1: " << endl << robot.get_T_w_1();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+		if constexpr (requires (T& x) { x.get_T_w_2(); }) {
+			std::stringstream ss;
+			ss << "T_w_2: " << endl << robot.get_T_w_2();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+		if constexpr (requires (T& x) { x.get_T_w_3(); }) {
+			std::stringstream ss;
+			ss << "T_w_3: " << endl << robot.get_T_w_3();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+		if constexpr (requires (T& x) { x.get_T_w_4(); }) {
+			std::stringstream ss;
+			ss << "T_w_4: " << endl << robot.get_T_w_4();
+			return ss.str();
+		} else {
+			return "not defined!";
+		}
+		if constexpr (requires (T& x) { x.get_T_w_5(); }) {
+			std::stringstream ss;
+			ss << "T_w_5: " << endl << robot.get_T_w_5();
 			return ss.str();
 		} else {
 			return "not defined!";
@@ -179,7 +231,7 @@ struct Tester {
 
 int main(){
 
-	Tester<thunder_RRR> robot;
+	Tester<thunder_treeRRR> robot;
 	cout << "Robot: " << robot.get_name() << endl;
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
@@ -192,12 +244,13 @@ int main(){
 
 	// robot.load_par(par_file);
 	const int NJ = robot.get_numJoints();
+	const int NDOF = robot.get_ndof();
 
 	/* Test */
-	VectorXd q(NJ);
-	VectorXd dq(NJ);
-	VectorXd dqr(NJ);
-	VectorXd ddqr(NJ);
+	VectorXd q(NDOF);
+	VectorXd dq(NDOF);
+	VectorXd dqr(NDOF);
+	VectorXd ddqr(NDOF);
 
 	q.setRandom();
 	dq.setRandom();
@@ -210,7 +263,11 @@ int main(){
 
 	cout << "#################" << endl <<
 			"### Functions ###" << endl <<
-			"#################" << endl << endl << robot.get_MCGY() << endl;
+			"#################" << endl << endl;
+	
+	cout << robot.get_T_w_i() << endl << endl;
+
+	cout << robot.get_MCGY() << endl << endl;
 
 	// Vector<double,1> q_joint;
 	// q_joint << 1.5;
@@ -268,9 +325,9 @@ int main(){
 	// 	Eigen::MatrixXd K(NEJ, 1);
 	// 	Eigen::MatrixXd D(NEJ, 1);
 	// 	Eigen::MatrixXd Dm(NEJ, 1);
-	// 	Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
-	// 	Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
-	// 	Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
+	// 	Eigen::MatrixXd reg_K(NDOF, N_PARAM_K);
+	// 	Eigen::MatrixXd reg_D(NDOF, N_PARAM_D);
+	// 	Eigen::MatrixXd reg_Dm(NDOF, N_PARAM_DM);
 
 	// 	par_K = robot.get_par_K();
 	// 	par_D = robot.get_par_D();

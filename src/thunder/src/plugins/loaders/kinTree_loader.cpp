@@ -37,7 +37,7 @@ namespace thunder_ns {
 			if (config_["kinematics"]) {
 				std::cout << "into kinematics" << std::endl;
 				auto kinematics = config_["kinematics"];
-				int ndof = 0;
+				ndof = 0;
 				for (const auto& joint : kinematics) {
 					jointsName.push_back(joint.first.as<string>());
 					jointsType.push_back(joint.second["joint_type"] ? joint.second["joint_type"].as<string>() : "FIXED");
@@ -61,7 +61,7 @@ namespace thunder_ns {
 				}
 				numJoints = jointsType.size();
 				// if derivatives set available
-				for (int i=0; i<numJoints; i++) if(jointsDerivatives[i]) jointsAvailable[i]=true;
+				for (int i=0; i<numJoints; i++) if (jointsDerivatives[i]) jointsAvailable[i]=true;
 				// add properties
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 				robot->add_property<int>("ndof", ndof, "int", "Number of degrees of freedom", true);
@@ -79,11 +79,11 @@ namespace thunder_ns {
 
 			// --- Variables --- //
 			// - Normal joints - //
-			robot->add_variable("q", SX::sym("q",numJoints,1), vector<double>(numJoints,0), {1}, "Configuration", true);
-			robot->add_variable("dq", SX::sym("dq",numJoints,1), vector<double>(numJoints,0), {1}, "Velocity", true);
-			robot->add_variable("ddq", SX::sym("ddq",numJoints,1), vector<double>(numJoints,0), {1}, "Acceleration", true);
-			robot->add_variable("d3q", SX::sym("d3q",numJoints,1), vector<double>(numJoints,0), {1}, "Jerk", true);
-			robot->add_variable("d4q", SX::sym("d4q",numJoints,1), vector<double>(numJoints,0), {1}, "Snap", true);
+			robot->add_variable("q", SX::sym("q",ndof,1), vector<double>(ndof,0), {1}, "Configuration", true);
+			robot->add_variable("dq", SX::sym("dq",ndof,1), vector<double>(ndof,0), {1}, "Velocity", true);
+			robot->add_variable("ddq", SX::sym("ddq",ndof,1), vector<double>(ndof,0), {1}, "Acceleration", true);
+			robot->add_variable("d3q", SX::sym("d3q",ndof,1), vector<double>(ndof,0), {1}, "Jerk", true);
+			robot->add_variable("d4q", SX::sym("d4q",ndof,1), vector<double>(ndof,0), {1}, "Snap", true);
 
 
 			// --- Kinematics parameters --- //
