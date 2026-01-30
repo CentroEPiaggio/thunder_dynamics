@@ -130,7 +130,9 @@ int main()
         if (time_to_go > t_hor_lim)
         {
             planner.init(q_curr, q_final, dq_curr, dq_final, ddq_opt, ddq_final, t_curr, t_end);
-            trajs_file << t_curr;
+        }
+
+        trajs_file << t_curr;
 
             // 1. 21 valori per la MinJerk 
             for (int i = 0; i <= N_HORIZON; i++)
@@ -149,6 +151,10 @@ int main()
             }
             trajs_file << "\n";
 
+        // --- C. AGGIORNAMENTO MPC STAGE COST/CONSTRAINTS ---
+        if (time_to_go > t_hor_lim)
+        {
+            // FASE DI MOVIMENTO
             for (int i = 0; i <= N_HORIZON; i++)
             {
                 double ti = t_curr + i * dt_mpc_node;

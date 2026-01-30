@@ -37,7 +37,7 @@ def run_plot():
     t_real_full = np.arange(len(q_real_full)) * dt_sim
 
     # Setup Plot
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(24, 14))
 
     # --- ELEMENTI DINAMICI ---
     (line_real,) = ax.plot([], [], "b-", linewidth=2, label="Traiettoria Reale (Sim)")
@@ -124,7 +124,36 @@ def run_plot():
 
     def toggle_pause(event):
         nonlocal paused
-        # Controllo se l'evento è un tasto o un click mouse
+
+        # Gestione uscita con ESC
+        if event.name == "key_press_event" and event.key == "escape":
+            plt.close(fig)
+            return
+
+        # 2. 'r' per Restart
+        if event.name == "key_press_event" and event.key == "r":
+            # Ferma l'animazione corrente
+            ani.event_source.stop()
+
+            # Resetta l'iteratore dei frame all'inizio
+            ani.frame_seq = ani.new_frame_seq()
+
+            # Pulisce le linee dal grafico (opzionale ma pulito)
+            line_real.set_data([], [])
+            line_mj.set_data([], [])
+            line_mpc.set_data([], [])
+            dot_current.set_data([], [])
+
+            # Resetta stato pausa e titolo
+            paused = False
+            ax.set_title("Analisi MPC (Restarted)")
+
+            # Riavvia
+            ani.event_source.start()
+            plt.draw()
+            return
+
+        # Controllo se l'evento è SPAZIO o CLICK mouse
         if (event.name == "key_press_event" and event.key == " ") or (
             event.name == "button_press_event"
         ):
