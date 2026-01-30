@@ -1,6 +1,12 @@
 import casadi as ca
 import numpy as np
-from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
+from acados_template import (
+    AcadosOcp,
+    AcadosOcpSolver,
+    AcadosModel,
+    AcadosSimSolver,
+    AcadosSim,
+)
 import os
 
 # ===================== PATHS =====================
@@ -52,31 +58,13 @@ def export_clean_model():
 
     # Aggiungiamo la coppia ai vincoli algebrici (h)
     model.con_h_expr = tau_expr
-    
-    # error = ca.SX.sym("error", x.size1())
-    # error[0] = x[0] - x_final[0]
-    # error[1] = x[1] - x_final[1]
-    # error[2] = x[2] - x_final[2]
-    # error[3] = x[3] - x_final[3]
-    # error[4] = x[4] - x_final[4]
-    # error[5] = x[5] - x_final[5]
-    # error[6] = x[6] - x_final[6]
-    # error[7] = x[7] - x_final[7]
-    # error[8] = x[8] - x_final[8]
-    # error[9] = x[9] - x_final[9]
-    # error[10] = x[10] - x_final[10]
-    # error[11] = x[11] - x_final[11]
-    # error[12] = x[12] - x_final[12]
-    # error[13] = x[13] - x_final[13]
-    # Nessun vincolo h terminale (la coppia a fine traiettoria è determinata dallo stato finale, di solito fermo)
-    # model.con_h_expr_e = ca.SX.zeros(14)
 
     # --- FUNZIONE DI COSTO ---
     # y = [q, u] -> Minimizziamo posizione e accelerazione
-    model.cost_y_expr = ca.vertcat(q, u)
+    model.cost_y_expr = ca.vertcat(q, dq, u)
     
-    # # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
-    # model.cost_y_expr_e = ca.vertcat(q, dq)
+    # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
+    model.cost_y_expr_e = ca.vertcat(q, dq)
 
     return model
 
@@ -88,29 +76,34 @@ def create_solver():
 
     # --- SETUP ORARIO ---
     N = 20
-    Tf = 5.0 # Verrà sovrascritto dal tuo Shrinking Horizon in C++
+    Tf = 5.0 # Verrà sovrascritto dallo Shrinking Horizon in C++
     ocp.dims.N = N
     ocp.solver_options.tf = Tf
 
     # --- COSTI ---
     ocp.cost.cost_type = "NONLINEAR_LS"
-    ocp.cost.cost_type_e = "NONLINEAR_LS"  
+    ocp.cost.cost_type_e = "NONLINEAR_LS"
 
     # Pesi Stage Cost
     # y = [q, u] (14)
     # Obiettivo: Minima posizione e accelerazione (W_q e W_u)
     W_q = 1e-6
-    W_u = 1e-1  
-    
-    # Matrice W (14x14) per y = [q, u]
-    ocp.cost.W = np.diag(np.concatenate([np.full(7, W_q), np.full(7, W_u)]))
+    W_dq = 1e-6
+    W_u = 1e-1
 
-    ocp.cost.yref = np.zeros(14) # Target zero posizione e accelerazione
+    # Matrice W (21x21) per y = [q, dq, u]
+    W_diag = np.concatenate([np.full(7, W_q), np.full(7, W_dq), np.full(7, W_u)])
+    ocp.cost.W = np.diag(W_diag)
 
-    # # Pesi Terminal Cost
-    # # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver
-    # ocp.cost.W_e = np.eye(14) * 1000.0 # Peso alto su tutto lo stato finale
-    # ocp.cost.yref_e = np.zeros(14) # Verrà aggiornato in C++
+    ocp.cost.yref = np.zeros(21) # Target zero posizione e accelerazione
+
+    # Pesi Terminal Cost
+    W_q_e = 1e5
+    W_dq_e = 1e3
+    # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver
+    W_diag_e = np.concatenate([np.full(7, W_q_e), np.full(7, W_dq_e)])
+    ocp.cost.W_e = np.diag(W_diag_e) # Peso alto su tutto lo stato finale
+    ocp.cost.yref_e = np.zeros(14) # Verrà aggiornato in C++
 
     # --- VINCOLI ---
     
@@ -162,7 +155,7 @@ def create_solver():
     ocp.solver_options.levenberg_marquardt = 1e-3
     
     ocp.solver_options.sim_method_num_stages = 4
-    ocp.solver_options.sim_method_num_steps = 5
+    ocp.solver_options.sim_method_num_steps = 20
 
     # Parametri iniziali (nessuno ora, ma Acados li vuole se definiti nel model)
     # Nota: nel model clean non ho definito model.p, quindi non serve parameter_values
@@ -172,6 +165,19 @@ def create_solver():
     # Crea JSON e genera codice
     AcadosOcpSolver(ocp, json_file="acados_track.json")
     print("Codice generato con successo in c_generated_code_tracking")
+
+    # --- GENERAZIONE SIMULATORE ---
+    sim = AcadosSim()
+    sim.model = model
+    sim.code_export_directory = ocp.code_export_directory
+    sim.solver_options.T = 0.001  # Deve matchare dt_sim in C++
+    sim.solver_options.integrator_type = "ERK"
+    sim.solver_options.num_stages = 4
+    sim.solver_options.num_steps = 1
+
+    AcadosSimSolver(sim, json_file="acados_sim_frankino.json")
+    print("Codice SIMULATORE generato con successo.")
+
 
 if __name__ == "__main__":
     create_solver()
