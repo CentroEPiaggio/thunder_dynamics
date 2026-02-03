@@ -86,55 +86,38 @@ struct Tester {
 	}
 
 	string get_T_w_i() {
-		// if constexpr (requires (T& x) { x.get_T_w_ee(); }) {
-		// 	std::stringstream ss;
-		// 	ss << robot.get_T_w_ee();
-		// 	return ss.str();
-		// } else {
-		// 	return "not defined!";
-		// }
+		std::stringstream ss;
 		if constexpr (requires (T& x) { x.get_T_w_0(); }) {
-			std::stringstream ss;
-			ss << "T_w_0: " << endl << robot.get_T_w_0();
-			return ss.str();
+			ss << "T_w_0: " << endl << robot.get_T_w_0() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_0 not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_T_w_1(); }) {
-			std::stringstream ss;
-			ss << "T_w_1: " << endl << robot.get_T_w_1();
-			return ss.str();
+			ss << "T_w_1: " << endl << robot.get_T_w_1() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_1 not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_T_w_2(); }) {
-			std::stringstream ss;
-			ss << "T_w_2: " << endl << robot.get_T_w_2();
-			return ss.str();
+			ss << "T_w_2: " << endl << robot.get_T_w_2() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_2 not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_T_w_3(); }) {
-			std::stringstream ss;
-			ss << "T_w_3: " << endl << robot.get_T_w_3();
-			return ss.str();
+			ss << "T_w_3: " << endl << robot.get_T_w_3() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_3 not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_T_w_4(); }) {
-			std::stringstream ss;
-			ss << "T_w_4: " << endl << robot.get_T_w_4();
-			return ss.str();
+			ss << "T_w_4: " << endl << robot.get_T_w_4() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_4 not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_T_w_5(); }) {
-			std::stringstream ss;
-			ss << "T_w_5: " << endl << robot.get_T_w_5();
-			return ss.str();
+			ss << "T_w_5: " << endl << robot.get_T_w_5() << endl << endl;
 		} else {
-			return "not defined!";
+			ss << "T_w_5 not defined!" << endl << endl;
 		}
+		return ss.str();
 	}
 
 	string get_J_ee() {
@@ -267,7 +250,7 @@ int main(){
 	
 	cout << robot.get_T_w_i() << endl << endl;
 
-	cout << robot.get_MCGY() << endl << endl;
+	cout << robot.get_MCGY() << endl << endl; 
 
 	// Vector<double,1> q_joint;
 	// q_joint << 1.5;
