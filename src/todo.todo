@@ -1,13 +1,20 @@
+✔ test friction parameters @done (2/4/2026, 9:14:54 PM)
+☐ test dynamic parameters
+✔ i parametri Dl hanno la stessa dimensione di numJoints, quindi anche quelli fissi. Non bello ma più semplice. Inizializzati a zero e simbolici a zero, quindi non danno noia nel generato. @done (2/4/2026, 8:07:57 AM)
+trova un modo di gestire i giunti fissi nella dinamica:
+	☐ preferred: numJoints è il numero di giunti, anche quelli fissi. E' il costruttore dinamico che raggruppa sulla base dei fissi
+	☐ se ripartisco i parametri sui giunti mobili ho par_DYN che ha dimensioni incoerenti sia con numJoints che ndof
+	☐ se elimino i giunti fissi devo stare attento a ripartire tutto nel modo corretto
 ✔ finisci di aggiustare numJoints in ndof in kinTree_loader @done (1/29/2026, 9:35:55 PM)
 ✔ test della cinamatica del robot generato, problema di dimensioni da qualche parte @done (1/29/2026, 9:35:59 PM)
 ☐ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf.
 ☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
 ✔ nonexisting parent mean world @done (1/29/2026, 10:32:04 AM)
-☐ attenzione che ora ndof è la dimensione di q, numJoints è il numero di giunti
+☐ attenzione che ora ndof è la dimensione di q, numJoints è il numero di giunti (anche fissi)
 ☐ migliora la gestione dei giunti, forse meglio avere un vector di SX e ogni giunto prendo un elemento dell'array
 ✔ aggiungi dimensione giunti per giunti fissi che hanno dimensione 0 @done (1/28/2026, 5:40:52 PM)
 ✔ probabilmente c'è un problema in get_value_str per i vector<vector<double>> degli assi dei giunti @done (1/29/2026, 10:32:57 AM)
-☐ capisci come gestire i giunti fissi negli alberi
+✔ capisci come gestire i giunti fissi negli alberi @done (2/3/2026, 8:24:13 AM)
 ☐ in casadi possono essere messe le condizioni, guarda come poterle usare.
 ☐ salva tutte le trasformate come una lista (temo servano le funzioni custom)
 ✔ salva come funzioni singole solo le trasformate che abbiano un flag (tipo save: true) @done (1/29/2026, 5:34:50 PM)

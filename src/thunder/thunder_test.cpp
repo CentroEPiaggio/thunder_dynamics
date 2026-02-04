@@ -48,8 +48,9 @@ int main(){
 
 	// std::string legacy_robot_conf = "../robots/debug/legacy_RRR.yaml";
 	// std::string new_robot_conf = "../robots/debug/RRR.yaml";
+	std::string new_robot_conf = "../robots/debug/treeRRR.yaml";
 	// std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
-	std::string new_robot_conf = "../robots/debug/seaRRR.yaml";
+	// std::string new_robot_conf = "../robots/debug/seaRRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
@@ -127,11 +128,12 @@ int main(){
 	// cout << "q: " << robot->get("q") << endl;
 
 	// /* Matrices declaration*/
-	// casadi::DM par_DYN(robot->get("par_DYN"));
-	// casadi::DM par_REG(robot->get("par_REG"));
-	// casadi::DM dyn2reg(robot->get("dyn2reg"));
-	// casadi::DM reg2dyn(robot->get("reg2dyn"));
-	// casadi::DM par_Dl(robot->get("par_Dl"));
+	casadi::DM par_DYN(robot->get("par_DYN"));
+	casadi::DM par_REG(robot->get("par_REG"));
+	casadi::DM dyn2reg(robot->get("dyn2reg"));
+	casadi::DM reg2dyn(robot->get("reg2dyn"));
+	casadi::DM par_Dl(robot->get("par_Dl"));
+	casadi::SX par_Dl_symb(robot->get_model("par_Dl"));
 	// casadi::DM par_K(robot->get("par_K"));
 	// casadi::DM par_D(robot->get("par_D"));
 	// casadi::DM par_Dm(robot->get("par_Dm"));
@@ -161,11 +163,12 @@ int main(){
 	// casadi::DM tau_cmd_regMat(NJ, 1);
 
 	// cout<<"par_DHtable:"<<endl<<par_DHtable<<endl<<endl;
-	// cout<<"par_DYN:"<<endl<<par_DYN<<endl<<endl;
-	// cout<<"par_REG:"<<endl<<par_REG<<endl<<endl;
-	// cout<<"dyn2reg:"<<endl<<dyn2reg<<endl<<endl;
-	// cout<<"reg2dyn:"<<endl<<reg2dyn<<endl<<endl;
-	// cout<<"par_Dl:"<<endl<<par_Dl<<endl<<endl;
+	cout<<"par_DYN:"<<endl<<par_DYN<<endl<<endl;
+	cout<<"par_REG:"<<endl<<par_REG<<endl<<endl;
+	cout<<"dyn2reg:"<<endl<<dyn2reg<<endl<<endl;
+	cout<<"reg2dyn:"<<endl<<reg2dyn<<endl<<endl;
+	cout<<"par_Dl:"<<endl<<par_Dl<<endl<<endl;
+	cout<<"par_Dl symb:"<<endl<<par_Dl_symb<<endl<<endl;
 	// cout<<"par_K:"<<endl<<par_K<<endl<<endl;
 	// cout<<"par_D:"<<endl<<par_D<<endl<<endl;
 	// cout<<"par_Dm:"<<endl<<par_Dm<<endl<<endl;

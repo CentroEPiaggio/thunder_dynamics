@@ -16,6 +16,7 @@
 #include "plugins/loaders/soft_loader.h"
 #include "plugins/loaders/urdf_loader.h"
 #include "plugins/loaders/kinTree_loader.h"
+#include "plugins/loaders/dynTree_loader.h"
 
 // - Builders - //
 #include "plugins/builders/kin_builder.h"
@@ -42,7 +43,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	{"soft_loader", std::make_shared<SoftLoader>()},
 	{"urdf_loader", std::make_shared<UrdfLoader>()},
 	{"kinTree_loader", std::make_shared<KinTreeLoader>()},
-
+	{"dynTree_loader", std::make_shared<DynTreeLoader>()},
 };
 
 /**
@@ -56,6 +57,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"soft_builder", std::make_shared<SoftBuilder>()},
 	{"example_builder", std::make_shared<ExampleBuilder>()},
 	{"kinTree_builder", std::make_shared<KinTreeBuilder>()},
+	// {"dynTree_builder", std::make_shared<dynTreeBuilder>()},
 };
 
 /**
