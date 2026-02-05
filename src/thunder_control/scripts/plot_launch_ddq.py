@@ -7,13 +7,10 @@ import numpy as np
 # Percorso del file CSV
 csv_path = '/home/thunder_dev/thunder_dynamics/src/thunder_control/build/simulation_data.csv'
 
-# Se vuoi testarlo nella cartella corrente, scommenta la riga sotto:
-# csv_path = 'simulation_data.csv'
-
 # Passo di campionamento (Time Step)
 DT = 0.001 
 
-# --- CONTROLLI PRELIMINARI ---
+# --- CONTROLLI PRELIMINARI --- 
 if not os.path.exists(csv_path):
     print(f"Errore: Non trovo il file in: {csv_path}")
     print("Controlla il percorso o esegui la simulazione.")

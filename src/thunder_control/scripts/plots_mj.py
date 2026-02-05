@@ -31,6 +31,10 @@ def run_plot():
     # 2. OTTIMIZZAZIONE: Conversione in NumPy Arrays
     data_ref_np = df_ref.values
     q_real_full = df_real.iloc[:, 0].values
+    
+    # --- CALCOLO DINAMICO DEL TEMPO FINALE ---
+    t_end_sim = data_ref_np[-1, 0] 
+    x_limit = t_end_sim * 1.1
 
     # Pre-calcolo asse temporale reale
     dt_sim = 0.001
@@ -55,7 +59,7 @@ def run_plot():
         q_mpc_fixed = row_fixed[N_HORIZON + 2 :]
 
         # Calcolo asse temporale per questa specifica predizione
-        time_to_go_fixed = max(5.0 - t_sim_fixed, 0.02)
+        time_to_go_fixed = max(t_end_sim - t_sim_fixed, 0.02)
         dt_node_fixed = time_to_go_fixed / N_HORIZON
         t_horizon_fixed = t_sim_fixed + np.arange(N_HORIZON + 1) * dt_node_fixed
 
@@ -76,10 +80,10 @@ def run_plot():
     ax.grid(True, alpha=0.3)
 
     # Limiti assi
-    ax.set_xlim(0, 5.5)
-    y_min = q_real_full.min() - 0.1
-    y_max = q_real_full.max() + 0.3
-    ax.set_ylim(y_min, y_max)
+    ax.set_xlim(0, x_limit)
+    y_min = min(q_real_full.min(), data_ref_np[:, 1:].min())
+    y_max = max(q_real_full.max(), data_ref_np[:, 1:].max())
+    ax.set_ylim(y_min - 0.1, y_max + 0.1)
 
     frames_indices = range(0, len(data_ref_np), SPEED_UP_FACTOR)
     last_t_sim = [0.0]  
@@ -91,7 +95,7 @@ def run_plot():
         q_mj = row[1 : N_HORIZON + 2]
         q_mpc = row[N_HORIZON + 2 :]
 
-        time_to_go = max(5.0 - t_sim, 0.02)
+        time_to_go = max(t_end_sim - t_sim, 0.02)
         dt_node = time_to_go / N_HORIZON
         t_horizon = t_sim + np.arange(N_HORIZON + 1) * dt_node
 

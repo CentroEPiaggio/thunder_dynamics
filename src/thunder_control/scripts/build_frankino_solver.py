@@ -29,12 +29,13 @@ def export_clean_model():
     # Stato: x = [q, dq] (14 elementi)
     q = ca.SX.sym("q", 7)
     dq = ca.SX.sym("dq", 7)
+    Tf = ca.SX.sym("Tf", 1)
     x = ca.vertcat(q, dq)
 
     # Input: u = ddq (7 elementi)
     ddq = ca.SX.sym("ddq", 7)
     u = ddq
-    
+
     # x_final = ca.SX.sym("p_obs", x.size1())
     # model.p = x_final
 
@@ -42,9 +43,8 @@ def export_clean_model():
     model.x = x
     model.u = u
     # x_dot = [dq, u]
-    model.f_expl_expr = ca.vertcat(dq, u)
-    
-    
+    model.f_expl_expr = Tf * ca.vertcat(dq, u)
+    model.p = Tf
 
     # --- CALCOLO COPPIA (Vincolo Fisico) ---
     # Tau = M(q)*u + C(q,dq)*dq + G(q)
@@ -62,7 +62,6 @@ def export_clean_model():
     # --- FUNZIONE DI COSTO ---
     # y = [q, u] -> Minimizziamo posizione e accelerazione
     model.cost_y_expr = ca.vertcat(q, dq, u)
-    
     # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
     model.cost_y_expr_e = ca.vertcat(q, dq)
 
@@ -76,9 +75,9 @@ def create_solver():
 
     # --- SETUP ORARIO ---
     N = 20
-    Tf = 5.0 # Verrà sovrascritto dallo Shrinking Horizon in C++
-    ocp.dims.N = N
-    ocp.solver_options.tf = Tf
+    ocp.solver_options.N_horizon = N
+    ocp.dims.np = 1
+    ocp.solver_options.tf = 1.0
 
     # --- COSTI ---
     ocp.cost.cost_type = "NONLINEAR_LS"
@@ -95,18 +94,17 @@ def create_solver():
     W_diag = np.concatenate([np.full(7, W_q), np.full(7, W_dq), np.full(7, W_u)])
     ocp.cost.W = np.diag(W_diag)
 
-    ocp.cost.yref = np.zeros(21) # Target zero posizione e accelerazione
+    ocp.cost.yref = np.zeros(21)  # Target zero posizione e accelerazione
 
     # Pesi Terminal Cost
     W_q_e = 1e5
     W_dq_e = 1e3
     # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver
     W_diag_e = np.concatenate([np.full(7, W_q_e), np.full(7, W_dq_e)])
-    ocp.cost.W_e = np.diag(W_diag_e) # Peso alto su tutto lo stato finale
-    ocp.cost.yref_e = np.zeros(14) # Verrà aggiornato in C++
+    ocp.cost.W_e = np.diag(W_diag_e)  # Peso alto su tutto lo stato finale
+    ocp.cost.yref_e = np.zeros(14)  # Verrà aggiornato in C++
 
     # --- VINCOLI ---
-    
     # Limiti Fisici Giunti
     q_max = np.array([2.89, 1.76, 2.89, -0.06, 2.89, 3.75, 2.89])
     q_min = np.array([-2.89, -1.76, -2.89, -3.07, -2.89, -0.01, -2.89])
@@ -129,14 +127,12 @@ def create_solver():
     # 3. Torque Bounds (h) - Solo Stage Constraints
     ocp.constraints.lh = np.full(7, -tau_lim)
     ocp.constraints.uh = np.full(7, +tau_lim)
-    
     # 4. HARD CONSTRAINTS TERMINALI (Cruciale per la tua richiesta)
     # Definiamo che all'ultimo nodo (N), TUTTI gli stati (q, dq) sono vincolati.
     # In Python mettiamo dummy values. In C++ aggiornerai lbx_e e ubx_e con il target.
-    ocp.constraints.idxbx_e = np.arange(14) 
+    ocp.constraints.idxbx_e = np.arange(14)
     ocp.constraints.lbx_e = np.zeros(14)
     ocp.constraints.ubx_e = np.zeros(14)
-    
     # ocp.constraints.lh_e = np.zeros(14)
     # ocp.constraints.uh_e = np.zeros(14)
 
@@ -144,8 +140,8 @@ def create_solver():
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM"
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP" # SQP standard o SQP_RTI
-    
+    ocp.solver_options.nlp_solver_type = "SQP"  # SQP standard o SQP_RTI
+
     # Per Hard Constraints terminali, a volte serve più iterazioni o tolleranze diverse
     ocp.solver_options.qp_solver_iter_max = 50
     ocp.solver_options.nlp_solver_max_iter = 100
@@ -153,13 +149,13 @@ def create_solver():
 
     # Levenberg-Marquardt aiuta se l'Hessiana diventa singolare
     ocp.solver_options.levenberg_marquardt = 1e-3
-    
+
     ocp.solver_options.sim_method_num_stages = 4
-    ocp.solver_options.sim_method_num_steps = 20
+    ocp.solver_options.sim_method_num_steps = 5
 
     # Parametri iniziali (nessuno ora, ma Acados li vuole se definiti nel model)
     # Nota: nel model clean non ho definito model.p, quindi non serve parameter_values
-    # ocp.parameter_values = np.zeros(14)
+    ocp.parameter_values = np.array([1.0])
     ocp.constraints.x0 = np.zeros(14)
 
     # Crea JSON e genera codice
@@ -169,11 +165,12 @@ def create_solver():
     # --- GENERAZIONE SIMULATORE ---
     sim = AcadosSim()
     sim.model = model
+    sim.parameter_values = ocp.parameter_values
     sim.code_export_directory = ocp.code_export_directory
     sim.solver_options.T = 0.001  # Deve matchare dt_sim in C++
     sim.solver_options.integrator_type = "ERK"
     sim.solver_options.num_stages = 4
-    sim.solver_options.num_steps = 1
+    sim.solver_options.num_steps = 5
 
     AcadosSimSolver(sim, json_file="acados_sim_frankino.json")
     print("Codice SIMULATORE generato con successo.")
@@ -181,4 +178,3 @@ def create_solver():
 
 if __name__ == "__main__":
     create_solver()
-    
