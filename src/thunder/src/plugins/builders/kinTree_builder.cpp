@@ -72,7 +72,7 @@ namespace thunder_ns {
 		auto numJoints = robot->get<int>("numJoints");
 		vector<string> jointsType = robot->get<vector<string>>("jointsType");
 		vector<string> jointsName = robot->get<vector<string>>("jointsName");
-		vector<string> jointsParent = robot->get<vector<string>>("jointsParent");
+		vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
 		vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
 		if (!robot->parameters.count("par_jointsAxis")){
@@ -112,16 +112,15 @@ namespace thunder_ns {
 			SX q_joint = q(casadi::Slice(dof_count, dof_count+dim));	// if dim == 0 Slice have dimension 1, but it do not interfere
 			dof_count += dim;
 			Ti[i] = apply_joint(robot, frame, jointsType[i], q_joint, axis);
+			std::cout << "axis: " << axis << std::endl;
+			std::cout << "q_joint: " << q_joint << std::endl;
+			std::cout << "dim: " << dim << std::endl;
+			std::cout << "Ti[i]: " << Ti[i] << std::endl;
 
-			int parent_id = 0;
-			string parent = jointsParent[i];
-			if (parent == "world") {
+			int parent_id = jointsParent[i];
+			if (parent_id == -1) {
 				Twi[i] = Ti[i];
 			} else {
-				// search parent
-				while(jointsName[parent_id++] != parent);
-				parent_id--;
-				// apply to parent
 				Twi[i] = casadi::SX::mtimes({Twi[parent_id], Ti[i]});
 			}
 			

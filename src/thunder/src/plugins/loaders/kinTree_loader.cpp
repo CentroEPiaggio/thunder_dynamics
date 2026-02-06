@@ -14,7 +14,8 @@ namespace thunder_ns {
 			int ndof;
 			vector<string> jointsName;
 			vector<string> jointsType;
-			vector<string> jointsParent;
+			vector<string> jointsParentStr;
+			vector<int> jointsParent;
 			vector<bool> jointsAvailable;
 			vector<bool> jointsDerivatives;
 			vector<int> jointsDimension;
@@ -41,7 +42,7 @@ namespace thunder_ns {
 				for (const auto& joint : kinematics) {
 					jointsName.push_back(joint.first.as<string>());
 					jointsType.push_back(joint.second["joint_type"] ? joint.second["joint_type"].as<string>() : "FIXED");
-					jointsParent.push_back(joint.second["parent"] ? joint.second["parent"].as<string>() : "world");
+					jointsParentStr.push_back(joint.second["parent"] ? joint.second["parent"].as<string>() : "world");
 					jointsAvailable.push_back(joint.second["available"] ? joint.second["available"].as<bool>() : false);
 					jointsDerivatives.push_back(joint.second["derivatives"] ? joint.second["derivatives"].as<bool>() : false);
 					jointsAxis.push_back(joint.second["axis"] ? joint.second["axis"].as<vector<double>>() : vector<double>{0,0,1});
@@ -67,11 +68,29 @@ namespace thunder_ns {
 				robot->add_property<int>("ndof", ndof, "int", "Number of degrees of freedom", true);
 				robot->add_property<vector<string>>("jointsName", jointsName, "vector<string>", "Name of joints", true);
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
-				robot->add_property<vector<string>>("jointsParent", jointsParent, "vector<string>", "Parent of joints", true);
+				// robot->add_property<vector<string>>("jointsParentStr", jointsParentStr, "vector<string>", "Parent of joints", true);
 				robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
 				robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
 				robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 				robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
+			
+				// find parent index
+				for (int i=0; i<numJoints; i++) {
+					string parent = jointsParentStr[i];
+					int parent_id = -1;
+					if (parent == "world") {
+						jointsParent.push_back(parent_id);
+					} else {
+						while ((++parent_id<numJoints) && (parent != jointsName[parent_id]));
+						if (parent_id == numJoints) {
+							throw std::runtime_error("Parent joint '" + parent + "' not found for joint '" + jointsName[i] + "'");
+						} else {
+							jointsParent.push_back(parent_id);
+						}
+					}
+				}
+				robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);
+				
 			} else {
 				debug_log("No kinematics specified in yaml file, using from other plugins", VERB_INFO);
 			}
