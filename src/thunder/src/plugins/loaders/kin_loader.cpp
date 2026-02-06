@@ -20,6 +20,7 @@ namespace thunder_ns {
 					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'joints_type' vector.");
 				numJoints = jointsType.size();
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
+				robot->add_property<int>("ndof", numJoints, "int", "Number of degree of freedoms", true);
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 			} else {
 				debug_log("No joints type specified in yaml file, using from other plugins", VERB_INFO);

@@ -28,7 +28,7 @@ namespace thunder_ns {
 			// - copy 'q0: [...]' into yaml file
 
 		// --- parameters from robot --- //
-		int numJoints = robot->get<int>("numJoints");
+		int ndof = robot->get<int>("ndof");
 		// - use <robot>.get_model("<term>") to access the model term you want
 		auto q = robot->get_model("q");
 
@@ -36,8 +36,8 @@ namespace thunder_ns {
 		if (robot->config_yaml["q0"]){
 			// --- take q0 from yaml --- //
 			std::vector<double> q0_vect = robot->config_yaml["q0"].as<std::vector<double>>();
-			casadi::SX q0(numJoints,1);
-			for (int i=0; i<numJoints; i++){
+			casadi::SX q0(ndof,1);
+			for (int i=0; i<ndof; i++){
 				q0(i) = q0_vect[i];
 			}
 
