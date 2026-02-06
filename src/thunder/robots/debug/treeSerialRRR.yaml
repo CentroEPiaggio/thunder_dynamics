@@ -8,8 +8,6 @@ version: 1.0
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
-PI_4: &PI_4           0.785398163
-PI_4_neg: &PI_4_neg  -0.785398163
 
 ############################################
 robot_generator:
@@ -22,45 +20,36 @@ robot_generator:
 kinTree_loader:
 
   # --- Hyperparameters --- #
-  # num_joints: 3
+  num_joints: 3
 
   # joint types: 'R': rotoidal, 'P': prismatic
-  # joints_type: ['R', 'R', 'R']
+  joints_type: ['R', 'R', 'R']
 
-  # Chain (each element is rigidBody+joint)
+  # joint positions (xyz-rpy)
   kinematics:
-    # world:
-    #   parent: null
-    base:
-      parent: 'world'
-      joint_type: 'R'
-      axis: [0,0,1]
+    link0:
+      parent: "world"
+      joint_type: "R"
       symb: [0,0,0,0,0,0]
       xyz: [0,0,1]
       rpy: [0,0,0]
-    leftArm:
-      parent: 'base'
+    link1:
+      parent: "link0"
+      joint_type: 'R'
+      axis: [0,0,1]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [1,0,0, *PI_2,0,0]
+    link2:
+      parent: "link1"
       joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,1,1, *PI_2,0,0]
-    rightArm:
-      parent: 'base'
-      joint_type: 'R'
-      symb: [0,0,0,0,0,0]
-      xyzrpy: [0,-1,1, *PI_2,0,0]
-    leftEE:
-      parent: 'leftArm'
+      xyz: [1,0,0]
+      ypr: [0,0,0]
+    EE:
+      parent: "link2"
       symb: [0,0,0,0,0,0]
       xyz: [1,0,0]
-      rpy: [*PI_2_neg,0,0]
-      available: true
-      derivatives: true
-    rightEE:
-      parent: 'rightArm'
-      symb: [0,0,0,0,0,0]
-      xyz: [1,0,0]
-      rpy: [*PI_2_neg,0,0]
-      available: true
+      ypr: [0,0,*PI_2_neg]
 
   # # world to link_0
   # Base_to_L0:
@@ -87,7 +76,7 @@ dynTree_loader:
 
   # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
-    base:
+    link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -104,7 +93,7 @@ dynTree_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
-    leftArm:
+    link2:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -121,41 +110,7 @@ dynTree_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
-    rightArm:
-      inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 1.0
-        CoM_x: 0.5
-        CoM_y: 0.0
-        CoM_z: 0.0
-        Ixx: 0.01
-        Ixy: 0.0
-        Ixz: 0.0
-        Iyy: 0.3
-        Iyz: 0.0
-        Izz: 0.3
-      friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
-
-    leftEE:
-      inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 1.0
-        CoM_x: 0.5
-        CoM_y: 0.0
-        CoM_z: 0.0
-        Ixx: 0.01
-        Ixy: 0.0
-        Ixz: 0.0
-        Iyy: 0.3
-        Iyz: 0.0
-        Izz: 0.3
-      friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
-
-    rightEE:
+    EE:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0

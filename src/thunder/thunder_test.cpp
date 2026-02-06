@@ -48,30 +48,31 @@ int main(){
 
 	// std::string legacy_robot_conf = "../robots/debug/legacy_RRR.yaml";
 	// std::string new_robot_conf = "../robots/debug/RRR.yaml";
-	std::string new_robot_conf = "../robots/debug/treeRRR.yaml";
+	// std::string robot_conf = "../robots/debug/RRR.yaml";
+	std::string robot_conf = "../robots/debug/treeSerialRRR.yaml";
 	// std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
-	// std::string new_robot_conf = "../robots/debug/seaRRR.yaml";
 	// std::string config_file = "../robots/franka/franka.yaml";
 	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string config_file = "../robots/ego/egoRightArm.yaml";
 	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
 	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
-	auto robot = legacy_robot_from_file("robot", new_robot_conf);
+	auto robot = legacy_robot_from_file("robot", robot_conf);
 
 
 	int NJ = robot->get<int>("numJoints");
+	int ndof = robot->get<int>("ndof");
 
-	robot->set("q", std::vector<double>(NJ,0));
-	robot->set("dq", std::vector<double>(NJ,1));
-	robot->set("dqr", std::vector<double>(NJ,0));
-	robot->set("ddqr", std::vector<double>(NJ,0));
+	robot->set("q", std::vector<double>(ndof,0));
+	robot->set("dq", std::vector<double>(ndof,1));
+	robot->set("dqr", std::vector<double>(ndof,0));
+	robot->set("ddqr", std::vector<double>(ndof,0));
 
 	for (int i=0; i<=NJ; i++){
 		auto new_fun = robot->get("T_w_"+std::to_string(i));
 		cout << "new robot T_w_"+std::to_string(i)+": " << new_fun << endl << endl;
 	}
 
-	cout << "new robot T_w_ee: " << robot->get("T_w_ee") << endl << endl;
+	// cout << "new robot T_w_ee: " << robot->get("T_w_ee") << endl << endl;
 
 	// for (int i=0; i<=NJ; i++){
 	// 	auto legacy_fun = legacyRobot->get("T_w_"+std::to_string(i));
@@ -147,18 +148,18 @@ int main(){
 	// casadi::DM reg_K(robot->get("reg_K"));
 	// casadi::DM reg_D(robot->get("reg_D"));
 	// casadi::DM reg_Dm(robot->get("reg_Dm"));
-	// casadi::DM M(robot->get("M"));
-	// casadi::DM C(robot->get("C"));
-	// casadi::DM C_std(robot->get("C_std"));
-	// casadi::DM G(robot->get("G"));
-	// casadi::DM Dl(robot->get("Dl"));
+	casadi::DM M(robot->get("M"));
+	casadi::DM C(robot->get("C"));
+	casadi::DM C_std(robot->get("C_std"));
+	casadi::DM G(robot->get("G"));
+	casadi::DM Dl(robot->get("Dl"));
 	// casadi::DM K(robot->get("k"));
 	// casadi::DM D(robot->get("d"));
 	// casadi::DM Dm(robot->get("dm"));
 	// casadi::DM Kin(robot->get("T_w_ee"));
 	// casadi::DM Jac(robot->get("J_ee"));
 
-	// casadi::DM tau_cmd_dyn(NJ, 1);
+	casadi::DM tau_cmd_dyn(NJ, 1);
 	// casadi::DM tau_cmd_reg(NJ, 1);
 	// casadi::DM tau_cmd_regMat(NJ, 1);
 
@@ -206,14 +207,14 @@ int main(){
 	// Jac = robot->get("J_3");
 	// cout<<endl<<"Jac3\n"<<Jac<<endl;
 
-	// M = robot->get("M");
-	// cout<<endl<<"M\n"<<M<<endl;
-	// C = robot->get("C");
-	// cout<<endl<<"C\n"<<C<<endl;
-	// C_std = robot->get("C_std");
-	// cout<<endl<<"C_std\n"<<C_std<<endl;
-	// G = robot->get("G");
-	// cout<<endl<<"G\n"<<G<<endl;
+	M = robot->get("M");
+	cout<<endl<<"M\n"<<M<<endl;
+	C = robot->get("C");
+	cout<<endl<<"C\n"<<C<<endl;
+	C_std = robot->get("C_std");
+	cout<<endl<<"C_std\n"<<C_std<<endl;
+	G = robot->get("G");
+	cout<<endl<<"G\n"<<G<<endl;
 	// if (robot->get<int>("Dl_order")){
 	// 	Dl = robot->get("dl");
 	// 	cout<<endl<<"D_link\n"<<Dl<<endl;

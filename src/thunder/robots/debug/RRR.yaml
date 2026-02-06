@@ -29,13 +29,16 @@ kin_loader:
   kinematics:
     joint1:
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,0,1, 0,0,0]
+      xyz: [0,0,1]
+      rpy: [0,0,0]
     joint2:
+      axis: [0,0,1]
       symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, *PI_2,0,0]
     joint3:
       symb: [0,0,0,0,0,0]
-      xyzrpy: [1,0,0, 0,0,0]
+      xyz: [1,0,0]
+      ypr: [0,0,0]
 
   # world to link_0
   Base_to_L0:

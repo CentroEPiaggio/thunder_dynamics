@@ -25,6 +25,7 @@
 #include "plugins/builders/soft_builder.h"
 #include "plugins/builders/example_builder.h"
 #include "plugins/builders/kinTree_builder.h"
+#include "plugins/builders/dynTree_builder.h"
 
 // - Generators - //
 #include "plugins/generators/robot_generator.h"
@@ -57,7 +58,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"soft_builder", std::make_shared<SoftBuilder>()},
 	{"example_builder", std::make_shared<ExampleBuilder>()},
 	{"kinTree_builder", std::make_shared<KinTreeBuilder>()},
-	// {"dynTree_builder", std::make_shared<dynTreeBuilder>()},
+	{"dynTree_builder", std::make_shared<DynTreeBuilder>()},
 };
 
 /**

@@ -1,5 +1,9 @@
+✔ jointsParent have to be the index, more clear and fast, work on kinTree_loader @done (2/6/2026, 10:29:33 PM)
+✔ controlla dove è usato jointsParent e usa solo indici @done (2/6/2026, 10:29:38 PM)
+✔ vai avanti con dynTree_builder, raggruppando i parametri per giunti fissi @done (2/5/2026, 9:33:39 PM)
+✔ nel calcolo di M, C, G, sembrerebbe non servire raggruppare i parametri dei giunti fissi, perchè sia la M che la G fanno la somma su tutti @done (2/6/2026, 10:29:44 PM)
 ✔ test friction parameters @done (2/4/2026, 9:14:54 PM)
-☐ test dynamic parameters
+✔ test dynamic parameters @done (2/6/2026, 10:29:48 PM)
 ✔ i parametri Dl hanno la stessa dimensione di numJoints, quindi anche quelli fissi. Non bello ma più semplice. Inizializzati a zero e simbolici a zero, quindi non danno noia nel generato. @done (2/4/2026, 8:07:57 AM)
 trova un modo di gestire i giunti fissi nella dinamica:
 	☐ preferred: numJoints è il numero di giunti, anche quelli fissi. E' il costruttore dinamico che raggruppa sulla base dei fissi
