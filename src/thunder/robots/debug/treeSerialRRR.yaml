@@ -1,6 +1,6 @@
 pipeline:
   loaders:    ["kinTree_loader", "dynTree_loader"]
-  builders:   ["kinTree_builder", "dynTree_builder"] #, "reg_builder"]
+  builders:   ["kinTree_builder", "dynTree_builder", "reg_builder"]
   generators: ["robot_generator"]
 
 version: 1.0
@@ -76,6 +76,23 @@ dynTree_loader:
 
   # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
+    link0:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
     link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]

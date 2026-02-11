@@ -11,6 +11,7 @@ namespace thunder_ns {
     void RegBuilder::init(std::shared_ptr<Robot> robot){
 		// --- Basic Robot properties --- //
 		int numJoints = robot->get<int>("numJoints");
+		int ndof = robot->get<int>("ndof");
 
 		// - Parameters per link
 		int STD_PAR_LINK = 10;
@@ -22,8 +23,8 @@ namespace thunder_ns {
 
 		// --- Variables --- //
 		// - Slotine regressor - //
-		robot->add_variable("dqr", SX::sym("dqr",numJoints,1), vector<double>(numJoints,0), {1}, "Velocity reference", true);
-		robot->add_variable("ddqr", SX::sym("ddqr",numJoints,1), vector<double>(numJoints,0), {1}, "Acceleration reference", true);
+		robot->add_variable("dqr", SX::sym("dqr",ndof,1), vector<double>(ndof,0), {1}, "Velocity reference", true);
+		robot->add_variable("ddqr", SX::sym("ddqr",ndof,1), vector<double>(ndof,0), {1}, "Acceleration reference", true);
 		// - Kinematic regressor - //
 		robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,0), {1}, "Wrench", true);
 	}
@@ -76,7 +77,9 @@ namespace thunder_ns {
 	int RegBuilder::compute_Yr(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		int nj = robot->get<int>("numJoints");
+		int ndof = robot->get<int>("ndof");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 		auto dqr = robot->get_model("dqr");
@@ -90,19 +93,19 @@ namespace thunder_ns {
 		casadi::SX dq_sel_ = dyn.dq_select(dq);
 		
 		casadi::SX Twi(4,4);
-		casadi::SX Ji(6,nj);
-		casadi::SX Jvi(3, nj);
-		casadi::SX Jwi(3, nj);
+		casadi::SX Ji(6, ndof);
+		casadi::SX Jvi(3, ndof);
+		casadi::SX Jwi(3, ndof);
 
 		casadi::SX g = par_gravity;
 
-		casadi::SX Yr(nj,nParLink*nj);
-		casadi::SX reg_M(nj, nParLink*nj);
-		casadi::SX reg_C(nj, nParLink*nj);
-		casadi::SX reg_G(nj, nParLink*nj);
+		casadi::SX Yr(ndof, nParLink*nj);
+		casadi::SX reg_M(ndof, nParLink*nj);
+		casadi::SX reg_C(ndof, nParLink*nj);
+		casadi::SX reg_G(ndof, nParLink*nj);
 				
-		casadi::Slice allRows;
-		casadi::Slice allCols(0,nj);          
+		casadi::Slice allRows(0, ndof);
+		casadi::Slice allCols(0, ndof);          
 		casadi::Slice selR(0,3);
 		casadi::Slice sel_v(0,3);
 		casadi::Slice sel_w(3,6);
@@ -116,19 +119,20 @@ namespace thunder_ns {
 		// Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
+
+			//get the parent transform and Jacobian
+			int parent_id = jointsParent[i];
+			if (parent_id == -1) {
+				Twi = SX::eye(4);
+				Ji = SX::zeros(6, ndof);
+			} else {
+				Twi = robot->get_model("T_w_"+std::to_string(parent_id));
+				Ji = robot->get_model("J_"+std::to_string(parent_id));
+			}
 			
-			Twi = robot->get_model("T_w_"+std::to_string(i+1));
-			Ji = robot->get_model("J_"+std::to_string(i+1));
 			casadi::SX Rwi = Twi(selR,selR);
 			Jvi = Ji(sel_v, allCols);
 			Jwi = Ji(sel_w, allCols);
-			// world transform is included in Twi
-			// // if(i==(nj-1)){	// end-effector
-			// // 	Rwi = mtimes(Rwi,ee_frame.get_rotation());
-			// // } else {
-			// // 	Rwi = casadi::SX::mtimes({_world2L0_.get_rotation(),Rwi,_world2L0_.get_rotation().T()});
-			// // }
-			// Rwi = casadi::SX::mtimes({_world2L0_.get_rotation(),Rwi,_world2L0_.get_rotation().T()});
 
 			// ------------------------- Y0r_i -------------------------- //
 			
@@ -143,8 +147,8 @@ namespace thunder_ns {
 			
 			// ------------------------- Y1r_i -------------------------- //
 			
-			casadi::SX dX1r_i(nj,3);
-			casadi::SX W1r_i(nj,3);
+			casadi::SX dX1r_i(ndof,3);
+			casadi::SX W1r_i(ndof,3);
 
 			for (int l=0; l<3; l++) {
 
@@ -162,8 +166,8 @@ namespace thunder_ns {
 
 			// ------------------------- Y2r_i -------------------------- //
 
-			casadi::SX dX2r_i(nj,6);
-			casadi::SX W2r_i(nj,6);
+			casadi::SX dX2r_i(ndof,6);
+			casadi::SX W2r_i(ndof,6);
 			
 			for (int l=0; l<6; l++) {
 
@@ -180,7 +184,7 @@ namespace thunder_ns {
 			// ------------------- matrix regressors ------------------- //
 			casadi::SX reg_M_i = horzcat(dX0r_i, dX1r_i, dX2r_i);
 			casadi::SX reg_C_i = horzcat(-W0r_i, -W1r_i, -W2r_i);
-			casadi::SX reg_G_i = horzcat(Z0r_i, Z1r_i, casadi::SX::zeros(nj,6));
+			casadi::SX reg_G_i = horzcat(Z0r_i, Z1r_i, casadi::SX::zeros(ndof,6));
 
 			// ------------------------- Yr_i -------------------------- //
 
@@ -194,13 +198,13 @@ namespace thunder_ns {
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 		std::vector<std::string> arg_list;
-		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_world2L0", "par_gravity"};
+		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"};
 		if (!robot->add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
-		arg_list = {"q", "ddqr", "par_KIN", "par_world2L0"};
+		arg_list = {"q", "ddqr", "par_KIN"};
 		if (!robot->add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = {"q", "dq", "dqr", "par_KIN", "par_world2L0"};
+		arg_list = {"q", "dq", "dqr", "par_KIN"};
 		if (!robot->add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity"};
+		arg_list = {"q", "par_KIN", "par_gravity"};
 		if (!robot->add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
 		return 1;
@@ -208,8 +212,8 @@ namespace thunder_ns {
 
 	int RegBuilder::compute_reg_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
-		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		// int nj = robot->get<int>("numJoints");
+		// const int nParLink = robot->get<const int>("STD_PAR_LINK");
 		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 		auto dq = robot->get_model("dq");
 		if (Dl_order==0) return 0;
