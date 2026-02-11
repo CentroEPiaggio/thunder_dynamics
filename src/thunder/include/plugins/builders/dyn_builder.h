@@ -1,15 +1,15 @@
-#ifndef DYNTREE_BUILDER_H
-#define DYNTREE_BUILDER_H
+#ifndef DYN_BUILDER_H
+#define DYN_BUILDER_H
 
 #include "plugin_interfaces.h"
 
 
 namespace thunder_ns {
 
-	class DynTreeBuilder : public BaseBuilder {
+	class DynBuilder : public BaseBuilder {
 
 		public:
-			DynTreeBuilder() : BaseBuilder("Dynamics Builder", "Build the robot dynamics, with trees.") {}
+			DynBuilder() : BaseBuilder("Dynamics Builder", "Build the robot dynamics.") {}
 
 			std::tuple<casadi::SXVector,casadi::SXVector, casadi::SXVector> createInertialParameters(int nj, int nParLink, casadi::SX);
 			casadi::SX dq_select(const casadi::SX& dq_);
@@ -28,4 +28,4 @@ namespace thunder_ns {
 	
 } // namespace thunder_ns
 
-#endif // DYNTREE_BUILDER_H
+#endif // DYN_BUILDER_H

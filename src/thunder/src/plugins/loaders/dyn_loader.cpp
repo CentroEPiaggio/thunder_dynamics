@@ -1,10 +1,10 @@
-#include "plugins/loaders/dynTree_loader.h"
+#include "plugins/loaders/dyn_loader.h"
 
 
 namespace thunder_ns {
 
 	// --- Load function --- //
-	std::shared_ptr<Robot> DynTreeLoader::load(std::shared_ptr<Robot> robot){
+	std::shared_ptr<Robot> DynLoader::load(std::shared_ptr<Robot> robot){
 		debug_log("Loading started", VERB_INFO);
 
 		// ----- Parsing YAML ----- //

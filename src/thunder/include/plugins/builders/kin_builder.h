@@ -1,15 +1,15 @@
-#ifndef KINTREE_BUILDER_H
-#define KINTREE_BUILDER_H
+#ifndef KIN_BUILDER_H
+#define KIN_BUILDER_H
 
 #include "plugin_interfaces.h"
 
 
 namespace thunder_ns {
 
-	class KinTreeBuilder : public BaseBuilder {
+	class KinBuilder : public BaseBuilder {
 
 		public:
-			KinTreeBuilder() : BaseBuilder("Kinematic Builder", "Build kinematics and differential kinematics expressions, like Jacobians and Transform matrixes T.") {}
+			KinBuilder() : BaseBuilder("Kinematic Builder", "Build kinematics and differential kinematics expressions, like Jacobians and Transform matrixes T.") {}
 
 			
 			SX apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi, const SX& axis);
@@ -26,4 +26,4 @@ namespace thunder_ns {
 	
 } // namespace thunder_ns
 
-#endif // KINTREE_BUILDER_H
+#endif // KIN_BUILDER_H

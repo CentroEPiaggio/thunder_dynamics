@@ -1,6 +1,6 @@
 pipeline:
-  loaders:    ["kinTree_loader", "dynTree_loader"]
-  builders:   ["kinTree_builder", "dynTree_builder"] #, "reg_builder"]
+  loaders:    ["kin_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder"] #, "reg_builder"]
   generators: ["robot_generator"]
 
 version: 1.0
@@ -19,7 +19,7 @@ robot_generator:
   copy_gen:     true
 
 ############################################
-kinTree_loader:
+kin_loader:
 
   # --- Hyperparameters --- #
   # num_joints: 3
@@ -75,7 +75,7 @@ kinTree_loader:
   #   ypr: [0, 0, *PI_2_neg]
 
 ############################################
-dynTree_loader:
+dyn_loader:
 
   # link friction
   Dl_order: 2

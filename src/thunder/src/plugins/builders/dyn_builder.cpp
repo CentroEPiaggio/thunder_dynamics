@@ -1,4 +1,4 @@
-#include "plugins/builders/dynTree_builder.h"
+#include "plugins/builders/dyn_builder.h"
 #include "utils.h"
 
 using std::string;
@@ -7,7 +7,7 @@ using casadi::SX;
 
 namespace thunder_ns {
 
-    std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> DynTreeBuilder::createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
+    std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> DynBuilder::createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
 		
 		// dynamics need
 		casadi::SXVector _mass_vec_(nj);
@@ -44,7 +44,7 @@ namespace thunder_ns {
 		return std::make_tuple(_mass_vec_, _distCM_, _J_3x3_);
 	}
 
-	casadi::SX DynTreeBuilder::dq_select(const casadi::SX& dq) {
+	casadi::SX DynBuilder::dq_select(const casadi::SX& dq) {
 		int n = dq.size1();
 		
 		casadi::Slice allRows;
@@ -57,7 +57,7 @@ namespace thunder_ns {
 		return mat_dq;
 	}
 
-	casadi::SX DynTreeBuilder::stdCmatrix(const casadi::SX& M, const casadi::SX& q, const casadi::SX& dq, const casadi::SX& dq_sel_) {
+	casadi::SX DynBuilder::stdCmatrix(const casadi::SX& M, const casadi::SX& q, const casadi::SX& dq, const casadi::SX& dq_sel_) {
 		int n = q.size1();
 
 		casadi::SX jac_M = jacobian(M,q);
@@ -72,7 +72,7 @@ namespace thunder_ns {
 		return C;
 	}
 
-	casadi::SX DynTreeBuilder::stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
+	casadi::SX DynBuilder::stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
 		// classic C matrix computation, probably have to be C = C/2
 		int n = q_.size1();
 
@@ -99,7 +99,7 @@ namespace thunder_ns {
 		return C;
 	}
 
-	std::tuple<casadi::SXVector,casadi::SXVector> DynTreeBuilder::DHJacCM(std::shared_ptr<Robot> robot){
+	std::tuple<casadi::SXVector,casadi::SXVector> DynBuilder::DHJacCM(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
@@ -173,7 +173,7 @@ namespace thunder_ns {
 		return std::make_tuple(Ji_v, Ji_w);
 	}
 
-	int DynTreeBuilder::compute_MCG(std::shared_ptr<Robot> robot){
+	int DynBuilder::compute_MCG(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
@@ -259,7 +259,7 @@ namespace thunder_ns {
 		return 1;
 	}
 
-	int DynTreeBuilder::compute_Dl(std::shared_ptr<Robot> robot){
+	int DynBuilder::compute_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 
@@ -293,7 +293,7 @@ namespace thunder_ns {
 		} else return 0;
 	}
 
-	int DynTreeBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
+	int DynBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 		auto ddq = robot->get_model("ddq");
@@ -331,7 +331,7 @@ namespace thunder_ns {
 	}
 
 	// --- REG/DYN conversions --- //
-	int DynTreeBuilder::compute_reg_dyn_conversions(std::shared_ptr<Robot> robot){
+	int DynBuilder::compute_reg_dyn_conversions(std::shared_ptr<Robot> robot){
 		int numJoints = robot->get<int>("numJoints");
 		const int STD_PAR_LINK = robot->get<const int>("STD_PAR_LINK");
 
@@ -373,7 +373,7 @@ namespace thunder_ns {
 		return 1;
 	}
 
-    void DynTreeBuilder::build(std::shared_ptr<Robot> robot) {
+    void DynBuilder::build(std::shared_ptr<Robot> robot) {
 		debug_log("Starting dynamic computations", VERB_INFO);
 
 		int ret = 1;

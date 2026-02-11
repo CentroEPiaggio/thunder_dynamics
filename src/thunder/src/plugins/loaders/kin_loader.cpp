@@ -1,10 +1,10 @@
-#include "plugins/loaders/kinTree_loader.h"
+#include "plugins/loaders/kin_loader.h"
 
 
 namespace thunder_ns {
 
 	// --- Load function --- //
-	std::shared_ptr<Robot> KinTreeLoader::load(std::shared_ptr<Robot> robot){
+	std::shared_ptr<Robot> KinLoader::load(std::shared_ptr<Robot> robot){
 		debug_log("Loading started", VERB_INFO);
 
 		// ----- Parsing YAML File ----- //

@@ -1,4 +1,4 @@
-#include "plugins/builders/kinTree_builder.h"
+#include "plugins/builders/kin_builder.h"
 #include "utils.h"
 
 using std::string;
@@ -9,7 +9,7 @@ namespace thunder_ns {
 
 	constexpr double MU = 0.02; //pseudo-inverse damping coeff
 
-    int KinTreeBuilder::create_std_joints(std::shared_ptr<Robot> robot){
+    int KinBuilder::create_std_joints(std::shared_ptr<Robot> robot){
 		// --- Standard joint functions --- //
 		SX q_joint = SX::sym("q_joint");
 		SX axis = SX::sym("axis",3,1);
@@ -60,13 +60,13 @@ namespace thunder_ns {
 		return 1;
 	}
 
-	SX KinTreeBuilder::apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi, const SX& axis){
+	SX KinBuilder::apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi, const SX& axis){
 		SX T(4,4);
 		T = casadi::SX::mtimes(get_transform_rpy(frame), robot->get_model("T_JOINT_"+joint_type, {qi, axis}));
 		return T;
 	}
 	
-	int KinTreeBuilder::compute_chain(std::shared_ptr<Robot> robot) {
+	int KinBuilder::compute_chain(std::shared_ptr<Robot> robot) {
 
 		// parameters from robot
 		auto numJoints = robot->get<int>("numJoints");
@@ -144,7 +144,7 @@ namespace thunder_ns {
 		return 1;
 	}
  
-	int KinTreeBuilder::compute_jacobians(std::shared_ptr<Robot> robot) {
+	int KinBuilder::compute_jacobians(std::shared_ptr<Robot> robot) {
 
 		// parameters from robot
 		int nj = robot->get<int>("numJoints");
@@ -221,7 +221,7 @@ namespace thunder_ns {
 		return 1;
 	}
 
-	int KinTreeBuilder::compute_kin_adv(std::shared_ptr<Robot> robot){
+	int KinBuilder::compute_kin_adv(std::shared_ptr<Robot> robot){
 		auto nj = robot->get<int>("numJoints");
 		vector<bool> jointsDerivatives = robot->get<vector<bool>>("jointsDerivatives");
 		vector<string> jointsName = robot->get<vector<string>>("jointsName");
@@ -252,7 +252,7 @@ namespace thunder_ns {
 		return 1;
 	}
 
-    void KinTreeBuilder::build(std::shared_ptr<Robot> robot) {
+    void KinBuilder::build(std::shared_ptr<Robot> robot) {
         create_std_joints(robot);
 				
 		debug_log("Starting kinematic computations", VERB_INFO);
