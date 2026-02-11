@@ -167,50 +167,51 @@ namespace thunder_ns {
 		// auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < nj; i++) {
+			SX T_wi = robot->get_model("T_w_"+std::to_string(i));
+
+			SX d_0_i = T_wi(r_tra_idx, 3);
+			SX R_0_i = T_wi(r_rot_idx, r_rot_idx);
+			SX Ji_pos = SX::jacobian(d_0_i, q);
+			SX Ji_or(3, ndof);
+
+			// Loop over joints and build columns
+			for (int j=0; j<ndof; ++j) {
+				// Partial derivative dR/dq_j  (3x3)
+				SX dR_dqj = SX::jacobian(SX::reshape(R_0_i, 9, 1), q(j));
+				dR_dqj = SX::reshape(dR_dqj, 3, 3);
+
+				// S_j = dR/dq_j * R^T  (3x3 skew-symmetric)
+				SX Sj = SX::mtimes(dR_dqj, R_0_i.T());
+
+				// Extract angular velocity vector from skew matrix
+				SX wj = vect(Sj);
+
+				// Set column j
+				Ji_or(allRows, j) = wj;
+			}
+
+			// // Add end-effector transformation (only in the EE Jacobian)
+			// if(i==nj){
+			// 	casadi::SX R0i = T_wi(r_rot_idx,r_rot_idx);
+			// 	casadi::SX ee_tr = get_transform_ypr(par_Ln2EE)(r_tra_idx,3);
+			// 	Ji_pos = Ji_pos - casadi::SX::mtimes({R0i,hat(ee_tr),R0i.T(),Ji_or});
+			// 	// Ji_pos = Ji_pos - casadi::SX::mtimes(hat(ee_tr), Ji_or);
+			// 	// std::cout << "Ji_pos_ee: " << Ji_pos << std::endl;
+			// }
+
+			Ji_v[i] = Ji_pos;
+			Ji_w[i] = Ji_or;
+
+			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
+			std::vector<std::string> arg_list;
+			// if (i<nj){
+			// 	arg_list = {"q", "par_KIN", "par_world2L0"};
+			// } else {
+			// 	arg_list = {"q", "par_KIN", "par_world2L0", "par_Ln2EE"};
+			// }
+			arg_list = {"q", "par_KIN"};
+			if (!robot->add_function("J_"+std::to_string(i), Ji[i], arg_list, "Jacobian of frame "+std::to_string(i))) return 0;
 			if (jointsAvailable[i]){
-				SX T_wi = robot->get_model("T_w_"+std::to_string(i));
-
-				SX d_0_i = T_wi(r_tra_idx, 3);
-				SX R_0_i = T_wi(r_rot_idx, r_rot_idx);
-				SX Ji_pos = SX::jacobian(d_0_i, q);
-				SX Ji_or(3, ndof);
-
-				// Loop over joints and build columns
-				for (int j=0; j<ndof; ++j) {
-					// Partial derivative dR/dq_j  (3x3)
-					SX dR_dqj = SX::jacobian(SX::reshape(R_0_i, 9, 1), q(j));
-					dR_dqj = SX::reshape(dR_dqj, 3, 3);
-
-					// S_j = dR/dq_j * R^T  (3x3 skew-symmetric)
-					SX Sj = SX::mtimes(dR_dqj, R_0_i.T());
-
-					// Extract angular velocity vector from skew matrix
-					SX wj = vect(Sj);
-
-					// Set column j
-					Ji_or(allRows, j) = wj;
-				}
-
-				// // Add end-effector transformation (only in the EE Jacobian)
-				// if(i==nj){
-				// 	casadi::SX R0i = T_wi(r_rot_idx,r_rot_idx);
-				// 	casadi::SX ee_tr = get_transform_ypr(par_Ln2EE)(r_tra_idx,3);
-				// 	Ji_pos = Ji_pos - casadi::SX::mtimes({R0i,hat(ee_tr),R0i.T(),Ji_or});
-				// 	// Ji_pos = Ji_pos - casadi::SX::mtimes(hat(ee_tr), Ji_or);
-				// 	// std::cout << "Ji_pos_ee: " << Ji_pos << std::endl;
-				// }
-
-				Ji_v[i] = Ji_pos;
-				Ji_w[i] = Ji_or;
-
-				Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
-				std::vector<std::string> arg_list;
-				// if (i<nj){
-				// 	arg_list = {"q", "par_KIN", "par_world2L0"};
-				// } else {
-				// 	arg_list = {"q", "par_KIN", "par_world2L0", "par_Ln2EE"};
-				// }
-				arg_list = {"q", "par_KIN"};
 				if (!robot->add_function("J_"+jointsName[i], Ji[i], arg_list, "Jacobian of frame "+jointsName[i])) return 0;
 			}
 		}
