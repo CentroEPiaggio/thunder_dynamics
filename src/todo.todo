@@ -1,9 +1,5 @@
-✔ jointsParent have to be the index, more clear and fast, work on kinTree_loader @done (2/6/2026, 10:29:33 PM)
-✔ controlla dove è usato jointsParent e usa solo indici @done (2/6/2026, 10:29:38 PM)
-✔ vai avanti con dynTree_builder, raggruppando i parametri per giunti fissi @done (2/5/2026, 9:33:39 PM)
-✔ nel calcolo di M, C, G, sembrerebbe non servire raggruppare i parametri dei giunti fissi, perchè sia la M che la G fanno la somma su tutti @done (2/6/2026, 10:29:44 PM)
-✔ test friction parameters @done (2/4/2026, 9:14:54 PM)
-✔ test dynamic parameters @done (2/6/2026, 10:29:48 PM)
+☐ aggiungi un modo per salvare una variabile non presente in robot (può servire per par_REG se non è un parametro)
+☐ se il giunto fisso non ha dinamica (m=0), calcolare par_DYN da par_REG può dar problemi (inf). no problemi solo per par_DYN
 ✔ i parametri Dl hanno la stessa dimensione di numJoints, quindi anche quelli fissi. Non bello ma più semplice. Inizializzati a zero e simbolici a zero, quindi non danno noia nel generato. @done (2/4/2026, 8:07:57 AM)
 trova un modo di gestire i giunti fissi nella dinamica:
 	☐ preferred: numJoints è il numero di giunti, anche quelli fissi. E' il costruttore dinamico che raggruppa sulla base dei fissi
@@ -63,6 +59,7 @@ thunder:
 		☐ allow different type for parameters
 		✔ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..) @done (1/16/2026, 11:27:18 AM)
 	kinematics:
+		- fixed joints have kinematics and dynamics, they are counted also in numJoints, but not in ndof
 		☐ is pinv really usefull to compute simbolically?
 		✔ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links) @done (1/26/2026, 5:28:43 PM)
 		☐ merge joints structure with parameters in kinTree_loader
@@ -84,6 +81,9 @@ thunder:
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	regressors:
 		- for now, the regressors (not slotine or dynamics) are computed only if there is at least one simbolic parameter.
+		☐ par_REG should be a function, no sense to set par_REG parameters. The internal parameters are par_DYN.
+		☐ problem if par_REG is a function is that we do not save it when we save parameters.
+		☐ we can save values of functions if they start with par, like par_REG, problems in the generated files?
 		☐ change dimension of the regressor dependently on the symbolic parameters, now is full size always (Yr).
 		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.

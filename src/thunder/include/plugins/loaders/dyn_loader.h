@@ -1,18 +1,18 @@
-#ifndef DYN_LOADER_H
-#define DYN_LOADER_H
+#ifndef DYNTREE_LOADER_H
+#define DYNTREE_LOADER_H
 
 #include "plugin_interfaces.h"
 
 
 namespace thunder_ns {
 
-	class DynLoader : public BaseLoader {
+	class DynTreeLoader : public BaseLoader {
 		
 		private:
 			std::string robot_name;
 
 		public:
-			DynLoader() : BaseLoader("Dynamics Loader", "Load the robot dynamics.") {}
+			DynTreeLoader() : BaseLoader("Dynamics Loader", "Load the robot dynamics, with trees.") {}
 
 			std::shared_ptr<Robot> load(std::shared_ptr<Robot> robot_ptr) override;
 
@@ -21,4 +21,4 @@ namespace thunder_ns {
 
 } // namespace thunder_ns
 
-#endif // DYN_LOADER_H
+#endif // DYNTREE_LOADER_H

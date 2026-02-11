@@ -1,4 +1,4 @@
-#include "plugins/builders/dyn_builder.h"
+#include "plugins/builders/dynTree_builder.h"
 #include "utils.h"
 
 using std::string;
@@ -7,7 +7,7 @@ using casadi::SX;
 
 namespace thunder_ns {
 
-    std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> DynBuilder::createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
+    std::tuple<casadi::SXVector, casadi::SXVector, casadi::SXVector> DynTreeBuilder::createInertialParameters(int nj, int nParLink, casadi::SX par_DYN){
 		
 		// dynamics need
 		casadi::SXVector _mass_vec_(nj);
@@ -44,7 +44,7 @@ namespace thunder_ns {
 		return std::make_tuple(_mass_vec_, _distCM_, _J_3x3_);
 	}
 
-	casadi::SX DynBuilder::dq_select(const casadi::SX& dq) {
+	casadi::SX DynTreeBuilder::dq_select(const casadi::SX& dq) {
 		int n = dq.size1();
 		
 		casadi::Slice allRows;
@@ -57,7 +57,7 @@ namespace thunder_ns {
 		return mat_dq;
 	}
 
-	casadi::SX DynBuilder::stdCmatrix(const casadi::SX& M, const casadi::SX& q, const casadi::SX& dq, const casadi::SX& dq_sel_) {
+	casadi::SX DynTreeBuilder::stdCmatrix(const casadi::SX& M, const casadi::SX& q, const casadi::SX& dq, const casadi::SX& dq_sel_) {
 		int n = q.size1();
 
 		casadi::SX jac_M = jacobian(M,q);
@@ -72,7 +72,7 @@ namespace thunder_ns {
 		return C;
 	}
 
-	casadi::SX DynBuilder::stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
+	casadi::SX DynTreeBuilder::stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_) {
 		// classic C matrix computation, probably have to be C = C/2
 		int n = q_.size1();
 
@@ -99,16 +99,19 @@ namespace thunder_ns {
 		return C;
 	}
 
-	std::tuple<casadi::SXVector,casadi::SXVector> DynBuilder::DHJacCM(std::shared_ptr<Robot> robot){
+	std::tuple<casadi::SXVector,casadi::SXVector> DynTreeBuilder::DHJacCM(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
+		const int nj = robot->get<int>("numJoints");
+		const int ndof = robot->get<int>("ndof");
 		const int _nParLink_ = robot->get<const int>("STD_PAR_LINK");
-		vector<string> jointsType = robot->get<vector<string>>("jointsType");
+		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
+		const vector<string> jointsName = robot->get<vector<string>>("jointsName");
+		// vector<string> jointsType = robot->get<vector<string>>("jointsType");
 		// const auto& q = robot->model["q"];
 		// const auto& par_world2L0 = robot->model["par_world2L0"];
 		// const auto& par_DYN = robot->model["par_DYN"];
 		auto q = robot->get_model("q");
-		auto par_world2L0 = robot->get_model("par_world2L0");
+		// auto par_world2L0 = robot->get_model("par_world2L0");
 		auto par_DYN = robot->get_model("par_DYN");
 
 		auto par_inertial = createInertialParameters(nj, _nParLink_, par_DYN);
@@ -122,18 +125,28 @@ namespace thunder_ns {
 		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
 		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
 		casadi::Slice allRows;              // Select all rows
-		auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
+		// auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
 
 		for (int i = 0; i < nj; i++) {
-			SX T_wi = robot->get_model("T_w_"+std::to_string(i+1));
+			SX T_wi;
+			//get the parent transform
+			int parent_id = jointsParent[i];
+			if (parent_id == -1) {
+				T_wi = SX::eye(4);
+			} else {
+				T_wi = robot->get_model("T_w_"+std::to_string(parent_id));
+			}
 
 			SX Rwi = T_wi(r_rot_idx, r_rot_idx);
+			// std::cout<<"Rwi: "<<Rwi<<std::endl;
 			SX d_Ci = T_wi(r_tra_idx, 3) + mtimes(Rwi,_distCM_[i]);		// center of mass distance
+			// std::cout<<"d_Ci: "<<d_Ci<<std::endl;
 			SX Jci_pos = SX::jacobian(d_Ci, q); 	// matrix of velocity jacobian
-			SX Ji_or(3, nj);   				// matrix of omega jacobian
+			// std::cout<<"Jci_pos: "<<Jci_pos<<std::endl;
+			SX Ji_or(3, ndof);   				// matrix of omega jacobian
 
 			// Loop over joints and build columns
-			for (int j=0; j<nj; ++j) {
+			for (int j=0; j<ndof; ++j) {
 				// Partial derivative dR/dq_j  (3x3)
 				SX dR_dqj = SX::jacobian(SX::reshape(Rwi, 9, 1), q(j));
 				dR_dqj = SX::reshape(dR_dqj, 3, 3);
@@ -153,17 +166,20 @@ namespace thunder_ns {
 
 			Ji[i] = casadi::SX::vertcat({Ji_v[i], Ji_w[i]});
 			// std::cout<<"Ji[i]: "<<Ji[i]<<std::endl;
-			std::vector<std::string> arg_list = {"q", "par_KIN", "par_world2L0", "par_DYN"};
-			robot->add_function("J_cm_"+std::to_string(i+1), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i+1));
+			std::vector<std::string> arg_list = {"q", "par_KIN", "par_DYN"};
+			robot->add_function("J_cm_"+std::to_string(i), Ji[i], arg_list, "Jacobian of center of mass of link "+std::to_string(i));
 		}
 
 		return std::make_tuple(Ji_v, Ji_w);
 	}
 
-	int DynBuilder::compute_MCG(std::shared_ptr<Robot> robot){
+	int DynTreeBuilder::compute_MCG(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
+		const int nj = robot->get<int>("numJoints");
+		const int ndof = robot->get<int>("ndof");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
+		// const vector<string> jointsName = robot->get<vector<string>>("jointsName");
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 		auto par_DYN = robot->get_model("par_DYN");
@@ -184,13 +200,13 @@ namespace thunder_ns {
 
 		casadi::SX g = par_gravity;
 
-		casadi::SX M(nj,nj);
-		casadi::SX C(nj,nj);
-		casadi::SX C_std(nj,nj);
-		casadi::SX G(nj,1);
+		casadi::SX M(ndof,ndof);
+		casadi::SX C(ndof,ndof);
+		casadi::SX C_std(ndof,ndof);
+		casadi::SX G(ndof,1);
 		
-		casadi::SX Mi(nj,nj);
-		casadi::SX Gi(1,nj);
+		casadi::SX Mi(ndof,ndof);
+		casadi::SX Gi(1,ndof);
 		casadi::SX mi(1,1);
 		casadi::SX Ii(3,3);
 		casadi::Slice selR(0,3);
@@ -200,7 +216,14 @@ namespace thunder_ns {
 		Jwi = std::get<1>(J_tuple);
 		
 		for (int i=0; i<nj; i++) {
-			Twi = robot->get_model("T_w_"+std::to_string(i+1));
+			//get the parent transform
+			int parent_id = jointsParent[i];
+			if (parent_id == -1) {
+				Twi = SX::eye(4);
+			} else {
+				Twi = robot->get_model("T_w_"+std::to_string(parent_id));
+			}
+			// Twi = robot->get_model("T_w_"+std::to_string(i));
 			// std::cout<<"Twi: "<<Twi<<std::endl;
 			casadi::SX Rwi = Twi(selR,selR);
 			// std::cout<<"Rwi: "<<Rwi<<std::endl;
@@ -210,6 +233,8 @@ namespace thunder_ns {
 			Ii = _J_3x3_[i];
 			// std::cout<<"Ii: "<<Ii<<std::endl;
 			Mi = mi * casadi::SX::mtimes({Jci[i].T(), Jci[i]}) + casadi::SX::mtimes({Jwi[i].T(),Rwi,Ii,Rwi.T(),Jwi[i]});
+			// std::cout<<"Jci[i]: "<<Jci[i]<<std::endl;
+			// std::cout<<"Jwi[i]: "<<Jwi[i]<<std::endl;
 			// std::cout<<"Mi: "<<Mi<<std::endl;
 			M = M + Mi;
 			// std::cout<<"M: "<<M<<std::endl;
@@ -222,37 +247,38 @@ namespace thunder_ns {
 		C_std = stdCmatrix_classic(M,q,dq,dq_sel_);
 
 		std::vector<std::string> arg_list;
-		arg_list = {"q", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "par_KIN", "par_DYN"};
 		robot->add_function("M", M, arg_list, "Manipulator mass matrix");
-		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_DYN"};
 		robot->add_function("C", C, arg_list, "Manipulator Coriolis matrix");
-		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_DYN"};
 		robot->add_function("C_std", C_std, arg_list, "Classic formulation of the manipulator Coriolis matrix");
-		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "par_KIN", "par_gravity", "par_DYN"};
 		robot->add_function("G", G, arg_list, "Manipulator gravity terms");
 
 		return 1;
 	}
 
-	int DynBuilder::compute_Dl(std::shared_ptr<Robot> robot){
+	int DynTreeBuilder::compute_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 
 		if (Dl_order > 0){
-			int nj = robot->get<int>("numJoints");
+			const int nj = robot->get<int>("numJoints");
+			const int ndof = robot->get<int>("ndof");
 			const auto& dq = robot->get_model("dq");
 			const auto& par_Dl = robot->get_model("par_Dl");
 
-			casadi::SX dl(nj,1);
+			casadi::SX dl(ndof,1);
 			std::vector<casadi::SX> Dl_vec(Dl_order);
-			for (int i=0; i<nj; i++){
+			for (int i=0; i<ndof; i++){
 				for (int ord=0; ord<Dl_order; ord++){
 					if (ord%2 == 0){
 						dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
 					} else {
 						dl(i) += sqrt(pow(dq(i), 2)) * pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
 					}
-					Dl_vec[ord].resize(nj,nj);
+					Dl_vec[ord].resize(ndof,ndof);
 					Dl_vec[ord](i,i) = par_Dl(i*Dl_order + ord);
 				}
 			}
@@ -267,7 +293,7 @@ namespace thunder_ns {
 		} else return 0;
 	}
 
-	int DynBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
+	int DynTreeBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 		auto ddq = robot->get_model("ddq");
@@ -280,32 +306,32 @@ namespace thunder_ns {
 		// - Mass derivatives - //
 		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
 		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
-		std::vector<std::string> arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_DYN"};
+		std::vector<std::string> arg_list = {"q", "dq", "par_KIN", "par_DYN"};
 		robot->add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_DYN"};
 		robot->add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
 
 		// - Coriolis derivatives - //
 		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
 		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_DYN"};
 		robot->add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
-		arg_list = {"q", "dq", "ddq", "d3q", "par_KIN", "par_world2L0", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "d3q", "par_KIN", "par_DYN"};
 		robot->add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
 
 		// - Gravity derivatives - //
 		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
 		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
-		arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "dq", "par_KIN", "par_gravity", "par_DYN"};
 		robot->add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_world2L0", "par_gravity", "par_DYN"};
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"};
 		robot->add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
 
 		return 1;
 	}
 
 	// --- REG/DYN conversions --- //
-	int DynBuilder::compute_reg_dyn_conversions(std::shared_ptr<Robot> robot){
+	int DynTreeBuilder::compute_reg_dyn_conversions(std::shared_ptr<Robot> robot){
 		int numJoints = robot->get<int>("numJoints");
 		const int STD_PAR_LINK = robot->get<const int>("STD_PAR_LINK");
 
@@ -347,7 +373,7 @@ namespace thunder_ns {
 		return 1;
 	}
 
-    void DynBuilder::build(std::shared_ptr<Robot> robot) {
+    void DynTreeBuilder::build(std::shared_ptr<Robot> robot) {
 		debug_log("Starting dynamic computations", VERB_INFO);
 
 		int ret = 1;
