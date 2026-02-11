@@ -4,7 +4,7 @@ namespace thunder_ns {
 
     int SoftBuilder::compute_elastic(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
+		int nj = robot->get<int>("ndof");
 
 		if (robot->properties.count("numSoftJoints")){
 			int numSoftJoints = robot->get<int>("numSoftJoints");
