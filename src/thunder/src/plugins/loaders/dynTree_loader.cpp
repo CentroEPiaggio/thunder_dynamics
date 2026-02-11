@@ -94,8 +94,8 @@ namespace thunder_ns {
 			SX par_REG_symb = SX::sym("par_REG", STD_PAR_LINK*numJoints,1);
 			// - Add to parameters - //
 			robot->add_parameter("par_DYN", par_DYN_symb, par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
-			vector<short> par_REG_isSymb = par_DYN_isSymb;
-			robot->add_parameter("par_REG", par_REG_symb, par_REG_num, par_REG_isSymb, "Dynamic parameters for regressor", true);
+			// vector<short> par_REG_isSymb = par_DYN_isSymb;
+			robot->add_parameter("par_REG", par_REG_symb, par_REG_num, {1}, "Dynamic parameters for regressor", true);
 
 
 			// --- Link friction --- //
