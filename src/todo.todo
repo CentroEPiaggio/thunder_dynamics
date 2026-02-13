@@ -1,3 +1,12 @@
+✔ serve un modo per gestire gli 0/0 di par_REG, altrimenti i parametri vengono inf o nan @done (2/13/2026, 7:14:44 PM)
+☐ for now dh_loader accepts only ypr in base and ee frames
+☐ world2L0 e Ln2EE needs different orientation inputs, create a function world2L0-Ln2EE like par_KIN  that takes the initial vector. Needed in dh_loader but also in kin_loader
+☐ dh_loader does not support joints with dimension greater than 1, ok fixed
+☐ in dh_loader, prima aggiungi i tre parametri w2l0,dh,ln2ee, poi fai la funzione par_KIN, riprendi da dh_loader vecchio, andava quasi bene, basta usare get_model() e fare i conti simbolici sui parametri per ottenere par_KIN
+☐ forse c'è un problema con i simboli di par_KIN se uno costruisce con rpy o ypr, mi sa che i simboli sono sempre rpy
+☐ update urdf_loader for new kinematic structure
+☐ update dh_loader to new kinematic structure
+☐ compute reg_J_<nameLink> only for the available links, not ee
 ☐ aggiungi un modo per salvare una variabile non presente in robot (può servire per par_REG se non è un parametro)
 ☐ se il giunto fisso non ha dinamica (m=0), calcolare par_DYN da par_REG può dar problemi (inf). no problemi solo per par_DYN
 ✔ i parametri Dl hanno la stessa dimensione di numJoints, quindi anche quelli fissi. Non bello ma più semplice. Inizializzati a zero e simbolici a zero, quindi non danno noia nel generato. @done (2/4/2026, 8:07:57 AM)

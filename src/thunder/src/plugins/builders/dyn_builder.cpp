@@ -358,8 +358,9 @@ namespace thunder_ns {
 			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
 			SX p_dyn(par_DYN(p_idx));
 			SX mass = p_dyn(0);
-			SX mCoM = mass*p_dyn(casadi::Slice(1,4));
-			SX I_tmp = SX::mtimes(hat(mCoM).T(), hat(mCoM))/mass;
+			SX CoM = p_dyn(casadi::Slice(1,4));
+			SX mCoM = mass * p_dyn(casadi::Slice(1,4));
+			SX I_tmp = mass * SX::mtimes(hat(CoM).T(), hat(CoM));
 			SX I_dyn = p_dyn(casadi::Slice(4,10));
 			SX I_tmp_v = SX::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
 			SX I = I_dyn + I_tmp_v;
