@@ -46,16 +46,14 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
-	// std::string legacy_robot_conf = "../robots/debug/legacy_RRR.yaml";
-	// std::string new_robot_conf = "../robots/debug/RRR.yaml";
-	// std::string robot_conf = "../robots/debug/RRR.yaml";
-	std::string robot_conf = "../robots/debug/treeSerialRRR.yaml";
-	// std::string legacy_robot_conf = "../robots/debug/legacy_seaRRR.yaml";
-	// std::string config_file = "../robots/franka/franka.yaml";
-	// std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	// std::string config_file = "../robots/ego/egoRightArm.yaml";
-	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
-	// std::string config_file = "../robots/testRobots/R9_noDynSymb.yaml";
+	std::string robot_conf = "../robots/debug/RRR_dh.yaml";
+	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
+	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
+	// std::string robot_conf = "../robots/franka/franka.yaml";
+	// std::string robot_conf = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string robot_conf = "../robots/ego/egoRightArm.yaml";
+	// std::string robot_conf = "../robots/frankaWrist/frankaWrist.yaml";
+	// std::string robot_conf = "../robots/testRobots/R9_noDynSymb.yaml";
 	auto robot = legacy_robot_from_file("robot", robot_conf);
 
 	// - Properties - //
@@ -76,7 +74,6 @@ int main(){
 	// robot->set("ddxr", std::vector<double>(NEJ,0));
 
 	// - parameters - //
-	// cout << "new robot par_DHtable: " << robot->get_model("par_DHtable") << endl << endl;
 	cout << "par_KIN: " << robot->get("par_KIN") << endl << endl;
 	cout << "par_DYN:" << endl << robot->get("par_DYN") << endl << endl;
 	cout << "par_REG:" << endl << robot->get("par_REG") << endl << endl;
@@ -87,10 +84,14 @@ int main(){
 
 	// - Transforms - //
 	for (int i=0; i<=NJ; i++){
-		auto new_fun = robot->get("T_w_"+std::to_string(i));
-		cout << endl << "new robot T_w_"+std::to_string(i)+": " << new_fun << endl << endl;
+		auto fun = robot->get("T_w_"+std::to_string(i));
+		cout << endl << "T_w_"+std::to_string(i)+": " << fun << endl << endl;
 	}
 	// - Jacobians - //
+	for (int i=0; i<=NJ; i++){
+		auto fun = robot->get("J_"+std::to_string(i));
+		cout << endl << "J_"+std::to_string(i)+": " << fun << endl << endl;
+	}
 
 	// - dynamic matrices - //
 	cout << "M: " << robot->get("M") << endl << endl;
@@ -132,7 +133,6 @@ int main(){
 	auto tau_cmd_dyn = mtimes(M,robot->get("ddqr")) + mtimes(C,robot->get("dqr")) + G;
 	auto tau_cmd_reg = mtimes(Yr, robot->get("par_REG"));
 	auto tau_cmd_regMat = mtimes(reg_M + reg_C + reg_G, robot->get("par_REG")); // + mtimes(reg_Dl, par_Dl);
-	// tau_cmd_regMat = mtimes(reg_C, robot->get("par_REG")); // + mtimes(reg_Dl, par_Dl);
 
 	cout << endl << "tau_cmd_dyn:\n" << tau_cmd_dyn << endl;
 	cout << endl << "tau_cmd_reg:\n" << tau_cmd_reg << endl;
@@ -152,25 +152,20 @@ int main(){
 	// // cout << "par_Ln2EE: " << robot->model["par_Ln2EE"] << endl<<endl;
 
 	// // - kinematic regressors - //
-	// // // casadi::DM wrench(6);
-	// // // wrench << 1, 1, 1, 1, 1, 1;
-	// // // robot->set_arg("w", wrench);
-	// // auto reg_omega = robot->get("reg_Jdq");
-	// // // auto reg_tau = robot->get("reg_JTw");
-	// // // // auto reg_omega = robot->model["reg_Jdq"];
-	// // // // auto reg_tau = robot->model["reg_JTw"];
-	// // // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// // auto par_dh = robot->get_arg("par_DHtable");
-	// // auto par_base = robot->get_arg("par_world2L0");
-	// // auto par_ee = robot->get_arg("par_Ln2EE");
-	// // casadi::DM par(20,1);
-	// // par << par_dh, par_base, par_ee;
-	// // casadi::DM omega_reg = reg_omega * par;
-	// // casadi::DM omega_kin = robot->get("J_ee")*dq;
-	// // cout << "omega_reg: " << omega_reg.T() << endl;
-	// // cout << "omega_kin: " << omega_kin.T() << endl;
-	// // cout << "diff: " << omega_reg - omega_kin << endl;
-	// // // cout << "reg_tau: " << endl << reg_tau << endl<<endl;
+	// // casadi::DM wrench(6);
+	// // wrench << 1, 1, 1, 1, 1, 1;
+	// // robot->set_arg("w", wrench);
+	// auto reg_omega = robot->get("reg_Jdq");
+	// // auto reg_tau = robot->get("reg_JTw");
+	// // // auto reg_omega = robot->model["reg_Jdq"];
+	// // // auto reg_tau = robot->model["reg_JTw"];
+	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
+	// casadi::DM omega_reg = reg_omega * par;
+	// casadi::DM omega_kin = robot->get("J_ee")*dq;
+	// cout << "omega_reg: " << omega_reg.T() << endl;
+	// cout << "omega_kin: " << omega_kin.T() << endl;
+	// cout << "diff: " << omega_reg - omega_kin << endl;
+	// // cout << "reg_tau: " << endl << reg_tau << endl<<endl;
 
 	// // // - Dynamic derivatives - //
 	// // auto M_dot = robot->get("M_dot");
