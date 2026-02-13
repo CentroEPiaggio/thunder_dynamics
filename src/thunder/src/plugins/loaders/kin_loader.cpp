@@ -36,7 +36,6 @@ namespace thunder_ns {
 
 			// --- Kinematics structure --- //
 			if (config_["kinematics"]) {
-				std::cout << "into kinematics" << std::endl;
 				auto kinematics = config_["kinematics"];
 				ndof = 0;
 				for (const auto& joint : kinematics) {

@@ -112,10 +112,10 @@ namespace thunder_ns {
 			SX q_joint = q(casadi::Slice(dof_count, dof_count+dim));	// if dim == 0 Slice have dimension 1, but it do not interfere
 			dof_count += dim;
 			Ti[i] = apply_joint(robot, frame, jointsType[i], q_joint, axis);
-			std::cout << "axis: " << axis << std::endl;
-			std::cout << "q_joint: " << q_joint << std::endl;
-			std::cout << "dim: " << dim << std::endl;
-			std::cout << "Ti[i]: " << Ti[i] << std::endl;
+			// std::cout << "axis: " << axis << std::endl;
+			// std::cout << "q_joint: " << q_joint << std::endl;
+			// std::cout << "dim: " << dim << std::endl;
+			// std::cout << "Ti[i]: " << Ti[i] << std::endl;
 
 			int parent_id = jointsParent[i];
 			if (parent_id == -1) {
