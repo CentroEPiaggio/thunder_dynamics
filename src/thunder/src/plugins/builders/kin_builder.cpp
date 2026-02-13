@@ -75,15 +75,7 @@ namespace thunder_ns {
 		vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
 		vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
-		if (!robot->parameters.count("par_jointsAxis")){
-			debug_log("par_jointsAxis not defined in robot parameters, using Z axis for all joints", VERB_INFO);
-			vector<double> jointsAxis(3* numJoints);
-			for (int i=0; i<numJoints; i++){
-				jointsAxis[3*i + 2] = 1.0;
-			}
-			robot->add_parameter("par_jointsAxis", casadi::SX::sym("jointsAxis", 3*numJoints), jointsAxis, {0}, "Joint axes", true);
-		}
-		auto jointsAxis = robot->get_model("par_jointsAxis");
+		vector<vector<double>> jointsAxis = robot->get<vector<vector<double>>>("jointsAxis");
 
 		auto q = robot->get_model("q");
 		auto par_KIN = robot->get_model("par_KIN");
@@ -107,7 +99,7 @@ namespace thunder_ns {
 
 		for (int i = 0, dof_count=0; i < numJoints; i++) {
 			casadi::SX frame = par_KIN(casadi::Slice(i*6, 6+i*6));
-			auto axis = jointsAxis(casadi::Slice(i*3, i*3+3));
+			auto axis = jointsAxis[i];
 			int dim = jointsDimension[i];
 			SX q_joint = q(casadi::Slice(dof_count, dof_count+dim));	// if dim == 0 Slice have dimension 1, but it do not interfere
 			dof_count += dim;
