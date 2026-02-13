@@ -320,78 +320,53 @@ namespace thunder_ns {
 
 	int RegBuilder::compute_reg_J(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
-		// auto par_DHtable = robot->get_model("par_DHtable");
-		// auto par_world2L0 = robot->get_model("par_world2L0");
-		// auto par_Ln2EE = robot->get_model("par_Ln2EE");
-		// auto DHtable_isSymb = robot->parameters["par_DHtable"].is_symbolic;
-		// auto world2L0_isSymb = robot->parameters["par_world2L0"].is_symbolic;
-		// auto Ln2EE_isSymb = robot->parameters["par_Ln2EE"].is_symbolic;
+		const int nj = robot->get<int>("numJoints");
+		const vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
+		const vector<string> jointsName = robot->get<vector<string>>("jointsName");
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 		auto w = robot->get_model("w");
 
-		// auto dims = par_DHtable.size();
-		// casadi::SX DH_vect = casadi::SX::reshape(par_DHtable, dims.first*dims.second, 1);
+		// - cycle on available joints - //
+		for (int i=0; i<nj; i++) {
+			if (jointsAvailable[i]) {
+				string J_str = "J_"+jointsName[i];
+				casadi::SX J = robot->get_model(J_str);
+				// std::cout <<"J: " << J << std::endl;
 
-		casadi::SX J = robot->get_model("J_ee");
-		// std::cout <<"J: " << J << std::endl;
+				// - symbolic par construction of par - //
+				std::vector<casadi::SX> par_symb;
 
-		// - symbolic par construction of par - //
-		std::vector<casadi::SX> par_symb;
-		// casadi::SX par = casadi::SX::vertcat({DH_vect, par_world2L0, par_Ln2EE});
-		// int sz = 0;
-		// parse DH
-		// for (int i=0; i<par_DHtable.size1(); i++){
-		// 	if (DHtable_isSymb[i]){
-		// 		par_symb.push_back(par_DHtable(i));
-		// 	}
-		// }
-		// // parse world2L0
-		// for (int i=0; i<par_world2L0.size1(); i++){
-		// 	if (world2L0_isSymb[i]){
-		// 		par_symb.push_back(par_world2L0(i));
-		// 	}
-		// }
-		// // parse Ln2EE
-		// for (int i=0; i<par_Ln2EE.size1(); i++){
-		// 	if (Ln2EE_isSymb[i]){
-		// 		par_symb.push_back(par_Ln2EE(i));
-		// 	}
-		// }
+				for (const auto& arg : robot->functions[J_str].args){
+					if (arg != "q"){
+						par_symb.push_back(robot->parameters[arg].get_symb_resized());
+					}
+				}
 
-		for (const auto& arg : robot->functions["J_ee"].args){
-			if (arg != "q"){
-				par_symb.push_back(robot->parameters[arg].get_symb_resized());
+				// par.resize(sz,1);
+				casadi::SX par = casadi::SX::vertcat(par_symb);
+				// std::cout <<"par: " << par << std::endl;
+				
+				if (par.size1() != 0){
+					casadi::SX Jdq = casadi::SX::mtimes(J, dq);
+					// std::cout <<"Jdq: " << Jdq << std::endl;
+					casadi::SX reg_Jdq = casadi::SX::jacobian(Jdq, par);
+					// std::cout <<"reg_Jdq: " << reg_Jdq << std::endl;
+					casadi::SX JTw = casadi::SX::mtimes(J.T(), w);
+					// std::cout <<"JTw: " << JTw << std::endl;
+					casadi::SX reg_JTw = casadi::SX::jacobian(JTw, par);
+					// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
+
+					std::vector<std::string> arg_list;
+					arg_list = {"q", "dq", "par_KIN"};
+					// std::cout << "par_list: " << par_symb << std::endl;
+					if (!robot->add_function("reg_Jdq_"+jointsName[i], reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq of link "+jointsName[i])) return 0;
+
+					arg_list = {"q", "w", "par_KIN"};
+					if (!robot->add_function("reg_JTw_"+jointsName[i], reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w of link "+jointsName[i])) return 0;
+				}
 			}
 		}
-
-		// par.resize(sz,1);
-		casadi::SX par = casadi::SX::vertcat(par_symb);
-		// std::cout <<"par: " << par << std::endl;
-		
-		if (par.size1() != 0){
-			casadi::SX Jdq = casadi::SX::mtimes(J, dq);
-			// std::cout <<"Jdq: " << Jdq << std::endl;
-			casadi::SX reg_Jdq = casadi::SX::jacobian(Jdq, par);
-			// std::cout <<"reg_Jdq: " << reg_Jdq << std::endl;
-			// reg_Jdq += casadi::SX::jacobian(Jdq, par_world2L0);
-			// reg_Jdq += casadi::SX::jacobian(Jdq, par_Ln2EE);
-			casadi::SX JTw = casadi::SX::mtimes(J.T(), w);
-			// std::cout <<"JTw: " << JTw << std::endl;
-			casadi::SX reg_JTw = casadi::SX::jacobian(JTw, par);
-			// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
-
-			std::vector<std::string> arg_list;
-			arg_list = {"q", "dq", "par_KIN", "par_world2L0", "par_Ln2EE"};
-			// std::cout << "par_list: " << par_symb << std::endl;
-			if (!robot->add_function("reg_Jdq", reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq")) return 0;
-
-			arg_list = {"q", "w", "par_KIN", "par_world2L0", "par_Ln2EE"};
-			if (!robot->add_function("reg_JTw", reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w")) return 0;
-		}
-		
-
 		return 1;
 	}
 
