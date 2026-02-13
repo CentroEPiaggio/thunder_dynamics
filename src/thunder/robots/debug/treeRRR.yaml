@@ -1,6 +1,6 @@
 pipeline:
   loaders:    ["kin_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder"] #, "reg_builder"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
 version: 1.0

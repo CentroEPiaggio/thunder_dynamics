@@ -51,18 +51,6 @@ kin_loader:
       xyz: [1,0,0]
       ypr: [0,0,*PI_2_neg]
 
-  # # world to link_0
-  # Base_to_L0:
-  #   symb: [0,0,0, 0,0,0]
-  #   xyz: [0, 0, 0]
-  #   ypr: [0, 0, 0]
-
-  # # Link_n to EE
-  # Ln_to_EE:
-  #   symb: [0,0,0, 0,0,0]
-  #   xyz: [1, 0, 0]
-  #   ypr: [0, 0, *PI_2_neg]
-
 ############################################
 dyn_loader:
 

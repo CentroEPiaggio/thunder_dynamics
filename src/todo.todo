@@ -1,39 +1,18 @@
 
-✔ in dh_loader, prima aggiungi i tre parametri w2l0,dh,ln2ee, poi fai la funzione par_KIN, riprendi da dh_loader vecchio, andava quasi bene, basta usare get_model() e fare i conti simbolici sui parametri per ottenere par_KIN @done (2/13/2026, 9:48:58 PM)
-✔ forse c'è un problema con i simboli di par_KIN se uno costruisce con rpy o ypr, mi sa che i simboli sono sempre rpy @done (2/13/2026, 9:49:08 PM)
 ☐ update urdf_loader for new kinematic structure
-✔ update dh_loader to new kinematic structure @done (2/13/2026, 9:50:43 PM)
-✔ compute reg_J_<nameLink> only for the available links, not ee @done (2/13/2026, 10:30:04 PM)
-☐ aggiungi un modo per salvare una variabile non presente in robot (può servire per par_REG se non è un parametro)
-☐ se il giunto fisso non ha dinamica (m=0), calcolare par_DYN da par_REG può dar problemi (inf). no problemi solo per par_DYN
-✔ i parametri Dl hanno la stessa dimensione di numJoints, quindi anche quelli fissi. Non bello ma più semplice. Inizializzati a zero e simbolici a zero, quindi non danno noia nel generato. @done (2/4/2026, 8:07:57 AM)
-trova un modo di gestire i giunti fissi nella dinamica:
-	☐ preferred: numJoints è il numero di giunti, anche quelli fissi. E' il costruttore dinamico che raggruppa sulla base dei fissi
-	☐ se ripartisco i parametri sui giunti mobili ho par_DYN che ha dimensioni incoerenti sia con numJoints che ndof
-	☐ se elimino i giunti fissi devo stare attento a ripartire tutto nel modo corretto
-✔ finisci di aggiustare numJoints in ndof in kinTree_loader @done (1/29/2026, 9:35:55 PM)
-✔ test della cinamatica del robot generato, problema di dimensioni da qualche parte @done (1/29/2026, 9:35:59 PM)
 ☐ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf.
-☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
-✔ nonexisting parent mean world @done (1/29/2026, 10:32:04 AM)
-☐ attenzione che ora ndof è la dimensione di q, numJoints è il numero di giunti (anche fissi)
-☐ migliora la gestione dei giunti, forse meglio avere un vector di SX e ogni giunto prendo un elemento dell'array
-✔ aggiungi dimensione giunti per giunti fissi che hanno dimensione 0 @done (1/28/2026, 5:40:52 PM)
-✔ probabilmente c'è un problema in get_value_str per i vector<vector<double>> degli assi dei giunti @done (1/29/2026, 10:32:57 AM)
-✔ capisci come gestire i giunti fissi negli alberi @done (2/3/2026, 8:24:13 AM)
-☐ in casadi possono essere messe le condizioni, guarda come poterle usare.
-☐ salva tutte le trasformate come una lista (temo servano le funzioni custom)
-✔ salva come funzioni singole solo le trasformate che abbiano un flag (tipo save: true) @done (1/29/2026, 5:34:50 PM)
 
 general:
+	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
 	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics
-	☐ joints with more that one dof?
-	☐ choose better names for config ("joints_type", ...)
+	✔ joints with more that one dof? added jointsDimension @done (2/13/2026, 10:42:38 PM)
+	✔ choose better names for config ("joints_type", ...) @done (2/13/2026, 10:42:44 PM)
 	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot
-	☐ robot_name not handled properly in legacy_loader, yaml have priority
+	✔ robot_name not handled properly in legacy_loader, yaml have priority @done (2/13/2026, 10:42:57 PM)
 	✔ move templates to thunder/data/templates (for example the cmakelists) @done (1/16/2026, 11:19:53 AM)
+	☐ use a vector of SX for joints? one for each joint and the dimensions regulate the total ndof
 	☐ generic utils.spatial and generic wrt robot and thunder_robot
 	☐ add verbosity levels (not bool)
 	☐ substitute cout with errors or info in plugins
@@ -45,7 +24,7 @@ general:
 	☐ add version control for config file
 	☐ generator for useful functions in thunder_robot (or add a new class <robot>_utils.h) or (read below)
 	☐ add add_C_function to insert custom functions in the generated code, needs a class CFunction to define
-	☐ test inertials of franka robots
+	✔ test inertials of franka robots @done (2/13/2026, 10:43:46 PM)
 	
 thunder:
 	☐ create structured tests for the robot
@@ -67,6 +46,8 @@ thunder:
 	kinematics:
 		- fixed joints have kinematics and dynamics, they are counted also in numJoints, but not in ndof
 		- internal representation is xyzrpy, it is possible to use also ypr but it change only numerical initialization of the rpy
+		☐ transforms as a list, probably needs the use of custom_C_function or intelligent using of casadi branched
+		☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
 		☐ dh_loader does not support joints with dimension greater than 1
 		☐ for now dh_loader accepts only ypr in base and ee frames
 		☐ allow different kinematic representation? like ypr in joints? have to keen track in some way (think about save parameters, representation is lost)
@@ -156,6 +137,7 @@ possible features::
 	☐ thunder_control: basic controllers that uses thunder_robot
 	☐ analytic Jacobian: choose a parametrization and provide conversions
 	☐ handling of different joint structure, fixed, defined by user
+	☐ casadi can handle if/else in SX, could be interesting
 	
 INFO:
 	- double indexes in casadi does not work (e.g. ### SX a(l:1); a(Slice(l1,l2))(1) = b ### does not assign correctly at a(l1+1))
