@@ -374,9 +374,9 @@ namespace thunder_ns {
 			for (int i = 0; i < numJoints; ++i) {
 				const auto& b = active_bodies[i];
 				par_DYN_num[STD_PAR_LINK * i + 0] = static_cast<double>(b.mass);
-				par_DYN_num[STD_PAR_LINK * i + 1] = static_cast<double>(b.mass_moment(0));
-				par_DYN_num[STD_PAR_LINK * i + 2] = static_cast<double>(b.mass_moment(1));
-				par_DYN_num[STD_PAR_LINK * i + 3] = static_cast<double>(b.mass_moment(2));
+				par_DYN_num[STD_PAR_LINK * i + 1] = static_cast<double>(b.com(0));
+				par_DYN_num[STD_PAR_LINK * i + 2] = static_cast<double>(b.com(1));
+				par_DYN_num[STD_PAR_LINK * i + 3] = static_cast<double>(b.com(2));
 				par_DYN_num[STD_PAR_LINK * i + 4] = static_cast<double>(b.inertia_at_origin(0, 0)); // Ixx
 				par_DYN_num[STD_PAR_LINK * i + 5] = static_cast<double>(b.inertia_at_origin(0, 1)); // Ixy
 				par_DYN_num[STD_PAR_LINK * i + 6] = static_cast<double>(b.inertia_at_origin(0, 2)); // Ixz
