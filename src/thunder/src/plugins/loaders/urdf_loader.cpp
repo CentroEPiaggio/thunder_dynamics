@@ -373,16 +373,25 @@ namespace thunder_ns {
 
 			for (int i = 0; i < numJoints; ++i) {
 				const auto& b = active_bodies[i];
+				// --- Compute CoM Inertia (I_com) ---
+				// We currently have I_origin (b.inertia_at_origin) and want I_com for par_DYN
+				// Formula: I_com = I_origin - m * S(c) * S(c)^T
+				casadi::SX mass = b.mass;
+				casadi::SX com = b.mass_moment / mass;
+				casadi::SX skew_c = hat(com);
+				casadi::SX I_origin = b.inertia_at_origin;
+				casadi::SX I_com = I_origin - mass * casadi::SX::mtimes(skew_c, skew_c.T());
+
 				par_DYN_num[STD_PAR_LINK * i + 0] = static_cast<double>(b.mass);
-				par_DYN_num[STD_PAR_LINK * i + 1] = static_cast<double>(b.mass_moment(0)/b.mass);
-				par_DYN_num[STD_PAR_LINK * i + 2] = static_cast<double>(b.mass_moment(1)/b.mass);
-				par_DYN_num[STD_PAR_LINK * i + 3] = static_cast<double>(b.mass_moment(2)/b.mass);
-				par_DYN_num[STD_PAR_LINK * i + 4] = static_cast<double>(b.inertia_at_origin(0, 0)); // Ixx
-				par_DYN_num[STD_PAR_LINK * i + 5] = static_cast<double>(b.inertia_at_origin(0, 1)); // Ixy
-				par_DYN_num[STD_PAR_LINK * i + 6] = static_cast<double>(b.inertia_at_origin(0, 2)); // Ixz
-				par_DYN_num[STD_PAR_LINK * i + 7] = static_cast<double>(b.inertia_at_origin(1, 1)); // Iyy
-				par_DYN_num[STD_PAR_LINK * i + 8] = static_cast<double>(b.inertia_at_origin(1, 2)); // Iyz
-				par_DYN_num[STD_PAR_LINK * i + 9] = static_cast<double>(b.inertia_at_origin(2, 2)); // Izz
+				par_DYN_num[STD_PAR_LINK * i + 1] = static_cast<double>(com(0));
+				par_DYN_num[STD_PAR_LINK * i + 2] = static_cast<double>(com(1));
+				par_DYN_num[STD_PAR_LINK * i + 3] = static_cast<double>(com(2));
+				par_DYN_num[STD_PAR_LINK * i + 4] = static_cast<double>(I_com(0, 0)); // Ixx
+				par_DYN_num[STD_PAR_LINK * i + 5] = static_cast<double>(I_com(0, 1)); // Ixy
+				par_DYN_num[STD_PAR_LINK * i + 6] = static_cast<double>(I_com(0, 2)); // Ixz
+				par_DYN_num[STD_PAR_LINK * i + 7] = static_cast<double>(I_com(1, 1)); // Iyy
+				par_DYN_num[STD_PAR_LINK * i + 8] = static_cast<double>(I_com(1, 2)); // Iyz
+				par_DYN_num[STD_PAR_LINK * i + 9] = static_cast<double>(I_com(2, 2)); // Izz
 			}
 
 			robot->add_parameter("par_DYN", casadi::SX::sym("par_DYN", STD_PAR_LINK * numJoints, 1), par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
