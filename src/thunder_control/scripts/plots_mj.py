@@ -23,6 +23,7 @@ def run_plot():
         return
 
     N_HORIZON = 20
+    t_hor_lim = 0.2
 
     # 1. Caricamento Dati
     df_ref = pd.read_csv(FILE_TRAJS, header=None)
@@ -59,7 +60,7 @@ def run_plot():
         q_mpc_fixed = row_fixed[N_HORIZON + 2 :]
 
         # Calcolo asse temporale per questa specifica predizione
-        time_to_go_fixed = max(t_end_sim - t_sim_fixed, 0.02)
+        time_to_go_fixed = max(t_end_sim - t_sim_fixed, t_hor_lim)
         dt_node_fixed = time_to_go_fixed / N_HORIZON
         t_horizon_fixed = t_sim_fixed + np.arange(N_HORIZON + 1) * dt_node_fixed
 
@@ -95,7 +96,7 @@ def run_plot():
         q_mj = row[1 : N_HORIZON + 2]
         q_mpc = row[N_HORIZON + 2 :]
 
-        time_to_go = max(t_end_sim - t_sim, 0.02)
+        time_to_go = max(t_end_sim - t_sim, t_hor_lim)
         dt_node = time_to_go / N_HORIZON
         t_horizon = t_sim + np.arange(N_HORIZON + 1) * dt_node
 

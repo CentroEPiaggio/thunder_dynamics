@@ -29,13 +29,14 @@ def export_clean_model():
     # Stato: x = [q, dq] (14 elementi)
     q = ca.SX.sym("q", 7)
     dq = ca.SX.sym("dq", 7)
+    ddq = ca.SX.sym("ddq", 7)
     Tf = ca.SX.sym("Tf", 1)
-    x = ca.vertcat(q, dq)
+    x = ca.vertcat(q, dq, ddq)
 
     # Input: u = ddq (7 elementi)
-    ddq = ca.SX.sym("ddq", 7)
-    u = ddq
-
+    jerk = ca.SX.sym("jerk", 7)
+    u = jerk
+    
     # x_final = ca.SX.sym("p_obs", x.size1())
     # model.p = x_final
 
@@ -43,7 +44,7 @@ def export_clean_model():
     model.x = x
     model.u = u
     # x_dot = [dq, u]
-    model.f_expl_expr = Tf * ca.vertcat(dq, u)
+    model.f_expl_expr = Tf * ca.vertcat(dq, ddq, u)
     model.p = Tf
 
     # --- CALCOLO COPPIA (Vincolo Fisico) ---
@@ -54,16 +55,17 @@ def export_clean_model():
     coriolis = (
         ca.mtimes(C_temp, dq) if C_temp.size1() == 7 and C_temp.size2() == 7 else C_temp
     )
-    tau_expr = ca.mtimes(M_val, u) + coriolis + G_val
+    tau_expr = ca.mtimes(M_val, ddq) + coriolis + G_val
 
     # Aggiungiamo la coppia ai vincoli algebrici (h)
     model.con_h_expr = tau_expr
 
     # --- FUNZIONE DI COSTO ---
-    # y = [q, u] -> Minimizziamo posizione e accelerazione
-    model.cost_y_expr = ca.vertcat(q, dq, u)
+    # y = [q, u] -> Minimizziamo posizione velocità e accelerazione
+    model.cost_y_expr = ca.vertcat(q, dq, ddq, u)
+    
     # Costo terminale: solo per definizione, ma comanderanno gli Hard Constraints
-    model.cost_y_expr_e = ca.vertcat(q, dq)
+    model.cost_y_expr_e = ca.vertcat(q, dq,ddq)
 
     return model
 
@@ -88,23 +90,26 @@ def create_solver():
     # Obiettivo: Minima posizione e accelerazione (W_q e W_u)
     W_q = 1e-6
     W_dq = 1e-6
-    W_u = 1e-1
+    W_ddq = 1e-1
+    W_u = 0.0
 
-    # Matrice W (21x21) per y = [q, dq, u]
-    W_diag = np.concatenate([np.full(7, W_q), np.full(7, W_dq), np.full(7, W_u)])
+    # Matrice W (28x28) per y = [q, dq, ddq, u]
+    W_diag = np.concatenate([np.full(7, W_q), np.full(7, W_dq), np.full(7, W_ddq), np.full(7, W_u)])
     ocp.cost.W = np.diag(W_diag)
 
-    ocp.cost.yref = np.zeros(21)  # Target zero posizione e accelerazione
+    ocp.cost.yref = np.zeros(28) # Target zero posizione e accelerazione
 
     # Pesi Terminal Cost
     W_q_e = 1e5
-    W_dq_e = 1e3
+    W_dq_e = 1e5
+    W_ddq_e = 1e2
     # Anche se usiamo Hard Constraints, mettiamo un peso per guidare il solver
-    W_diag_e = np.concatenate([np.full(7, W_q_e), np.full(7, W_dq_e)])
-    ocp.cost.W_e = np.diag(W_diag_e)  # Peso alto su tutto lo stato finale
-    ocp.cost.yref_e = np.zeros(14)  # Verrà aggiornato in C++
+    W_diag_e = np.concatenate([np.full(7, W_q_e), np.full(7, W_dq_e), np.full(7, W_ddq_e)])
+    ocp.cost.W_e = np.diag(W_diag_e) # Peso alto su tutto lo stato finale
+    ocp.cost.yref_e = np.zeros(21) # Verrà aggiornato in C++
 
-    # --- VINCOLI ---
+    # --- VINCOLI ---   
+    
     # Limiti Fisici Giunti
     q_max = np.array([2.89, 1.76, 2.89, -0.06, 2.89, 3.75, 2.89])
     q_min = np.array([-2.89, -1.76, -2.89, -3.07, -2.89, -0.01, -2.89])
@@ -113,26 +118,27 @@ def create_solver():
     ddq_min = np.array([-15, -7.5, -10, -12.5, -15, -20, -20])
     ddq_max = np.array([15, 7.5, 10, 12.5, 15, 20, 20])
     tau_lim = 87.0
+    jerk_lim = 5000.0  # Not used now, but can be added later
 
     # 1. State Bounds (x)
-    ocp.constraints.idxbx = np.arange(14)
-    ocp.constraints.lbx = np.concatenate([q_min, dq_min])
-    ocp.constraints.ubx = np.concatenate([q_max, dq_max])
+    ocp.constraints.idxbx = np.arange(21)
+    ocp.constraints.lbx = np.concatenate([q_min, dq_min, ddq_min])
+    ocp.constraints.ubx = np.concatenate([q_max, dq_max, ddq_max])
 
     # 2. Input Bounds (u)
     ocp.constraints.idxbu = np.arange(7)
-    ocp.constraints.lbu = ddq_min
-    ocp.constraints.ubu = ddq_max
+    ocp.constraints.lbu = np.full(7, jerk_lim * -1)
+    ocp.constraints.ubu = np.full(7, jerk_lim)
 
     # 3. Torque Bounds (h) - Solo Stage Constraints
-    ocp.constraints.lh = np.full(7, -tau_lim)
-    ocp.constraints.uh = np.full(7, +tau_lim)
-    # 4. HARD CONSTRAINTS TERMINALI (Cruciale per la tua richiesta)
+    ocp.constraints.lh = np.full(7, tau_lim * -1)
+    ocp.constraints.uh = np.full(7, tau_lim)
+    # 4. HARD CONSTRAINTS TERMINALI
     # Definiamo che all'ultimo nodo (N), TUTTI gli stati (q, dq) sono vincolati.
-    # In Python mettiamo dummy values. In C++ aggiornerai lbx_e e ubx_e con il target.
-    ocp.constraints.idxbx_e = np.arange(14)
+    ocp.constraints.idxbx_e = np.arange(14) 
     ocp.constraints.lbx_e = np.zeros(14)
     ocp.constraints.ubx_e = np.zeros(14)
+    
     # ocp.constraints.lh_e = np.zeros(14)
     # ocp.constraints.uh_e = np.zeros(14)
 
@@ -140,8 +146,8 @@ def create_solver():
     ocp.solver_options.qp_solver = "FULL_CONDENSING_HPIPM"
     ocp.solver_options.hessian_approx = "GAUSS_NEWTON"
     ocp.solver_options.integrator_type = "ERK"
-    ocp.solver_options.nlp_solver_type = "SQP"  # SQP standard o SQP_RTI
-
+    ocp.solver_options.nlp_solver_type = "SQP_RTI" # SQP standard o SQP_RTI
+    
     # Per Hard Constraints terminali, a volte serve più iterazioni o tolleranze diverse
     ocp.solver_options.qp_solver_iter_max = 50
     ocp.solver_options.nlp_solver_max_iter = 100
@@ -156,7 +162,7 @@ def create_solver():
     # Parametri iniziali (nessuno ora, ma Acados li vuole se definiti nel model)
     # Nota: nel model clean non ho definito model.p, quindi non serve parameter_values
     ocp.parameter_values = np.array([1.0])
-    ocp.constraints.x0 = np.zeros(14)
+    ocp.constraints.x0 = np.zeros(21)
 
     # Crea JSON e genera codice
     AcadosOcpSolver(ocp, json_file="acados_track.json")
