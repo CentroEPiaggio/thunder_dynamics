@@ -1,6 +1,10 @@
 
+☐ problema perchè numJoints serve prima di tutto ma è diverso da chain.size() perchè aggiungiamo link fittizzi
+☐ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml
+☐ riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader
+✔ sistema par_DYN_num, attualmente i numerici sono nella variabile locale par_DYN @done (2/19/2026, 5:20:34 PM)
 ☐ update urdf_loader for new kinematic structure
-☐ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf.
+✔ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf. @done (2/13/2026, 11:19:28 PM)
 
 general:
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)

@@ -4,7 +4,6 @@ pipeline:
   generators: ["robot_generator"]
 
 
-
 urdf_loader:
   urdf_path: "franka.urdf"
   base_link: "panda_link0"

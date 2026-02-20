@@ -46,7 +46,8 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
-	std::string robot_conf = "../robots/debug/RRR_dh.yaml";
+	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
+	std::string robot_conf = "../robots/debug/franka_urdf.yaml";
 	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
 	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
 	// std::string robot_conf = "../robots/franka/franka.yaml";
