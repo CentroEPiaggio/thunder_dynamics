@@ -3,16 +3,14 @@ pipeline:
   builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
-
 urdf_loader:
-  urdf_path: "franka.urdf"
-  base_link: "panda_link0"
-  ee_link: "panda_link8"
+  urdf_path: "dynaarm.urdf"
+  base_link: "base"
+  ee_link: "wrist_2"
 
-  # gravity
   gravity:
     symb: [0,0,0]
-    value: [0, 0, 9.81]
+    value: [0, 0, -9.81]
 
   # world to link_0
   Base_to_L0:

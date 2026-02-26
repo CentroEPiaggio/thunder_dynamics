@@ -12,6 +12,9 @@ namespace thunder_ns {
 		
 		private:
 			std::shared_ptr<urdf::UrdfModel> urdf_model;
+			std::vector<std::shared_ptr<urdf::Link>> chain;
+			std::shared_ptr<urdf::Link> root_link;
+			std::shared_ptr<urdf::Link> ee_link;
 			std::string robot_name;
 			int numJoints = 0;
 			int ndof = 0;
@@ -32,11 +35,12 @@ namespace thunder_ns {
 
 			void accumulateChain(std::shared_ptr<urdf::Link> link, const std::string& base, std::vector<std::shared_ptr<urdf::Link>>& chain);
 			casadi::SX to_casadi_sx(const urdf::Transform& T);
-			void reset_thunder_chain(size_t size);
+			void reset_thunder_chain();
 			casadi::DM extractKinematicsFromJoint(std::shared_ptr<urdf::Joint> joint);
 			casadi::DM extractInertiaFromLink(std::shared_ptr<urdf::Link> link);
-			void add_joint(int link_id, std::shared_ptr<urdf::Joint> joint);
-			void add_chain_from(int& link_id, int parent, std::shared_ptr<urdf::Link> link);
+			void add_joint(std::shared_ptr<urdf::Joint> joint);
+			bool chain_has_link(string link_name);
+			void add_chain_from(int parent, std::shared_ptr<urdf::Link> link);
 
 		public:
 			UrdfLoader() : BaseLoader("URDF Loader", "Load a robot from URDF file.") {}

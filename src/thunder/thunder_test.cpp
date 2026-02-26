@@ -47,7 +47,8 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 int main(){
 
 	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
-	std::string robot_conf = "../robots/debug/franka_urdf.yaml";
+	// std::string robot_conf = "../robots/debug/franka_urdf.yaml";
+	std::string robot_conf = "../robots/debug/dynaarm.yaml";
 	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
 	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
 	// std::string robot_conf = "../robots/franka/franka.yaml";
@@ -60,6 +61,8 @@ int main(){
 	// - Properties - //
 	int NJ = robot->get<int>("numJoints");
 	int ndof = robot->get<int>("ndof");
+	cout << "numJoints: " << NJ << endl << endl;
+	cout << "ndof: " << ndof << endl << endl;
 	// NEJ = robot->get<int>("numSoftJoints");
 	// N_PARAM_K = NEJ*robot->get<int>("K_order");
 	// N_PARAM_D = NEJ*robot->get<int>("D_order");
@@ -80,16 +83,22 @@ int main(){
 	cout << "par_REG:" << endl << robot->get("par_REG") << endl << endl;
 	cout << "dyn2reg:" << endl << robot->get("dyn2reg") << endl << endl;
 	cout << "reg2dyn:" << endl << robot->get("reg2dyn") << endl << endl;
-	cout << "par_Dl:" << endl << robot->get("par_Dl") << endl << endl;
-	cout << "par_Dl symb:" << endl << robot->get_model("par_Dl") << endl << endl;
+	if (robot->get<int>("Dl_order")){
+		cout << "par_Dl:" << endl << robot->get("par_Dl") << endl << endl;
+		cout << "par_Dl symb:" << endl << robot->get_model("par_Dl") << endl << endl;
+	} else {
+		cout<<endl<<"Robot have no Dl_order"<<endl;
+	}
+	
+	cout << "par_gravity: " << endl << robot->get_model("par_gravity") << endl << endl;
 
 	// - Transforms - //
-	for (int i=0; i<=NJ; i++){
+	for (int i=0; i<NJ; i++){
 		auto fun = robot->get("T_w_"+std::to_string(i));
 		cout << endl << "T_w_"+std::to_string(i)+": " << fun << endl << endl;
 	}
 	// - Jacobians - //
-	for (int i=0; i<=NJ; i++){
+	for (int i=0; i<NJ; i++){
 		auto fun = robot->get("J_"+std::to_string(i));
 		cout << endl << "J_"+std::to_string(i)+": " << fun << endl << endl;
 	}
@@ -99,16 +108,21 @@ int main(){
 	cout << "C: " << robot->get("C") << endl << endl;
 	cout << "C_std: " << robot->get("C_std") << endl << endl;
 	cout << "G: " << robot->get("G") << endl << endl;
-	cout << "reg_M: " << robot->get("reg_M") << endl << endl;
-	cout << "reg_C: " << robot->get("reg_C") << endl << endl;
-	cout << "reg_G: " << robot->get("reg_G") << endl << endl;
-	cout << "Yr: " << robot->get("Yr") << endl << endl;
 	if (robot->get<int>("Dl_order")){
 		cout << "dl: " << robot->get("dl") << endl << endl;
 		cout << "reg_dl: " << robot->get("reg_dl") << endl << endl;
 	} else {
 		cout<<endl<<"Robot have no Dl_order"<<endl;
 	}
+	if (robot->functions.count("Yr")) {
+		cout << "reg_M: " << robot->get("reg_M") << endl << endl;
+		cout << "reg_C: " << robot->get("reg_C") << endl << endl;
+		cout << "reg_G: " << robot->get("reg_G") << endl << endl;
+		cout << "Yr: " << robot->get("Yr") << endl << endl;
+	} else {
+		cout<<endl<<"Robot have no regressors"<<endl;
+	}
+	
 
 	// if (robot->get<bool>("ELASTIC")){
 	// 	cout << "k: " << robot->get("k") << endl << endl;
@@ -124,22 +138,21 @@ int main(){
 	auto M = robot->get("M");
 	auto C = robot->get("C");
 	auto G = robot->get("G");
-	auto Yr = robot->get("Yr");
-	auto reg_M = robot->get("reg_M");
-	auto reg_C = robot->get("reg_C");
-	auto reg_G = robot->get("reg_G");
-
-	// // cout<<endl<<"Yr\n"<<Yr<<endl;
-
 	auto tau_cmd_dyn = mtimes(M,robot->get("ddqr")) + mtimes(C,robot->get("dqr")) + G;
-	auto tau_cmd_reg = mtimes(Yr, robot->get("par_REG"));
-	auto tau_cmd_regMat = mtimes(reg_M + reg_C + reg_G, robot->get("par_REG")); // + mtimes(reg_Dl, par_Dl);
-
 	cout << endl << "tau_cmd_dyn:\n" << tau_cmd_dyn << endl;
-	cout << endl << "tau_cmd_reg:\n" << tau_cmd_reg << endl;
-	cout << endl << "tau_cmd_regMat:\n" << tau_cmd_regMat << endl;
-	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl;
 
+	if (robot->functions.count("Yr")) {
+		auto reg_M = robot->get("reg_M");
+		auto reg_C = robot->get("reg_C");
+		auto reg_G = robot->get("reg_G");
+		auto Yr = robot->get("Yr");
+		auto tau_cmd_reg = mtimes(Yr, robot->get("par_REG"));
+		auto tau_cmd_regMat = mtimes(reg_M + reg_C + reg_G, robot->get("par_REG")); // + mtimes(reg_Dl, par_Dl);
+		cout << endl << "tau_cmd_reg:\n" << tau_cmd_reg << endl;
+		cout << endl << "tau_cmd_regMat:\n" << tau_cmd_regMat << endl;
+		cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl;
+	}
+	
 	// // cout << "q0_dist: " << robot->get("q0_dist") << endl<<endl;
 
 	// // auto par_error = robot->model["G"] - mtimes(robot->model["reg_G"], robot->model["par_REG"]);

@@ -40,7 +40,7 @@ namespace thunder_ns{
 			// cout<<"result: "<<result<<endl;
 			return DM::vertcat(result);
 		} else {
-			std::cerr << name + " not recognised" << endl;
+			throw(std::runtime_error(name + " not recognised in robot " + robotName));
 			return DM::zeros(1,1);
 		}
 	}
@@ -78,7 +78,8 @@ namespace thunder_ns{
 				return SX::vertcat(result);
 			}
 		} else {
-			std::cerr << name + " not recognised" << endl;
+			throw(std::runtime_error(name + " not recognised in robot " + robotName));
+			// std::cerr << name + " not recognised" << endl;
 			return SX::zeros(1,1);
 		}
 	}

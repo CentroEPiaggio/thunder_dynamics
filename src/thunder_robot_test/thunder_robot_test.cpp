@@ -13,16 +13,18 @@
 
 // #include "thunder_robot.h"
 // #include "thunder_RRR.h"
-#include "thunder_treeRRR.h"
+// #include "thunder_treeRRR.h"
 // #include "thunder_franka.h"
+#include "thunder_franka_urdf.h"
 // #include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
 // const std::string par_file = "../robots/RRR_par.yaml";
-const std::string par_file = "../robots/treeRRR_par.yaml";
+// const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
+const std::string par_file = "../robots/franka_urdf_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
 // const std::string par_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
@@ -30,6 +32,8 @@ const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
 using namespace std::chrono;
 using std::cout;
 using std::endl;
+using std::string;
+using Eigen::VectorXd;
 
 template <typename T>
 struct Tester {
@@ -214,7 +218,7 @@ struct Tester {
 
 int main(){
 
-	Tester<thunder_treeRRR> robot;
+	Tester<thunder_franka_urdf> robot;
 	cout << "Robot: " << robot.get_name() << endl;
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
