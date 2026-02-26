@@ -261,7 +261,12 @@ namespace thunder_ns {
 
 	int DynBuilder::compute_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
+		int Dl_order = 0;
+		if (robot->properties.count("Dl_order")) {
+			Dl_order = robot->get<int>("Dl_order");
+		} else {
+			robot->add_property<int>("Dl_order", Dl_order, "int", "Order of the link friction model", true);
+		}
 
 		if (Dl_order > 0){
 			const int nj = robot->get<int>("numJoints");
