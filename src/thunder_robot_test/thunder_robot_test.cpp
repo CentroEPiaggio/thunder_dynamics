@@ -20,6 +20,8 @@
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
+#define thunder_robot thunder_franka_urdf
+
 // const std::string par_file = "../robots/RRR_par.yaml";
 // const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
@@ -218,7 +220,7 @@ struct Tester {
 
 int main(){
 
-	Tester<thunder_franka_urdf> robot;
+	Tester<thunder_robot> robot;
 	cout << "Robot: " << robot.get_name() << endl;
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};

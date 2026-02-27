@@ -91,7 +91,7 @@ namespace thunder_ns {
 		auto par_DYN_link = extractInertiaFromLink(link);
 		for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(static_cast<double>(par_DYN_link(j,0)));
 
-		if (link->child_joints.empty()) {		// link is an end-effector
+		if ((link->child_joints.empty()) || (ee_link == link)) {		// link is an end-effector
 			// cout << "Added end effector: " << link->name << endl;
 			jointsType.push_back("FIXED");
 			jointsAxis.push_back({0,0,0});
@@ -103,38 +103,30 @@ namespace thunder_ns {
 			// add kinematic properties for joints
 			int i = 0;
 			for (auto joint : link->child_joints) {
-				// cout << "Added link: " << link->name;
-				if (i > 0) {
-					// Initialize ghost node for branches
-					// cout << "_" + std::to_string(i);
-					link_id++;
-					jointsName.push_back(link->name + "_" + std::to_string(i));
-					jointsParent.push_back(parent); 							// Attached to same parent as main node
-					for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(0);		// fictitious link
-				}
-				// set availability and return if it is the end effector
-				if (ee_link == link) {
-					jointsType.push_back("FIXED");
-					jointsAxis.push_back({0,0,0});
-					jointsDimension.push_back(0);
-					jointsAvailable.push_back(true);
-					jointsDerivatives.push_back(true);
-					for(int j=0; j<KIN_DIM; j++) par_KIN_num.push_back(0);
-					return;
-				} else {	// add joint kinematics for each joint of the link
+				if (chain_has_link(joint->child_link_name)) {
+					if (i > 0) {
+						// Initialize ghost node for branches
+						// cout << "_" + std::to_string(i);
+						link_id++;
+						numJoints++;
+						jointsName.push_back(link->name + "_" + std::to_string(i));
+						jointsParent.push_back(parent); 							// Attached to same parent as main node
+						for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(0);		// fictitious link
+					}
+					// joints origin
 					jointsAvailable.push_back(false);
 					jointsDerivatives.push_back(false);
 					// extract kinematics from joint position
 					auto par_KIN_link = extractKinematicsFromJoint(joint);
 					for(int j=0; j<KIN_DIM; j++) par_KIN_num.push_back(static_cast<double>(par_KIN_link(j,0)));
 					add_joint(joint);
+					// cout << endl;
+					// add childrens
+					if (chain_has_link(joint->child_link_name)) {
+						add_chain_from(parent, urdf_model->getLink(joint->child_link_name));
+					}
+					i++;
 				}
-				// cout << endl;
-				// add childrens
-				if (chain_has_link(joint->child_link_name)) {
-					add_chain_from(parent, urdf_model->getLink(joint->child_link_name));
-				}
-				i++;
 			}
 		}
 	}
@@ -323,7 +315,7 @@ namespace thunder_ns {
 
 			// --- Kinematic parameters (par_KIN_num) --- //
 			// std::vector<double> par_KIN_num(6 * numJoints, 0);
-			std::vector<short> par_KIN_isSymb(6 * numJoints, 1);
+			std::vector<short> par_KIN_isSymb(6 * numJoints, 0);
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& T = static_transforms[i];
@@ -376,7 +368,7 @@ namespace thunder_ns {
 			}
 
 			// std::vector<double> par_DYN_num(STD_PAR_LINK * numJoints, 0);
-			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, 1);
+			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, 0);
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& b = active_bodies[i];

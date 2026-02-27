@@ -1,6 +1,7 @@
 
+✔ rewrite add_chain_code() to simplify structure, only one if ee or have chindrens, and an aux function inside that add element to thunder @done (2/27/2026, 12:10:32 AM)
 ☐ probably the function add_chain_from() could be improved
-☐ everything is symbolic in urdf, insert flags in loader to select
+☐ everything is not symbolic in urdf, insert flags in loader to select
 ✔ problema perchè numJoints serve prima di tutto ma è diverso da chain.size() perchè aggiungiamo link fittizzi @done (2/25/2026, 5:24:07 PM)
 ☐ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml
 ☐ riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader
