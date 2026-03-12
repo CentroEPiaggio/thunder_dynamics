@@ -292,20 +292,6 @@ namespace thunder_ns {
 			robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);
 
-			string joint_ids = "{0";
-			for (int i=1; i<jointsName.size(); i++) joint_ids += ", " + std::to_string(i);
-			joint_ids += "}";
-			cout << "numJoints: " << numJoints << endl;
-			cout << "ndof: " << ndof << endl;
-			cout << "jointsName: " << robot->properties["jointsName"].get_value_str() << endl;
-			cout << "joint_ids: " << joint_ids << endl;
-			cout << "jointsParent: " << robot->properties["jointsParent"].get_value_str() << endl;
-			cout << "jointsType: " << robot->properties["jointsType"].get_value_str() << endl;
-			cout << "jointsAvailable: " << robot->properties["jointsAvailable"].get_value_str() << endl;
-			cout << "jointsDerivatives: " << robot->properties["jointsDerivatives"].get_value_str() << endl;
-			cout << "jointsAxis: " << robot->properties["jointsAxis"].get_value_str() << endl;
-			cout << "jointsDimension: " << robot->properties["jointsDimension"].get_value_str() << endl;
-			
 			// --- Variables --- //
 			robot->add_variable("q", casadi::SX::sym("q", ndof, 1), std::vector<double>(ndof, 0), {1}, "Configuration", true);
 			robot->add_variable("dq", casadi::SX::sym("dq", ndof, 1), std::vector<double>(ndof, 0), {1}, "Velocity", true);
@@ -315,7 +301,7 @@ namespace thunder_ns {
 
 			// --- Kinematic parameters (par_KIN_num) --- //
 			// std::vector<double> par_KIN_num(6 * numJoints, 0);
-			std::vector<short> par_KIN_isSymb(6 * numJoints, 0);
+			std::vector<short> par_KIN_isSymb(6 * numJoints, 1);
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& T = static_transforms[i];
@@ -368,7 +354,7 @@ namespace thunder_ns {
 			}
 
 			// std::vector<double> par_DYN_num(STD_PAR_LINK * numJoints, 0);
-			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, 0);
+			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, 1);
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& b = active_bodies[i];

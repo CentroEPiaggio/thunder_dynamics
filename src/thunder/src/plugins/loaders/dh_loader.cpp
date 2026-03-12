@@ -22,6 +22,8 @@ namespace thunder_ns {
 			vector<bool> jointsDerivatives;
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
+			// optional prefix for naming DH links ("link" by default)
+			string dh_name_prefix = "link";
 
 
 			// --- Basic Robot properties --- //
@@ -39,8 +41,14 @@ namespace thunder_ns {
 				jointsDerivatives.resize(numJoints, false);
 				jointsDimension.resize(numJoints, 0);
 				jointsAxis.resize(numJoints, vector<double>{0,0,1});
+
+				// read optional DH link name prefix (e.g. "link" -> link0, link1, ...)
+				if (config_["DH"] && config_["DH"]["link_names"]) {
+					dh_name_prefix = config_["DH"]["link_names"].as<string>();
+				}
 				for (int i=0; i<numJoints-2; i++) {
-					jointsName[i+1] = "link" + std::to_string(i);
+					// skip index 0 (base) and reserve last index for end-effector (ee)
+					jointsName[i+1] = dh_name_prefix + std::to_string(i);
 					jointsType[i+1] = jointsType_tmp[i];
 					jointsDimension[i+1] = 1;
 					jointsParent[i+1] = i;
@@ -64,7 +72,7 @@ namespace thunder_ns {
 			// --- Frame Offsets --- //
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
-				jointsName[0] = (config_["Base_to_L0"]["name"]) ? config_["Base_to_L0"]["name"].as<string>() : "world2L0";
+				jointsName[0] = (config_["Base_to_L0"]["name"]) ? config_["Base_to_L0"]["name"].as<string>() : "base";
 				YAML::Node frame_base = config_["Base_to_L0"];
 				vector<double> world2L0_xyz = frame_base["xyz"].as<vector<double>>();
 				vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
@@ -110,7 +118,7 @@ namespace thunder_ns {
 				// robot->add_function("par_world2L0", ...)
 				// // ---------------------------------------------------------------------------------------------------------
 			} else {
-				jointsName[0] = "world2L0";
+				jointsName[0] = "base";
 				robot->add_parameter("par_world2L0", SX::sym("world2L0", 6), vector<double>(6,0), {0}, "World to base frame", true);
 			}
 
@@ -137,7 +145,7 @@ namespace thunder_ns {
 			
 			// - Ln_to_EE - //
 			if (config_["Ln_to_EE"]) {
-				jointsName[numJoints-1] = (config_["Ln2EE"]["name"]) ? config_["Ln2EE"]["name"].as<string>() : "ee";
+				jointsName[numJoints-1] = (config_["Ln_to_EE"]["name"]) ? config_["Ln_to_EE"]["name"].as<string>() : "ee";
 				YAML::Node frame_ee = config_["Ln_to_EE"];
 				vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
 				vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
@@ -170,8 +178,9 @@ namespace thunder_ns {
 
 			// - DH table - //
 			casadi::SX DH = robot->get_model("par_DHtable");
+			// use previously computed prefix if available (stored in local variable dh_name_prefix)
 			for (int i=0; i<numJoints-2; i++){
-				jointsName[i+1] = "link" + std::to_string(i);
+				jointsName[i+1] = dh_name_prefix + std::to_string(i);
 				jointsParent[i+1] = i;
 				// DH transformation:  T_a * T_alpha * T_d * T_theta
 				casadi::SX p_a(3,1);

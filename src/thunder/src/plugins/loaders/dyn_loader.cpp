@@ -68,8 +68,9 @@ namespace thunder_ns {
 					// Inertia terms
 					if (inertial["I"]) {
 						vector<double> I = inertial["I"].as<vector<double>>();
-						for (int j=4; j<10; j++) {
-							par_DYN_num[STD_PAR_LINK*i+j] = I[j];
+						// expect I to be a 6-element vector [Ixx,Ixy,Ixz,Iyy,Iyz,Izz]
+						for (int k=0; k<6 && k < (int)I.size(); k++) {
+							par_DYN_num[STD_PAR_LINK*i + 4 + k] = I[k];
 						}
 					} else {
 						par_DYN_num[STD_PAR_LINK*i+4] = inertial["Ixx"].as<double>();
@@ -85,7 +86,7 @@ namespace thunder_ns {
 					if (inertial["symb"]) {
 						link_isSymb = inertial["symb"].as<vector<short>>();
 						std::copy(link_isSymb.begin(), link_isSymb.end(), par_DYN_isSymb.begin() + i * STD_PAR_LINK);
-					}					
+					}
 				}
 			}
 

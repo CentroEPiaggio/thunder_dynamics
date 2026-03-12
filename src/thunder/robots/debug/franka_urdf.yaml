@@ -12,7 +12,7 @@ urdf_loader:
   # gravity
   gravity:
     symb: [0,0,0]
-    value: [0, 0, 9.81]
+    value: [0, 0, -9.81]
 
   # world to link_0
   Base_to_L0:
