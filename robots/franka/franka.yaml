@@ -1,6 +1,6 @@
 pipeline:
   loaders:    ["dh_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder", "base_inertial_param_builder"]
   generators: ["robot_generator"]
 
 version: 1.0
@@ -12,7 +12,7 @@ PI_4_neg: &PI_4_neg  -0.7853981633974483
 
 ############################################
 robot_generator:
-  gen_python:   false
+  gen_python:   true
   gen_casadi:   false
   gen_robot:    true
   copy_gen:     false
@@ -64,7 +64,7 @@ dyn_loader:
   dynamics:
     link1:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 4.970684
         CoM_x: 3.875e-3
         CoM_y: 2.081e-3
@@ -76,12 +76,12 @@ dyn_loader:
         Ixz: 6.7720e-3
         Iyz: 1.9169e-2
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link2:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.646926
         CoM_x: -3.141e-3
         CoM_y: -2.872e-2
@@ -93,12 +93,12 @@ dyn_loader:
         Ixz: 1.0254e-02
         Iyz: 7.0400e-04
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link3:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 3.228604
         CoM_x: 2.7518e-02
         CoM_y: 3.9252e-02
@@ -110,12 +110,12 @@ dyn_loader:
         Ixz: -1.1396e-02
         Iyz: -1.2805e-02
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link4:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 3.587895
         CoM_x: -5.317e-02
         CoM_y: 1.04419e-01
@@ -127,12 +127,12 @@ dyn_loader:
         Ixz: -1.3320e-03
         Iyz: 8.6410e-03
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link5:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.225946
         CoM_x: -1.1953e-02
         CoM_y: 4.1065e-02
@@ -144,12 +144,12 @@ dyn_loader:
         Ixz: -4.0370e-03
         Iyz: 2.2900e-04
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link6:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.666555
         CoM_x: 6.0149e-02
         CoM_y: -1.4117e-02
@@ -161,7 +161,7 @@ dyn_loader:
         Ixz: -1.1580e-03
         Iyz: 3.4100e-04
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]
 
     link7:
@@ -178,5 +178,5 @@ dyn_loader:
         Ixz: -1.1960e-03
         Iyz: -7.4100e-04
       friction:
-        symb: [0,0]
+        symb: [1,1]
         Dl: [0.1, 0.01]

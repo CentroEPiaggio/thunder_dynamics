@@ -22,7 +22,6 @@ namespace thunder_ns {
 			int compute_reg_dyn_conversions(std::shared_ptr<Robot> robot);
 
 			void build(std::shared_ptr<Robot> robot) override;
-			
 	};
 
 	

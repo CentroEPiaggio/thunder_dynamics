@@ -10,6 +10,7 @@ RUN	apt-get update && apt-get install -y \
 	cmake \
 	cmake-curses-gui \
 	gdb \
+	libboost-all-dev \
 	libeigen3-dev \
 	python3	\
 	python3-pip \
@@ -26,7 +27,7 @@ RUN groupadd --gid ${USER_GID} ${USERNAME} \
     && echo ${USERNAME} ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/${USERNAME} \
     && chmod 0440 /etc/sudoers.d/${USERNAME}
 
-ENV HOME /home/${USERNAME} 
+ENV HOME=/home/${USERNAME} 
 
 # Enable bash history so it can be mounted and become persistent
 RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \

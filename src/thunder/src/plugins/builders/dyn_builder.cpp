@@ -247,10 +247,12 @@ namespace thunder_ns {
 			std::vector<casadi::SX> Dl_vec(Dl_order);
 			for (int i=0; i<nj; i++){
 				for (int ord=0; ord<Dl_order; ord++){
-					if (ord%2 == 0){
-						dl(i) += pow(dq(i), ord+1) * par_Dl(i*Dl_order+ord);
+					if (ord == 0){
+						dl(i) += sign(dq(i)) * par_Dl(i*Dl_order+ord);
+					} else if (ord%2 == 0){
+						dl(i) += sqrt(pow(dq(i), 2)) * pow(dq(i), ord-1) * par_Dl(i*Dl_order+ord);
 					} else {
-						dl(i) += sqrt(pow(dq(i), 2)) * pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
+						dl(i) += pow(dq(i), ord) * par_Dl(i*Dl_order+ord);
 					}
 					Dl_vec[ord].resize(nj,nj);
 					Dl_vec[ord](i,i) = par_Dl(i*Dl_order + ord);
@@ -266,6 +268,8 @@ namespace thunder_ns {
 			return 1;
 		} else return 0;
 	}
+
+
 
 	int DynBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
 		auto q = robot->get_model("q");
@@ -361,5 +365,4 @@ namespace thunder_ns {
 		// return ret;
 		debug_log("Dynamics computed", VERB_INFO);
     }
-
 }

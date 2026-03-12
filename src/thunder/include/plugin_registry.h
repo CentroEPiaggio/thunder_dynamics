@@ -23,6 +23,8 @@
 #include "plugins/builders/soft_builder.h"
 #include "plugins/builders/example_builder.h"
 
+#include "plugins/builders/base_inertial_param_builder.h"
+
 // - Generators - //
 #include "plugins/generators/robot_generator.h"
 
@@ -52,6 +54,8 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"reg_builder", std::make_shared<RegBuilder>()},
 	{"soft_builder", std::make_shared<SoftBuilder>()},
 	{"example_builder", std::make_shared<ExampleBuilder>()},
+
+	{"base_inertial_param_builder", std::make_shared<BaseInertialParamBuilder>()},
 
 };
 

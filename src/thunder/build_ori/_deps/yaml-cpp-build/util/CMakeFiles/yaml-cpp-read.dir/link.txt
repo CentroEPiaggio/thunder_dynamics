@@ -1,0 +1,1 @@
+/usr/bin/c++ -g3 -lstdc++fs -std=c++17 CMakeFiles/yaml-cpp-read.dir/read.cpp.o -o ../../../yaml-cpp-read  ../../../libyaml-cpp.a 

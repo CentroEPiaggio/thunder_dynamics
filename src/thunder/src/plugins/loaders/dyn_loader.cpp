@@ -114,6 +114,40 @@ namespace thunder_ns {
 				// - Add to parameters - //
 				robot->add_parameter("par_Dl", par_Dl_symb, par_Dl_num, par_Dl_isSymb, "Link friction parameters", true);
 			}
+
+
+			// --- Motor inertia (Leo) --- //
+			bool has_motor = config_["has_motor"] ? config_["has_motor"].as<bool>():false;	// defaults to false
+			if (has_motor){
+				debug_log("Proceeding with motor inertia", VERB_INFO);
+				vector<double> par_Ia_num;
+				vector<short> par_Ia_isSymb;
+				par_Ia_num.resize(numJoints);
+				par_Ia_isSymb.resize(numJoints);
+				idx = 0;
+				for (const auto& node : dynamics) {
+					// - Numeric - //
+					if (node.second["motor"]){
+						double Ia = node.second["motor"]["Ia"].as<double>();
+						par_Ia_num[idx] = Ia;
+					}
+
+					// - Symbolic selectivity - //
+					YAML::Node motor = node.second["motor"];
+					vector<int> motor_isSymb;
+					if (motor["symb"]) {
+						motor_isSymb = motor["symb"].as<vector<int>>();
+					} else {
+						motor_isSymb.assign(1, 0);
+					}
+					std::copy(motor_isSymb.begin(), motor_isSymb.end(), par_Ia_isSymb.begin() + idx);
+					idx++;
+				}
+				// - Model - //
+				SX par_Ia_symb = SX::sym("par_Ia", numJoints,1);
+				// - Add to parameters - //
+				robot->add_parameter("par_Ia", par_Ia_symb, par_Ia_num, par_Ia_isSymb, "Link motor inertia parameters", true);
+			}
 			
 		} catch (const YAML::Exception& e) {
 			std::cerr << "Error while parsing YAML: " << e.what() << std::endl;
