@@ -8,6 +8,10 @@ urdf_loader:
   urdf_path: "franka.urdf"
   base_link: "panda_link0"
   ee_link: "panda_link8"
+  # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
+  symbolic_kinematics: true
+  # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
+  symbolic_dynamics: true
 
   # gravity
   gravity:

@@ -1,13 +1,12 @@
 ✔ different parameters visualization could depend on simbolicity, it prints only symbolic parameters @done (3/12/2026, 7:35:50 AM)
 ✔ problema nella dinamica, indaga dal file di Yang, parameters seams to be loaded in the right way @done (3/5/2026, 9:31:29 PM)
 ✔ rewrite add_chain_code() to simplify structure, only one if ee or have chindrens, and an aux function inside that add element to thunder @done (2/27/2026, 12:10:32 AM)
-☐ franka urdf have wrong inertials, cannot be used to test.
+✔ franka urdf have wrong inertials, cannot be used to test. @done (3/13/2026, 5:36:13 PM)
 ✔ problema in dh_loader, ha una colonna di zeri la matrice di massa @done (3/12/2026, 7:35:56 AM)
 ✔ par_KIN diverso tra i due franka, probabilmente carico male il loader urdf @done (3/10/2026, 7:08:36 PM)
 ✔ par_gravity diverso, magari nell'urdf è positivo, (ci va negativo) @done (3/10/2026, 7:09:32 PM)
 ✔ avendo la cinematica sbagliata poi è tutto sbagliato, riguarda il loading dei parametri cinematici @done (3/10/2026, 7:09:38 PM)
-☐ probably the function add_chain_from() could be improved
-☐ everything is not symbolic in urdf, insert flags in loader to select
+✔ everything is not symbolic in urdf, insert flags in loader to select @done (3/13/2026, 6:50:34 PM)
 ✔ problema perchè numJoints serve prima di tutto ma è diverso da chain.size() perchè aggiungiamo link fittizzi @done (2/25/2026, 5:24:07 PM)
 ☐ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml
 ☐ riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader
@@ -59,6 +58,7 @@ thunder:
 	kinematics:
 		- fixed joints have kinematics and dynamics, they are counted also in numJoints, but not in ndof
 		- internal representation is xyzrpy, it is possible to use also ypr but it change only numerical initialization of the rpy
+		☐ probably the function add_chain_from() in urdf_loader could be improved
 		☐ transforms as a list, probably needs the use of custom_C_function or intelligent using of casadi branched
 		☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
 		☐ dh_loader does not support joints with dimension greater than 1

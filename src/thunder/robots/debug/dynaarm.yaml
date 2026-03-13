@@ -7,6 +7,10 @@ urdf_loader:
   urdf_path: "dynaarm.urdf"
   base_link: "base"
   ee_link: "wrist_2"
+  # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
+  symbolic_kinematics: true
+  # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
+  symbolic_dynamics: true
 
   gravity:
     symb: [0,0,0]

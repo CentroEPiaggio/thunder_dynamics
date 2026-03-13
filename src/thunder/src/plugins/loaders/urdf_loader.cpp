@@ -301,7 +301,13 @@ namespace thunder_ns {
 
 			// --- Kinematic parameters (par_KIN_num) --- //
 			// std::vector<double> par_KIN_num(6 * numJoints, 0);
-			std::vector<short> par_KIN_isSymb(6 * numJoints, 1);
+			// Whether kinematic parameters should be symbolic (1) or numeric (0).
+			// Can be overridden per element with `par_KIN_symb`.
+			bool kin_symb = config_["symbolic_kinematics"] ? config_["symbolic_kinematics"].as<bool>() : true;
+			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb ? 1 : 0);
+			if (config_["par_KIN_symb"]) {
+				par_KIN_isSymb = config_["par_KIN_symb"].as<std::vector<short>>();
+			}
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& T = static_transforms[i];
@@ -354,7 +360,13 @@ namespace thunder_ns {
 			}
 
 			// std::vector<double> par_DYN_num(STD_PAR_LINK * numJoints, 0);
-			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, 1);
+			// Whether dynamic parameters should be symbolic (1) or numeric (0).
+			// Can be overridden per-element with `par_DYN_symb`.
+			bool dyn_symb = config_["symbolic_dynamics"] ? config_["symbolic_dynamics"].as<bool>() : true;
+			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, dyn_symb ? 1 : 0);
+			if (config_["par_DYN_symb"]) {
+				par_DYN_isSymb = config_["par_DYN_symb"].as<std::vector<short>>();
+			}
 
 			// for (int i = 0; i < numJoints; ++i) {
 			// 	const auto& b = active_bodies[i];
