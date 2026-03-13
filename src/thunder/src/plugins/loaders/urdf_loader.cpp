@@ -240,6 +240,46 @@ static std::unordered_map<std::string, std::vector<short>> parseSymbolicFromUrdf
 	return result;
 }
 
+static std::unordered_map<std::string, std::vector<short>> parseSymbolicKinematicsFromUrdfJoints(const std::string& urdf_text, short global_default) {
+	std::unordered_map<std::string, std::vector<short>> result;
+	size_t pos = 0;
+	while (true) {
+		size_t joint_pos = urdf_text.find("<joint", pos);
+		if (joint_pos == std::string::npos) break;
+		size_t joint_end = urdf_text.find('>', joint_pos);
+		if (joint_end == std::string::npos) break;
+
+		// Determine joint block boundaries
+		size_t close_pos = urdf_text.find("</joint>", joint_end);
+		size_t block_end = (close_pos == std::string::npos) ? joint_end + 1 : close_pos + 8;
+		std::string joint_block = urdf_text.substr(joint_pos, block_end - joint_pos);
+
+		// Extract child link name
+		std::string child_link;
+		size_t child_pos = joint_block.find("<child");
+		if (child_pos != std::string::npos) {
+			size_t name_pos = joint_block.find("link=\"", child_pos);
+			if (name_pos != std::string::npos) {
+				name_pos += 6;
+				size_t name_end = joint_block.find('"', name_pos);
+				if (name_end != std::string::npos) {
+					child_link = joint_block.substr(name_pos, name_end - name_pos);
+				}
+			}
+		}
+
+		if (!child_link.empty()) {
+			auto vec = parseKinematicSymbolicFromXml(joint_block, global_default);
+			if (!vec.empty()) {
+				result[child_link] = vec;
+			}
+		}
+
+		pos = block_end;
+	}
+	return result;
+}
+
 static std::unordered_map<std::string, std::vector<short>> parseKinematicSymbolicFromYaml(const YAML::Node& node, short global_default) {
 	std::unordered_map<std::string, std::vector<short>> result;
 	if (!node || !node.IsMap()) return result;
@@ -657,7 +697,7 @@ namespace thunder_ns {
 
 			auto yaml_kin_map = parseKinematicSymbolicFromYaml(config_["symbolic_kinematics"], kin_symb_global);
 			std::string urdf_text = readFileToString(urdf_path_final);
-			auto urdf_kin_map = parseSymbolicFromUrdf(urdf_text, "symbolic_kinematics", 6, kin_symb_global, parseKinematicSymbolicFromXml);
+			auto urdf_kin_map = parseSymbolicKinematicsFromUrdfJoints(urdf_text, kin_symb_global);
 
 			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb_global);
 			for (int i = 0; i < numJoints; ++i) {

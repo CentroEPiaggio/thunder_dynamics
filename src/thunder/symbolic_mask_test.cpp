@@ -15,6 +15,8 @@ int main() {
 
     const std::string config_file = std::string(THUNDER_SOURCE_DIR) + "/src/thunder_robot_test/robots/symbolic_mask_test.yaml";
 
+    std::cout << "[TEST] Using config: " << config_file << std::endl;
+
     PluginManager manager;
     manager.set_verbose(false);
     manager.configure_pipeline(config_file, 1); // no generation
@@ -23,8 +25,29 @@ int main() {
 
     const int numJoints = robot->get<int>("numJoints");
 
+    const auto jointsName = robot->get<vector<string>>("jointsName");
+    std::unordered_map<std::string, int> jointIndex;
+    for (int i = 0; i < (int)jointsName.size(); ++i) {
+        jointIndex[jointsName[i]] = i;
+    }
+
     const auto &parKIN = robot->parameters["par_KIN"];
     const auto &parDYN = robot->parameters["par_DYN"];
+
+    // DEBUG - print joint names and their current masks
+    std::cout << "-- jointName -> KIN mask (first 6 bits) --" << std::endl;
+    for (int i = 0; i < (int)jointsName.size(); ++i) {
+        std::cout << i << ": " << jointsName[i] << " -> ";
+        for (int j = 0; j < 6; ++j) {
+            std::cout << parKIN.is_symbolic[i * 6 + j];
+        }
+        std::cout << " | DYN: ";
+        for (int j = 0; j < 10; ++j) {
+            std::cout << parDYN.is_symbolic[i * 10 + j];
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "---------------------------------------" << std::endl;
 
     bool ok = true;
 
@@ -37,34 +60,42 @@ int main() {
         ok = false;
     }
 
-    // Expect first link to be numeric, second link fully symbolic, third link mixed
-    const std::vector<short> expectedKIN0 = {0, 0, 0, 0, 0, 0};
-    const std::vector<short> expectedKIN1 = {1, 1, 1, 1, 1, 1};
-    const std::vector<short> expectedKIN2 = {1, 0, 1, 0, 1, 0};
+    auto check_mask = [&](const std::string &link_name, const std::vector<short> &expected_kin, const std::vector<short> &expected_dyn) {
+        if (!jointIndex.count(link_name)) {
+            std::cerr << "[ERROR] Link name not found: " << link_name << std::endl;
+            return false;
+        }
+        int idx = jointIndex[link_name];
+        int baseKIN = idx * 6;
+        int baseDYN = idx * 10;
 
-    const std::vector<short> expectedDYN0 = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    const std::vector<short> expectedDYN1 = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    const std::vector<short> expectedDYN2 = {1, 0, 1, 0, 1, 0, 1, 0, 1, 0};
+        for (int i = 0; i < (int)expected_kin.size(); ++i) {
+            if (parKIN.is_symbolic[baseKIN + i] != expected_kin[i]) {
+                std::cerr << "Mismatch KIN for " << link_name << " at " << i << " (got "
+                          << parKIN.is_symbolic[baseKIN + i] << ", expected " << expected_kin[i] << ")\n";
+                return false;
+            }
+        }
+        for (int i = 0; i < (int)expected_dyn.size(); ++i) {
+            if (parDYN.is_symbolic[baseDYN + i] != expected_dyn[i]) {
+                std::cerr << "Mismatch DYN for " << link_name << " at " << i << " (got "
+                          << parDYN.is_symbolic[baseDYN + i] << ", expected " << expected_dyn[i] << ")\n";
+                return false;
+            }
+        }
+        return true;
+    };
 
-    for (int i = 0; i < 6 && i < (int)parKIN.is_symbolic.size(); ++i) {
-        if (parKIN.is_symbolic[i] != expectedKIN0[i]) ok = false;
-    }
-    for (int i = 0; i < 6 && (6 + i) < (int)parKIN.is_symbolic.size(); ++i) {
-        if (parKIN.is_symbolic[6 + i] != expectedKIN1[i]) ok = false;
-    }
-    for (int i = 0; i < 6 && (12 + i) < (int)parKIN.is_symbolic.size(); ++i) {
-        if (parKIN.is_symbolic[12 + i] != expectedKIN2[i]) ok = false;
-    }
+    ok &= check_mask("panda_link0", {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0}); // YAML override
+    ok &= check_mask("panda_link1", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // YAML override
+    ok &= check_mask("panda_link2", {1,0,1,0,1,0}, {1,0,1,0,1,0,1,0,1,0}); // YAML override
 
-    for (int i = 0; i < 10 && i < (int)parDYN.is_symbolic.size(); ++i) {
-        if (parDYN.is_symbolic[i] != expectedDYN0[i]) ok = false;
-    }
-    for (int i = 0; i < 10 && (10 + i) < (int)parDYN.is_symbolic.size(); ++i) {
-        if (parDYN.is_symbolic[10 + i] != expectedDYN1[i]) ok = false;
-    }
-    for (int i = 0; i < 10 && (20 + i) < (int)parDYN.is_symbolic.size(); ++i) {
-        if (parDYN.is_symbolic[20 + i] != expectedDYN2[i]) ok = false;
-    }
+    ok &= check_mask("panda_link3", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // default (no tag)
+    ok &= check_mask("panda_link4", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // default (no tag)
+
+    ok &= check_mask("panda_link5", {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0}); // URDF joint tag + link tag
+    ok &= check_mask("panda_link6", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // URDF joint tag + link tag
+    ok &= check_mask("panda_link7", {1,0,1,0,1,0}, {1,0,1,0,1,0,1,0,1,0}); // URDF joint tag + link tag
 
     if (!ok) {
         std::cerr << "[FAIL] Symbolic mask test failed." << std::endl;
