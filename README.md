@@ -128,15 +128,15 @@ An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emi
 > **Note:** This feature is only available when using the `urdf_loader` plugin.
 
 When loading a URDF through `urdf_loader`, the loader builds both kinematic and dynamic parameter vectors (`par_KIN` and `par_DYN`).
-By default these parameters are treated as symbolic (so they show up in generated CASADI functions), but you can selectively force numeric values.
+By default these parameters are treated as numeric (so they do not show up in the generated CASADI functions), but you can selectively enable symbolic values.
 
 ### YAML configuration
 
 The loader supports:
 
 * a global switch:
-  * `symbolic_kinematics: true|false`
-  * `symbolic_dynamics: true|false`
+* `symbolic_kinematics: true|false|1|0`
+* `symbolic_dynamics: true|false|1|0`
 
 * per-link masks (takes precedence over the global switch):
 
@@ -161,6 +161,7 @@ The same masks can also be embedded directly in the URDF (used if YAML does not 
 
 ```xml
 <link name="base_link">
+  <!-- Values can be 0/1 or true/false -->
   <symbolic_kinematics xyz="1 1 1" rpy="0 0 0" />
   <symbolic_dynamics mass="1" com="0 1 0" inertia="1 1 1 0 0 0" />
 </link>

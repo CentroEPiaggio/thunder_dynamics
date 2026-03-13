@@ -18,14 +18,14 @@ urdf_loader:
   #     rpy: [0, 0, 0]
   symbolic_kinematics: true
   # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
-  # Can also be overridden per-link via a mask of 10 values (mass, CoM, inertia).
+  # Can also be overridden per-link via a mask of 10 values (mass, CoM, I).
   # Example:
   # symbolic_dynamics:
   #   panda_link0: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   #   panda_link1:
   #     mass: 1
-  #     com: [0, 1, 0]
-  #     inertia: [1, 1, 1, 0, 0, 0]
+  #     CoM: [0, 1, 0]
+  #     I: [1, 1, 1, 0, 0, 0]
   symbolic_dynamics: true
 
   # gravity

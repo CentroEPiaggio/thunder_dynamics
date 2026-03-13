@@ -21,11 +21,49 @@ static std::string trim(const std::string& s) {
 static std::vector<int> parseInts(const std::string& s) {
 	std::vector<int> out;
 	std::istringstream iss(s);
-	int v;
-	while (iss >> v) {
-		out.push_back(v);
+	std::string token;
+	while (iss >> token) {
+		// Support both numeric (0/1) and boolean words (true/false).
+		switch (token.size()) {
+			case 1:
+				if (token == "0") { out.push_back(0); continue; }
+				if (token == "1") { out.push_back(1); continue; }
+				break;
+		}
+		std::string token_lc = token;
+		std::transform(token_lc.begin(), token_lc.end(), token_lc.begin(), [](unsigned char c){ return std::tolower(c); });
+		if (token_lc == "true" || token_lc == "yes" || token_lc == "y") {
+			out.push_back(1);
+			continue;
+		} else if (token_lc == "false" || token_lc == "no" || token_lc == "n") {
+			out.push_back(0);
+			continue;
+		}
+		try {
+			int v = std::stoi(token);
+			out.push_back(v);
+		} catch (...) {
+			// ignore non-integer tokens
+		}
 	}
 	return out;
+}
+
+static short yamlScalarToBinary(const YAML::Node& node, short default_value) {
+	if (!node || !node.IsScalar()) return default_value;
+	// Try boolean-like scalars first (true/false/0/1)
+	std::string s = node.as<std::string>();
+	std::string sl = s;
+	std::transform(sl.begin(), sl.end(), sl.begin(), [](unsigned char c){ return std::tolower(c); });
+	if (sl == "0" || sl == "false" || sl == "no" || sl == "n") return 0;
+	if (sl == "1" || sl == "true" || sl == "yes" || sl == "y") return 1;
+	// Fallback to numeric conversion
+	try {
+		int v = std::stoi(s);
+		return v != 0 ? 1 : 0;
+	} catch (...) {
+	}
+	return default_value;
 }
 
 static std::vector<short> toBinary(const std::vector<int>& vals, int expected, short default_value) {
@@ -289,32 +327,42 @@ static std::unordered_map<std::string, std::vector<short>> parseKinematicSymboli
 		auto val = it->second;
 		std::vector<short> mask(6, global_default);
 		if (val.IsSequence()) {
-			auto v = val.as<std::vector<int>>();
+			// Accept sequences of 0/1 or true/false
+			std::vector<int> v;
+			for (auto item : val) {
+				v.push_back(yamlScalarToBinary(item, global_default));
+			}
 			mask = toBinary(v, 6, global_default);
 		} else if (val.IsScalar()) {
-			int v = val.as<int>();
-			mask = toBinary(std::vector<int>{v, v, v, v, v, v}, 6, global_default);
+			short b = yamlScalarToBinary(val, global_default);
+			mask = toBinary(std::vector<int>{b, b, b, b, b, b}, 6, global_default);
 		} else if (val.IsMap()) {
 			if (val["xyz"]) {
 				if (val["xyz"].IsSequence()) {
-					auto v = val["xyz"].as<std::vector<int>>();
+					std::vector<int> v;
+					for (auto item : val["xyz"]) {
+						v.push_back(yamlScalarToBinary(item, global_default));
+					}
 					auto b = toBinary(v, 3, global_default);
 					for (int i = 0; i < 3; ++i) mask[i] = b[i];
 				} else if (val["xyz"].IsScalar()) {
-					int v = val["xyz"].as<int>();
-					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
-					for (int i = 0; i < 3; ++i) mask[i] = b[i];
+					short b = yamlScalarToBinary(val["xyz"], global_default);
+					auto bv = toBinary(std::vector<int>{b, b, b}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[i] = bv[i];
 				}
 			}
 			if (val["rpy"]) {
 				if (val["rpy"].IsSequence()) {
-					auto v = val["rpy"].as<std::vector<int>>();
+					std::vector<int> v;
+					for (auto item : val["rpy"]) {
+						v.push_back(yamlScalarToBinary(item, global_default));
+					}
 					auto b = toBinary(v, 3, global_default);
 					for (int i = 0; i < 3; ++i) mask[3 + i] = b[i];
 				} else if (val["rpy"].IsScalar()) {
-					int v = val["rpy"].as<int>();
-					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
-					for (int i = 0; i < 3; ++i) mask[3 + i] = b[i];
+					short b = yamlScalarToBinary(val["rpy"], global_default);
+					auto bv = toBinary(std::vector<int>{b, b, b}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[3 + i] = bv[i];
 				}
 			}
 		}
@@ -332,43 +380,57 @@ static std::unordered_map<std::string, std::vector<short>> parseDynamicSymbolicF
 		auto val = it->second;
 		std::vector<short> mask(10, global_default);
 		if (val.IsSequence()) {
-			auto v = val.as<std::vector<int>>();
+			// Accept sequences of 0/1 or true/false
+			std::vector<int> v;
+			for (auto item : val) {
+				v.push_back(yamlScalarToBinary(item, global_default));
+			}
 			mask = toBinary(v, 10, global_default);
 		} else if (val.IsScalar()) {
-			int v = val.as<int>();
-			mask = toBinary(std::vector<int>{v, v, v, v, v, v, v, v, v, v}, 10, global_default);
+			short b = yamlScalarToBinary(val, global_default);
+			mask = toBinary(std::vector<int>{b, b, b, b, b, b, b, b, b, b}, 10, global_default);
 		} else if (val.IsMap()) {
 			if (val["mass"]) {
 				if (val["mass"].IsScalar()) {
-					int v = val["mass"].as<int>();
-					mask[0] = (v != 0) ? 1 : 0;
+					short b = yamlScalarToBinary(val["mass"], global_default);
+					mask[0] = (b != 0) ? 1 : 0;
 				} else if (val["mass"].IsSequence()) {
-					auto v = val["mass"].as<std::vector<int>>();
-					mask[0] = (!v.empty() && v[0] != 0) ? 1 : 0;
+					auto v = val["mass"];
+					if (v.IsSequence()) {
+						std::vector<int> vv;
+						for (auto item : v) vv.push_back(yamlScalarToBinary(item, global_default));
+						mask[0] = (!vv.empty() && vv[0] != 0) ? 1 : 0;
+					}
 				}
 			}
 			if (val["CoM"] || val["com"]) {
 				auto n = val["CoM"] ? val["CoM"] : val["com"];
 				if (n.IsSequence()) {
-					auto v = n.as<std::vector<int>>();
+					std::vector<int> v;
+					for (auto item : n) {
+						v.push_back(yamlScalarToBinary(item, global_default));
+					}
 					auto b = toBinary(v, 3, global_default);
 					for (int i = 0; i < 3; ++i) mask[1 + i] = b[i];
 				} else if (n.IsScalar()) {
-					int v = n.as<int>();
-					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
-					for (int i = 0; i < 3; ++i) mask[1 + i] = b[i];
+					short b = yamlScalarToBinary(n, global_default);
+					auto bv = toBinary(std::vector<int>{b, b, b}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[1 + i] = bv[i];
 				}
 			}
 			if (val["I"] || val["inertia"]) {
 				auto n = val["I"] ? val["I"] : val["inertia"];
 				if (n.IsSequence()) {
-					auto v = n.as<std::vector<int>>();
+					std::vector<int> v;
+					for (auto item : n) {
+						v.push_back(yamlScalarToBinary(item, global_default));
+					}
 					auto b = toBinary(v, 6, global_default);
 					for (int i = 0; i < 6; ++i) mask[4 + i] = b[i];
 				} else if (n.IsScalar()) {
-					int v = n.as<int>();
-					auto b = toBinary(std::vector<int>{v, v, v, v, v, v}, 6, global_default);
-					for (int i = 0; i < 6; ++i) mask[4 + i] = b[i];
+					short b = yamlScalarToBinary(n, global_default);
+					auto bv = toBinary(std::vector<int>{b, b, b, b, b, b}, 6, global_default);
+					for (int i = 0; i < 6; ++i) mask[4 + i] = bv[i];
 				}
 			}
 		}
@@ -686,16 +748,17 @@ namespace thunder_ns {
 			// std::vector<double> par_KIN_num(6 * numJoints, 0);
 			// Whether kinematic parameters should be symbolic (1) or numeric (0).
 			// Can be overridden per-link (symbolic_kinematics) or per-element (par_KIN_symb).
-			short kin_symb_global = 1;
-			if (config_["symbolic_kinematics"]) {
-				if (config_["symbolic_kinematics"].IsScalar()) {
-					kin_symb_global = config_["symbolic_kinematics"].as<bool>() ? 1 : 0;
-				} else if (config_["symbolic_kinematics"]["default"]) {
-					kin_symb_global = config_["symbolic_kinematics"]["default"].as<bool>() ? 1 : 0;
-				}
+		// Default to numeric (false) unless overridden.
+		short kin_symb_global = 0;
+		if (config_["symbolic_kinematics"]) {
+			if (config_["symbolic_kinematics"].IsScalar()) {
+				kin_symb_global = yamlScalarToBinary(config_["symbolic_kinematics"], kin_symb_global);
+			} else if (config_["symbolic_kinematics"]["default"]) {
+				kin_symb_global = yamlScalarToBinary(config_["symbolic_kinematics"]["default"], kin_symb_global);
 			}
+		}
 
-			auto yaml_kin_map = parseKinematicSymbolicFromYaml(config_["symbolic_kinematics"], kin_symb_global);
+		auto yaml_kin_map = parseKinematicSymbolicFromYaml(config_["symbolic_kinematics"], kin_symb_global);
 			std::string urdf_text = readFileToString(urdf_path_final);
 			auto urdf_kin_map = parseSymbolicKinematicsFromUrdfJoints(urdf_text, kin_symb_global);
 
@@ -771,12 +834,13 @@ namespace thunder_ns {
 
 			// Whether dynamic parameters should be symbolic (1) or numeric (0).
 			// Can be overridden per-link (symbolic_dynamics) or per-element (par_DYN_symb).
-			short dyn_symb_global = 1;
+			// Default to numeric (false) unless overridden.
+			short dyn_symb_global = 0;
 			if (config_["symbolic_dynamics"]) {
 				if (config_["symbolic_dynamics"].IsScalar()) {
-					dyn_symb_global = config_["symbolic_dynamics"].as<bool>() ? 1 : 0;
+					dyn_symb_global = yamlScalarToBinary(config_["symbolic_dynamics"], dyn_symb_global);
 				} else if (config_["symbolic_dynamics"]["default"]) {
-					dyn_symb_global = config_["symbolic_dynamics"]["default"].as<bool>() ? 1 : 0;
+					dyn_symb_global = yamlScalarToBinary(config_["symbolic_dynamics"]["default"], dyn_symb_global);
 				}
 			}
 			auto yaml_dyn_map = parseDynamicSymbolicFromYaml(config_["symbolic_dynamics"], dyn_symb_global);

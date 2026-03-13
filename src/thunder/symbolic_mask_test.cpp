@@ -90,8 +90,8 @@ int main() {
     ok &= check_mask("panda_link1", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // YAML override
     ok &= check_mask("panda_link2", {1,0,1,0,1,0}, {1,0,1,0,1,0,1,0,1,0}); // YAML override
 
-    ok &= check_mask("panda_link3", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // default (no tag)
-    ok &= check_mask("panda_link4", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // default (no tag)
+    ok &= check_mask("panda_link3", {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0}); // default (no tag)
+    ok &= check_mask("panda_link4", {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0}); // default (no tag)
 
     ok &= check_mask("panda_link5", {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0}); // URDF joint tag + link tag
     ok &= check_mask("panda_link6", {1,1,1,1,1,1}, {1,1,1,1,1,1,1,1,1,1}); // URDF joint tag + link tag
