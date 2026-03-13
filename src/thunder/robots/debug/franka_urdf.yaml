@@ -9,8 +9,23 @@ urdf_loader:
   base_link: "panda_link0"
   ee_link: "panda_link8"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
+  # Alternatively, set per-link masks using the link name.
+  # Example:
+  # symbolic_kinematics:
+  #   panda_link0: [1, 1, 1, 1, 1, 1]
+  #   panda_link1:
+  #     xyz: [1, 1, 1]
+  #     rpy: [0, 0, 0]
   symbolic_kinematics: true
   # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
+  # Can also be overridden per-link via a mask of 10 values (mass, CoM, inertia).
+  # Example:
+  # symbolic_dynamics:
+  #   panda_link0: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  #   panda_link1:
+  #     mass: 1
+  #     com: [0, 1, 0]
+  #     inertia: [1, 1, 1, 0, 0, 0]
   symbolic_dynamics: true
 
   # gravity

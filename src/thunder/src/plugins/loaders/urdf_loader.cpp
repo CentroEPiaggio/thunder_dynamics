@@ -3,6 +3,349 @@
 #include <algorithm>
 #include <iostream>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <functional>
+#include <cctype>
+
+namespace {
+
+static std::string trim(const std::string& s) {
+	const auto is_space = [](unsigned char c) { return std::isspace(c); };
+	const auto l = std::find_if_not(s.begin(), s.end(), is_space);
+	const auto r = std::find_if_not(s.rbegin(), s.rend(), is_space).base();
+	return (l < r) ? std::string(l, r) : std::string();
+}
+
+static std::vector<int> parseInts(const std::string& s) {
+	std::vector<int> out;
+	std::istringstream iss(s);
+	int v;
+	while (iss >> v) {
+		out.push_back(v);
+	}
+	return out;
+}
+
+static std::vector<short> toBinary(const std::vector<int>& vals, int expected, short default_value) {
+	std::vector<short> out(expected, default_value);
+	for (int i = 0; i < (int)std::min((int)vals.size(), expected); ++i) {
+		out[i] = vals[i] != 0 ? 1 : 0;
+	}
+	return out;
+}
+
+static bool extractXmlTag(const std::string& text, const std::string& tag, std::string& attributes, std::string& inner, bool& self_closing) {
+	const std::string open = "<" + tag;
+	size_t p = text.find(open);
+	if (p == std::string::npos) return false;
+	size_t gt = text.find('>', p);
+	if (gt == std::string::npos) return false;
+	attributes = text.substr(p + open.size(), gt - (p + open.size()));
+	// detect "<tag ... />" even if there is whitespace before the '/'
+	self_closing = false;
+	if (gt > 0) {
+		size_t scan = gt - 1;
+		while (scan > 0 && std::isspace(static_cast<unsigned char>(text[scan]))) {
+			scan--;
+		}
+		if (text[scan] == '/') {
+			self_closing = true;
+		}
+	}
+	if (self_closing) {
+		inner.clear();
+		return true;
+	}
+	const std::string close = "</" + tag + ">";
+	size_t close_pos = text.find(close, gt + 1);
+	if (close_pos == std::string::npos) return false;
+	inner = text.substr(gt + 1, close_pos - (gt + 1));
+	return true;
+}
+
+static bool extractXmlElement(const std::string& text, const std::string& element, std::string& out) {
+	const std::string open = "<" + element + ">";
+	const std::string close = "</" + element + ">";
+	size_t p = text.find(open);
+	if (p == std::string::npos) return false;
+	size_t start = p + open.size();
+	size_t end = text.find(close, start);
+	if (end == std::string::npos) return false;
+	out = text.substr(start, end - start);
+	return true;
+}
+
+static std::string extractXmlAttribute(const std::string& attributes, const std::string& name) {
+	const std::string key = name + "=\"";
+	size_t p = attributes.find(key);
+	if (p == std::string::npos) return "";
+	size_t start = p + key.size();
+	size_t end = attributes.find('"', start);
+	if (end == std::string::npos) return "";
+	return attributes.substr(start, end - start);
+}
+
+static std::vector<short> parseKinematicSymbolicFromXml(const std::string& xml, short global_default) {
+	std::string attributes, inner;
+	bool self_closing;
+	if (!extractXmlTag(xml, "symbolic_kinematics", attributes, inner, self_closing)) return {};
+
+	std::vector<short> out(6, global_default);
+
+	// <symbolic_kinematics xyz="..." rpy="..." />
+	auto xyz_attr = extractXmlAttribute(attributes, "xyz");
+	auto rpy_attr = extractXmlAttribute(attributes, "rpy");
+	if (!xyz_attr.empty() || !rpy_attr.empty()) {
+		if (!xyz_attr.empty()) {
+			auto v = parseInts(xyz_attr);
+			auto b = toBinary(v, 3, global_default);
+			for (int i = 0; i < 3; ++i) out[i] = b[i];
+		}
+		if (!rpy_attr.empty()) {
+			auto v = parseInts(rpy_attr);
+			auto b = toBinary(v, 3, global_default);
+			for (int i = 0; i < 3; ++i) out[3 + i] = b[i];
+		}
+		return out;
+	}
+
+	// <symbolic_kinematics><xyz>...</xyz><rpy>...</rpy></symbolic_kinematics>
+	std::string xyz_inner, rpy_inner;
+	if (extractXmlElement(inner, "xyz", xyz_inner) || extractXmlElement(inner, "XYZ", xyz_inner)) {
+		auto v = parseInts(xyz_inner);
+		auto b = toBinary(v, 3, global_default);
+		for (int i = 0; i < 3; ++i) out[i] = b[i];
+	}
+	if (extractXmlElement(inner, "rpy", rpy_inner) || extractXmlElement(inner, "RPY", rpy_inner)) {
+		auto v = parseInts(rpy_inner);
+		auto b = toBinary(v, 3, global_default);
+		for (int i = 0; i < 3; ++i) out[3 + i] = b[i];
+	}
+	if (!xyz_inner.empty() || !rpy_inner.empty()) {
+		return out;
+	}
+
+	// <symbolic_kinematics>0 0 1 0 0 0</symbolic_kinematics>
+	auto v = parseInts(inner);
+	if (!v.empty()) {
+		auto b = toBinary(v, 6, global_default);
+		return b;
+	}
+
+	return {};
+}
+
+static std::vector<short> parseDynamicSymbolicFromXml(const std::string& xml, short global_default) {
+	std::string attributes, inner;
+	bool self_closing;
+	if (!extractXmlTag(xml, "symbolic_dynamics", attributes, inner, self_closing)) return {};
+
+	std::vector<short> out(10, global_default);
+
+	// <symbolic_dynamics mass="..." com="..." inertia="..." />
+	auto mass_attr = extractXmlAttribute(attributes, "mass");
+	auto com_attr = extractXmlAttribute(attributes, "com");
+	if (com_attr.empty()) com_attr = extractXmlAttribute(attributes, "CoM");
+	auto inertia_attr = extractXmlAttribute(attributes, "inertia");
+	if (inertia_attr.empty()) inertia_attr = extractXmlAttribute(attributes, "I");
+
+	if (!mass_attr.empty() || !com_attr.empty() || !inertia_attr.empty()) {
+		if (!mass_attr.empty()) {
+			auto v = parseInts(mass_attr);
+			out[0] = (!v.empty() && v[0] != 0) ? 1 : 0;
+		}
+		if (!com_attr.empty()) {
+			auto v = parseInts(com_attr);
+			auto b = toBinary(v, 3, global_default);
+			for (int i = 0; i < 3; ++i) out[1 + i] = b[i];
+		}
+		if (!inertia_attr.empty()) {
+			auto v = parseInts(inertia_attr);
+			auto b = toBinary(v, 6, global_default);
+			for (int i = 0; i < 6; ++i) out[4 + i] = b[i];
+		}
+		return out;
+	}
+
+	// <symbolic_dynamics><mass>...</mass><com>...</com><inertia>...</inertia></symbolic_dynamics>
+	std::string mass_inner, com_inner, inertia_inner;
+	if (extractXmlElement(inner, "mass", mass_inner)) {
+		auto v = parseInts(mass_inner);
+		out[0] = (!v.empty() && v[0] != 0) ? 1 : 0;
+	}
+	if (extractXmlElement(inner, "com", com_inner) || extractXmlElement(inner, "CoM", com_inner)) {
+		auto v = parseInts(com_inner);
+		auto b = toBinary(v, 3, global_default);
+		for (int i = 0; i < 3; ++i) out[1 + i] = b[i];
+	}
+	if (extractXmlElement(inner, "inertia", inertia_inner) || extractXmlElement(inner, "I", inertia_inner)) {
+		auto v = parseInts(inertia_inner);
+		auto b = toBinary(v, 6, global_default);
+		for (int i = 0; i < 6; ++i) out[4 + i] = b[i];
+	}
+	
+	// If inner text only contains 10 numbers
+	auto v = parseInts(inner);
+	if (v.size() >= 10) {
+		auto b = toBinary(v, 10, global_default);
+		return b;
+	}
+
+	// If we have some values, return what we have (others remain default)
+	bool any = false;
+	for (auto x : out) if (x != global_default) { any = true; break; }
+	return any ? out : std::vector<short>();
+}
+
+static std::unordered_map<std::string, std::vector<short>> parseSymbolicFromUrdf(const std::string& urdf_text,
+	const std::string& tag,
+	int expected_size,
+	short global_default,
+	const std::function<std::vector<short>(const std::string&, short)>& parser) {
+	std::unordered_map<std::string, std::vector<short>> result;
+	size_t pos = 0;
+	while (true) {
+		size_t link_pos = urdf_text.find("<link", pos);
+		if (link_pos == std::string::npos) break;
+		size_t name_pos = urdf_text.find("name=\"", link_pos);
+		if (name_pos == std::string::npos) break;
+		size_t name_start = name_pos + 6;
+		size_t name_end = urdf_text.find('"', name_start);
+		if (name_end == std::string::npos) break;
+		std::string link_name = urdf_text.substr(name_start, name_end - name_start);
+
+		size_t link_tag_end = urdf_text.find('>', name_end);
+		if (link_tag_end == std::string::npos) break;
+		size_t close_pos = urdf_text.find("</link>", link_tag_end);
+		if (close_pos == std::string::npos) break;
+		std::string link_body = urdf_text.substr(link_tag_end + 1, close_pos - (link_tag_end + 1));
+
+		auto vec = parser(link_body, global_default);
+		if (!vec.empty()) {
+			if ((int)vec.size() == expected_size) {
+				result[link_name] = vec;
+			} else {
+				// If the parser returned a smaller vector, pad with global_default
+				std::vector<short> padded(expected_size, global_default);
+				for (int i = 0; i < (int)vec.size() && i < expected_size; ++i) {
+					padded[i] = vec[i];
+				}
+				result[link_name] = padded;
+			}
+		}
+		pos = close_pos + 7;
+	}
+	return result;
+}
+
+static std::unordered_map<std::string, std::vector<short>> parseKinematicSymbolicFromYaml(const YAML::Node& node, short global_default) {
+	std::unordered_map<std::string, std::vector<short>> result;
+	if (!node || !node.IsMap()) return result;
+	for (auto it = node.begin(); it != node.end(); ++it) {
+		const std::string key = it->first.as<std::string>();
+		if (key == "default") continue;
+		auto val = it->second;
+		std::vector<short> mask(6, global_default);
+		if (val.IsSequence()) {
+			auto v = val.as<std::vector<int>>();
+			mask = toBinary(v, 6, global_default);
+		} else if (val.IsScalar()) {
+			int v = val.as<int>();
+			mask = toBinary(std::vector<int>{v, v, v, v, v, v}, 6, global_default);
+		} else if (val.IsMap()) {
+			if (val["xyz"]) {
+				if (val["xyz"].IsSequence()) {
+					auto v = val["xyz"].as<std::vector<int>>();
+					auto b = toBinary(v, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[i] = b[i];
+				} else if (val["xyz"].IsScalar()) {
+					int v = val["xyz"].as<int>();
+					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[i] = b[i];
+				}
+			}
+			if (val["rpy"]) {
+				if (val["rpy"].IsSequence()) {
+					auto v = val["rpy"].as<std::vector<int>>();
+					auto b = toBinary(v, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[3 + i] = b[i];
+				} else if (val["rpy"].IsScalar()) {
+					int v = val["rpy"].as<int>();
+					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[3 + i] = b[i];
+				}
+			}
+		}
+		result[key] = mask;
+	}
+	return result;
+}
+
+static std::unordered_map<std::string, std::vector<short>> parseDynamicSymbolicFromYaml(const YAML::Node& node, short global_default) {
+	std::unordered_map<std::string, std::vector<short>> result;
+	if (!node || !node.IsMap()) return result;
+	for (auto it = node.begin(); it != node.end(); ++it) {
+		const std::string key = it->first.as<std::string>();
+		if (key == "default") continue;
+		auto val = it->second;
+		std::vector<short> mask(10, global_default);
+		if (val.IsSequence()) {
+			auto v = val.as<std::vector<int>>();
+			mask = toBinary(v, 10, global_default);
+		} else if (val.IsScalar()) {
+			int v = val.as<int>();
+			mask = toBinary(std::vector<int>{v, v, v, v, v, v, v, v, v, v}, 10, global_default);
+		} else if (val.IsMap()) {
+			if (val["mass"]) {
+				if (val["mass"].IsScalar()) {
+					int v = val["mass"].as<int>();
+					mask[0] = (v != 0) ? 1 : 0;
+				} else if (val["mass"].IsSequence()) {
+					auto v = val["mass"].as<std::vector<int>>();
+					mask[0] = (!v.empty() && v[0] != 0) ? 1 : 0;
+				}
+			}
+			if (val["CoM"] || val["com"]) {
+				auto n = val["CoM"] ? val["CoM"] : val["com"];
+				if (n.IsSequence()) {
+					auto v = n.as<std::vector<int>>();
+					auto b = toBinary(v, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[1 + i] = b[i];
+				} else if (n.IsScalar()) {
+					int v = n.as<int>();
+					auto b = toBinary(std::vector<int>{v, v, v}, 3, global_default);
+					for (int i = 0; i < 3; ++i) mask[1 + i] = b[i];
+				}
+			}
+			if (val["I"] || val["inertia"]) {
+				auto n = val["I"] ? val["I"] : val["inertia"];
+				if (n.IsSequence()) {
+					auto v = n.as<std::vector<int>>();
+					auto b = toBinary(v, 6, global_default);
+					for (int i = 0; i < 6; ++i) mask[4 + i] = b[i];
+				} else if (n.IsScalar()) {
+					int v = n.as<int>();
+					auto b = toBinary(std::vector<int>{v, v, v, v, v, v}, 6, global_default);
+					for (int i = 0; i < 6; ++i) mask[4 + i] = b[i];
+				}
+			}
+		}
+		result[key] = mask;
+	}
+	return result;
+}
+
+static std::string readFileToString(const std::string& path) {
+	std::ifstream ifs(path);
+	if (!ifs) return std::string();
+	std::ostringstream ss;
+	ss << ifs.rdbuf();
+	return ss.str();
+}
+
+} // namespace
 
 namespace thunder_ns {
 
@@ -302,9 +645,36 @@ namespace thunder_ns {
 			// --- Kinematic parameters (par_KIN_num) --- //
 			// std::vector<double> par_KIN_num(6 * numJoints, 0);
 			// Whether kinematic parameters should be symbolic (1) or numeric (0).
-			// Can be overridden per element with `par_KIN_symb`.
-			bool kin_symb = config_["symbolic_kinematics"] ? config_["symbolic_kinematics"].as<bool>() : true;
-			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb ? 1 : 0);
+			// Can be overridden per-link (symbolic_kinematics) or per-element (par_KIN_symb).
+			short kin_symb_global = 1;
+			if (config_["symbolic_kinematics"]) {
+				if (config_["symbolic_kinematics"].IsScalar()) {
+					kin_symb_global = config_["symbolic_kinematics"].as<bool>() ? 1 : 0;
+				} else if (config_["symbolic_kinematics"]["default"]) {
+					kin_symb_global = config_["symbolic_kinematics"]["default"].as<bool>() ? 1 : 0;
+				}
+			}
+
+			auto yaml_kin_map = parseKinematicSymbolicFromYaml(config_["symbolic_kinematics"], kin_symb_global);
+			std::string urdf_text = readFileToString(urdf_path_final);
+			auto urdf_kin_map = parseSymbolicFromUrdf(urdf_text, "symbolic_kinematics", 6, kin_symb_global, parseKinematicSymbolicFromXml);
+
+			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb_global);
+			for (int i = 0; i < numJoints; ++i) {
+				const auto& link_name = jointsName[i];
+				auto it_yaml = yaml_kin_map.find(link_name);
+				auto it_urdf = urdf_kin_map.find(link_name);
+				if (it_yaml != yaml_kin_map.end()) {
+					for (int j = 0; j < 6; ++j) {
+						par_KIN_isSymb[6 * i + j] = (j < (int)it_yaml->second.size()) ? it_yaml->second[j] : kin_symb_global;
+					}
+				} else if (it_urdf != urdf_kin_map.end()) {
+					for (int j = 0; j < 6; ++j) {
+						par_KIN_isSymb[6 * i + j] = (j < (int)it_urdf->second.size()) ? it_urdf->second[j] : kin_symb_global;
+					}
+				}
+			}
+
 			if (config_["par_KIN_symb"]) {
 				par_KIN_isSymb = config_["par_KIN_symb"].as<std::vector<short>>();
 			}
@@ -359,11 +729,35 @@ namespace thunder_ns {
 				robot->add_property<int>("STD_PAR_LINK", STD_PAR_LINK, "int", "Standard number of dynamic parameters per link", true);
 			}
 
-			// std::vector<double> par_DYN_num(STD_PAR_LINK * numJoints, 0);
 			// Whether dynamic parameters should be symbolic (1) or numeric (0).
-			// Can be overridden per-element with `par_DYN_symb`.
-			bool dyn_symb = config_["symbolic_dynamics"] ? config_["symbolic_dynamics"].as<bool>() : true;
-			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, dyn_symb ? 1 : 0);
+			// Can be overridden per-link (symbolic_dynamics) or per-element (par_DYN_symb).
+			short dyn_symb_global = 1;
+			if (config_["symbolic_dynamics"]) {
+				if (config_["symbolic_dynamics"].IsScalar()) {
+					dyn_symb_global = config_["symbolic_dynamics"].as<bool>() ? 1 : 0;
+				} else if (config_["symbolic_dynamics"]["default"]) {
+					dyn_symb_global = config_["symbolic_dynamics"]["default"].as<bool>() ? 1 : 0;
+				}
+			}
+			auto yaml_dyn_map = parseDynamicSymbolicFromYaml(config_["symbolic_dynamics"], dyn_symb_global);
+			auto urdf_dyn_map = parseSymbolicFromUrdf(urdf_text, "symbolic_dynamics", STD_PAR_LINK, dyn_symb_global, parseDynamicSymbolicFromXml);
+
+			std::vector<short> par_DYN_isSymb(STD_PAR_LINK * numJoints, dyn_symb_global);
+			for (int i = 0; i < numJoints; ++i) {
+				const auto& link_name = jointsName[i];
+				auto it_yaml = yaml_dyn_map.find(link_name);
+				auto it_urdf = urdf_dyn_map.find(link_name);
+				if (it_yaml != yaml_dyn_map.end()) {
+					for (int j = 0; j < STD_PAR_LINK; ++j) {
+						par_DYN_isSymb[STD_PAR_LINK * i + j] = (j < (int)it_yaml->second.size()) ? it_yaml->second[j] : dyn_symb_global;
+					}
+				} else if (it_urdf != urdf_dyn_map.end()) {
+					for (int j = 0; j < STD_PAR_LINK; ++j) {
+						par_DYN_isSymb[STD_PAR_LINK * i + j] = (j < (int)it_urdf->second.size()) ? it_urdf->second[j] : dyn_symb_global;
+					}
+				}
+			}
+
 			if (config_["par_DYN_symb"]) {
 				par_DYN_isSymb = config_["par_DYN_symb"].as<std::vector<short>>();
 			}

@@ -8,8 +8,14 @@ urdf_loader:
   base_link: "base"
   ee_link: "wrist_2"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
+  # Can also be overridden per-link using a mask like:
+  # symbolic_kinematics:
+  #   base: [1, 1, 1, 1, 1, 1]
   symbolic_kinematics: true
   # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
+  # You can also override per-link, e.g.:
+  # symbolic_dynamics:
+  #   base: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   symbolic_dynamics: true
 
   gravity:

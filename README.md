@@ -123,6 +123,48 @@ The DH table takes the trasformation in the order a, alpha, d, theta (modified c
 The inertial parameters are expressed in the DH frames with the same convention.
 An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda, or a 3 d.o.f RRR manipulator, or a SEA RRR robot.
 
+## Symbolic parameter control (kinematics & dynamics)
+
+When loading a URDF, the loader builds both kinematic and dynamic parameter vectors (`par_KIN` and `par_DYN`).
+By default these parameters are treated as symbolic (so they show up in generated CASADI functions), but you can selectively force numeric values.
+
+### YAML configuration
+
+The loader supports:
+
+* a global switch:
+  * `symbolic_kinematics: true|false`
+  * `symbolic_dynamics: true|false`
+
+* per-link masks (takes precedence over the global switch):
+
+```yaml
+symbolic_kinematics:
+  base_link: [0, 0, 0, 0, 0, 0]
+  link1:
+    xyz: [1, 1, 1]
+    rpy: [0, 0, 0]
+
+symbolic_dynamics:
+  base_link: [0,0,0,0,0,0,0,0,0,0]
+  link1:
+    mass: 1
+    com: [0, 1, 0]
+    inertia: [1, 1, 1, 0, 0, 0]
+```
+
+### URDF configuration
+
+The same masks can also be embedded directly in the URDF (used if YAML does not override):
+
+```xml
+<link name="base_link">
+  <symbolic_kinematics xyz="1 1 1" rpy="0 0 0" />
+  <symbolic_dynamics mass="1" com="0 1 0" inertia="1 1 1 0 0 0" />
+</link>
+```
+
+
 
 The framework will create a `<robot>_generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
