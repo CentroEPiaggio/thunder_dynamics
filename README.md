@@ -123,9 +123,11 @@ The DH table takes the trasformation in the order a, alpha, d, theta (modified c
 The inertial parameters are expressed in the DH frames with the same convention.
 An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda, or a 3 d.o.f RRR manipulator, or a SEA RRR robot.
 
-## Symbolic parameter control (kinematics & dynamics)
+## URDF Loader: Symbolic parameter control (kinematics & dynamics)
 
-When loading a URDF, the loader builds both kinematic and dynamic parameter vectors (`par_KIN` and `par_DYN`).
+> **Note:** This feature is only available when using the `urdf_loader` plugin.
+
+When loading a URDF through `urdf_loader`, the loader builds both kinematic and dynamic parameter vectors (`par_KIN` and `par_DYN`).
 By default these parameters are treated as symbolic (so they show up in generated CASADI functions), but you can selectively force numeric values.
 
 ### YAML configuration

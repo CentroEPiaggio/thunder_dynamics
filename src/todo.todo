@@ -114,6 +114,7 @@ plugins:
 		☐ is the function .execute(robot_name) autoexplicative?
 		☐ system to deactivate generators after loading the configuration (needed in tests)
 	loaders:
+		☐ readme for loaders, there is for urdf now, add dh and internal representation
 		☐ kin_loader wants world and ee frames, robustify!
 		☐ delete numJoints in the config. The std joint loader have to set it from joints type.
 		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
