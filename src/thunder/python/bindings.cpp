@@ -21,7 +21,7 @@
 namespace nb = nanobind;
 using namespace thunder_ns;
 
-NB_MODULE(thunder_core, m) {
+NB_MODULE(_bindings, m) {
     m.doc() = "Thunder Dynamics core bindings — Robot, parameters, functions, and utilities";
 
     // =======================================================================
