@@ -377,7 +377,9 @@ namespace thunder_ns{
 				arg_index++;
 			}
 
-			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
+			// Apply CSE to reduce redundant sub-expressions in generated code
+			auto cse_exprs = casadi::SX::cse({expr});
+			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, cse_exprs);
 			// cout<<"fun: "<<fun<<endl;
 			function.fun = fun;
 			functions[f_name] = function;

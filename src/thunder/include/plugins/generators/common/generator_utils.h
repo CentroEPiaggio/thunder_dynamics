@@ -380,14 +380,28 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			}
 		}
 		args_string.append(")");
+
+		// Query output sparsity from the CasADi function
+		casadi::Sparsity sp_out = fun.second.fun.sparsity_out(0);
+		bool out_is_dense = sp_out.is_dense();
+		casadi_int nnz = sp_out.nnz();
+		long nrow = out_size[0];
+		long ncol = out_size[1];
+
 		// other parts
 		string ret_type = fun.second.get_ret_type_str();
 		functions_str.append("// " + fun.second.description + "\n");
 		functions_str.append(ret_type + " thunder_" + robot_name + "::" + fun_name + args_string + " {\n");
-		// functions_str.append("\tEigen::MatrixXd out;\n");
-		// functions_str.append("\tout.resize("+to_string(out_size[0])+","+to_string(out_size[1])+");\n");
-		string size_str = std::to_string(out_size[0]*out_size[1]);
-		functions_str.append("\tthread_local double buffer["+size_str+"];\n"); // alignas("+size_str+") 
+
+		if (out_is_dense) {
+			// Dense output: buffer = nrow*ncol, direct Eigen::Map
+			string size_str = std::to_string(nrow * ncol);
+			functions_str.append("\tthread_local double buffer[" + size_str + "];\n");
+		} else {
+			// Sparse output: buffer only needs nnz elements
+			functions_str.append("\tthread_local double buffer[" + std::to_string(nnz) + "];\n");
+		}
+
 		functions_str.append("\tthread_local long long p3[" + fun_name_gen + "_fun_SZ_IW];\n");
 		functions_str.append("\tthread_local double p4[" + fun_name_gen + "_fun_SZ_W];\n");
 		// inputs
@@ -411,10 +425,38 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			}
 			functions_str.append("};\n");
 		}
-		// output
+		// output + call
 		functions_str.append("\tdouble* output_[] = {buffer};\n");
 		functions_str.append("\tint check = " + fun_name_gen + "_fun(input_, output_, p3, p4, 0);\n");
-		functions_str.append("\treturn Eigen::Map<"+ret_type+">(buffer);\n");
+
+		if (out_is_dense) {
+			// Dense: direct map as before
+			functions_str.append("\treturn Eigen::Map<" + ret_type + ">(buffer);\n");
+		} else {
+			// Sparse: scatter non-zeros into dense Eigen matrix
+			// Build the column-major dense index for each non-zero element
+			std::vector<casadi_int> row = sp_out.get_row();
+			std::vector<casadi_int> colind = sp_out.get_colind();
+
+			// Generate static scatter map: sparse index -> column-major dense index
+			string indices_str = "\tstatic constexpr int sparse_map_[] = {";
+			int k = 0;
+			for (long c = 0; c < ncol; c++) {
+				for (casadi_int idx = colind[c]; idx < colind[c + 1]; idx++) {
+					if (k > 0) indices_str += ", ";
+					casadi_int r = row[idx];
+					long dense_idx = r + c * nrow;  // column-major
+					indices_str += std::to_string(dense_idx);
+					k++;
+				}
+			}
+			indices_str += "};\n";
+			functions_str.append(indices_str);
+
+			functions_str.append("\t" + ret_type + " result_ = " + ret_type + "::Zero();\n");
+			functions_str.append("\tfor (int i = 0; i < " + std::to_string(nnz) + "; i++) result_.data()[sparse_map_[i]] = buffer[i];\n");
+			functions_str.append("\treturn result_;\n");
+		}
 		functions_str.append("}\n\n");
 
 	}
