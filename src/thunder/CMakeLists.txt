@@ -1,5 +1,5 @@
 # cmake and c++ version
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -17,21 +17,18 @@ set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Add all source files in the "src" directory to the SOURCES variable
-file(GLOB_RECURSE SOURCES 
+file(GLOB_RECURSE SOURCES
   ${CMAKE_SOURCE_DIR}/src/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/loaders/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/builders/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/builders/common/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/generators/*.cpp
-  # ${CMAKE_SOURCE_DIR}/src/plugins/generators/common/*.cpp
 )
+# Exclude Python proxy 
+list(FILTER SOURCES EXCLUDE REGEX ".*/plugins/python/.*")
 
 # Define the library target with the collected source files
 add_library(library ${SOURCES})
 
 # Set the output name for the library
 set_target_properties(library PROPERTIES OUTPUT_NAME "library")
+set_target_properties(library PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Make the library's headers available to other projects
 target_include_directories(library PUBLIC ${CMAKE_SOURCE_DIR}/include)
@@ -127,3 +124,75 @@ set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
 # Install the executable and the template directory
 install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
+
+# =============================== #
+# --- Python Plugin Support  --- #
+# =============================== #
+option(BUILD_PYTHON_PLUGINS "Build Python plugin support with nanobind" OFF)
+
+if(BUILD_PYTHON_PLUGINS)
+  find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)
+  find_package(SWIG REQUIRED)
+  include(${SWIG_USE_FILE})
+
+  # Generate swigpyrun.h (SWIG runtime header for pointer extraction)
+  set(SWIGPYRUN_DIR "${CMAKE_CURRENT_BINARY_DIR}/swigpyrun")
+  set(SWIGPYRUN_OUTPUT "${SWIGPYRUN_DIR}/swigpyrun.h")
+  file(MAKE_DIRECTORY ${SWIGPYRUN_DIR})
+  add_custom_command(
+    OUTPUT ${SWIGPYRUN_OUTPUT}
+    COMMAND ${SWIG_EXECUTABLE} -python -external-runtime ${SWIGPYRUN_OUTPUT}
+    COMMENT "Generating swigpyrun.h for CasADi type bridge"
+    VERBATIM
+  )
+  add_custom_target(generate_swigpyrun ALL DEPENDS ${SWIGPYRUN_OUTPUT})
+
+  # Fetch nanobind
+  FetchContent_Declare(
+    nanobind
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG v2.4.0
+  )
+  FetchContent_MakeAvailable(nanobind)
+
+  # thunder_core._bindings Python module (Robot bindings + CasADi type casters)
+  nanobind_add_module(_bindings
+    ${CMAKE_SOURCE_DIR}/python/bindings.cpp
+  )
+  target_link_libraries(_bindings PRIVATE library)
+  target_include_directories(_bindings PRIVATE
+    ${CMAKE_SOURCE_DIR}/python
+    ${SWIGPYRUN_DIR}
+  )
+  add_dependencies(_bindings generate_swigpyrun)
+
+  # Add Python proxy plugin sources to the main library
+  target_sources(library PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/plugins/python/py_plugin_proxy.cpp
+  )
+  target_link_libraries(library Python::Python)
+  target_include_directories(library PRIVATE ${SWIGPYRUN_DIR})
+  target_compile_definitions(library PUBLIC THUNDER_PYTHON_PLUGINS)
+  add_dependencies(library generate_swigpyrun)
+
+  # Also give the thunder executable nanobind/Python include paths
+  target_include_directories(thunder PRIVATE ${SWIGPYRUN_DIR})
+
+  # Install thunder_core package to Python site-packages
+  execute_process(
+    COMMAND ${Python_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_path('purelib'))"
+    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  # Install compiled _bindings module into thunder_core package directory
+  install(TARGETS _bindings LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/thunder_core)
+
+  # Install thunder_core Python package (pure-Python parts)
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_core
+    DESTINATION ${PYTHON_SITE_PACKAGES})
+
+  message(STATUS "Python plugin support ENABLED")
+  message(STATUS "  Python: ${Python_EXECUTABLE} (${Python_VERSION})")
+  message(STATUS "  SWIG:   ${SWIG_EXECUTABLE} (${SWIG_VERSION})")
+  message(STATUS "  Install to: ${PYTHON_SITE_PACKAGES}")
+endif()

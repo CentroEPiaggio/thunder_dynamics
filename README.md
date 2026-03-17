@@ -85,6 +85,187 @@ Done!
 
 ---
 
+## Writing plugins in Python
+
+Thunder supports writing plugins in Python. This requires building with Python plugin support enabled:
+
+```bash
+cd src/thunder
+mkdir -p build && cd build
+cmake .. -DBUILD_PYTHON_PLUGINS=ON
+make
+```
+
+This produces the `thunder_core` Python package (nanobind bindings for `Robot` and utilities, plus pure-Python modules for plugin base classes and pipeline execution) and enables the `py:` prefix in YAML pipeline configurations.
+
+### `thunder_core` package structure
+
+```
+thunder_core                  # Python package
+├── _bindings                 # Compiled C++ nanobind module (Robot, PluginManager, utils)
+├── plugins                   # ABC base classes: BaseLoader, BaseBuilder, BaseGenerator
+└── pipeline                  # Config class and run_pipeline() for pipeline execution
+```
+
+Everything from `_bindings` is re-exported at the top level, so `thunder_core.Robot`, `thunder_core.PluginManager`, etc. work directly.
+
+### Python plugin conventions
+
+Use the `py:module.ClassName` syntax in the pipeline YAML to reference Python plugins:
+
+```yaml
+pipeline:
+  loaders:    ["kin_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "py:my_plugins.MyBuilder"]
+  generators: ["robot_generator"]
+
+# Config block for the Python plugin (key = full py: name)
+"py:my_plugins.MyBuilder":
+  my_param: 42
+```
+
+Multiple Python plugins of the same type are supported — just add more `py:` entries.
+
+The Python module file (e.g., `my_plugins.py`) should be placed **in the same directory as the YAML config file**. Standard `PYTHONPATH` and `sys.path` rules also apply.
+
+### Writing Python plugins
+
+All Python plugins **must** inherit from the appropriate base class in `thunder_core.plugins`:
+
+| Plugin type | Base class     | Required method      |
+|-------------|----------------|----------------------|
+| Loader      | `BaseLoader`   | `load(self, robot)`  |
+| Builder     | `BaseBuilder`  | `build(self, robot)` |
+| Generator   | `BaseGenerator`| `generate(self, robot)` |
+
+These are abstract classes — forgetting to implement the required method will raise a `TypeError` at instantiation.
+
+#### Minimal builder template
+
+```python
+import casadi
+from thunder_core.plugins import BaseBuilder
+
+class MyBuilder(BaseBuilder):
+    def build(self, robot):
+        q = robot.get_model("q")            # returns casadi.SX
+        expr = casadi.cos(q)                 # standard CasADi Python API
+        robot.add_function("cos_q", expr, ["q"], "Cosine of joint angles")
+```
+
+#### Optional pydantic config validation
+
+Plugins can optionally define a `ConfigModel` class attribute (a pydantic `BaseModel` subclass) to validate the YAML config dict received in `configure()`. When present, `self.config` will be the validated pydantic model instance instead of a raw dict:
+
+```python
+import casadi
+from pydantic import BaseModel
+from thunder_core.plugins import BaseBuilder
+
+class MyBuilder(BaseBuilder):
+    class ConfigModel(BaseModel):
+        function_name: str = "cos_q"
+        scale: float = 1.0
+
+    def build(self, robot):
+        q = robot.get_model("q")
+        robot.add_function(
+            self.config.function_name,
+            self.config.scale * casadi.cos(q),
+            ["q"],
+            "Scaled cosine of joint angles",
+        )
+```
+
+If no `ConfigModel` is defined, `self.config` remains a plain Python dict (backward-compatible).
+
+### Running the pipeline from Python
+
+Use `thunder_core.pipeline` to run a pipeline from Python code or Jupyter notebooks:
+
+```python
+from thunder_core.pipeline import Config, run_pipeline
+
+# Quick one-liner from a YAML file
+robot = run_pipeline("path/to/robot.yaml", robot_name="my_robot")
+
+# Or from a dict
+robot = run_pipeline({
+    "pipeline": {
+        "loaders": ["kin_loader"],
+        "builders": ["kin_builder"],
+        "generators": []
+    },
+    "kin_loader": { "num_joints": 2, "joints_type": ["R", "R"] }
+}, robot_name="RR")
+
+# Or use Config directly for more control
+cfg = Config("path/to/robot.yaml")
+print(cfg)
+robot = cfg.execute(robot_name="RR", verbose=True)
+```
+
+### Available Robot API in Python
+
+```python
+import thunder_core
+
+robot = thunder_core.Robot("my_robot")
+
+# Properties (typed getters/setters — C++ templates mapped to explicit methods)
+robot.add_property_int("ndof", 3)
+robot.add_property_double("mass", 10.5)
+robot.add_property_string("name", "arm")
+robot.add_property_vector_double("lengths", [1.0, 1.0, 1.0])
+ndof  = robot.get_int("ndof")
+name  = robot.get_string("name")
+
+# Symbolic variables and parameters (CasADi SX/DM pass seamlessly)
+q = casadi.SX.sym("q", 3)
+robot.add_variable("q", q, [0.0, 0.0, 0.0], [1, 1, 1])
+
+# Symbolic model access
+q_sym = robot.get_model("q")       # returns casadi.SX
+
+# Numeric evaluation
+q_val = robot.get_value("q")       # returns casadi.DM
+
+# Set parameter values
+robot.set("q", casadi.DM([1.0, 2.0, 3.0]))
+
+# Add symbolic functions
+robot.add_function("sin_q", casadi.sin(q), ["q"], "Sine of q")
+
+# I/O
+robot.save_par("params.yaml")
+robot.load_par("params.yaml")
+
+# Direct map access
+print(robot.properties)    # dict-like: {name: Property, ...}
+print(robot.parameters)    # dict-like: {name: Parameter, ...}
+print(robot.functions)     # dict-like: {name: Function, ...}
+
+# Utility functions
+thunder_core.hat(v)        # skew-symmetric matrix
+thunder_core.R_x(angle)    # rotation about X
+thunder_core.R_y(angle)    # rotation about Y
+thunder_core.R_z(angle)    # rotation about Z
+```
+
+### Notes on Python plugins
+
+- **CasADi interop**: CasADi's Python objects (`casadi.SX`, `casadi.DM`, `casadi.Function`) are converted automatically at the C++/Python boundary using SWIG pointer extraction. No serialization overhead.
+- **Shared Robot object**: Python plugins receive the same `Robot` instance as C++ plugins. Modifications (adding functions, setting parameters) persist across the pipeline.
+- **Dynamic attributes**: You can set arbitrary Python attributes on the Robot object (e.g., `robot.my_data = [1,2,3]`). These are visible to subsequent Python plugins but not to C++ plugins. Use `robot.add_property_*()` or `robot.add_parameter()` if C++ needs access.
+- **Error handling**: Python exceptions are caught and re-raised as C++ `std::runtime_error` with the full Python traceback.
+- **Config**: The YAML config block for a Python plugin is passed to `configure()` as a Python dict (or validated via pydantic if `ConfigModel` is defined). The key in the YAML must match the full `py:module.Class` name.
+
+### Example
+
+See `src/thunder/robots/debug/RRR_py.yaml` and `src/thunder/robots/debug/my_py_builder.py` for a working example.
+
+---
+
 
 
 
