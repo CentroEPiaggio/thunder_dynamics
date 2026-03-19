@@ -1,0 +1,140 @@
+pipeline:
+  loaders:    ["dh_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder", "base_inertial_param_builder"]
+  generators: ["robot_generator"]
+
+version: 1.0
+
+# --- Constants --- #
+PI: &PI               3.14163267948966
+PI_2: &PI_2           1.5707963267948966
+PI_2_neg: &PI_2_neg  -1.5707963267948966
+
+
+############################################
+robot_generator:
+  gen_python:   true
+  gen_casadi:   false
+  gen_robot:    true
+  copy_gen:     false
+
+
+############################################
+dh_loader:
+
+  # --- Hyperparameters --- #
+  num_joints: 4
+
+  # joint types: 'R': rotoidal, 'P': prismatic
+  joints_type: ['P', 'R', 'P', 'R']
+
+  # # DH convention: a -> alpha -> d -> theta
+  DH:
+    symb: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+    value: [0,       *PI,          0,      *PI,     
+            0,       *PI_2_neg,   0.069,   *PI_2_neg,
+            0,       *PI_2,        0,      *PI_2,
+            0.038,      0,          0,        0]
+
+  # world to link_0
+  Base_to_L0:
+    symb: [1,1,1, 1,1,1]
+    xyz: [0.002, 0.02671, -0.06342]
+    ypr: [0, 0, -0.0872665]
+
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [1,1,1, 1,1,1]
+    xyz: [0.049, 0, 0]
+    ypr: [0, 0, 0]
+
+############################################
+dyn_loader:
+
+  # link friction
+  Dl_order: 2             # link friction order (i.e., 1: static; 2: damping; ..). Remove for no friction model 
+  has_motor: true             # link motor inertia 
+
+  # gravity vector
+  gravity:
+    symb: [1,1,1]
+    value: [0, 0, -9.81]
+
+  # inertial parameters expressed w.r.t. DH frames
+  dynamics:
+    link1:
+      inertial:
+        symb: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        mass: 0.0446
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 5.44e-05
+        Ixy: 4.0e-07
+        Ixz: -1.12e-07
+        Iyy: 9.19e-06
+        Iyz: 1.07e-05
+        Izz: 4.8e-05
+      friction:
+        symb: [1, 1]
+        Dl: [0.1, 0.01]
+      motor:
+        symb: [1]
+        Ia: 0
+    link2:
+      inertial:
+        symb: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        mass: 0.0173
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 1.52e-05
+        Ixy: -2.09e-08
+        Ixz: -9.8e-09
+        Iyy: 1.3323e-05
+        Iyz: -2.04e-06
+        Izz: 2.85e-06
+      friction:
+        symb: [1, 1]
+        Dl: [0.1, 0.01]
+      motor:
+        symb: [1]
+        Ia: 0
+    link3:
+      inertial:
+        symb: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        mass: 0.0367
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 3.7e-06
+        Ixy: 2.43e-07
+        Ixz: 6.48e-07
+        Iyy: 1.54e-05
+        Iyz: -3.11e-08
+        Izz: 1.388e-05
+      friction:
+        symb: [1, 1]
+        Dl: [0.1, 0.01]
+      motor:
+        symb: [1]
+        Ia: 0
+    link4:
+      inertial:
+        symb: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        mass: 0.0348
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 2.94e-06
+        Ixy: 1.244e-07
+        Ixz: 3.52e-07
+        Iyy: 1.13e-05
+        Iyz: -3.11e-08
+        Izz: 1.06e-05
+      friction:
+        symb: [1, 1]
+        Dl: [0.1, 0.01]
+      motor:
+        symb: [1]
+        Ia: 0

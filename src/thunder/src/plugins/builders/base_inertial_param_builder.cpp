@@ -11,17 +11,10 @@ namespace thunder_ns {
 
 	void BaseInertialParamBuilder::init(std::shared_ptr<Robot> robot){
 		// --- Check DH Usage --- //
-		//if (!config_["DH"]){
-		//	throw std::runtime_error("The inertial parameters must be defined using the DH convention.");
-		//}
 		if(robot->parameters.count("par_DHtable") == 0){
 			throw std::runtime_error("The inertial parameters must be defined using the DH convention.");
 		}
 		// --- Check wheter include motor inertia --- //
-		//if (config_["par_Mm"]){
-		//	debug_log("Including the motor inrtia in the system dynamics", VERB_INFO);
-		//	has_motor_inertia = true;
-		//}
 		if(robot->parameters.count("par_Ia") > 0){
 			has_motor_inertia = true;
 			debug_log("Including the motor inertia in the system dynamics", VERB_INFO);
@@ -87,29 +80,26 @@ namespace thunder_ns {
 
 
 	casadi::SX BaseInertialParamBuilder::createS(std::shared_ptr<Robot> robot, int link){
-		// Extract link parameters
+		// Extract link parameters, so that pi_link = S pi.
 		int numJoints = robot->get<int>("numJoints");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
 		SX S;
 
-		if (has_motor_inertia){ // Regroup also motor inertial parameters		
+		if (has_motor_inertia){ 
+			// Regroup also motor inertial parameters		
 			S = SX::zeros(11,numJoints*11);
 			casadi::Slice rows(0,10);
 			casadi::Slice cols(link*10, (link+1)*10);
 			S(rows,cols) = SX::eye(10);
-			S(10, numJoints*10 + link) = 1; // selector of motor inertia
+			S(10, numJoints*10 + link) = 1; // selector of link motor inertia
 			
-		}else{// regroup only standard inertial parameters
+		}else{
+			// regroup only standard inertial parameters
 			S = SX::zeros(10,numJoints*10);
 			casadi::Slice rows(0,10);
 			casadi::Slice cols(link*10, (link+1)*10);
 			S(rows,cols) = SX::eye(10);
 		}
-		// Ia in Reg
-		// S = SX::zeros(nParLink,numJoints*nParLink);
-		// casadi::Slice rows(0,nParLink);
-		// casadi::Slice cols(link*nParLink, (link+1)*nParLink);
-		// S(rows,cols) = SX::eye(nParLink);
 
 		return S;
 	}
@@ -244,9 +234,7 @@ namespace thunder_ns {
 		vector<string> joints_type = robot->get<vector<string>>("jointsType");
 
 		auto DHtable = reshape(robot->get_model("par_DHtable"),4,-1).T(); // DH table (a - alplha - d - q)
-		auto gravity = robot->get_model("par_gravity"); //shoul
-		//debug_log(DHtable.dim(), VERB_INFO);
-
+		auto gravity = robot->get_model("par_gravity");
 
 		int r1 = has_r1 ? robot->get<int>("r1") : -1;
 		int r2 = has_r2 ? robot->get<int>("r2") : -1;
@@ -284,60 +272,57 @@ namespace thunder_ns {
 
 			//  ----------- REVOLUTE ----------------------------
 			if (joints_type[i] == "R"){
-				// 1.a) Reducing linear dependent parameters
+				// 1.a) Regrouping linear dependent parameters (Rule 1a)
 				E_full(4,7) = -1; // I_xx' = I_xx - I_yy
 				elim_idx.push_back(0);elim_idx.push_back(3);elim_idx.push_back(7); // DELETE: mass, m*COM_z, I_yy
 				reg_linear_dependent_column.push_back(10*i+0);
 				reg_linear_dependent_column.push_back(10*i+3);
 				reg_linear_dependent_column.push_back(10*i+7);
-				debug_log("Reducing M, MZ, YY of link " + std::to_string(i), VERB_INFO);
+				debug_log("Regrouping M, MZ, YY of link " + std::to_string(i), VERB_INFO);
 
 
+				// 1.b) Reduce motor inertia 
 				if (has_motor_inertia){
 					if (has_r2 && i == r2){					
-						// auto T_r1 = robot->get_model("T_"+std::to_string(r1));
-						// auto k_r1 = T_r1(casadi::Slice(0,3), casadi::Slice(2,3)); 
-						// auto T_r2 = robot->get_model("T_"+std::to_string(r2)); 
-						// auto k_r2 = T_r2(casadi::Slice(0,3), casadi::Slice(2,3));
-
+						// get transform across r1 and r2 revolute joints
 						SX T_r1_r2 = SX::eye(4); 
 						for (int j=r1+1; j<=r2; j++){
 							auto T_r1_j = robot->get_model("T_"+std::to_string(j+1)); 
 							T_r1_r2 = SX::mtimes({T_r1_r2, T_r1_j});
 						}
-
-						// if (dot(k_r1, k_r2).is_zero()){
 						if (T_r1_r2(2,2).is_zero()){
-							// r2 joint axis orthogonal to r1 joint axis
+							// aggregate when r2 joint axis orthogonal to r1 joint axis
 							E_full(9,10) = 1; 		// I_zz' = I_zz + I_r
 							elim_idx.push_back(10); // DELETE: motor inertia
 							reg_linear_dependent_column.push_back(10*numJoints + i);
-							debug_log("Reducing Ir of link " + std::to_string(i), VERB_INFO);
+							debug_log("Regrouping Ir of link " + std::to_string(i), VERB_INFO);
 						}
 					}else if(i == r1){
+						// aggregate motor inertia for first revolute joint
 						E_full(9,10) = 1; 		// I_zz' = I_zz + I_r
 						elim_idx.push_back(10); // DELETE: motor inertia
 						reg_linear_dependent_column.push_back(10*numJoints + i);
-						debug_log("Reducing Ir of link " + std::to_string(i), VERB_INFO);
+						debug_log("Regrouping Ir of link " + std::to_string(i), VERB_INFO);
 					}
 				}
 
 
-				// 2.a) Reducing parameters with no effect to the dynamic
+				// 2.a) Eliminating parameters with no effect to the dynamic (Rule 4)
 				if((i>=r1 && !has_r2) || (i>=r1 && i<r2)){
+					// these links can only translate or rotate along z
 					elim_idx.push_back(4); elim_idx.push_back(5); 
 					elim_idx.push_back(6); elim_idx.push_back(8); // DELETE: I_xx, I_xy, I_xz, I_yz
 					reg_linear_dependent_column.push_back(10*i+4);
 					reg_linear_dependent_column.push_back(10*i+5);
 					reg_linear_dependent_column.push_back(10*i+6);
 					reg_linear_dependent_column.push_back(10*i+8);
-					debug_log("Reducing XX, XY, XZ, YZ of link " + std::to_string(i), VERB_INFO);
+					debug_log("Deleting XX, XY, XZ, YZ of link " + std::to_string(i), VERB_INFO);
 
 				
+					// check gravity effect (Rule 5)
 					auto T_r1 = robot->get_model("T_w_"+std::to_string(r1));
 					auto k_r1 = T_r1(casadi::Slice(0,3), casadi::Slice(2,3)); 
 					auto u_g = robot->get_model("par_gravity")/norm_1(robot->get_model("par_gravity"));
-					
 					if ((1-abs(dot(k_r1, u_g))).is_zero()){
 						// joint axis aligned with first revolute joint axis and gravity direction
 						if (i==r1 && (1-abs(dot(k_r1, u_g))).is_zero()){
@@ -346,7 +331,7 @@ namespace thunder_ns {
 							elim_idx.push_back(2); // DELETE: m*COM_y
 							reg_linear_dependent_column.push_back(10*i+1);
 							reg_linear_dependent_column.push_back(10*i+2);
-							debug_log("Reducing MX, MY of link " + std::to_string(i), VERB_INFO);
+							debug_log("Deleting MX, MY of link " + std::to_string(i), VERB_INFO);
 						}
 					}
 				}			
@@ -354,7 +339,7 @@ namespace thunder_ns {
 			}
 			//  ----------- PRISMATIC ----------------------------
 			else if (joints_type[i] == "P"){
-				// 1.a) Reducing linear dependent parameters
+				// 1.a) Regrouping linear dependent parameters (Rule 1b)
 				elim_idx.push_back(4);elim_idx.push_back(5);elim_idx.push_back(6); // DELETE: I_xx, I_xy, I_xz, I_yy, I_yz, I_zz
 				elim_idx.push_back(7);elim_idx.push_back(8);elim_idx.push_back(9);
 
@@ -364,25 +349,21 @@ namespace thunder_ns {
 				reg_linear_dependent_column.push_back(10*i+7);
 				reg_linear_dependent_column.push_back(10*i+8);
 				reg_linear_dependent_column.push_back(10*i+9);
-				debug_log("Reducing XX, XY, XZ, YY, YZ, ZZ of link " + std::to_string(i), VERB_INFO);
+				debug_log("Regrouping XX, XY, XZ, YY, YZ, ZZ of link " + std::to_string(i), VERB_INFO);
 			
-				// 2.a) Reducing parameters with no effect to the dynamic
+
 				if( ((has_r1 && has_r2) && (i>r1 && i<r2)) ||
 					((has_r1 && !has_r2) && (i>r1))){
-					// auto T_r1 = robot->get_model("T_"+std::to_string(r1));
-					// auto k_r1 = T_r1(casadi::Slice(0,3), casadi::Slice(2,3)); 
-					// auto T_i = robot->get_model("T_"+std::to_string(i)); 
-					// auto k_i = T_i(casadi::Slice(0,3), casadi::Slice(2,3));
+					// get transform from r1 and j 
 					SX T_r1_i = SX::eye(4); 
 					for (int j=r1+1; j<=i; j++){
 						auto T_r1_j = robot->get_model("T_"+std::to_string(j+1)); 
 						T_r1_i = SX::mtimes({T_r1_i, T_r1_j});
 					}
-					auto dot_k_r1_k_i = T_r1_i(2,2);
+					auto dot_k_r1_k_i = T_r1_i(2,2); // =+-1 if z axes are aligned
 
-					//if((1-abs(dot(k_r1, k_i))).is_zero()){
 					if((1-abs(dot_k_r1_k_i)).is_zero()){
-						// if z_i parallel to z_ri axis
+						// if z_i parallel to z_ri axis (Rule 2)
 						auto d = DHtable(i,2); auto ct = cos(DHtable(i,3)); auto st = sin(DHtable(i,2));
 						E_full(9,1) = 2*d*ct;			// regroup ZZ' = ZZ + 2dct MX - 2dst MY  
 						E_full(9,2) = -2*d*st;
@@ -392,39 +373,41 @@ namespace thunder_ns {
 						reg_linear_dependent_column.push_back(10*i + 1);
 						reg_linear_dependent_column.push_back(10*i + 2);
 						reg_linear_dependent_column.push_back(10*i + 3);
-						debug_log("Reducing MX, MY, MZ of link " + std::to_string(i), VERB_INFO);
+						debug_log("Regrouping MX, MY, MZ of link " + std::to_string(i), VERB_INFO);
 					}else{
-						// if z_i NOT parallel to z_ri axis
+						// if z_i NOT parallel to z_ri axis (Rule 3)
 						auto i_k_r1 = T_r1_i(casadi::Slice(0,3), casadi::Slice(2,3)); 
 						if(!i_k_r1(2).is_zero()){
 							E_full(1,3) = -i_k_r1(0)/i_k_r1(2);			// regroup MX' = MX + a*MZ  
 							E_full(2,3) = -i_k_r1(1)/i_k_r1(2);			// regroup MY' = MY + b*MZ
 							elim_idx.push_back(3); 						// DELETE: m*CoM_z
 							reg_linear_dependent_column.push_back(10*i + 3);
-							debug_log("Reducing MZ of link " + std::to_string(i), VERB_INFO);
+							debug_log("Regrouping MZ of link " + std::to_string(i), VERB_INFO);
 						}else if(!i_k_r1(0).is_zero() && !i_k_r1(1).is_zero()){
 							E_full(1,2) = -i_k_r1(0)/i_k_r1(1);			// regroup MX' = MX + c*MX
 							elim_idx.push_back(2); 						// DELETE: m*CoM_y
 							reg_linear_dependent_column.push_back(10*i + 2);
-							debug_log("Reducing MY of link " + std::to_string(i), VERB_INFO);
+							debug_log("Regrouping MY of link " + std::to_string(i), VERB_INFO);
 						}else if(!i_k_r1(0).is_zero()){
 							elim_idx.push_back(2); 						// DELETE: m*CoM_y
 							reg_linear_dependent_column.push_back(10*i + 2);
-							debug_log("Reducing MY of link " + std::to_string(i), VERB_INFO);
+							debug_log("Deleting MY of link " + std::to_string(i), VERB_INFO);
 						}else{
 							elim_idx.push_back(1); 						// DELETE: m*CoM_x
 							reg_linear_dependent_column.push_back(10*i + 1);
-							debug_log("Reducing MX of link " + std::to_string(i), VERB_INFO);
+							debug_log("Deleting MX of link " + std::to_string(i), VERB_INFO);
 						}
 					}
 				}else if(has_r1 && i<r1){
+					// These joints can only translate (Rule 6)
 					elim_idx.push_back(1); elim_idx.push_back(2); elim_idx.push_back(3); // DELETE: m*CoM_x, m*CoM_y, m*CoM_z
 					reg_linear_dependent_column.push_back(10*i+1);
 					reg_linear_dependent_column.push_back(10*i+2);
 					reg_linear_dependent_column.push_back(10*i+3);
-					debug_log("Reducing MX, MY, MZ of link " + std::to_string(i), VERB_INFO);
+					debug_log("Deleting MX, MY, MZ of link " + std::to_string(i), VERB_INFO);
 				}
 
+				// reduce motor inertia
 				if(has_motor_inertia){
 					if(has_rp1){
 						auto T_p1 = robot->get_model("T_"+std::to_string(p1));
@@ -433,20 +416,21 @@ namespace thunder_ns {
 						auto k_rp1 = T_rp1(casadi::Slice(0,3), casadi::Slice(2,3));
 						auto u_g = robot->get_model("par_gravity")/norm_1(robot->get_model("par_gravity"));
 						if(dot(k_p1, u_g).is_zero()){
-							// z-axis of p1 orthogonal to gravity, and if p1=1 or z-axis aligned to z-axes preceedinng 
+							// z-axis of p1 orthogonal to gravity, and if p1=0 or its z-axis aligned to all z-axes preceeding it,
+							// i.e. it's axis always orthogonal to gravity so that M has no effect on gravity force of previous link 
 							E_full(0,10) = 1;			// regroup M' = M + Ir  
 							elim_idx.push_back(10); 						// DELETE: Ir
 							reg_linear_dependent_column.push_back(10*numJoints + i);
-							debug_log("Reducing Ir of link " + std::to_string(i), VERB_INFO);
+							debug_log("Regrouping Ir of link " + std::to_string(i), VERB_INFO);
 						}
 					}
 
 				}
 			}
 			else if(joints_type[i]=="R_SEA"){
-				throw std::runtime_error("Soft joint will not be reduced.");
+				throw std::runtime_error("Soft joints cannot be reduced.");
 			}else{
-				throw std::runtime_error("Unkwnown joint type.");
+				throw std::runtime_error("Unkwnown joints type.");
 			}
 
 			// 3) Remapping parameters that can be eliminated on previous link
@@ -490,7 +474,7 @@ namespace thunder_ns {
 
 
 		// 4) Computing linear relationship with reduced set of parameters
-		//  ----------------------------------------------------------------
+		// ----------------------------------------------------------------
 		casadi::SXVector beta_blocks;
 		for (int i = 0; i < numJoints; ++i) {
 			SX product = casadi::SX::mtimes({E[i], H[i], W[i]});
@@ -500,10 +484,10 @@ namespace thunder_ns {
 		debug_log("Reduced from " + std::to_string(beta.size2()) + " to " + std::to_string(beta.size1()) + " parameters", VERB_INFO);
 
 		// 5) Adding functions 
-		//  ----------------------------------------------------------------
+		// ----------------------------------------------------------------
 		// a.1) beta s.t. par_DYN_red = beta*par_DYN
 		std::vector<std::string> arg_list = {};
-		if (!robot->add_function("beta", beta, arg_list, "linear relationship between full dyn parameters and the reduced set. beta s.t. par_red = beta*par.")) return 0;
+		if (!robot->add_function("beta", beta, arg_list, "linear relationship between full regressor parameters and the reduced set. beta s.t. par_REG_red = beta*par_REG.")) return 0;
 		
 		// a.2) par_DYN_red = beta*par_DYN
 		// - Add conversion function - //
@@ -519,9 +503,7 @@ namespace thunder_ns {
 		robot->add_parameter("par_REG_red", par_REG_red_symb, par_REG_red_num, par_REG_red_isSymb, "Base inertial parameters for reduced regressor.", true);
 		robot->set("par_REG_red", robot->get("reg2red"));
 
-		// b.1) beta_pinv s.t. Yr_red = Y_r*beta_pinv
-		//SX beta_pinv = mtimes(inv(mtimes(beta.T(), beta)), beta.T());
-		// b.2) Yr_red
+		// b.1) Yr_red: regressor linera in reduced parameters
 		casadi::SX Yr_red;
 		casadi::SX Yr;
 		if(has_motor_inertia){
@@ -534,46 +516,26 @@ namespace thunder_ns {
 		}else{
 			Yr = robot->get_model("Yr");
 		}
-		// Yr_red = del_col(Yr, reg_linear_dependent_column);
-		auto beta_pinv = SX::pinv(beta); 
+		auto beta_pinv = SX::pinv(beta); 		// using beta pseudo-inverse is required to take into account column order for motor inertia parameters
 		Yr_red = SX::mtimes({Yr,beta_pinv}); 
 		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_world2L0", "par_gravity"};
 		if (!robot->add_function("Yr_red", Yr_red, arg_list, "Regressor defined w.r.t the set of base iniertial parameters.")) return 0;
 
-		// b.3) reg_M_red
+		// b.2) reg_M_red
 		casadi::SX reg_M_red;
 		reg_M_red = del_col(robot->get_model("reg_M"), reg_linear_dependent_column);
 		arg_list = {"q", "ddqr", "par_KIN", "par_world2L0"};
-		if (!robot->add_function("reg_M_red", reg_M_red, arg_list, "Regressor of masses defined w.r.t the set of base iniertial parameters.")) return 0;
-		// b.4) reg_C_red
+		if (!robot->add_function("reg_M_red", reg_M_red, arg_list, "Regressor of masses defined w.r.t the set of base inertial parameters.")) return 0;
+		// b.3) reg_C_red
 		casadi::SX reg_C_red;
 		reg_C_red = del_col(robot->get_model("reg_C"), reg_linear_dependent_column);
 		arg_list = {"q", "dq", "dqr", "par_KIN", "par_world2L0"};
-		if (!robot->add_function("reg_C_red", reg_C_red, arg_list, "Regressor of centripetal defined w.r.t the set of base iniertial parameters.")) return 0;
-		// b.5) reg_G_red
+		if (!robot->add_function("reg_C_red", reg_C_red, arg_list, "Regressor of centripetal defined w.r.t the set of base inertial parameters.")) return 0;
+		// b.4) reg_G_red
 		casadi::SX reg_G_red;
 		reg_G_red = del_col(robot->get_model("reg_G"), reg_linear_dependent_column);
 		arg_list = {"q", "par_KIN", "par_world2L0", "par_gravity"};
-		if (!robot->add_function("reg_G_red", reg_G_red, arg_list, "Regressor of gravity defined w.r.t the set of base iniertial parameters.")) return 0;
-
-
-
-		// b.3) print Regrouping info
-		// std::string description = "";
-		// for (int i=0; i < par_REG_red.size1();i++){
-		// 	std::stringstream ss;
-		// 	bool first_term = true;
-		// 	for (int j=0; j < par_full.size1();i++){
-		// 		if(!beta(i,j).is_zero()){
-		// 			if (!first_term) {
-		// 				ss << " + ";
-		// 			}
-		// 			ss << beta(i,j) << "*" << par_full(i) << " ";
-		// 		}
-		// 	}
-		// 	description += ss.str() + "\n";
-		// }
-
+		if (!robot->add_function("reg_G_red", reg_G_red, arg_list, "Regressor of gravity defined w.r.t the set of base inertial parameters.")) return 0;
 
 		return 1;
 	}

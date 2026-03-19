@@ -1,1 +1,0 @@
-/usr/bin/c++ -g3 -lstdc++fs -std=c++17 CMakeFiles/yaml-cpp-sandbox.dir/sandbox.cpp.o -o ../../../yaml-cpp-sandbox  ../../../libyaml-cpp.a 

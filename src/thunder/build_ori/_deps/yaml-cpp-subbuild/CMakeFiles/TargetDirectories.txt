@@ -1,3 +1,0 @@
-/home/leo/thunder_dynamics/src/thunder/build/_deps/yaml-cpp-subbuild/CMakeFiles/yaml-cpp-populate.dir
-/home/leo/thunder_dynamics/src/thunder/build/_deps/yaml-cpp-subbuild/CMakeFiles/edit_cache.dir
-/home/leo/thunder_dynamics/src/thunder/build/_deps/yaml-cpp-subbuild/CMakeFiles/rebuild_cache.dir

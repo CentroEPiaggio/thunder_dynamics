@@ -119,7 +119,6 @@ namespace thunder_ns {
 			// --- Motor inertia (Leo) --- //
 			bool has_motor = config_["has_motor"] ? config_["has_motor"].as<bool>():false;	// defaults to false
 			if (has_motor){
-				debug_log("Proceeding with motor inertia", VERB_INFO);
 				vector<double> par_Ia_num;
 				vector<short> par_Ia_isSymb;
 				par_Ia_num.resize(numJoints);
