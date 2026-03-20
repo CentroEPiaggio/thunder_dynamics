@@ -8,6 +8,7 @@
 #include <iomanip>
 #include "MinJerkTrajectory.h"
 #include "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/thunder_frankino.h"
+#include "KinematicsSolver.h"
 
 // --- INCLUSIONI ACADOS ---
 #include "acados_sim_solver_frankino_tracking_mpc.h"
@@ -22,7 +23,7 @@ using namespace Eigen;
 #define NU 7   // [jerk]
 #define NY 28  // [q, dq, ddq, jerk] nel cost stage
 #define NYN 21 // [q,dq,ddq] nel cost terminale
-#define NP 1   // Nessun parametro ostacoli
+#define NP 19  // Nessun parametro ostacoli
 
 // Funzione di utilità per l'errore di predizione sulla traiettoria
 double simulate_prediction(
@@ -47,6 +48,23 @@ double simulate_prediction(
     return (q_corrente - q_target).norm();
 }
 
+void saveUSequenceToCSV(std::ofstream &file, double t_curr, const Eigen::MatrixXd &U_seq)
+{
+    if (file.is_open())
+    {
+        // Formato: tempo_corrente, u_0_j0, u_0_j1, ..., u_N_j6
+        file << t_curr;
+        for (int r = 0; r < U_seq.cols(); ++r)
+        { // Per ogni nodo dell'orizzonte (N_HORIZON)
+            for (int j = 0; j < U_seq.rows(); ++j)
+            { // Per ogni giunto (NJ)
+                file << "," << U_seq(j, r);
+            }
+        }
+        file << "\n";
+    }
+}
+
 int main()
 {
     // ----------------------------------------------------------------
@@ -56,6 +74,32 @@ int main()
     const std::string conf_file = "/home/thunder_dev/thunder_dynamics/src/thunder_control/frankino_generatedFiles/frankino_conf.yaml";
     robot_sim.load_conf(conf_file);
     int NJ = robot_sim.get_numJoints();
+
+    // --- DEFINIZIONE PATH ---
+    std::string custom_path = "/home/thunder_dev/thunder_dynamics/src/thunder_control/build/Sequence_jerk.csv";
+
+    std::ofstream u_seq_file;
+    u_seq_file.open(custom_path, std::ios::out);
+
+    if (!u_seq_file.is_open())
+    {
+        std::cout << "ERRORE: Impossibile creare il file in " << custom_path << ". Controlla che la cartella esista!" << std::endl;
+    }
+    else
+    {
+        std::cout << "File di log creato correttamente in: " << custom_path << std::endl;
+    }
+
+    // Scrittura Header
+    u_seq_file << "time";
+    for (int i = 0; i < N_HORIZON; ++i)
+    {
+        for (int j = 0; j < NJ; ++j)
+        {
+            u_seq_file << ",node" << i << "_j" << j;
+        }
+    }
+    u_seq_file << "\n";
 
     frankino_tracking_mpc_solver_capsule *capsule = frankino_tracking_mpc_acados_create_capsule();
     frankino_tracking_mpc_acados_create(capsule);
@@ -93,13 +137,34 @@ int main()
     ddq_curr.setZero();
     jerk_opt.setZero();
 
-    q_final = q_curr;
-    q_final << -0.14724, -0.526, -0.565, -2.1099, -0.312, 1.557,-1.733;
-    dq_final.setZero();
-    dq_final(0) += 0.9;
-    ddq_final.setZero();
+    // q_final = q_curr;
+    // q_final << -0.14724, -0.526, -0.565, -2.1099, -0.312, 1.557, -1.733;
+    // dq_final.setZero();
+    // dq_final(0) += 0.9;
+    // ddq_final.setZero();
 
-    double t_curr = 0.0, t_duration = 5.0, t_end = t_duration, dt_sim = 0.001, t_hor_lim = 0.2;
+    // --- DEFINIZIONE TARGET CARTESIANO ---
+    Vector3d p_des(0.33, -0.35, 0.35);
+    Vector3d v_des(0.0, 0.0, 0.0); // Velocità target
+    std::cout << "Posizione target: " << p_des.transpose() << std::endl;
+    std::cout << "Velocità target: " << v_des.transpose() << std::endl;
+
+    // --- CHIAMATA CLIK ---
+    JointStateTarget target_state = KinematicsUtils::computeFullTarget(robot_sim, p_des, v_des, q_curr, dq_curr, ddq_curr);
+
+    q_final = target_state.q;
+    std::cout << "Target q: " << q_final.transpose() << std::endl;
+    dq_final = target_state.dq;
+    std::cout << "Target dq: " << dq_final.transpose() << std::endl;
+    ddq_final = target_state.ddq;
+    std::cout << "Target ddq: " << ddq_final.transpose() << std::endl;
+
+    // PROVA PER ROBOT FERMO E PALLA SI MUOVE
+    // q_final = q_curr;
+    // dq_final.setZero();
+    // ddq_final.setZero();
+
+    double t_curr = 0.0, t_duration = 5.0, t_end = t_duration, dt_sim = 0.001, t_hor_lim = 0.5;
 
     double lb[NX] = {-2.8973, -1.7628, -2.8973, -3.0718, -2.8973, -0.0175, -2.8973,
                      -2.175, -2.175, -2.175, -2.175, -2.61, -2.61, -2.61,
@@ -129,7 +194,7 @@ int main()
     // 4. VARIABILI PER IL CONTROLLO A NODO FISSO
     // ----------------------------------------------------------------
     double next_mpc_time = 0.0; // Prossimo istante in cui ricalcolare MPC
-    double frequenza = 100;     // Frequenza di ricalcolo MPC (s)
+    double frequenza = 40;      // Frequenza di ricalcolo MPC (s)
     bool first_mpc_call = true; // True per prima chiamata MPC
     VectorXd current_u0(NJ);    // Controllo corrente da applicare
     current_u0.setZero();
@@ -140,6 +205,34 @@ int main()
 
     double solve_time_ms = 0.0; // Variabile per tempo di risoluzione MPC
 
+    std::vector<std::string> constraint_names;
+
+    // 1. Aggiungi le 8 auto-collisioni
+    constraint_names.push_back("Self: Cap 1 vs Cap 7");
+    constraint_names.push_back("Self: Cap 1 vs Cap 8");
+    constraint_names.push_back("Self: Cap 1 vs Cap 10");
+    constraint_names.push_back("Self: Cap 1 vs Cap 11");
+    constraint_names.push_back("Self: Cap 2 vs Cap 10");
+    constraint_names.push_back("Self: Cap 2 vs Cap 11");
+    constraint_names.push_back("Self: Cap 3 vs Cap 10");
+    constraint_names.push_back("Self: Cap 3 vs Cap 11");
+
+    // 2. Aggiungi Sfera 1 (Capsule da 1 a 11)
+    for (int i = 1; i <= 11; i++)
+        constraint_names.push_back("Sfera 1 vs Cap " + std::to_string(i));
+
+    // 3. Aggiungi Sfera 2 (Capsule da 1 a 11)
+    for (int i = 1; i <= 11; i++)
+        constraint_names.push_back("Sfera 2 vs Cap " + std::to_string(i));
+
+    // 4. Aggiungi Sfera 3 (Capsule da 1 a 11)
+    for (int i = 1; i <= 11; i++)
+        constraint_names.push_back("Sfera 3 vs Cap " + std::to_string(i));
+
+    // 5. Aggiungi Piano (Capsule da 3 a 11, essendo link > 2)
+    for (int i = 3; i <= 11; i++)
+        constraint_names.push_back("Piano vs Cap " + std::to_string(i));
+
     // ----------------------------------------------------------------
     // 5. LOOP DI CONTROLLO
     // ----------------------------------------------------------------
@@ -148,6 +241,48 @@ int main()
         double time_to_go = t_end - t_curr;
         double Tf = std::max(time_to_go, t_hor_lim);
         double dt_mpc_node = Tf / N_HORIZON;
+        double p_values[NP] = {Tf, 0.11, -0.35, 0.53, 0.05,
+                               0.31, 0.0, 0.5, 0.05,
+                               1000.0, 1000.0, 900.0, 0.05,
+                               0.0, 0.0, 0.0,
+                               0.0, 0.0, 1.0};
+        // if (t_curr < 2.0)
+        // {
+        //     // L'ostacolo parte da x = 1.0 e "scivola"
+        //     double progresso = t_curr / 1.0; // va da 0 a 1
+        //     p_values[1] = 1.0 - (1.0 - 0.11) * progresso;
+        // }
+        // else if (t_curr >= 2.0 && t_curr < 2.5)
+        // {
+        //     p_values[1] = 0.11; // Raggiunge la posizione finale
+        // }
+        // else
+        // {
+        //     p_values[1] = 10.11; // Se ne va
+        // }
+
+        // // Definiamo i parametri del movimento
+        // double t_inizio_movimento = 0.0;
+        // double t_fine_movimento = 5.0; // Durata del transito (es. 4 secondi)
+        // double x_start = 0.3;
+        // double x_end = -0.3;
+
+        // if (t_curr >= t_inizio_movimento && t_curr <= t_fine_movimento)
+        // {
+        //     // Calcoliamo il progresso normalizzato (da 0 a 1)
+        //     double progresso = (t_curr - t_inizio_movimento) / (t_fine_movimento - t_inizio_movimento);
+
+        //     // Interpolazione lineare tra x_start e x_end
+        //     p_values[1] = x_start + (x_end - x_start) * progresso;
+        // }
+        // else if (t_curr > t_fine_movimento)
+        // {
+        //     p_values[1] = x_start; // Rimane ferma nel punto di arrivo
+        // }
+        // else
+        // {
+        //     p_values[1] = x_start; // Ferma al punto di partenza prima dell'inizio
+        // }
 
         // --- A. FEEDBACK STATO CORRENTE ---
         double x0[NX];
@@ -181,6 +316,8 @@ int main()
             if (time_to_go >= t_hor_lim)
             {
                 planner.init(q_curr, q_final, dq_curr, dq_final, ddq_curr, ddq_final, t_curr, t_end);
+
+                // LOGGING TRAIETTORIE
                 trajs_file << t_curr;
                 double x_prev[NX], u_prev[NU];
 
@@ -200,6 +337,7 @@ int main()
                     trajs_file << "," << x_node[0];
                 }
                 trajs_file << "\n";
+                // FINE
 
                 for (int i = 0; i <= N_HORIZON; i++)
                 {
@@ -235,11 +373,11 @@ int main()
                     // --- B. SET INITIAL GUESS (WARM START) ---
                     if (!first_mpc_call)
                     {
-                        // Shifting: usa il nodo (i+1) della soluzione precedente per il nodo (i) attuale
+                        // usa il nodo (i) della soluzione precedente per il nodo (i) attuale
                         if (i < N_HORIZON)
                         {
-                            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i + 1, "x", x_prev);
-                            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i + 1, "u", u_prev);
+                            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i, "x", x_prev);
+                            ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i, "u", u_prev);
                             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", x_prev);
                             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u_prev);
                         }
@@ -259,7 +397,7 @@ int main()
                             ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", s.jerk.data());
                     }
 
-                    ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "parameter_values", &Tf);
+                    ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "parameter_values", p_values);
                 }
             }
             else
@@ -285,6 +423,43 @@ int main()
                 std::cout << "NODO = " << NODO << std::endl;
                 for (int i = 0; i <= N_HORIZON; i++)
                 {
+                    double ti = t_curr + i * dt_mpc_node;
+                    auto s = planner.evaluate(ti);
+
+                    // Set yref
+                    double yref_stage[NY];
+                    for (int j = 0; j < NJ; j++)
+                    {
+                        yref_stage[j] = s.pos(j);          // Stage cost reference
+                        yref_stage[NJ + j] = s.vel(j);     // Target velocità
+                        yref_stage[2 * NJ + j] = s.acc(j); // Target accelerazione
+                        yref_stage[3 * NJ + j] = 0.0;      // Target jerk
+                    }
+
+                    if (i < N_HORIZON)
+                    {
+                        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_stage);
+                    }
+                    else
+                    {
+                        // Terminal cost reference
+                        double yref_term[NYN];
+                        for (int j = 0; j < NJ; j++)
+                        {
+                            yref_term[j] = q_final(j);
+                            yref_term[NJ + j] = dq_final(j);
+                            yref_term[2 * NJ + j] = ddq_final(j);
+                        }
+                        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N_HORIZON, "yref", yref_term);
+                    }
+
+                    // Set initial guess
+                    double u_guess[NU];
+                    if (i < NODO)
+                    {
+                        ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i + 1, "u", u_guess);
+                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u_guess);
+                    }
 
                     if (i == NODO && NODO != 0)
                     {
@@ -297,6 +472,8 @@ int main()
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "lbx", lb);
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "ubx", ub);
                     }
+
+                    ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "parameter_values", p_values);
                 }
             }
 
@@ -310,6 +487,38 @@ int main()
             if (status != ACADOS_SUCCESS)
             {
                 printf("\n>>> ERRORE SOLVER! Status: %d a t = %.3f s\n", status, t_curr);
+                break;
+            }
+
+            // --- F. SUPERVISORE: CONTROLLO VIOLAZIONE OSTACOLI TRAMITE SLACK ---
+            const int N_DIST = 50; // Numero totale di distanze di sicurezza monitorate (es. 8 auto-collisioni + 11 capsule*3 sfere + 9 capsule*piano)
+            double slacks[N_DIST];
+            bool collision_detected = false;
+            double tolleranza_slack = 1e-1; // Tolleranza per considerare una violazione di sicurezza (in metri)
+
+            // Controlliamo l'intero orizzonte predittivo per anticipare l'urto
+            for (int node = 1; node <= N_HORIZON; node++)
+            {
+                ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, node, "sl", slacks);
+
+                for (int idx = 0; idx < N_DIST; idx++)
+                {
+                    if (slacks[idx] > tolleranza_slack)
+                    {
+                        collision_detected = true;
+                        printf("\n>>> ALLARME PREDIZIONE! Rischio collisione al nodo %d", node);
+                        printf("\n>>> CAUSA: %s (violazione di %.4f m)\n", constraint_names[idx].c_str(), slacks[idx]);
+                        break;
+                    }
+                }
+                if (collision_detected)
+                    break;
+            }
+
+            if (collision_detected)
+            {
+                printf("\n>>> TRAIETTORIA NON SICURA: Fermo il robot a t = %.3f s.\n", t_curr);
+                break; // Questo esce dal ciclo "while" della simulazione!
             }
 
             // Recupera u0
@@ -331,6 +540,8 @@ int main()
                     U_sequence(j, r) = u0_temp[j];
                 }
             }
+
+            saveUSequenceToCSV(u_seq_file, t_curr, U_sequence);
 
             // Calcola errore di predizione
             double pred_error = simulate_prediction(q_curr, dq_curr, ddq_curr, U_sequence, q_final, dt_mpc_node, N_HORIZON);
@@ -425,6 +636,8 @@ int main()
     data_file.close();
     pred_file.close();
     trajs_file.close();
+    u_seq_file.close();
+    
     frankino_tracking_mpc_acados_free(capsule);
     frankino_tracking_mpc_acados_free_capsule(capsule);
     frankino_tracking_mpc_acados_sim_free(sim_capsule);

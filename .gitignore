@@ -27,6 +27,7 @@ src/thunder_control/src/**
 src/thunder_control/scripts/c_generated_code_frankino_throw/**
 src/thunder_control/scripts/c_generated_code_tracking/**
 src/thunder_control/plots/**
+src/thunder_control/rosbag/**
 src/thunder_control/scripts/Untitled-2.py
 src/thunder_control/scripts/test_function.py
 src/thunder_control/scripts/simulazione_franka.py

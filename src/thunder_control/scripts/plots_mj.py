@@ -175,7 +175,7 @@ def run_plot():
 
     
     fig.canvas.mpl_connect("key_press_event", toggle_pause)
-    fig.canvas.mpl_connect("button_press_event", toggle_pause)
+    # fig.canvas.mpl_connect("button_press_event", toggle_pause)
 
     plt.show()
 
