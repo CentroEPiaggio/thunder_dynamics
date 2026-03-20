@@ -4,7 +4,8 @@ pipeline:
   generators: ["robot_generator"]
 
 urdf_loader:
-  urdf_path: "dynaarm.urdf"
+  # urdf_path: "dynaarm.urdf"
+  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/dynaarm.urdf"
   base_link: "base"
   ee_link: "wrist_2"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.

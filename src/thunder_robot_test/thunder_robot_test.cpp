@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <casadi/casadi.hpp>
 #include <cmath>
 #include <eigen3/Eigen/Dense>
@@ -11,24 +12,24 @@
 #include <concepts>
 // #include <yaml-cpp/yaml.h>
 
-// #include "thunder_robot.h"
-// #include "thunder_RRR.h"
-// #include "thunder_treeRRR.h"
-// #include "thunder_franka.h"
-// #include "thunder_franka_urdf.h"
+#include "thunder_RRR.h"
+#include "thunder_treeRRR.h"
+#include "thunder_franka.h"
+#include "thunder_franka_urdf.h"
 #include "thunder_dynaarm.h"
-// #include "thunder_seaRRR.h"
+#include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-#define thunder_robot thunder_dynaarm
+// #define thunder_robot thunder_dynaarm
+#define thunder_robot thunder_franka
 
 // const std::string par_file = "../robots/RRR_par.yaml";
 // const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
 // const std::string par_file = "../robots/franka_urdf_conf.yaml";
-const std::string par_file = "../robots/dynaarm_conf.yaml";
+// const std::string par_file = "../robots/dynaarm_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
 // const std::string par_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
@@ -144,18 +145,21 @@ struct Tester {
 		if constexpr (requires (T& x) { x.get_M(); }) {
 			ss << "M: " << endl << robot.get_M() << endl << endl;
 			tau_diff = robot.get_M() * robot.get_ddqr();
+			ss << "tau_M difference: " << endl << robot.get_M()*robot.get_ddqr() - robot.get_reg_M()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "M: not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_C(); }) {
 			ss << "C: " << endl << robot.get_C() << endl << endl;
 			tau_diff += robot.get_C() * robot.get_dqr();
+			ss << "tau_C difference: " << endl << robot.get_C()*robot.get_dqr() - robot.get_reg_C()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "C: not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_G(); }) {
 			ss << "G: " << endl << robot.get_G().transpose() << endl << endl;
 			tau_diff += robot.get_G();
+			ss << "tau_G difference: " << endl << robot.get_G() - robot.get_reg_G()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "G: not defined!" << endl << endl;
 		}
@@ -238,10 +242,14 @@ int main(){
 	const int NDOF = robot.get_ndof();
 
 	/* Test */
-	Vector<double,6> q({0, 0, 1, 0, 0, 0});
-	Vector<double,6> dq({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
-	Vector<double,6> dqr({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
-	Vector<double,6> ddqr({0.5, -0.3, 0.2, 0.1, -0.05, 0.01});
+	Eigen::VectorXd q = (Eigen::VectorXd(NDOF) << 0, 0, 1, 0, 0, 0, 0).finished();
+	Eigen::VectorXd dq = (Eigen::VectorXd(NDOF) << 0.1, -0.2, 0.3, -0.1, 0.05, 0.02, 0.1).finished();
+	Eigen::VectorXd dqr = (Eigen::VectorXd(NDOF) << 0.1, -0.2, 0.3, -0.1, 0.05, 0.02, 0.1).finished();
+	Eigen::VectorXd ddqr = (Eigen::VectorXd(NDOF) << 0.5, -0.3, 0.2, 0.1, -0.05, 0.01, 0.2).finished();
+	// Vector<double,NDOF> q({0, 0, 1, 0, 0, 0});
+	// Vector<double,NDOF> dq({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
+	// Vector<double,NDOF> dqr({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
+	// Vector<double,NDOF> ddqr({0.5, -0.3, 0.2, 0.1, -0.05, 0.01});
 
 	q.setRandom();
 	dq.setRandom();
