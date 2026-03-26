@@ -132,6 +132,7 @@ int main()
     // 3. STATO INIZIALE & TRAIETTORIA
     // ----------------------------------------------------------------
     VectorXd q_curr(NJ), dq_curr(NJ), q_final(NJ), dq_final(NJ), ddq_curr(NJ), ddq_final(NJ), jerk_opt(NJ);
+    double x_stop[NX];
     q_curr << -1.25962, -0.663669, -0.692637, -2.17138, -0.264125, 1.50759, 0.0630972;
     dq_curr.setZero();
     ddq_curr.setZero();
@@ -246,6 +247,10 @@ int main()
                                1000.0, 1000.0, 900.0, 0.05,
                                0.0, 0.0, 0.0,
                                0.0, 0.0, 1.0};
+
+        //Definizione dinamica ostacolo (es. ostacolo che si avvicina lungo l'asse x del piano)
+        
+        //--CASO 1: Ostacolo che si avvicina lungo x 
         // if (t_curr < 2.0)
         // {
         //     // L'ostacolo parte da x = 1.0 e "scivola"
@@ -260,7 +265,8 @@ int main()
         // {
         //     p_values[1] = 10.11; // Se ne va
         // }
-
+        
+        //--CASO 2: Movimento avanti-indietro lungo x
         // // Definiamo i parametri del movimento
         // double t_inizio_movimento = 0.0;
         // double t_fine_movimento = 5.0; // Durata del transito (es. 4 secondi)
@@ -420,50 +426,36 @@ int main()
                 }
                 trajs_file << "\n";
 
+                // Stato di sosta (Target finale con vel/acc = 0)
+                for (int j = 0; j < NJ; j++)
+                {
+                    x_stop[j] = q_final(j);
+                    x_stop[NJ + j] = 0.0;
+                    x_stop[2 * NJ + j] = 0.0;
+                }
+                double u_zero[NU] = {0.0};
+
                 std::cout << "NODO = " << NODO << std::endl;
                 for (int i = 0; i <= N_HORIZON; i++)
                 {
-                    double ti = t_curr + i * dt_mpc_node;
-                    auto s = planner.evaluate(ti);
-
-                    // Set yref
-                    double yref_stage[NY];
-                    for (int j = 0; j < NJ; j++)
+                    // --- 1. GESTIONE WARM START ---
+                    if (i < NODO)
                     {
-                        yref_stage[j] = s.pos(j);          // Stage cost reference
-                        yref_stage[NJ + j] = s.vel(j);     // Target velocità
-                        yref_stage[2 * NJ + j] = s.acc(j); // Target accelerazione
-                        yref_stage[3 * NJ + j] = 0.0;      // Target jerk
-                    }
-
-                    if (i < N_HORIZON)
-                    {
-                        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_stage);
+                        double x_prev[NX], u_prev[NU];
+                        ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i + 1, "x", x_prev);
+                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", x_prev);
                     }
                     else
                     {
-                        // Terminal cost reference
-                        double yref_term[NYN];
-                        for (int j = 0; j < NJ; j++)
-                        {
-                            yref_term[j] = q_final(j);
-                            yref_term[NJ + j] = dq_final(j);
-                            yref_term[2 * NJ + j] = ddq_final(j);
-                        }
-                        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N_HORIZON, "yref", yref_term);
+                        // Per i >= NODO, inizializziamo il solver già sullo stato "Fermo"
+                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", x_stop);
+                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u_zero);
                     }
 
-                    // Set initial guess
-                    double u_guess[NU];
-                    if (i < NODO)
-                    {
-                        ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, i + 1, "u", u_guess);
-                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "u", u_guess);
-                    }
-
+                    // --- 2. GESTIONE VINCOLI E RIFERIMENTI ---
                     if (i == NODO && NODO != 0)
                     {
-                        ocp_nlp_out_set(nlp_config, nlp_dims, nlp_out, nlp_in, i, "x", x_target_lb);
+                        // TARGET DINAMICO: Qui il robot deve avere la velocità desiderata (es. 0.9 rad/s)
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "lbx", x_target_lb);
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "ubx", x_target_ub);
                     }
@@ -471,6 +463,12 @@ int main()
                     {
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "lbx", lb);
                         ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, nlp_out, i, "ubx", ub);
+
+                        // NY = 28. Impostiamo yref = [q_final, 0, 0, 0] per forzare la decelerazione
+                        double yref_stop[NY] = {0.0};
+                        for (int j = 0; j < NJ; j++)
+                            yref_stop[j] = q_final(j);
+                        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, i, "yref", yref_stop);
                     }
 
                     ocp_nlp_in_set(nlp_config, nlp_dims, nlp_in, i, "parameter_values", p_values);
@@ -637,7 +635,7 @@ int main()
     pred_file.close();
     trajs_file.close();
     u_seq_file.close();
-    
+
     frankino_tracking_mpc_acados_free(capsule);
     frankino_tracking_mpc_acados_free_capsule(capsule);
     frankino_tracking_mpc_acados_sim_free(sim_capsule);
