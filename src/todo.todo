@@ -1,18 +1,6 @@
-✔ different parameters visualization could depend on simbolicity, it prints only symbolic parameters @done (3/12/2026, 7:35:50 AM)
-✔ problema nella dinamica, indaga dal file di Yang, parameters seams to be loaded in the right way @done (3/5/2026, 9:31:29 PM)
-✔ rewrite add_chain_code() to simplify structure, only one if ee or have chindrens, and an aux function inside that add element to thunder @done (2/27/2026, 12:10:32 AM)
-✔ franka urdf have wrong inertials, cannot be used to test. @done (3/13/2026, 5:36:13 PM)
-✔ problema in dh_loader, ha una colonna di zeri la matrice di massa @done (3/12/2026, 7:35:56 AM)
-✔ par_KIN diverso tra i due franka, probabilmente carico male il loader urdf @done (3/10/2026, 7:08:36 PM)
-✔ par_gravity diverso, magari nell'urdf è positivo, (ci va negativo) @done (3/10/2026, 7:09:32 PM)
-✔ avendo la cinematica sbagliata poi è tutto sbagliato, riguarda il loading dei parametri cinematici @done (3/10/2026, 7:09:38 PM)
-✔ everything is not symbolic in urdf, insert flags in loader to select @done (3/13/2026, 6:50:34 PM)
-✔ problema perchè numJoints serve prima di tutto ma è diverso da chain.size() perchè aggiungiamo link fittizzi @done (2/25/2026, 5:24:07 PM)
-☐ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml
+✔ test generated code @done (3/18/2026, 9:12:52 PM)
+✔ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml @done (3/20/2026, 7:54:28 AM)
 ☐ riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader
-✔ sistema par_DYN_num, attualmente i numerici sono nella variabile locale par_DYN @done (2/19/2026, 5:20:34 PM)
-✔ update urdf_loader for new kinematic structure @done (2/25/2026, 5:24:22 PM)
-✔ property jointsAxis not used, for now there is par_jointsAxis created in kin_builder or urdf. @done (2/13/2026, 11:19:28 PM)
 
 general:
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)

@@ -15,7 +15,7 @@ robot_generator:
   gen_python:   false
   gen_casadi:   false
   gen_robot:    true
-  copy_gen:     false
+  copy_gen:     true
 
 ############################################
 kin_loader:
