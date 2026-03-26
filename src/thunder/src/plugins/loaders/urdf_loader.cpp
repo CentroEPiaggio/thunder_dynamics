@@ -537,7 +537,7 @@ namespace thunder_ns {
 		for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(static_cast<double>(par_DYN_link(j,0)));
 
 		if ((link->child_joints.empty()) || (ee_link == link)) {		// link is an end-effector
-			// cout << "Added end effector: " << link->name << endl;
+			debug_log("add_chain_from: treating link '" + link->name + "' as terminal/fixed node", VERB_DEBUG);
 			jointsType.push_back("FIXED");
 			jointsAxis.push_back({0,0,0});
 			jointsDimension.push_back(0);
@@ -650,12 +650,10 @@ namespace thunder_ns {
 			
 			auto urdf_path_final = urdf_path.string();
 			
-			auto base_link_name = config_["base_link"] ? config_["base_link"].as<std::string>() : "base_link";
-			auto ee_link_name = config_["ee_link"] ? config_["ee_link"].as<std::string>() : "tool0";
+			auto configured_base_link_name = config_["base_link"] ? config_["base_link"].as<std::string>() : "base_link";
 
 			debug_log("Loading URDF from: " + urdf_path_final, VERB_INFO);
-			debug_log("Base link: " + base_link_name, VERB_INFO);
-			debug_log("End-effector link: " + ee_link_name, VERB_INFO);
+			debug_log("Configured base link: " + configured_base_link_name, VERB_INFO);
 
 			// --- Load URDF --- //
 			try {
@@ -673,13 +671,25 @@ namespace thunder_ns {
 			if (config_["base_link"]){
 				try{
 					root_link = urdf_model->getLink(config_["base_link"].as<std::string>());
+					if (!root_link) {
+						std::cerr << "Base link '" << configured_base_link_name << "' not found in URDF." << std::endl;
+						return robot;
+					}
 				} catch (const std::exception& e) {
-					std::cerr << "Base link '" << base_link_name << "' not found in URDF: " << e.what() << std::endl;
+					std::cerr << "Base link '" << configured_base_link_name << "' not found in URDF: " << e.what() << std::endl;
 					return robot;
 				}
 			} else {
 				root_link = urdf_model->getRoot();
 			}
+
+			if (!root_link) {
+				std::cerr << "Failed to resolve root/base link from URDF." << std::endl;
+				return robot;
+			}
+
+			const std::string resolved_base_link_name = root_link->name;
+			debug_log("Resolved base link: " + resolved_base_link_name, VERB_INFO);
 
 			// --- Build chain from EE back to base --- //
 			
@@ -690,7 +700,7 @@ namespace thunder_ns {
 						std::cerr << "End-effector link not found in URDF." << std::endl;
 						return robot;
 					}
-					accumulateChain(ee_link, root_link->name, chain);
+					accumulateChain(ee_link, resolved_base_link_name, chain);
 					std::reverse(chain.begin(), chain.end());
 				} catch (const std::exception& e) {	
 					std::cerr << "Error while building kinematic chain: " << e.what() << std::endl;
@@ -706,8 +716,13 @@ namespace thunder_ns {
 				debug_log(" - " + link->name, VERB_DEBUG);
 			}
 
-			if (chain.empty() || chain.front()->name != base_link_name) {
-				std::cerr << "Base link '" << base_link_name << "' not found in chain or chain is empty." << std::endl;
+			if (chain.empty()) {
+				std::cerr << "Chain is empty." << std::endl;
+				return robot;
+			}
+			if (std::none_of(chain.begin(), chain.end(),
+					[&](const auto& link) { return link->name == resolved_base_link_name; })) {
+				std::cerr << "Base link '" << resolved_base_link_name << "' not found in chain." << std::endl;
 				return robot;
 			}
 
