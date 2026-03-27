@@ -481,6 +481,16 @@ namespace thunder_ns {
 			beta_blocks.push_back(product);
 		}
 		beta = SX::vertcat(beta_blocks);
+		// simplify almost zero values (nemerical residual)
+		for (int r = 0; r < beta.size1(); ++r) {
+            for (int c = 0; c < beta.size2(); ++c) {
+				double val = static_cast<double>(beta(r, c));
+                if (std::abs(val) < 1e-16) {
+                    beta(r, c) = 0.0;
+                }
+            }
+        }
+
 		debug_log("Reduced from " + std::to_string(beta.size2()) + " to " + std::to_string(beta.size1()) + " parameters", VERB_INFO);
 
 		// 5) Adding functions 
