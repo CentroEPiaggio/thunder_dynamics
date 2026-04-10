@@ -1,6 +1,10 @@
 ✔ test generated code @done (3/18/2026, 9:12:52 PM)
 ✔ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml @done (3/20/2026, 7:54:28 AM)
-☐ riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader
+✔ (controlla) riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader @done (3/20/2026, 8:57:27 PM)
+✔ test dh_loader world orientation parametrization, should allow rpy, ypr at least, the symbolic is in the initial vectors @done (4/10/2026, 2:09:09 PM)
+☐ add the same ability to kin
+☐ add the different parametrizations in urdf
+☐ urdf and others does not match
 
 general:
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
