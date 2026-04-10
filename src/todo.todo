@@ -2,7 +2,7 @@
 ✔ problema in thunder_test per il percorso dell'urdf, bisogna aggiungere a robot il percorso dello yaml @done (3/20/2026, 7:54:28 AM)
 ✔ (controlla) riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader @done (3/20/2026, 8:57:27 PM)
 ✔ test dh_loader world orientation parametrization, should allow rpy, ypr at least, the symbolic is in the initial vectors @done (4/10/2026, 2:09:09 PM)
-☐ add the same ability to kin
+✔ add the same ability to kin @done (4/10/2026, 4:16:47 PM)
 ☐ add the different parametrizations in urdf
 ☐ urdf and others does not match
 

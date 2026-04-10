@@ -46,17 +46,20 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
+	std::string robot_conf = "../robots/debug/franka.yaml";
+
+	std::string robot2_conf = "../robots/debug/franka_dh.yaml";
+	// std::string robot2_conf = "../robots/debug/franka_urdf.yaml";
+
 	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
-	std::string franka_2_conf = "../robots/debug/franka_2.yaml";
 	// std::string robot_conf = "../robots/debug/dynaarm.yaml";
 	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
 	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
-	std::string robot_conf = "../robots/debug/franka_dh.yaml";
-	std::string robot2_conf = "../robots/debug/franka.yaml";
 	// std::string robot_conf = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string robot_conf = "../robots/ego/egoRightArm.yaml";
 	// std::string robot_conf = "../robots/frankaWrist/frankaWrist.yaml";
 	// std::string robot_conf = "../robots/testRobots/R9_noDynSymb.yaml";
+
 	auto robot = legacy_robot_from_file("robot", robot_conf);
 	auto robot2 = legacy_robot_from_file("robot", robot2_conf);
 
