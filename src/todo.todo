@@ -4,9 +4,10 @@
 ✔ test dh_loader world orientation parametrization, should allow rpy, ypr at least, the symbolic is in the initial vectors @done (4/10/2026, 2:09:09 PM)
 ✔ add the same ability to kin @done (4/10/2026, 4:16:47 PM)
 ☐ add the different parametrizations in urdf
-☐ urdf and others does not match
+✔ urdf and others does not match @done (4/10/2026, 4:38:59 PM)
 
 general:
+	☐ divide links and joints instead having one only element
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
 	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics

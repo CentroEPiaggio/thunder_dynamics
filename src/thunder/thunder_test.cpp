@@ -48,8 +48,8 @@ int main(){
 
 	std::string robot_conf = "../robots/debug/franka.yaml";
 
-	std::string robot2_conf = "../robots/debug/franka_dh.yaml";
-	// std::string robot2_conf = "../robots/debug/franka_urdf.yaml";
+	// std::string robot2_conf = "../robots/debug/franka_dh.yaml";
+	std::string robot2_conf = "../robots/debug/franka_urdf.yaml";
 
 	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
 	// std::string robot_conf = "../robots/debug/dynaarm.yaml";
