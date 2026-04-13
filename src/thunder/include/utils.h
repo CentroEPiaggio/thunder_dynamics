@@ -3,6 +3,9 @@
 
 #include <string>
 #include <any>
+#include <limits>
+#include <sstream>
+#include <iomanip>
 #include <casadi/casadi.hpp>
 #include <eigen3/Eigen/Dense>
 
@@ -10,6 +13,13 @@ using std::string;
 using std::vector;
 
 namespace thunder_ns{
+
+	template <typename T>
+	std::string to_full_precision_string(T value) {
+		std::ostringstream oss;
+		oss << std::setprecision(std::numeric_limits<T>::max_digits10) << value;
+		return oss.str();
+	}
 
 	constexpr double EPSILON = 1e-15; // numerical resolution, below is zero
 
@@ -56,8 +66,8 @@ namespace thunder_ns{
 			if (type == "short") return std::to_string(std::any_cast<short>(val));
 			else if (type == "int") return std::to_string(std::any_cast<int>(val));
 			else if (type == "long") return std::to_string(std::any_cast<long>(val));
-			else if (type == "float") return std::to_string(std::any_cast<float>(val));
-			else if (type == "double") return std::to_string(std::any_cast<double>(val));
+			else if (type == "float") return to_full_precision_string<float>(std::any_cast<float>(val));
+			else if (type == "double") return to_full_precision_string<double>(std::any_cast<double>(val));
 			else if (type == "bool") return string((std::any_cast<bool>(val))?"true":"false");
 			else if ((type == "string") || (type == "std::string")) return "\"" + std::any_cast<string>(val) + "\"";
 			else if (type.find("vector<") != std::string::npos) {
@@ -141,9 +151,9 @@ namespace thunder_ns{
 			casadi::DM val = get_value_resized();
 			std::string res = "{}";
 			if (symb_size() != 0){
-				res = "{" + std::to_string((double)val(0));
+				res = "{" + to_full_precision_string<double>(static_cast<double>(val(0)));
 				for (int i=1; i<symb_size(); i++){
-					res.append(", " + std::to_string((double)val(i)));
+					res.append(", " + to_full_precision_string<double>(static_cast<double>(val(i))));
 				}
 				res.append("}");
 			}
