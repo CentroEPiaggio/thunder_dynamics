@@ -882,6 +882,58 @@ namespace thunder_ns {
 			std::string urdf_text = readFileToString(urdf_path_final);
 			auto urdf_kin_map = parseSymbolicKinematicsFromUrdfJoints(urdf_text, kin_symb_global);
 
+			// Parse optional base/ee frame offsets up-front so they can be merged into par_KIN.
+			const bool has_base_offset = static_cast<bool>(config_["Base_to_L0"]);
+			const bool has_ee_offset = static_cast<bool>(config_["Ln_to_EE"]);
+
+			casadi::SX world2L0_expr;
+			std::vector<std::string> world2L0_args;
+			parse_frame_parameterization(
+				robot,
+				config_["Base_to_L0"],
+				"world2L0",
+				std::vector<double>(6, 0.0),
+				std::vector<short>(6, 0),
+				world2L0_expr,
+				world2L0_args,
+				"World to base frame");
+
+			casadi::SX ln2ee_expr;
+			std::vector<std::string> ln2ee_args;
+			parse_frame_parameterization(
+				robot,
+				config_["Ln_to_EE"],
+				"Ln2EE",
+				std::vector<double>(6, 0.0),
+				std::vector<short>(6, 0),
+				ln2ee_expr,
+				ln2ee_args,
+				"Last link to end-effector frame");
+
+			std::vector<bool> node_has_children(numJoints, false);
+			for (int i = 0; i < numJoints; ++i) {
+				int p = jointsParent[i];
+				if (p >= 0 && p < numJoints) {
+					node_has_children[p] = true;
+				}
+			}
+
+			auto append_unique_args = [](std::vector<std::string>& dst, const std::vector<std::string>& src) {
+				for (const auto& a : src) {
+					if (std::find(dst.begin(), dst.end(), a) == dst.end()) {
+						dst.push_back(a);
+					}
+				}
+			};
+
+			auto compose_frames_rpy = [](const casadi::SX& left_frame, const casadi::SX& right_frame) {
+				casadi::SX T = casadi::SX::mtimes({get_transform_rpy(left_frame), get_transform_rpy(right_frame)});
+				casadi::SX out = casadi::SX::zeros(6, 1);
+				out(casadi::Slice(0, 3)) = T(casadi::Slice(0, 3), 3);
+				out(casadi::Slice(3, 6)) = get_euler_rpy(T);
+				return out;
+			};
+
 			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb_global);
 			for (int i = 0; i < numJoints; ++i) {
 				const auto& link_name = jointsName[i];
@@ -930,8 +982,21 @@ namespace thunder_ns {
 					joint_args,
 					"Kinematic frame");
 
+				append_unique_args(par_KIN_args, joint_args);
+
+				// Root nodes are pre-multiplied by Base_to_L0 if configured.
+				if (has_base_offset && jointsParent[i] == -1) {
+					joint_expr = compose_frames_rpy(world2L0_expr, joint_expr);
+					append_unique_args(par_KIN_args, world2L0_args);
+				}
+
+				// Terminal nodes (no children in the constructed tree) are post-multiplied by Ln_to_EE if configured.
+				if (has_ee_offset && !node_has_children[i]) {
+					joint_expr = compose_frames_rpy(joint_expr, ln2ee_expr);
+					append_unique_args(par_KIN_args, ln2ee_args);
+				}
+
 				par_KIN_expr(casadi::Slice(6 * i, 6 * (i + 1))) = joint_expr;
-				par_KIN_args.insert(par_KIN_args.end(), joint_args.begin(), joint_args.end());
 			}
 
 			if (!robot->add_function("par_KIN", par_KIN_expr, par_KIN_args, "Kinematic parameters")) {
@@ -940,34 +1005,12 @@ namespace thunder_ns {
 			}
 
 			// --- World to L0 (par_world2L0) --- //
-			casadi::SX world2L0_expr;
-			std::vector<std::string> world2L0_args;
-			parse_frame_parameterization(
-				robot,
-				config_["Base_to_L0"],
-				"world2L0",
-				std::vector<double>(6, 0.0),
-				std::vector<short>(6, 0),
-				world2L0_expr,
-				world2L0_args,
-				"World to base frame");
 			if (!robot->add_function("par_world2L0", world2L0_expr, world2L0_args, "World to base frame.")) {
 				std::cerr << "Error adding base frame function!" << std::endl;
 				return robot;
 			}
 
 			// --- Ln to EE (par_Ln2EE) --- //
-			casadi::SX ln2ee_expr;
-			std::vector<std::string> ln2ee_args;
-			parse_frame_parameterization(
-				robot,
-				config_["Ln_to_EE"],
-				"Ln2EE",
-				std::vector<double>(6, 0.0),
-				std::vector<short>(6, 0),
-				ln2ee_expr,
-				ln2ee_args,
-				"Last link to end-effector frame");
 			if (!robot->add_function("par_Ln2EE", ln2ee_expr, ln2ee_args, "Last link to end-effector frame.")) {
 				std::cerr << "Error adding end-effector frame function!" << std::endl;
 				return robot;

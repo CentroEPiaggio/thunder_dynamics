@@ -3,12 +3,13 @@
 ✔ (controlla) riprendi da dh_loader la parte della trasformazione world e ee per urdf_loader @done (3/20/2026, 8:57:27 PM)
 ✔ test dh_loader world orientation parametrization, should allow rpy, ypr at least, the symbolic is in the initial vectors @done (4/10/2026, 2:09:09 PM)
 ✔ add the same ability to kin @done (4/10/2026, 4:16:47 PM)
+✔ 10,10,10 in xyz and 0,0,1 in ypr resulys in "10, 9.71979, 10.1799, 1, 0, 0" instead of "10, 10, 10, 1, 0, 0", check it @done (4/13/2026, 6:57:03 AM)
 ☐ test thunder_robot
 ✔ add the different parametrizations in urdf @done (4/10/2026, 9:59:15 PM)
 ✔ urdf and others does not match @done (4/10/2026, 4:38:59 PM)
 
 general:
-	☐ divide links and joints instead having one only element
+	☐ divide links and joints instead having one only element. kinematics creates joints, dynamics creates links. joint has also the link child field.
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
 	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics
