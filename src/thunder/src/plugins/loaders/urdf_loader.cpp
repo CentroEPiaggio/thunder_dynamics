@@ -472,6 +472,112 @@ namespace thunder_ns {
 		return R;
 	}
 
+	// Build a 6D frame parameterization as [x, y, z, r, p, y].
+	// Supported formats are xyzrpy, xyz+rpy, xyz+ypr, and legacy tr+ypr.
+	void UrdfLoader::parse_frame_parameterization(
+		std::shared_ptr<Robot> robot,
+		const YAML::Node& frame_node,
+		const std::string& frame_prefix,
+		const std::vector<double>& default_xyzrpy,
+		const std::vector<short>& default_symb,
+		casadi::SX& frame_expr,
+		std::vector<std::string>& frame_args,
+		const std::string& description_prefix) {
+
+		if (default_xyzrpy.size() != 6 || default_symb.size() != 6) {
+			throw std::runtime_error("Invalid defaults for frame parameterization helper.");
+		}
+
+		std::vector<double> xyz_default(default_xyzrpy.begin(), default_xyzrpy.begin() + 3);
+		std::vector<double> rpy_default(default_xyzrpy.begin() + 3, default_xyzrpy.end());
+
+		std::vector<short> frame_isSymb = default_symb;
+		if (frame_node && frame_node["symb"]) {
+			frame_isSymb = frame_node["symb"].as<std::vector<short>>();
+			if (frame_isSymb.size() != 6) {
+				throw std::runtime_error("'" + frame_prefix + ".symb' must have 6 elements.");
+			}
+		}
+
+		if (frame_node && frame_node["xyzrpy"]) {
+			auto xyzrpy_num = frame_node["xyzrpy"].as<std::vector<double>>();
+			if (xyzrpy_num.size() != 6) {
+				throw std::runtime_error("'" + frame_prefix + ".xyzrpy' must have 6 elements.");
+			}
+			const std::string xyzrpy_name = frame_prefix + "_xyzrpy";
+			casadi::SX xyzrpy_symb = casadi::SX::sym(xyzrpy_name, 6);
+			robot->add_parameter(xyzrpy_name, xyzrpy_symb, xyzrpy_num, frame_isSymb, description_prefix + " in xyzrpy", true);
+			frame_expr = robot->get_model(xyzrpy_name);
+			frame_args = {xyzrpy_name};
+			return;
+		}
+
+		bool has_xyz = frame_node && (frame_node["xyz"] || frame_node["tr"]);
+		auto xyz_num = xyz_default;
+		if (has_xyz) {
+			if (frame_node["xyz"]) xyz_num = frame_node["xyz"].as<std::vector<double>>();
+			else xyz_num = frame_node["tr"].as<std::vector<double>>();
+			if (xyz_num.size() != 3) {
+				throw std::runtime_error("'" + frame_prefix + ".xyz' (or '.tr') must have 3 elements.");
+			}
+		}
+
+		std::vector<short> xyz_isSymb(frame_isSymb.begin(), frame_isSymb.begin() + 3);
+		std::vector<short> or_isSymb(frame_isSymb.begin() + 3, frame_isSymb.end());
+
+		const std::string xyz_name = frame_prefix + "_xyz";
+		casadi::SX xyz_symb = casadi::SX::sym(xyz_name, 3);
+		robot->add_parameter(xyz_name, xyz_symb, xyz_num, xyz_isSymb, description_prefix + " translation", true);
+
+		if (frame_node && frame_node["rpy"]) {
+			auto rpy_num = frame_node["rpy"].as<std::vector<double>>();
+			if (rpy_num.size() != 3) {
+				throw std::runtime_error("'" + frame_prefix + ".rpy' must have 3 elements.");
+			}
+			const std::string rpy_name = frame_prefix + "_rpy";
+			casadi::SX rpy_symb = casadi::SX::sym(rpy_name, 3);
+			robot->add_parameter(rpy_name, rpy_symb, rpy_num, or_isSymb, description_prefix + " orientation in rpy", true);
+
+			casadi::SXVector frame_parts(2);
+			frame_parts[0] = robot->get_model(xyz_name);
+			frame_parts[1] = robot->get_model(rpy_name);
+			frame_expr = casadi::SX::vertcat(frame_parts);
+			frame_args = {xyz_name, rpy_name};
+			return;
+		}
+
+		if (frame_node && frame_node["ypr"]) {
+			auto ypr_num = frame_node["ypr"].as<std::vector<double>>();
+			if (ypr_num.size() != 3) {
+				throw std::runtime_error("'" + frame_prefix + ".ypr' must have 3 elements.");
+			}
+			const std::string ypr_name = frame_prefix + "_ypr";
+			casadi::SX ypr_symb = casadi::SX::sym(ypr_name, 3);
+			robot->add_parameter(ypr_name, ypr_symb, ypr_num, or_isSymb, description_prefix + " orientation in ypr", true);
+
+			casadi::SX ypr_frame = casadi::SX::zeros(6, 1);
+			ypr_frame(casadi::Slice(3, 6)) = robot->get_model(ypr_name);
+			casadi::SX rpy_from_ypr = get_euler_rpy(get_transform_ypr(ypr_frame));
+
+			casadi::SXVector frame_parts(2);
+			frame_parts[0] = robot->get_model(xyz_name);
+			frame_parts[1] = rpy_from_ypr;
+			frame_expr = casadi::SX::vertcat(frame_parts);
+			frame_args = {xyz_name, ypr_name};
+			return;
+		}
+
+		const std::string rpy_name = frame_prefix + "_rpy";
+		casadi::SX rpy_symb = casadi::SX::sym(rpy_name, 3);
+		robot->add_parameter(rpy_name, rpy_symb, rpy_default, or_isSymb, description_prefix + " orientation in rpy", true);
+
+		casadi::SXVector frame_parts(2);
+		frame_parts[0] = robot->get_model(xyz_name);
+		frame_parts[1] = robot->get_model(rpy_name);
+		frame_expr = casadi::SX::vertcat(frame_parts);
+		frame_args = {xyz_name, rpy_name};
+	}
+
 	casadi::DM UrdfLoader::extractKinematicsFromJoint(std::shared_ptr<urdf::Joint> joint) {
 		// extract position from joints?
 		casadi::DM T_pj = to_casadi_sx(joint->parent_to_joint_transform);
@@ -760,7 +866,6 @@ namespace thunder_ns {
 			robot->add_variable("d4q", casadi::SX::sym("d4q", ndof, 1), std::vector<double>(ndof, 0), {1}, "Snap", true);
 
 			// --- Kinematic parameters (par_KIN_num) --- //
-			// std::vector<double> par_KIN_num(6 * numJoints, 0);
 			// Whether kinematic parameters should be symbolic (1) or numeric (0).
 			// Can be overridden per-link (symbolic_kinematics) or per-element (par_KIN_symb).
 		// Default to numeric (false) unless overridden.
@@ -776,6 +881,58 @@ namespace thunder_ns {
 		auto yaml_kin_map = parseKinematicSymbolicFromYaml(config_["symbolic_kinematics"], kin_symb_global);
 			std::string urdf_text = readFileToString(urdf_path_final);
 			auto urdf_kin_map = parseSymbolicKinematicsFromUrdfJoints(urdf_text, kin_symb_global);
+
+			// Parse optional base/ee frame offsets up-front so they can be merged into par_KIN.
+			const bool has_base_offset = static_cast<bool>(config_["Base_to_L0"]);
+			const bool has_ee_offset = static_cast<bool>(config_["Ln_to_EE"]);
+
+			casadi::SX world2L0_expr;
+			std::vector<std::string> world2L0_args;
+			parse_frame_parameterization(
+				robot,
+				config_["Base_to_L0"],
+				"world2L0",
+				std::vector<double>(6, 0.0),
+				std::vector<short>(6, 0),
+				world2L0_expr,
+				world2L0_args,
+				"World to base frame");
+
+			casadi::SX ln2ee_expr;
+			std::vector<std::string> ln2ee_args;
+			parse_frame_parameterization(
+				robot,
+				config_["Ln_to_EE"],
+				"Ln2EE",
+				std::vector<double>(6, 0.0),
+				std::vector<short>(6, 0),
+				ln2ee_expr,
+				ln2ee_args,
+				"Last link to end-effector frame");
+
+			std::vector<bool> node_has_children(numJoints, false);
+			for (int i = 0; i < numJoints; ++i) {
+				int p = jointsParent[i];
+				if (p >= 0 && p < numJoints) {
+					node_has_children[p] = true;
+				}
+			}
+
+			auto append_unique_args = [](std::vector<std::string>& dst, const std::vector<std::string>& src) {
+				for (const auto& a : src) {
+					if (std::find(dst.begin(), dst.end(), a) == dst.end()) {
+						dst.push_back(a);
+					}
+				}
+			};
+
+			auto compose_frames_rpy = [](const casadi::SX& left_frame, const casadi::SX& right_frame) {
+				casadi::SX T = casadi::SX::mtimes({get_transform_rpy(left_frame), get_transform_rpy(right_frame)});
+				casadi::SX out = casadi::SX::zeros(6, 1);
+				out(casadi::Slice(0, 3)) = T(casadi::Slice(0, 3), 3);
+				out(casadi::Slice(3, 6)) = get_euler_rpy(T);
+				return out;
+			};
 
 			std::vector<short> par_KIN_isSymb(6 * numJoints, kin_symb_global);
 			for (int i = 0; i < numJoints; ++i) {
@@ -797,47 +954,67 @@ namespace thunder_ns {
 				par_KIN_isSymb = config_["par_KIN_symb"].as<std::vector<short>>();
 			}
 
-			// for (int i = 0; i < numJoints; ++i) {
-			// 	const auto& T = static_transforms[i];
+			casadi::SX par_KIN_expr = casadi::SX::zeros(6 * numJoints, 1);
+			std::vector<std::string> par_KIN_args;
+			auto kinematics_cfg = config_["kinematics"];
+			for (int i = 0; i < numJoints; ++i) {
+				std::vector<double> default_xyzrpy(6, 0.0);
+				std::vector<short> default_symb(6, kin_symb_global);
+				for (int j = 0; j < 6; ++j) {
+					default_xyzrpy[j] = par_KIN_num[6 * i + j];
+					default_symb[j] = par_KIN_isSymb[6 * i + j];
+				}
 
-			// 	// Translation
-			// 	par_KIN_num[6 * i + 0] = static_cast<double>(T(0, 3));
-			// 	par_KIN_num[6 * i + 1] = static_cast<double>(T(1, 3));
-			// 	par_KIN_num[6 * i + 2] = static_cast<double>(T(2, 3));
-				
-			// 	// Rotation (RPY)
-			// 	casadi::SX rpy = get_euler_rpy(T);
-			// 	par_KIN_num[6 * i + 3] = static_cast<double>(rpy(0));
-			// 	par_KIN_num[6 * i + 4] = static_cast<double>(rpy(1));
-			// 	par_KIN_num[6 * i + 5] = static_cast<double>(rpy(2));
-			// }
-			robot->add_parameter("par_KIN", casadi::SX::sym("par_KIN", 6 * numJoints, 1), par_KIN_num, par_KIN_isSymb, "Kinematic parameters", true);
+				YAML::Node joint_cfg;
+				if (kinematics_cfg && kinematics_cfg[jointsName[i]]) {
+					joint_cfg = kinematics_cfg[jointsName[i]];
+				}
+
+				casadi::SX joint_expr;
+				std::vector<std::string> joint_args;
+				parse_frame_parameterization(
+					robot,
+					joint_cfg,
+					"KIN_" + jointsName[i],
+					default_xyzrpy,
+					default_symb,
+					joint_expr,
+					joint_args,
+					"Kinematic frame");
+
+				append_unique_args(par_KIN_args, joint_args);
+
+				// Root nodes are pre-multiplied by Base_to_L0 if configured.
+				if (has_base_offset && jointsParent[i] == -1) {
+					joint_expr = compose_frames_rpy(world2L0_expr, joint_expr);
+					append_unique_args(par_KIN_args, world2L0_args);
+				}
+
+				// Terminal nodes (no children in the constructed tree) are post-multiplied by Ln_to_EE if configured.
+				if (has_ee_offset && !node_has_children[i]) {
+					joint_expr = compose_frames_rpy(joint_expr, ln2ee_expr);
+					append_unique_args(par_KIN_args, ln2ee_args);
+				}
+
+				par_KIN_expr(casadi::Slice(6 * i, 6 * (i + 1))) = joint_expr;
+			}
+
+			if (!robot->add_function("par_KIN", par_KIN_expr, par_KIN_args, "Kinematic parameters")) {
+				std::cerr << "Error adding kinematic parameters function!" << std::endl;
+				return robot;
+			}
 
 			// --- World to L0 (par_world2L0) --- //
-			std::vector<double> world2L0_num(6, 0);
-			if (config_["Base_to_L0"]) {
-				auto base_to_l0 = config_["Base_to_L0"];
-				auto xyz = base_to_l0["tr"].as<std::vector<double>>();
-				auto ypr = base_to_l0["ypr"].as<std::vector<double>>();
-				for (int i = 0; i < 3; ++i) {
-					world2L0_num[i] = xyz[i];
-					world2L0_num[i + 3] = ypr[i];
-				}
+			if (!robot->add_function("par_world2L0", world2L0_expr, world2L0_args, "World to base frame.")) {
+				std::cerr << "Error adding base frame function!" << std::endl;
+				return robot;
 			}
-			robot->add_parameter("par_world2L0", casadi::SX::sym("world2L0", 6), world2L0_num, std::vector<short>(6, 0), "World to base frame", true);
 
 			// --- Ln to EE (par_Ln2EE) --- //
-			std::vector<double> ln2ee_num(6, 0);
-			if (config_["Ln_to_EE"]) {
-				auto ln_to_ee = config_["Ln_to_EE"];
-				auto xyz = ln_to_ee["tr"].as<std::vector<double>>();
-				auto ypr = ln_to_ee["ypr"].as<std::vector<double>>();
-				for (int i = 0; i < 3; ++i) {
-					ln2ee_num[i] = xyz[i];
-					ln2ee_num[i + 3] = ypr[i];
-				}
+			if (!robot->add_function("par_Ln2EE", ln2ee_expr, ln2ee_args, "Last link to end-effector frame.")) {
+				std::cerr << "Error adding end-effector frame function!" << std::endl;
+				return robot;
 			}
-			robot->add_parameter("par_Ln2EE", casadi::SX::sym("Ln2EE", 6), ln2ee_num, std::vector<short>(6, 0), "Last link to end-effector frame", true);
 
 			// --- Dynamic parameters (par_DYN_num) --- //
 			int STD_PAR_LINK = 10;

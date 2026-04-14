@@ -72,51 +72,71 @@ namespace thunder_ns {
 			// --- Frame Offsets --- //
 			// - Base_to_L0 - //
 			if (config_["Base_to_L0"]) {
-				jointsName[0] = (config_["Base_to_L0"]["name"]) ? config_["Base_to_L0"]["name"].as<string>() : "base";
 				YAML::Node frame_base = config_["Base_to_L0"];
-				vector<double> world2L0_xyz = frame_base["xyz"].as<vector<double>>();
-				vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
-				vector<double> world2L0_num(6,0);
-				for (int i = 0; i < 3; i++) {
-					world2L0_num[i] = world2L0_xyz[i];
-					world2L0_num[i + 3] = world2L0_ypr[i];
+				jointsName[0] = (frame_base["name"]) ? frame_base["name"].as<string>() : "base";
+
+				vector<short> base_isSymb(6, 0);
+				if (frame_base["symb"]) {
+					base_isSymb = frame_base["symb"].as<vector<short>>();
+					if (base_isSymb.size() != 6) throw std::runtime_error("'Base_to_L0.symb' must have 6 elements.");
 				}
-				// - Symbolic selectivity - //
-				vector<short> world2L0_isSymb;
-				if (frame_base["symb"]) world2L0_isSymb = frame_base["symb"].as<vector<short>>();
-				else world2L0_isSymb.assign(6, 0);
-				// - Model - //
-				SX world2L0_symb = SX::sym("world2L0", 6);
-				// - Numeric - //
-				robot->add_parameter("par_world2L0", world2L0_symb, world2L0_num, world2L0_isSymb, "World to base frame", true);
-				// // adjust this part --------------------------------------------------------------------------------------
-				// if (frame_base["xyzrpy"]){
-				// 	par_KIN(Slice(0,6)) = world2L0_symb;
-				// 	world2L0_num = frame_base["xyzrpy"].as<vector<double>>();
-				// } else if(frame_base["xyz"]){
-				// 	vector<double> xyz = frame_base["xyz"].as<vector<double>>();
-				// 	vector<double> rpy;
-				// 	if (frame_base["rpy"]){
-				// 		par_KIN(Slice(3,6)) = world2L0_symb(Slice(3,6));
-				// 		rpy = frame_base["rpy"].as<vector<double>>();
-				// 	} else if(frame_base["ypr"]){
-				// 		vector<double> ypr = frame_base["ypr"].as<vector<double>>();
-				// 		// conversion from ypr to rpy
-				// 		SX ypr_num({0,0,0, ypr[0], ypr[1], ypr[2]});
-				// 		SX T_num = get_transform_ypr(ypr_num);
-				// 		SX rpy_num = get_euler_rpy(T_num);
-				// 		SX ypr_symb({0,0,0, ypr[0], ypr[1], ypr[2]});
-				// 		SX T_symb = get_transform_ypr(ypr_symb);
-				// 		SX rpy_num = get_euler_rpy(T_symb);
-				// 		rpy = {static_cast<double>(rpy_num(0)), static_cast<double>(rpy_num(1)), static_cast<double>(rpy_num(2))};
-				// 	}
-				// 	for (int i=0; i<3; i++){
-				// 		world2L0_num[i] = xyz[i];
-				// 		world2L0_num[i + 3] = rpy[i];
-				// 	}
-				// }
-				// robot->add_function("par_world2L0", ...)
-				// // ---------------------------------------------------------------------------------------------------------
+
+				vector<string> world2L0_args;
+				SX world2L0_expr;
+
+				if (frame_base["xyzrpy"]) {
+					vector<double> world2L0_num = frame_base["xyzrpy"].as<vector<double>>();
+					if (world2L0_num.size() != 6) throw std::runtime_error("'Base_to_L0.xyzrpy' must have 6 elements.");
+					SX world2L0_symb = SX::sym("Wxyzrpy", 6);
+					robot->add_parameter("Wxyzrpy", world2L0_symb, world2L0_num, base_isSymb, "World to base frame in xyzrpy", true);
+					world2L0_expr = robot->get_model("Wxyzrpy");
+					world2L0_args = {"Wxyzrpy"};
+				} else if (frame_base["xyz"]) {
+					vector<double> world2L0_xyz = frame_base["xyz"].as<vector<double>>();
+					if (world2L0_xyz.size() != 3) throw std::runtime_error("'Base_to_L0.xyz' must have 3 elements.");
+					vector<short> xyz_isSymb(base_isSymb.begin(), base_isSymb.begin() + 3);
+					vector<short> or_isSymb(base_isSymb.begin() + 3, base_isSymb.end());
+
+					SX xyz_symb = SX::sym("Wxyz", 3);
+					robot->add_parameter("Wxyz", xyz_symb, world2L0_xyz, xyz_isSymb, "World to base translation", true);
+
+					if (frame_base["rpy"]) {
+						vector<double> world2L0_rpy = frame_base["rpy"].as<vector<double>>();
+						if (world2L0_rpy.size() != 3) throw std::runtime_error("'Base_to_L0.rpy' must have 3 elements.");
+						SX rpy_symb = SX::sym("Wrpy", 3);
+						robot->add_parameter("Wrpy", rpy_symb, world2L0_rpy, or_isSymb, "World to base orientation in rpy", true);
+
+						casadi::SXVector frame_parts(2);
+						frame_parts[0] = robot->get_model("Wxyz");
+						frame_parts[1] = robot->get_model("Wrpy");
+						world2L0_expr = casadi::SX::vertcat({frame_parts});
+						world2L0_args = {"Wxyz", "Wrpy"};
+					} else if (frame_base["ypr"]) {
+						vector<double> world2L0_ypr = frame_base["ypr"].as<vector<double>>();
+						if (world2L0_ypr.size() != 3) throw std::runtime_error("'Base_to_L0.ypr' must have 3 elements.");
+						SX ypr_symb = SX::sym("Wypr", 3);
+						robot->add_parameter("Wypr", ypr_symb, world2L0_ypr, or_isSymb, "World to base orientation in ypr", true);
+
+						SX ypr_frame = SX::zeros(6, 1);
+						ypr_frame(Slice(3, 6)) = robot->get_model("Wypr");
+						SX rpy_from_ypr = get_euler_rpy(get_transform_ypr(ypr_frame));
+
+						casadi::SXVector frame_parts(2);
+						frame_parts[0] = robot->get_model("Wxyz");
+						frame_parts[1] = rpy_from_ypr;
+						world2L0_expr = casadi::SX::vertcat(frame_parts);
+						world2L0_args = {"Wxyz", "Wypr"};
+					} else {
+						throw std::runtime_error("'Base_to_L0' must define either 'rpy' or 'ypr' when 'xyz' is used.");
+					}
+				} else {
+					throw std::runtime_error("'Base_to_L0' must define either 'xyzrpy' or 'xyz'.");
+				}
+
+				if (!robot->add_function("par_world2L0", world2L0_expr, world2L0_args, "World to base frame.")) {
+					std::cerr << "Error adding base frame function!" << std::endl;
+					return robot;
+				}
 			} else {
 				jointsName[0] = "base";
 				robot->add_parameter("par_world2L0", SX::sym("world2L0", 6), vector<double>(6,0), {0}, "World to base frame", true);
@@ -147,21 +167,69 @@ namespace thunder_ns {
 			if (config_["Ln_to_EE"]) {
 				jointsName[numJoints-1] = (config_["Ln_to_EE"]["name"]) ? config_["Ln_to_EE"]["name"].as<string>() : "ee";
 				YAML::Node frame_ee = config_["Ln_to_EE"];
-				vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
-				vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
-				vector<double> Ln2EE_num(6, 0);
-				for (int i = 0; i < 3; i++) {
-					Ln2EE_num[i] = Ln2EE_xyz[i];
-					Ln2EE_num[i + 3] = Ln2EE_ypr[i];
+
+				vector<short> ee_isSymb(6, 0);
+				if (frame_ee["symb"]) {
+					ee_isSymb = frame_ee["symb"].as<vector<short>>();
+					if (ee_isSymb.size() != 6) throw std::runtime_error("'Ln_to_EE.symb' must have 6 elements.");
 				}
-				// - Symbolic selectivity - //
-				vector<short> Ln2EE_isSymb;
-				if (frame_ee["symb"]) Ln2EE_isSymb = frame_ee["symb"].as<vector<short>>();
-				else Ln2EE_isSymb.assign(6, 0);
-				// - Model - //
-				SX Ln2EE_symb = SX::sym("Ln2EE", 6);
-				// - Numeric - //
-				robot->add_parameter("par_Ln2EE", Ln2EE_symb, Ln2EE_num, Ln2EE_isSymb, "Last link to end-effector frame", true);
+
+				vector<string> Ln2EE_args;
+				SX Ln2EE_expr;
+
+				if (frame_ee["xyzrpy"]) {
+					vector<double> Ln2EE_num = frame_ee["xyzrpy"].as<vector<double>>();
+					if (Ln2EE_num.size() != 6) throw std::runtime_error("'Ln_to_EE.xyzrpy' must have 6 elements.");
+					SX Ln2EE_symb = SX::sym("Lnxyzrpy", 6);
+					robot->add_parameter("Lnxyzrpy", Ln2EE_symb, Ln2EE_num, ee_isSymb, "Last link to end-effector frame in xyzrpy", true);
+					Ln2EE_expr = robot->get_model("Lnxyzrpy");
+					Ln2EE_args = {"Lnxyzrpy"};
+				} else if (frame_ee["xyz"]) {
+					vector<double> Ln2EE_xyz = frame_ee["xyz"].as<vector<double>>();
+					if (Ln2EE_xyz.size() != 3) throw std::runtime_error("'Ln_to_EE.xyz' must have 3 elements.");
+					vector<short> xyz_isSymb(ee_isSymb.begin(), ee_isSymb.begin() + 3);
+					vector<short> or_isSymb(ee_isSymb.begin() + 3, ee_isSymb.end());
+
+					SX xyz_symb = SX::sym("Lnxyz", 3);
+					robot->add_parameter("Lnxyz", xyz_symb, Ln2EE_xyz, xyz_isSymb, "Last link to end-effector translation", true);
+
+					if (frame_ee["rpy"]) {
+						vector<double> Ln2EE_rpy = frame_ee["rpy"].as<vector<double>>();
+						if (Ln2EE_rpy.size() != 3) throw std::runtime_error("'Ln_to_EE.rpy' must have 3 elements.");
+						SX rpy_symb = SX::sym("Lnrpy", 3);
+						robot->add_parameter("Lnrpy", rpy_symb, Ln2EE_rpy, or_isSymb, "Last link to end-effector orientation in rpy", true);
+
+						casadi::SXVector frame_parts(2);
+						frame_parts[0] = robot->get_model("Lnxyz");
+						frame_parts[1] = robot->get_model("Lnrpy");
+						Ln2EE_expr = casadi::SX::vertcat(frame_parts);
+						Ln2EE_args = {"Lnxyz", "Lnrpy"};
+					} else if (frame_ee["ypr"]) {
+						vector<double> Ln2EE_ypr = frame_ee["ypr"].as<vector<double>>();
+						if (Ln2EE_ypr.size() != 3) throw std::runtime_error("'Ln_to_EE.ypr' must have 3 elements.");
+						SX ypr_symb = SX::sym("Lnypr", 3);
+						robot->add_parameter("Lnypr", ypr_symb, Ln2EE_ypr, or_isSymb, "Last link to end-effector orientation in ypr", true);
+
+						SX ypr_frame = SX::zeros(6, 1);
+						ypr_frame(Slice(3, 6)) = robot->get_model("Lnypr");
+						SX rpy_from_ypr = get_euler_rpy(get_transform_ypr(ypr_frame));
+
+						casadi::SXVector frame_parts(2);
+						frame_parts[0] = robot->get_model("Lnxyz");
+						frame_parts[1] = rpy_from_ypr;
+						Ln2EE_expr = casadi::SX::vertcat(frame_parts);
+						Ln2EE_args = {"Lnxyz", "Lnypr"};
+					} else {
+						throw std::runtime_error("'Ln_to_EE' must define either 'rpy' or 'ypr' when 'xyz' is used.");
+					}
+				} else {
+					throw std::runtime_error("'Ln_to_EE' must define either 'xyzrpy' or 'xyz'.");
+				}
+
+				if (!robot->add_function("par_Ln2EE", Ln2EE_expr, Ln2EE_args, "Last link to end-effector frame.")) {
+					std::cerr << "Error adding end-effector frame function!" << std::endl;
+					return robot;
+				}
 			} else {
 				jointsName[numJoints-1] = "ee";
 				robot->add_parameter("par_Ln2EE", SX::sym("Ln2EE", 6), vector<double>(6,0), {0}, "Last link to end-effector frame", true);

@@ -1,7 +1,96 @@
 #include "plugins/loaders/kin_loader.h"
 
+using casadi::Slice;
+
 
 namespace thunder_ns {
+
+	// Build one 6D frame parameterization as [x, y, z, r, p, y].
+	// Accepted YAML formats are: xyzrpy, xyz+rpy, or xyz+ypr.
+	void KinLoader::parse_frame_parameterization(
+		std::shared_ptr<Robot> robot,
+		const YAML::Node& frame_node,
+		const std::string& frame_prefix,
+		casadi::SX& frame_expr,
+		std::vector<std::string>& frame_args) {
+
+		vector<short> frame_isSymb(6, 0);
+		if (frame_node["symb"]) {
+			frame_isSymb = frame_node["symb"].as<vector<short>>();
+			if (frame_isSymb.size() != 6) {
+				throw std::runtime_error("'" + frame_prefix + ".symb' must have 6 elements.");
+			}
+		}
+
+		if (frame_node["xyzrpy"]) {
+			vector<double> xyzrpy_num = frame_node["xyzrpy"].as<vector<double>>();
+			if (xyzrpy_num.size() != 6) {
+				throw std::runtime_error("'" + frame_prefix + ".xyzrpy' must have 6 elements.");
+			}
+			const string xyzrpy_name = frame_prefix + "_xyzrpy";
+			SX xyzrpy_symb = SX::sym(xyzrpy_name, 6);
+			robot->add_parameter(xyzrpy_name, xyzrpy_symb, xyzrpy_num, frame_isSymb, "Kinematic frame in xyzrpy", true);
+			frame_expr = robot->get_model(xyzrpy_name);
+			frame_args = {xyzrpy_name};
+			return;
+		}
+
+		if (!frame_node["xyz"]) {
+			throw std::runtime_error("'" + frame_prefix + "' must define either 'xyzrpy' or 'xyz'.");
+		}
+
+		vector<double> xyz_num = frame_node["xyz"].as<vector<double>>();
+		if (xyz_num.size() != 3) {
+			throw std::runtime_error("'" + frame_prefix + ".xyz' must have 3 elements.");
+		}
+
+		vector<short> xyz_isSymb(frame_isSymb.begin(), frame_isSymb.begin() + 3);
+		vector<short> or_isSymb(frame_isSymb.begin() + 3, frame_isSymb.end());
+
+		const string xyz_name = frame_prefix + "_xyz";
+		SX xyz_symb = SX::sym(xyz_name, 3);
+		robot->add_parameter(xyz_name, xyz_symb, xyz_num, xyz_isSymb, "Kinematic frame translation", true);
+
+		if (frame_node["rpy"]) {
+			vector<double> rpy_num = frame_node["rpy"].as<vector<double>>();
+			if (rpy_num.size() != 3) {
+				throw std::runtime_error("'" + frame_prefix + ".rpy' must have 3 elements.");
+			}
+			const string rpy_name = frame_prefix + "_rpy";
+			SX rpy_symb = SX::sym(rpy_name, 3);
+			robot->add_parameter(rpy_name, rpy_symb, rpy_num, or_isSymb, "Kinematic frame orientation in rpy", true);
+
+			casadi::SXVector frame_parts(2);
+			frame_parts[0] = robot->get_model(xyz_name);
+			frame_parts[1] = robot->get_model(rpy_name);
+			frame_expr = casadi::SX::vertcat(frame_parts);
+			frame_args = {xyz_name, rpy_name};
+			return;
+		}
+
+		if (frame_node["ypr"]) {
+			vector<double> ypr_num = frame_node["ypr"].as<vector<double>>();
+			if (ypr_num.size() != 3) {
+				throw std::runtime_error("'" + frame_prefix + ".ypr' must have 3 elements.");
+			}
+			const string ypr_name = frame_prefix + "_ypr";
+			SX ypr_symb = SX::sym(ypr_name, 3);
+			robot->add_parameter(ypr_name, ypr_symb, ypr_num, or_isSymb, "Kinematic frame orientation in ypr", true);
+
+			SX ypr_frame = SX::zeros(6, 1);
+			ypr_frame(Slice(3, 6)) = robot->get_model(ypr_name);
+			SX rpy_from_ypr = get_euler_rpy(get_transform_ypr(ypr_frame));
+
+			casadi::SXVector frame_parts(2);
+			frame_parts[0] = robot->get_model(xyz_name);
+			frame_parts[1] = rpy_from_ypr;
+			frame_expr = casadi::SX::vertcat(frame_parts);
+			frame_args = {xyz_name, ypr_name};
+			return;
+		}
+
+		throw std::runtime_error("'" + frame_prefix + "' must define either 'rpy' or 'ypr' when 'xyz' is used.");
+	}
 
 	// --- Load function --- //
 	std::shared_ptr<Robot> KinLoader::load(std::shared_ptr<Robot> robot){
@@ -106,53 +195,29 @@ namespace thunder_ns {
 
 			// --- Kinematics parameters --- //
 			if (config_["kinematics"]){
-				vector<double> par_KIN_num(6 * numJoints,0);
-				vector<short> par_KIN_isSymb(6 * numJoints);
+				SX par_KIN_expr = SX::zeros(6 * numJoints, 1);
+				vector<string> par_KIN_args;
 				YAML::Node kinematics = config_["kinematics"];
 				
 				int idx = 0;
 				for (const auto& joint : kinematics) {
 					if (idx==numJoints) break;	// termination on link number
-					
-					// - Numeric - //
-					if (joint.second["xyzrpy"]){
-						vector<double> xyzrpy = joint.second["xyzrpy"].as<vector<double>>();
-						for (int i=0; i<6; i++){
-							par_KIN_num[6*idx + i] = xyzrpy[i];
-						}
-					} else if(joint.second["xyz"]){
-						vector<double> xyz = joint.second["xyz"].as<vector<double>>();
-						vector<double> rpy;
-						if (joint.second["rpy"]){
-							rpy = joint.second["rpy"].as<vector<double>>();
-						} else if(joint.second["ypr"]){
-							vector<double> ypr = joint.second["ypr"].as<vector<double>>();
-							// conversion from ypr to rpy
-							SX ypr_casadi({0,0,0, ypr[0], ypr[1], ypr[2]});
-							SX T = get_transform_ypr(ypr_casadi);
-							SX rpy_casadi = get_euler_rpy(T);
-							rpy = {static_cast<double>(rpy_casadi(0)), static_cast<double>(rpy_casadi(1)), static_cast<double>(rpy_casadi(2))};
-						}
-						for (int i=0; i<3; i++){
-							par_KIN_num[6*idx + i] = xyz[i];
-							par_KIN_num[6*idx + i + 3] = rpy[i];
-						}
-					}
-					
-					// - Symbolic selectivity - //
-					vector<short> joint_isSymb;
-					if (joint.second["symb"]) {
-						joint_isSymb = joint.second["symb"].as<vector<short>>();
-					} else {
-						joint_isSymb.assign(6, 0); // Default to non-symbolic
-					}
-					std::copy(joint_isSymb.begin(), joint_isSymb.end(), par_KIN_isSymb.begin() + 6*idx);
+
+					SX joint_expr;
+					vector<string> joint_args;
+					const string joint_name = joint.first.as<string>();
+					const string frame_prefix = "KIN_" + joint_name;
+					parse_frame_parameterization(robot, joint.second, frame_prefix, joint_expr, joint_args);
+
+					par_KIN_expr(Slice(6*idx, 6*(idx+1))) = joint_expr;
+					par_KIN_args.insert(par_KIN_args.end(), joint_args.begin(), joint_args.end());
 					idx++;
 				}
-				// - Model - //
-				SX par_KIN_symb = SX::sym("par_KIN", 6*numJoints,1);
-				// - Add to parameters - //
-				robot->add_parameter("par_KIN", par_KIN_symb, par_KIN_num, par_KIN_isSymb, "Kinematic parameters", true);
+
+				if (!robot->add_function("par_KIN", par_KIN_expr, par_KIN_args, "Kinematic parameters")) {
+					std::cerr << "Error adding kinematic parameters function!" << std::endl;
+					return robot;
+				}
 			}
 
 
