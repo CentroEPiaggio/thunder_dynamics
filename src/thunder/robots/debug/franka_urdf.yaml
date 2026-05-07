@@ -5,7 +5,8 @@ pipeline:
 
 
 urdf_loader:
-  urdf_path: "franka.urdf"
+  # urdf_path: "franka.urdf"
+  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/franka.urdf"
   base_link: "panda_link0"
   ee_link: "panda_link8"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
