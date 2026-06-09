@@ -123,7 +123,6 @@ The DH table takes the trasformation in the order a, alpha, d, theta (modified c
 The inertial parameters are expressed in the DH frames with the same convention.
 An example can be finded in the folder `robots/` for a 7 d.o.f. robot Franka Emika Panda, or a 3 d.o.f RRR manipulator, or a SEA RRR robot.
 
-
 The framework will create a `<robot>_generatedFiles/` directory containing some files:
 - `<robot>_gen.h` is the C-generated library from CasADi associated with the source file `<robot>_gen.cpp`.
 - `thunder_<robot>.h`, `thunder_<robot>.cpp` is the wrapper class for the generated files.
@@ -268,6 +267,80 @@ You can also extract values from the yaml config file that is stored in `Robot::
 
 For a complete example, look for the files `userDefined.h/cpp`.
 
+## Orientation parameterization in YAML
+
+Thunder internally uses 6D frames in the form `[x, y, z, roll, pitch, yaw]` (RPY order for rotations).
+To define a frame in YAML, the loaders support the following equivalent input styles:
+
+* `xyzrpy: [x, y, z, r, p, y]`
+* `xyz: [x, y, z]` with `rpy: [r, p, y]`
+* `xyz: [x, y, z]` with `ypr: [y, p, r]` (automatically converted to RPY internally)
+
+You can also control symbolic selectivity with `symb: [sx, sy, sz, sr, sp, sy]`.
+
+### kin_loader
+
+In `kin_loader`, each entry of `kinematics` can use any of the three parameterizations above:
+
+```yaml
+kin_loader:
+  kinematics:
+    base:
+      parent: world
+      joint_type: FIXED
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, 0, 0, 0, 0, 0]
+    link1:
+      parent: base
+      joint_type: R
+      symb: [1,1,1,1,1,1]
+      xyz: [0, 0, 0.333]
+      ypr: [0, 0, 1.5708]
+```
+
+### dh_loader
+
+In `dh_loader`, frame offsets `Base_to_L0` and `Ln_to_EE` accept the same orientation parameterization options:
+
+```yaml
+dh_loader:
+  Base_to_L0:
+    symb: [0,0,0,0,0,0]
+    xyz: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  Ln_to_EE:
+    symb: [1,1,1,1,1,1]
+    xyzrpy: [0, 0, 0.107, 0, 0, 1.0]
+```
+
+### urdf_loader
+
+In `urdf_loader` there are two sources of kinematic frame data:
+
+* URDF joint `<origin>` (standard URDF): uses `xyz` + `rpy`.
+* YAML overrides (`urdf_loader.kinematics.<link_name>`): supports `xyzrpy`, `xyz+rpy`, and `xyz+ypr`.
+
+Additionally, `Base_to_L0` and `Ln_to_EE` in `urdf_loader` support the same three formats.
+For backward compatibility, `tr` is accepted as an alias of `xyz` in these two blocks.
+
+```yaml
+urdf_loader:
+  urdf_path: robot.urdf
+
+  kinematics:
+    panda_joint8:
+      symb: [1,1,1,1,1,1]
+      xyz: [0, 0, 0.107]
+      ypr: [0, 0, 1.0]
+
+  Base_to_L0:
+    xyzrpy: [0, 0, 0, 0, 0, 0]
+
+  Ln_to_EE:
+    tr: [0, 0, 0.103]   # alias of xyz
+    rpy: [0, 0, -0.785398163397]
+```
 ## Symbolic selectivity of parameters
 Each parameter specified in the config file can be symbolic or not based on the `symb:` control boxes in the specific parameter.
 For example, in the inertial parameters it is sufficient to write `symb: [1,1,1,1,1,1,1,1,1,1]` to enable the symbolic computation of the classical dynamics.
@@ -280,13 +353,58 @@ parameter:
   symb: [0,0,1] 		# only the third element of parameter is symbolic
   value: [1, 2, 3] 		# initial values of the parameter
 ...
-}
 ```
 
 then in the built code it is possible to write
 ```C++
 thunder_<robot> myRobot;
 myRobot.set_parameter(1); 	# this change the symbolic third element of parameter from 3 to 1
+```
+
+### Symbolic parameter on URDF (kinematics & dynamics)
+
+> **Note:** This is valid when using the `urdf_loader` plugin.
+
+When loading a URDF through `urdf_loader`, the loader builds both kinematic and dynamic parameter vectors (`par_KIN` and `par_DYN`).
+By default these parameters are treated as numeric (so they do not show up in the generated CASADI functions), but you can selectively enable symbolic values.
+
+#### YAML configuration
+
+The loader supports:
+
+* a global switch:
+  * `symbolic_kinematics: true|false|1|0`
+  * `symbolic_dynamics: true|false|1|0`
+  
+  > **Note:** When using a scalar value (e.g. `symbolic_kinematics: 0`), the loader applies it globally and will not parse any per-link overrides. To use per-link masks, specify the option as a map with `default:` and link keys.
+
+* per-link masks (takes precedence over the global switch):
+
+```yaml
+symbolic_kinematics:
+  base_link: [0, 0, 0, 0, 0, 0]
+  link1:
+    xyz: [1, 1, 1]
+    rpy: [0, 0, 0]
+
+symbolic_dynamics:
+  base_link: [0,0,0,0,0,0,0,0,0,0]
+  link1:
+    mass: 1
+    com: [0, 1, 0]
+    inertia: [1, 1, 1, 0, 0, 0]
+```
+
+#### URDF configuration
+
+The same masks can also be embedded directly in the URDF (used if YAML does not override):
+
+```xml
+<link name="base_link">
+  <!-- Values can be 0/1 or true/false -->
+  <symbolic_kinematics xyz="1 1 1" rpy="0 0 0" />
+  <symbolic_dynamics mass="1" com="0 1 0" inertia="1 1 1 0 0 0" />
+</link>
 ```
 
 ## Installation

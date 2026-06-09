@@ -33,7 +33,7 @@
 		{
 			"label": "makeThunderRobot",
 			"type": "shell",
-			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder_robot/ && mkdir -p build && cd build && cmake .. && make -d",
+			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder_robot_test/ && mkdir -p build && cd build && cmake .. && make -d",
 			"group": {
 				"kind": "build",
 				"isDefault": false
@@ -42,7 +42,7 @@
 				"owner": "cpp",
 				"fileLocation": [
 					"relative",
-					"/home/thunder_dev/thunder_dynamics/src/thunder_robot/build"
+					"/home/thunder_dev/thunder_dynamics/src/thunder_robot_test/build"
 				],
 				"pattern": {
 					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",

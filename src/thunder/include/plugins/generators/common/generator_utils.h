@@ -25,7 +25,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	
 	// --- get everything from robot --- //
 	string robotName = robot.robotName;
-	int n_joints = robot.get<int>("numJoints");
+	// int n_joints = robot.get<int>("numJoints");
 	int numSoftJoints = (robot.properties.count("numSoftJoints")) ? robot.get<int>("numSoftJoints") : 0;
 	int Dl_order = (robot.properties.count("Dl_order")) ? robot.get<int>("Dl_order") : 0;
 

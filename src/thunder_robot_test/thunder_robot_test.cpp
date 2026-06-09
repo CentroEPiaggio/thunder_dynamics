@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <casadi/casadi.hpp>
 #include <cmath>
 #include <eigen3/Eigen/Dense>
@@ -11,16 +12,24 @@
 #include <concepts>
 // #include <yaml-cpp/yaml.h>
 
-// #include "thunder_robot.h"
 #include "thunder_RRR.h"
-// #include "thunder_franka.h"
-// #include "thunder_seaRRR.h"
+#include "thunder_treeRRR.h"
+#include "thunder_franka.h"
+#include "thunder_franka_urdf.h"
+#include "thunder_dynaarm.h"
+#include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-const std::string par_file = "../robots/RRR_par.yaml";
+// #define thunder_robot thunder_dynaarm
+#define thunder_robot thunder_franka
+
+// const std::string par_file = "../robots/RRR_par.yaml";
+// const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
+// const std::string par_file = "../robots/franka_urdf_conf.yaml";
+// const std::string par_file = "../robots/dynaarm_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
 // const std::string par_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
@@ -28,6 +37,8 @@ const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";
 using namespace std::chrono;
 using std::cout;
 using std::endl;
+using std::string;
+using Eigen::VectorXd;
 
 template <typename T>
 struct Tester {
@@ -75,14 +86,47 @@ struct Tester {
 		}
 	}
 
-	string get_T_w_ee() {
-		if constexpr (requires (T& x) { x.get_T_w_ee(); }) {
-			std::stringstream ss;
-			ss << robot.get_T_w_ee();
-			return ss.str();
+	int get_ndof() {
+		if constexpr (requires (T& x) { x.ndof; }) {
+			return robot.ndof;
 		} else {
-			return "not defined!";
+			return 0;
 		}
+	}
+
+	string get_T_w_i() {
+		std::stringstream ss;
+		if constexpr (requires (T& x) { x.get_T_w_0(); }) {
+			ss << "T_w_0: " << endl << robot.get_T_w_0() << endl << endl;
+		} else {
+			ss << "T_w_0 not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_T_w_1(); }) {
+			ss << "T_w_1: " << endl << robot.get_T_w_1() << endl << endl;
+		} else {
+			ss << "T_w_1 not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_T_w_2(); }) {
+			ss << "T_w_2: " << endl << robot.get_T_w_2() << endl << endl;
+		} else {
+			ss << "T_w_2 not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_T_w_3(); }) {
+			ss << "T_w_3: " << endl << robot.get_T_w_3() << endl << endl;
+		} else {
+			ss << "T_w_3 not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_T_w_4(); }) {
+			ss << "T_w_4: " << endl << robot.get_T_w_4() << endl << endl;
+		} else {
+			ss << "T_w_4 not defined!" << endl << endl;
+		}
+		if constexpr (requires (T& x) { x.get_T_w_5(); }) {
+			ss << "T_w_5: " << endl << robot.get_T_w_5() << endl << endl;
+		} else {
+			ss << "T_w_5 not defined!" << endl << endl;
+		}
+		return ss.str();
 	}
 
 	string get_J_ee() {
@@ -101,18 +145,21 @@ struct Tester {
 		if constexpr (requires (T& x) { x.get_M(); }) {
 			ss << "M: " << endl << robot.get_M() << endl << endl;
 			tau_diff = robot.get_M() * robot.get_ddqr();
+			ss << "tau_M difference: " << endl << robot.get_M()*robot.get_ddqr() - robot.get_reg_M()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "M: not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_C(); }) {
 			ss << "C: " << endl << robot.get_C() << endl << endl;
 			tau_diff += robot.get_C() * robot.get_dqr();
+			ss << "tau_C difference: " << endl << robot.get_C()*robot.get_dqr() - robot.get_reg_C()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "C: not defined!" << endl << endl;
 		}
 		if constexpr (requires (T& x) { x.get_G(); }) {
 			ss << "G: " << endl << robot.get_G().transpose() << endl << endl;
 			tau_diff += robot.get_G();
+			ss << "tau_G difference: " << endl << robot.get_G() - robot.get_reg_G()*robot.get_par_REG() << endl << endl;
 		} else {
 			ss << "G: not defined!" << endl << endl;
 		}
@@ -179,7 +226,7 @@ struct Tester {
 
 int main(){
 
-	Tester<thunder_RRR> robot;
+	Tester<thunder_robot> robot;
 	cout << "Robot: " << robot.get_name() << endl;
 
 	// std::vector<std::string> robots = {"R3", "R5", "R7", "R9", "R15", "R30"};
@@ -192,17 +239,24 @@ int main(){
 
 	// robot.load_par(par_file);
 	const int NJ = robot.get_numJoints();
+	const int NDOF = robot.get_ndof();
 
 	/* Test */
-	VectorXd q(NJ);
-	VectorXd dq(NJ);
-	VectorXd dqr(NJ);
-	VectorXd ddqr(NJ);
+	Eigen::VectorXd q = (Eigen::VectorXd(NDOF) << 0, 0, 1, 0, 0, 0, 0).finished();
+	Eigen::VectorXd dq = (Eigen::VectorXd(NDOF) << 0.1, -0.2, 0.3, -0.1, 0.05, 0.02, 0.1).finished();
+	Eigen::VectorXd dqr = (Eigen::VectorXd(NDOF) << 0.1, -0.2, 0.3, -0.1, 0.05, 0.02, 0.1).finished();
+	Eigen::VectorXd ddqr = (Eigen::VectorXd(NDOF) << 0.5, -0.3, 0.2, 0.1, -0.05, 0.01, 0.2).finished();
+	// Vector<double,NDOF> q({0, 0, 1, 0, 0, 0});
+	// Vector<double,NDOF> dq({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
+	// Vector<double,NDOF> dqr({0.1, -0.2, 0.3, -0.1, 0.05, 0.02});
+	// Vector<double,NDOF> ddqr({0.5, -0.3, 0.2, 0.1, -0.05, 0.01});
 
 	q.setRandom();
 	dq.setRandom();
 	robot.set_q(q);
 	robot.set_dq(dq);
+	robot.set_dqr(dqr);
+	robot.set_ddqr(ddqr);
 
 	cout << "##################" << endl <<
 			"### Parameters ###" << endl <<
@@ -210,7 +264,11 @@ int main(){
 
 	cout << "#################" << endl <<
 			"### Functions ###" << endl <<
-			"#################" << endl << endl << robot.get_MCGY() << endl;
+			"#################" << endl << endl;
+	
+	cout << robot.get_T_w_i() << endl << endl;
+
+	cout << robot.get_MCGY() << endl << endl; 
 
 	// Vector<double,1> q_joint;
 	// q_joint << 1.5;
@@ -268,9 +326,9 @@ int main(){
 	// 	Eigen::MatrixXd K(NEJ, 1);
 	// 	Eigen::MatrixXd D(NEJ, 1);
 	// 	Eigen::MatrixXd Dm(NEJ, 1);
-	// 	Eigen::MatrixXd reg_K(NJ, N_PARAM_K);
-	// 	Eigen::MatrixXd reg_D(NJ, N_PARAM_D);
-	// 	Eigen::MatrixXd reg_Dm(NJ, N_PARAM_DM);
+	// 	Eigen::MatrixXd reg_K(NDOF, N_PARAM_K);
+	// 	Eigen::MatrixXd reg_D(NDOF, N_PARAM_D);
+	// 	Eigen::MatrixXd reg_Dm(NDOF, N_PARAM_DM);
 
 	// 	par_K = robot.get_par_K();
 	// 	par_D = robot.get_par_D();

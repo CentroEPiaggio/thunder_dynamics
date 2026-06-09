@@ -38,8 +38,7 @@ inline const std::map<std::string, std::shared_ptr<BaseLoader>> LOADERS = {
 	{"kin_loader", std::make_shared<KinLoader>()},
 	{"dyn_loader", std::make_shared<DynLoader>()},
 	{"soft_loader", std::make_shared<SoftLoader>()},
-	{"urdf_loader", std::make_shared<UrdfLoader>()}
-
+	{"urdf_loader", std::make_shared<UrdfLoader>()},
 };
 
 /**
@@ -52,7 +51,6 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 	{"reg_builder", std::make_shared<RegBuilder>()},
 	{"soft_builder", std::make_shared<SoftBuilder>()},
 	{"example_builder", std::make_shared<ExampleBuilder>()},
-
 };
 
 /**

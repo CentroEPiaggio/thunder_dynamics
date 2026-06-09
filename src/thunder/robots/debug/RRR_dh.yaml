@@ -91,7 +91,7 @@ dyn_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
-    link3:
+    ee:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0

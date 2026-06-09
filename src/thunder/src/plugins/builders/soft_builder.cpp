@@ -4,14 +4,37 @@ namespace thunder_ns {
 
     int SoftBuilder::compute_elastic(std::shared_ptr<Robot> robot){
 		// parameters from robot
-		int nj = robot->get<int>("numJoints");
+		int nj = robot->get<int>("ndof");
+		int numSoftJoints = 0;
+		if (robot->properties.count("numSoftJoints")) {
+			numSoftJoints = robot->get<int>("numSoftJoints");
+		} else {
+			robot->add_property<int>("numSoftJoints", numSoftJoints, "int", "Number of soft joints", true);
+		}
 
-		if (robot->properties.count("numSoftJoints")){
-			int numSoftJoints = robot->get<int>("numSoftJoints");
+		if (numSoftJoints){
 			vector<short> isSoftJoint = robot->get<vector<short>>("isSoftJoint");
-			int K_order = robot->get<int>("K_order");
-			int D_order = robot->get<int>("D_order");
-			int Dm_order = robot->get<int>("Dm_order");
+			int K_order = 0;
+			int D_order = 0;
+			int Dm_order = 0;
+			// - K_order - //
+			if (robot->properties.count("K_order")) {
+				K_order = robot->get<int>("K_order");
+			} else {
+				robot->add_property<int>("K_order", K_order, "int", "Number of soft joints", true);
+			}
+			// - D_order - //
+			if (robot->properties.count("D_order")) {
+				D_order = robot->get<int>("D_order");
+			} else {
+				robot->add_property<int>("D_order", D_order, "int", "Number of soft joints", true);
+			}
+			// - Dm_order - //
+			if (robot->properties.count("Dm_order")) {
+				Dm_order = robot->get<int>("Dm_order");
+			} else {
+				robot->add_property<int>("Dm_order", Dm_order, "int", "Number of soft joints", true);
+			}
 			const auto& q = robot->get_model("q");
 			const auto& x = robot->get_model("x");
 			const auto& dq = robot->get_model("dq");

@@ -70,6 +70,10 @@ target_link_libraries(thunder_test library)
 add_executable(thunder_test_chrono ${CMAKE_SOURCE_DIR}/thunder_test_chrono.cpp)
 target_link_libraries(thunder_test_chrono library)
 
+add_executable(thunder_symbolic_test ${CMAKE_SOURCE_DIR}/symbolic_mask_test.cpp)
+target_link_libraries(thunder_symbolic_test library)
+target_compile_definitions(thunder_symbolic_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
 
@@ -102,6 +106,10 @@ set_target_properties(thunder PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 set_target_properties(thunder_test PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+set_target_properties(thunder_symbolic_test PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
     BUILD_WITH_INSTALL_RPATH TRUE
 )

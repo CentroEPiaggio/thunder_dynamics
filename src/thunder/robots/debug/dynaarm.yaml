@@ -3,33 +3,22 @@ pipeline:
   builders:   ["kin_builder", "dyn_builder", "reg_builder"]
   generators: ["robot_generator"]
 
-
 urdf_loader:
-  # urdf_path: "franka.urdf"
-  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/franka.urdf"
-  base_link: "panda_link0"
-  ee_link: "panda_link8"
+  # urdf_path: "dynaarm.urdf"
+  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/dynaarm.urdf"
+  base_link: "base"
+  ee_link: "wrist_2"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
-  # Alternatively, set per-link masks using the link name.
-  # Example:
+  # Can also be overridden per-link using a mask like:
   # symbolic_kinematics:
-  #   panda_link0: [1, 1, 1, 1, 1, 1]
-  #   panda_link1:
-  #     xyz: [1, 1, 1]
-  #     rpy: [0, 0, 0]
+  #   base: [1, 1, 1, 1, 1, 1]
   symbolic_kinematics: true
   # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
-  # Can also be overridden per-link via a mask of 10 values (mass, CoM, I).
-  # Example:
+  # You can also override per-link, e.g.:
   # symbolic_dynamics:
-  #   panda_link0: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-  #   panda_link1:
-  #     mass: 1
-  #     CoM: [0, 1, 0]
-  #     I: [1, 1, 1, 0, 0, 0]
+  #   base: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
   symbolic_dynamics: true
 
-  # gravity
   gravity:
     symb: [0,0,0]
     value: [0, 0, -9.81]

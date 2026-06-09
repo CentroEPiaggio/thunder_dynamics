@@ -1,12 +1,16 @@
 general:
+	☐ update robot yamls
+	☐ divide links and joints instead having one only element. kinematics creates joints, dynamics creates links. joint has also the link child field.
+	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
 	☐ delete boost dependency
 	☐ update robots from dh to internal kinematics
-	☐ joints with more that one dof?
-	☐ choose better names for config ("joints_type", ...)
+	✔ joints with more that one dof? added jointsDimension @done (2/13/2026, 10:42:38 PM)
+	✔ choose better names for config ("joints_type", ...) @done (2/13/2026, 10:42:44 PM)
 	☐ update readme
 	☐ robot_name is important, check the entire pipeline of generations and use of Robot
-	☐ robot_name not handled properly in legacy_loader, yaml have priority
+	✔ robot_name not handled properly in legacy_loader, yaml have priority @done (2/13/2026, 10:42:57 PM)
 	✔ move templates to thunder/data/templates (for example the cmakelists) @done (1/16/2026, 11:19:53 AM)
+	☐ use a vector of SX for joints? one for each joint and the dimensions regulate the total ndof
 	☐ generic utils.spatial and generic wrt robot and thunder_robot
 	☐ add verbosity levels (not bool)
 	☐ substitute cout with errors or info in plugins
@@ -18,7 +22,7 @@ general:
 	☐ add version control for config file
 	☐ generator for useful functions in thunder_robot (or add a new class <robot>_utils.h) or (read below)
 	☐ add add_C_function to insert custom functions in the generated code, needs a class CFunction to define
-	☐ test inertials of franka robots
+	✔ test inertials of franka robots @done (2/13/2026, 10:43:46 PM)
 	
 thunder:
 	☐ create structured tests for the robot
@@ -38,8 +42,17 @@ thunder:
 		☐ allow different type for parameters
 		✔ add general kinematic parameters (par_KIN) that does not depend on the format (DH, URDF..) @done (1/16/2026, 11:27:18 AM)
 	kinematics:
-		☐ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links)
-		☐ 
+		- fixed joints have kinematics and dynamics, they are counted also in numJoints, but not in ndof
+		- internal representation is xyzrpy, it is possible to use also ypr but it change only numerical initialization of the rpy
+		☐ probably the function add_chain_from() in urdf_loader could be improved
+		☐ transforms as a list, probably needs the use of custom_C_function or intelligent using of casadi branched
+		☐ for fixed joints the q passed have dimension 1 and it is not taken into consideration, how to solve? not a big deal
+		☐ dh_loader does not support joints with dimension greater than 1
+		☐ for now dh_loader accepts only ypr in base and ee frames
+		☐ allow different kinematic representation? like ypr in joints? have to keen track in some way (think about save parameters, representation is lost)
+		☐ is pinv really usefull to compute simbolically?
+		✔ add the choice of kinematic rapresentation in joints: rpy or ypr (also in base and ee links) @done (1/26/2026, 5:28:43 PM)
+		☐ merge joints structure with parameters in kinTree_loader
 		✔ index are wrong, T_0_0 is instead T_0_1, but everything use it, check it and pay attention! @done (12/25/2025, 9:52:12 PM)
 		☐ check consistency with parametrization, write down parametrization, urdf differences?
 		☐ make a general kinematic parametrization for trees
@@ -47,6 +60,7 @@ thunder:
 	elasticity:
 		- stiffness order adds odd exponent to (x-q) (^1, ^3...) and functions are k, K1, K3...
 		- damping order adds all exponents from 1 to ord+1 (considering the direction, friction wants to stop the movement), fun are d, D1, D2...
+		☐ if numSoftJoints > 0, there should exist isSoftJoint as property
 		☐ obtain orders directly from size of elastic parameters arrays
 		☐ each joint with different orders?
 		☐ could be usefull to use also even orders?
@@ -58,6 +72,9 @@ thunder:
 		☐ elastic matrices and quantities are related on motor side equation, have to be modified to use in link side equation by selection matrix
 	regressors:
 		- for now, the regressors (not slotine or dynamics) are computed only if there is at least one simbolic parameter.
+		☐ par_REG should be a function, no sense to set par_REG parameters. The internal parameters are par_DYN.
+		☐ problem if par_REG is a function is that we do not save it when we save parameters.
+		☐ we can save values of functions if they start with par, like par_REG, problems in the generated files?
 		☐ change dimension of the regressor dependently on the symbolic parameters, now is full size always (Yr).
 		☐ Decide how to handle known parameters in the use of the regressor.
 		☐ in general for regressor, which is the order of the parameters? method to obtain it.
@@ -83,6 +100,7 @@ plugins:
 		☐ is the function .execute(robot_name) autoexplicative?
 		☐ system to deactivate generators after loading the configuration (needed in tests)
 	loaders:
+		☐ readme for loaders, there is for urdf now, add dh and internal representation
 		☐ kin_loader wants world and ee frames, robustify!
 		☐ delete numJoints in the config. The std joint loader have to set it from joints type.
 		☐ robustify configuration, check it, avoid incoherent dimension (delete orders, take from arrays)
@@ -120,6 +138,7 @@ possible features::
 	☐ thunder_control: basic controllers that uses thunder_robot
 	☐ analytic Jacobian: choose a parametrization and provide conversions
 	☐ handling of different joint structure, fixed, defined by user
+	☐ casadi can handle if/else in SX, could be interesting
 	
 INFO:
 	- double indexes in casadi does not work (e.g. ### SX a(l:1); a(Slice(l1,l2))(1) = b ### does not assign correctly at a(l1+1))
@@ -139,6 +158,3 @@ INFO:
 		- Link n is the end-effector
 		- Link 0 is considered only in case of moving base robot (not ready)
 
-
-issues:
-	☐ error on first column of jacobian? K is always [0;0;1]? (to check)

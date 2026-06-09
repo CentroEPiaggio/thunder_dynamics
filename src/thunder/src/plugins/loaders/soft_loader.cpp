@@ -51,12 +51,16 @@ namespace thunder_ns {
 			int numSoftJoints = 0;
 			vector<short> isSoftJoint(numJoints);
 			// isSoftJoint.resize(numJoints);
+			int n_fixed = 0;	// have to be relative to ndof, not numJoints
 			for (int i = 0; i < numJoints; i++) {
+				if (jointsType[i] == "FIXED") {
+					n_fixed++;
+				}
 				if ((jointsType[i] == "R_SEA") || (jointsType[i] == "P_SEA")) {
-					isSoftJoint[i] = 1;
+					isSoftJoint[i-n_fixed] = 1;
 					numSoftJoints++;
 				} else {
-					isSoftJoint[i] = 0;
+					isSoftJoint[i-n_fixed] = 0;
 				}
 			}
 

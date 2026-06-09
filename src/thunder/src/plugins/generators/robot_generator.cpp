@@ -27,7 +27,7 @@ namespace thunder_ns {
 	// ----- GENERATE ----- //
 	void RobotGenerator::generate(const std::shared_ptr<Robot> robot){
 
-        int nj = robot->get<int>("numJoints");
+        // int nj = robot->get<int>("numJoints");
 		// --- Generate merge code --- //
 
 		if (config_["gen_casadi"]) GEN_CASADI = config_["gen_casadi"].as<bool>();
