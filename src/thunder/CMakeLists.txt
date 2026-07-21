@@ -128,9 +128,11 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL
 # =============================== #
 # --- Python Plugin Support  --- #
 # =============================== #
-option(BUILD_PYTHON_PLUGINS "Build Python plugin support with nanobind" OFF)
+
+option(BUILD_PYTHON_PLUGINS "Build Python plugin support with nanobind" ON)
 
 if(BUILD_PYTHON_PLUGINS)
+  message(STATUS "Configuring Python plugin support...")
   find_package(Python 3.8 COMPONENTS Interpreter Development REQUIRED)
   find_package(SWIG REQUIRED)
   include(${SWIG_USE_FILE})
@@ -189,6 +191,9 @@ if(BUILD_PYTHON_PLUGINS)
 
   # Install thunder_core Python package (pure-Python parts)
   install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_core
+    DESTINATION ${PYTHON_SITE_PACKAGES})
+  # Install thunder_plugins package (Python plugin system)
+  install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_plugins
     DESTINATION ${PYTHON_SITE_PACKAGES})
 
   message(STATUS "Python plugin support ENABLED")

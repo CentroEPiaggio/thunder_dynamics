@@ -150,7 +150,7 @@ namespace thunder_ns {
 			for (const auto &name : loader_names) {
 				std::shared_ptr<BaseLoader> plugin;
 #ifdef THUNDER_PYTHON_PLUGINS
-				if (name.size() > 3 && name.substr(0, 3) == "py:") {
+				if (name.size() > 3 && name.substr(0, 3) == "PY.") {
 					auto [mod, cls] = parse_py_plugin_name(name);
 					plugin = std::make_shared<PyLoaderProxy>(mod, cls);
 				} else
@@ -169,7 +169,7 @@ namespace thunder_ns {
 			for (const auto &name : builder_names) {
 				std::shared_ptr<BaseBuilder> plugin;
 #ifdef THUNDER_PYTHON_PLUGINS
-				if (name.size() > 3 && name.substr(0, 3) == "py:") {
+				if (name.size() > 3 && name.substr(0, 3) == "PY.") {
 					auto [mod, cls] = parse_py_plugin_name(name);
 					plugin = std::make_shared<PyBuilderProxy>(mod, cls);
 				} else
@@ -188,7 +188,7 @@ namespace thunder_ns {
 			for (const auto &name : generator_names) {
 				std::shared_ptr<BaseGenerator> plugin;
 #ifdef THUNDER_PYTHON_PLUGINS
-				if (name.size() > 3 && name.substr(0, 3) == "py:") {
+				if (name.size() > 3 && name.substr(0, 3) == "PY.") {
 					auto [mod, cls] = parse_py_plugin_name(name);
 					plugin = std::make_shared<PyGeneratorProxy>(mod, cls);
 				} else
