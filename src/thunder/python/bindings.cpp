@@ -95,6 +95,7 @@ NB_MODULE(_bindings, m) {
         .def_rw("name", &Function::name)
         .def_rw("description", &Function::description)
         .def_rw("args", &Function::args)
+        .def_rw("explicit_args", &Function::explicit_args)
         .def_rw("expr", &Function::expr)
         .def_rw("fun", &Function::fun)
         .def("get_out_size", &Function::get_out_size)
