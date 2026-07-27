@@ -130,6 +130,8 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL
 # =============================== #
 
 option(BUILD_PYTHON_PLUGINS "Build Python plugin support with nanobind" ON)
+option(THUNDER_USE_LOCAL_PYTHON_FILES "Use local thunder_core/thunder_plugins sources instead of installing Python packages" OFF)
+set(THUNDER_LOCAL_PYTHON_ROOT "${CMAKE_SOURCE_DIR}/../../python" CACHE PATH "Path to local Python source root (must contain thunder_core and thunder_plugins)")
 
 if(BUILD_PYTHON_PLUGINS)
   message(STATUS "Configuring Python plugin support...")
@@ -161,6 +163,13 @@ if(BUILD_PYTHON_PLUGINS)
   nanobind_add_module(_bindings
     ${CMAKE_SOURCE_DIR}/python/bindings.cpp
   )
+
+  if(THUNDER_USE_LOCAL_PYTHON_FILES)
+    #  write compiled module next to local thunder_core package.
+    set_target_properties(_bindings PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY "${THUNDER_LOCAL_PYTHON_ROOT}/thunder_core")
+  endif()
+
   target_link_libraries(_bindings PRIVATE library)
   target_include_directories(_bindings PRIVATE
     ${CMAKE_SOURCE_DIR}/python
@@ -186,15 +195,22 @@ if(BUILD_PYTHON_PLUGINS)
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
-  # Install compiled _bindings module into thunder_core package directory
-  install(TARGETS _bindings LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/thunder_core)
 
-  # Install thunder_core Python package (pure-Python parts)
-  install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_core
-    DESTINATION ${PYTHON_SITE_PACKAGES})
-  # Install thunder_plugins package (Python plugin system)
-  install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_plugins
-    DESTINATION ${PYTHON_SITE_PACKAGES})
+  if(THUNDER_USE_LOCAL_PYTHON_FILES)
+    message(STATUS "  Local Python source mode ENABLED")
+    message(STATUS "  Local root: ${THUNDER_LOCAL_PYTHON_ROOT}")
+    message(STATUS "  _bindings output: ${THUNDER_LOCAL_PYTHON_ROOT}/thunder_core")
+    message(STATUS "  Skipping install of thunder_core/thunder_plugins into site-packages")
+  else()
+    # Install compiled _bindings module into thunder_core package directory
+    install(TARGETS _bindings LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/thunder_core)
+    # Install thunder_core Python package (pure-Python parts)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_core
+      DESTINATION ${PYTHON_SITE_PACKAGES})
+    # Install thunder_plugins package (Python plugin system)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_plugins
+      DESTINATION ${PYTHON_SITE_PACKAGES})
+  endif()
 
   message(STATUS "Python plugin support ENABLED")
   message(STATUS "  Python: ${Python_EXECUTABLE} (${Python_VERSION})")
