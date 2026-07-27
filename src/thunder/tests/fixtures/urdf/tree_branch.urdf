@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot name="tree_branch">
+  <link name="base_link"/>
+  <link name="left_link"/>
+  <link name="left_tip"/>
+  <link name="right_link"/>
+  <link name="right_tip"/>
+
+  <joint name="left_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="left_link"/>
+    <origin xyz="1 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="1" velocity="1"/>
+  </joint>
+
+  <joint name="left_tip_joint" type="fixed">
+    <parent link="left_link"/>
+    <child link="left_tip"/>
+    <origin xyz="0 0 1" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="right_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="right_link"/>
+    <origin xyz="0 1 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.14" upper="3.14" effort="1" velocity="1"/>
+  </joint>
+
+  <joint name="right_tip_joint" type="fixed">
+    <parent link="right_link"/>
+    <child link="right_tip"/>
+    <origin xyz="0 0 1" rpy="0 0 0"/>
+  </joint>
+</robot>

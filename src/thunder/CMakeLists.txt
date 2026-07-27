@@ -4,7 +4,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_dynamics VERSION 0.2)
+
+option(WITH_TESTS "Build C++ unit tests (GoogleTest)" OFF)
 
 # Set the output directories for compiled binaries and libraries
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
@@ -114,6 +115,61 @@ set_target_properties(thunder_test_chrono PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
     BUILD_WITH_INSTALL_RPATH TRUE
 )
+if(WITH_TESTS)
+  enable_testing()
+
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG main
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+
+  add_executable(thunder_no_generation_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_no_generation.cpp)
+  target_link_libraries(thunder_no_generation_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_no_generation_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
+  add_executable(thunder_generator_smoke_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_generator_smoke.cpp)
+  target_link_libraries(thunder_generator_smoke_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_generator_smoke_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
+  add_executable(thunder_tree_kinematics_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_tree_kinematics.cpp)
+  target_link_libraries(thunder_tree_kinematics_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_tree_kinematics_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
+  add_executable(thunder_robot_comparison_gtest
+    ${CMAKE_SOURCE_DIR}/tests/cpp/robot_comparison_gtest.cpp
+  )
+  target_link_libraries(thunder_robot_comparison_gtest PRIVATE library gtest_main)
+  target_compile_definitions(thunder_robot_comparison_gtest PRIVATE
+    THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\"
+    PINOCCHIO_HELPER_SCRIPT=\"${CMAKE_SOURCE_DIR}/tests/python/pinocchio_helper.py\"
+  )
+
+  set_target_properties(thunder_robot_comparison_gtest PROPERTIES
+      INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+      BUILD_WITH_INSTALL_RPATH TRUE
+  )
+
+  set_target_properties(thunder_no_generation_test PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+  )
+  set_target_properties(thunder_generator_smoke_test PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+  )
+  set_target_properties(thunder_tree_kinematics_test PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+    BUILD_WITH_INSTALL_RPATH TRUE
+  )
+
+  add_test(NAME thunder_no_generation_test COMMAND thunder_no_generation_test)
+  add_test(NAME thunder_generator_smoke_test COMMAND thunder_generator_smoke_test)
+  add_test(NAME thunder_tree_kinematics_test COMMAND thunder_tree_kinematics_test)
+  add_test(NAME thunder_robot_comparison_gtest COMMAND thunder_robot_comparison_gtest)
+endif()
 
 # Set default install prefix if not specified
 # if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -216,4 +272,12 @@ if(BUILD_PYTHON_PLUGINS)
   message(STATUS "  Python: ${Python_EXECUTABLE} (${Python_VERSION})")
   message(STATUS "  SWIG:   ${SWIG_EXECUTABLE} (${SWIG_VERSION})")
   message(STATUS "  Install to: ${PYTHON_SITE_PACKAGES}")
+  
+  if(WITH_TESTS)
+    add_test(NAME thunder_python_api_test
+      COMMAND ${CMAKE_COMMAND} -E env
+        PYTHONPATH=${CMAKE_BINARY_DIR}:${CMAKE_SOURCE_DIR}/../../python
+        ${Python_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/tests/python -p test_*.py -v)
+  endif()
+endif()
 endif()
