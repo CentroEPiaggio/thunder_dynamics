@@ -1,6 +1,6 @@
 pipeline:
   loaders:    ["kin_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder", "py:my_py_builder.MyCosBuilder"]
+  builders:   ["kin_builder", "dyn_builder", "py.my_py_builder.MyCosBuilder"]
   generators: []  # no code gen — just test the Python builder
 
 version: 1.0
@@ -11,7 +11,7 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 ############################################
 # Python plugin config (key = plugin name from pipeline)
-"py:my_py_builder.MyCosBuilder":
+"py.my_py_builder.MyCosBuilder":
   function_name: "cos_q"
 
 ############################################
