@@ -4,11 +4,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
+project(thunder_dynamics VERSION 0.9.9)
+
+include(GNUInstallDirs)
 
 option(WITH_TESTS "Build C++ unit tests (GoogleTest)" OFF)
 
 # Set the output directories for compiled binaries and libraries
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
@@ -91,10 +93,18 @@ if (CASADI_LIB_PATH)
   # Extract the directory from the library path
   get_filename_component(CASADI_LIB_DIR ${CASADI_LIB_PATH} DIRECTORY)
   message(STATUS "CasADi library directory: ${CASADI_LIB_DIR}")
+  set(THUNDER_PRIVATE_LIB_DIR "lib/thunder_dynamics")
 
   # Set rpath to include the CasADi library directory
-  set(CMAKE_INSTALL_RPATH "${CASADI_LIB_DIR}")
+  # set(CMAKE_INSTALL_RPATH "${CASADI_LIB_DIR}")
+  # set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  # Use $ORIGIN so the binary looks for the lib relative to its own path (bin/..)
+  # We use the escaped version \$ORIGIN so it literalizes in the ELF header
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${THUNDER_PRIVATE_LIB_DIR}")
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  # Install CasADi files so they get included in the .deb
+  file(GLOB CASADI_LIB_VARIANTS "${CASADI_LIB_DIR}/libcasadi.so*")
+  install(FILES ${CASADI_LIB_VARIANTS} DESTINATION ${THUNDER_PRIVATE_LIB_DIR})
 else()
   message(FATAL_ERROR "CasADi library not found!")
 endif()
@@ -176,10 +186,12 @@ endif()
 # 	set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path" FORCE)
 # endif()
 # set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path")
-set(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "default install path" FORCE)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "default install path" FORCE)
+endif()
 # Install the executable and the template directory
-install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_PREFIX}/share/thunder_dynamics)
+install(TARGETS thunder RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/templates DESTINATION ${CMAKE_INSTALL_DATADIR}/thunder_dynamics)
 
 # =============================== #
 # --- Python Plugin Support  --- #
@@ -231,6 +243,11 @@ if(BUILD_PYTHON_PLUGINS)
     ${CMAKE_SOURCE_DIR}/python
     ${SWIGPYRUN_DIR}
   )
+  # Resolve bundled shared libs from the extension module directory at runtime.
+  set_target_properties(_bindings PROPERTIES
+    INSTALL_RPATH "\$ORIGIN"
+    BUILD_WITH_INSTALL_RPATH TRUE
+  )
   add_dependencies(_bindings generate_swigpyrun)
 
   # Add Python proxy plugin sources to the main library
@@ -260,6 +277,9 @@ if(BUILD_PYTHON_PLUGINS)
   else()
     # Install compiled _bindings module into thunder_core package directory
     install(TARGETS _bindings LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES}/thunder_core)
+    # Install CasADi runtime libraries alongside _bindings so Python imports work
+    # without requiring system-wide CasADi linker configuration.
+    install(FILES ${CASADI_LIB_VARIANTS} DESTINATION ${PYTHON_SITE_PACKAGES}/thunder_core)
     # Install thunder_core Python package (pure-Python parts)
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/../../python/thunder_core
       DESTINATION ${PYTHON_SITE_PACKAGES})
@@ -280,4 +300,29 @@ if(BUILD_PYTHON_PLUGINS)
         ${Python_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/tests/python -p test_*.py -v)
   endif()
 endif()
+
+# =============================== #
+# ------- Package Support ------- #
+# =============================== #
+
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "thunder-dynamics")
+set(CPACK_PACKAGE_VENDOR "thunder")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_CONTACT "maintainers@thunder-dynamics.local")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Thunder dynamics executable, templates, and optional Python plugin support")
+
+# Keep absolute install destinations (e.g. Python site-packages) valid in packages.
+set(CPACK_SET_DESTDIR ON)
+set(CPACK_PACKAGING_INSTALL_PREFIX "/")
+
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+
+# Let CPack infer shared-library runtime deps automatically.
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+
+if(BUILD_PYTHON_PLUGINS AND NOT THUNDER_USE_LOCAL_PYTHON_FILES)
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3")
 endif()
+
+include(CPack)
