@@ -56,7 +56,7 @@ RUN git clone https://github.com/casadi/casadi.git casadi
 WORKDIR ${HOME}/casadi
 RUN mkdir -p build && \
 	cd build && \
-	cmake .. && \
+	cmake .. -DWITH_PYTHON=ON -DWITH_PYTHON3=ON && \
 	make && \
 	make install
 
@@ -101,6 +101,8 @@ RUN sudo chmod +x /entrypoint.sh ; sudo chown ${USERNAME} /entrypoint.sh \
     && echo "cd "${HOME} >> /entrypoint.sh \
     && echo 'exec bash -i -c $@' >> /entrypoint.sh \
     && cat /entrypoint.sh
+
+RUN pip install pyyaml
 
 # Clean image
 RUN sudo apt clean && sudo rm -rf /var/lib/apt/lists/*

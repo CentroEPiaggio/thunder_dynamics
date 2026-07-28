@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_dynamics VERSION 0.9.9)
+project(thunder_dynamics VERSION 1.0.0)
 
 include(GNUInstallDirs)
 
@@ -13,8 +13,9 @@ option(WITH_TESTS "Build C++ unit tests (GoogleTest)" OFF)
 # Set the output directories for compiled binaries and libraries
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-set (CMAKE_CXX_FLAGS "-g3 -lstdc++fs -std=c++17")
+set(CMAKE_CXX_FLAGS "-lstdc++fs -std=c++17")
 # set (CMAKE_CXX_FLAGS_DEBUG "-g3")
+set(CMAKE_BUILD_TYPE Release)
 
 # Include the "library" directory for header file search
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -94,6 +95,12 @@ if (CASADI_LIB_PATH)
   get_filename_component(CASADI_LIB_DIR ${CASADI_LIB_PATH} DIRECTORY)
   message(STATUS "CasADi library directory: ${CASADI_LIB_DIR}")
   set(THUNDER_PRIVATE_LIB_DIR "lib/thunder_dynamics")
+
+  # Make the test executables and shared library runnable from the build tree.
+  set_target_properties(library PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
+  )
+  set(CMAKE_BUILD_RPATH "${CASADI_LIB_DIR}")
 
   # Set rpath to include the CasADi library directory
   # set(CMAKE_INSTALL_RPATH "${CASADI_LIB_DIR}")
@@ -179,6 +186,15 @@ if(WITH_TESTS)
   add_test(NAME thunder_generator_smoke_test COMMAND thunder_generator_smoke_test)
   add_test(NAME thunder_tree_kinematics_test COMMAND thunder_tree_kinematics_test)
   add_test(NAME thunder_robot_comparison_gtest COMMAND thunder_robot_comparison_gtest)
+
+  set_tests_properties(
+    thunder_no_generation_test
+    thunder_generator_smoke_test
+    thunder_tree_kinematics_test
+    thunder_robot_comparison_gtest
+    PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${CASADI_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
+  )
 endif()
 
 # Set default install prefix if not specified
@@ -296,6 +312,7 @@ if(BUILD_PYTHON_PLUGINS)
   if(WITH_TESTS)
     add_test(NAME thunder_python_api_test
       COMMAND ${CMAKE_COMMAND} -E env
+        LD_LIBRARY_PATH=${CASADI_LIB_DIR}:$ENV{LD_LIBRARY_PATH}
         PYTHONPATH=${CMAKE_BINARY_DIR}:${CMAKE_SOURCE_DIR}/../../python
         ${Python_EXECUTABLE} -m unittest discover -s ${CMAKE_SOURCE_DIR}/tests/python -p test_*.py -v)
   endif()
