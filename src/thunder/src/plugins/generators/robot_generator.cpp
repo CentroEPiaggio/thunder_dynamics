@@ -94,7 +94,7 @@ namespace thunder_ns {
 
 			// Get home/.local/share directory
 			string home = std::getenv("HOME");
-			string template_path = "/usr/local/share/thunder_dynamics/templates/";
+			string template_path = "/usr/share/thunder_dynamics/templates/";
 
 			if (std::filesystem::is_directory(template_path)){
 				python_cmake_file = template_path + "CMakeLists.txt";
