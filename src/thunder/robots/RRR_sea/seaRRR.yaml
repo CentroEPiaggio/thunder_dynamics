@@ -1,135 +1,149 @@
-# -------------------------- #
-## ----- Robot Config ----- ##
-# -------------------------- #
-version: 0.2
+pipeline:
+  loaders:    ["kin_loader", "dyn_loader", "soft_loader"]
+  builders:   ["kin_builder", "dyn_builder", "soft_builder", "reg_builder"]
+  generators: ["robot_generator"]
+
+verdion: 1.0
 
 # --- Constants --- #
 PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
 
-# --- FLAGS --- #
-ELASTIC_MODEL: true        # use elastic model, requires elastic part, should be true or false, NOT 0 or 1
+############################################
+robot_generator:
+  gen_python:   false
+  gen_casadi:   false
+  gen_robot:    true
+  copy_gen:     false
 
-# --- Hyperparameters --- #
-num_joints: 3           # number of joints
-Dl_order: 2             # link friction order, 0 to not use link friction
+############################################
+kin_loader:
 
-# joint types: 'R': rotoidal, 'P': prismatic, 'R_SEA': SEA rotoidal, 'P_SEA': SEA prismatic
-type_joints: ['R_SEA', 'R', 'R']
+  # --- Hyperparameters --- #
+  num_joints: 3
 
-# DH convention: a -> alpha -> d -> theta
-kinematics:
-  symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
-  DH: [0,  0,      1, 0,
-       0,  *PI_2,  0, 0,
-       1,  0,      0, 0]
+  # joint types: 'R': rotoidal, 'P': prismatic
+  joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
 
-# gravity vector
-gravity:
-  symb: [0,0,0]
-  value: [0, 0, -9.81]
+  # joint positions (xyz-rpy)
+  kinematics:
+    joint1:
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0,0,1, 0,0,0]
+    joint2:
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [1,0,0, *PI_2,0,0]
+    joint3:
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [1,0,0, 0,0,0]
 
-# world to link_0
-Base_to_L0:
-  symb: [0,0,0, 0,0,0]
-  tr: [0, 0, 0]
-  ypr: [0, 0, 0]
+  # world to link_0
+  Base_to_L0:
+    symb: [0,0,0, 0,0,0]
+    xyz: [0, 0, 0]
+    ypr: [0, 0, 0]
 
-# Link_n to EE
-Ln_to_EE:
-  symb: [0,0,0, 0,0,0]
-  tr: [1, 0, 0]
-  ypr: [0, 0, *PI_2_neg]
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [0,0,0, 0,0,0]
+    xyz: [1, 0, 0]
+    ypr: [0, 0, *PI_2_neg]
 
+############################################
+dyn_loader:
 
-# --------------------------------- #
-## ----- Inertial Parameters ----- ##
-# --------------------------------- #
+  # link friction
+  Dl_order: 2
 
-# inertial parameters expressed w.r.t. DH frames
-dynamics:
-  link1:
-    inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]
+  # gravity vector
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
 
-  link2:
-    inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]
+  # inertial parameters expressed w.r.t. kinematic frames
+  dynamics:
+    link1:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
-  link3:
-    inertial:
-      symb: [0,0,0,0,0,0,0,0,0,0]
-      mass: 1.0
-      CoM_x: 1.0
-      CoM_y: 1.0
-      CoM_z: 1.0
-      Ixx: 1.0
-      Ixy: 1.0
-      Ixz: 1.0
-      Iyy: 1.0
-      Iyz: 1.0
-      Izz: 1.0
-    friction:
-      symb: [0,0]
-      Dl: [0.1, 0.01]
+    link2:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
+    link3:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
 
-# -------------------------------- #
-## ----- Elastic Parameters ----- ##
-# -------------------------------- #
+############################################
+soft_loader:
 
-elastic:
   K_order: 1
   D_order: 0
   Dm_order: 1
   joints:
-    joint1: 
-      # index: 0
-      K: [1.0]
+    joint1:
+      K: [10.0]
       D: []
       Dm: [0.1]
+      Mm: 1.0
       K_symb: [0]
-      D_symb: [0]
+      D_symb: []
       Dm_symb: [0]
+      Mm_symb: 0
     joint2:
-      # index: 1
-      K: [1.0, 0.0, 0.0]
-      D: [0.1, 0.0]
-      Dm: [0.1, 0.01]
-      K_symb: [0, 0, 0]
-      D_symb: [0, 0]
-      Dm_symb: [0, 0]
+      K: [10.0]
+      D: []
+      Dm: [0.1]
+      Mm: 1.0
+      K_symb: [0]
+      D_symb: []
+      Dm_symb: [0]
+      Mm_symb: 0
     joint3:
-      # index: 2
-      K: [1.0, 0.0, 0.0]
-      D: [0.1, 0.0]
-      Dm: [0.1, 0.01]
-      K_symb: [0, 0, 0]
-      D_symb: [0, 0]
-      Dm_symb: [0, 0]
+      K: [10.0]
+      D: []
+      Dm: [0.1]
+      Mm: 1.0
+      K_symb: [0]
+      D_symb: []
+      Dm_symb: [0]
+      Mm_symb: 0

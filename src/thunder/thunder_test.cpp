@@ -10,235 +10,249 @@
 #include <chrono>
 #include <yaml-cpp/yaml.h>
 
-#include "library/robot.h"
-#include "library/kinematics.h"
-#include "library/dynamics.h"
-#include "library/regressors.h"
+#include "robot.h"
+#include "plugin_manager.h"
 
-using namespace thunder_ns;
 using std::cout;
 using std::endl;
+using std::string;
+using std::vector;
+using namespace thunder_ns;
 
-// Eigen::Matrix3d hat(const Eigen::Vector3d v);
-// extern int compute_kinematics(Robot robot);
+
+
+std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
+
+	std::shared_ptr<Robot> robot;
+
+	try {
+		// Load YAML
+		YAML::Node config_node = YAML::LoadFile(file);
+
+		// Configure Manager
+		PluginManager manager;
+		manager.set_verbose(1);
+		manager.configure_pipeline(config_node, 1);
+
+		// Run Pipeline
+		robot = manager.execute(robot_name);
+
+	} catch (const std::exception& e) {
+		std::cerr << "[ERROR] " << e.what() << std::endl;
+	}
+
+	return robot;
+}
 
 int main(){
 
-	// std::string config_file = "../robots/RRR/RRR.yaml";
-	// std::string config_file = "../robots/franka/franka.yaml";
-	std::string config_file = "../robots/RRR_sea/seaRRR.yaml";
-	// std::string config_file = "../robots/ego/egoRightArm.yaml";
-	// std::string config_file = "../robots/frankaWrist/frankaWrist.yaml";
-	Robot robot = robot_from_file("testRobot", config_file, 1); 	// create robot and compute quantities
+	std::string robot_conf = "../robots/debug/franka.yaml";
 
-	// ---------------------------------------------------------------------------------//
-	// ------------------------------TEST CLASSES---------------------------------------//
-	// ---------------------------------------------------------------------------------//
+	// std::string robot2_conf = "../robots/debug/franka_dh.yaml";
+	std::string robot2_conf = "../robots/debug/franka_urdf.yaml";
 
-	int NJ = robot.get_numJoints();
-	int NEJ = robot.get_numElasticJoints();
-	int N_PARAM_DYN = robot.get_numParDYN();
-	int N_PARAM_REG = robot.get_numParREG();
-	int N_PARAM_DL = NJ*robot.get_Dl_order();
-	int N_PARAM_K = NEJ*robot.get_K_order();
-	int N_PARAM_D = NEJ*robot.get_D_order();
-	int N_PARAM_DM = NEJ*robot.get_Dm_order();
-	// int N_PARAM_ELA = robot.get_numParELA();
+	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
+	// std::string robot_conf = "../robots/debug/dynaarm.yaml";
+	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
+	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
+	// std::string robot_conf = "../robots/RRR_sea/seaRRR.yaml";
+	// std::string robot_conf = "../robots/ego/egoRightArm.yaml";
+	// std::string robot_conf = "../robots/frankaWrist/frankaWrist.yaml";
+	// std::string robot_conf = "../robots/testRobots/R9_noDynSymb.yaml";
 
-	/* Matrices declaration*/
-	Eigen::VectorXd par_DYN(N_PARAM_DYN);
-	Eigen::VectorXd par_REG(N_PARAM_REG);
-	Eigen::VectorXd par_Dl(N_PARAM_DL);
-	Eigen::VectorXd par_K(N_PARAM_K);
-	Eigen::VectorXd par_D(N_PARAM_D);
-	Eigen::VectorXd par_Dm(N_PARAM_DM);
-	// Eigen::VectorXd par_ELA(N_PARAM_ELA);
-	Eigen::MatrixXd Yr(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_M(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_C(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_G(NJ, N_PARAM_DYN);
-	Eigen::MatrixXd reg_Dl(NJ, N_PARAM_DL);
-	Eigen::MatrixXd reg_K(NEJ, N_PARAM_K);
-	Eigen::MatrixXd reg_D(NEJ, N_PARAM_D);
-	Eigen::MatrixXd reg_Dm(NEJ, N_PARAM_DM);
-	Eigen::MatrixXd M(NJ, NJ);
-	Eigen::MatrixXd C(NJ, NJ);
-	Eigen::MatrixXd C_std(NJ, NJ);
-	Eigen::MatrixXd G(NJ, 1);
-	Eigen::MatrixXd Dl(NJ, 1);
-	Eigen::MatrixXd K(NEJ, 1);
-	Eigen::MatrixXd D(NEJ, 1);
-	Eigen::MatrixXd Dm(NEJ, 1);
-	Eigen::MatrixXd Kin(4, 4);
-	Eigen::MatrixXd Jac(6, NJ);
+	auto robot = legacy_robot_from_file("robot", robot_conf);
+	auto robot2 = legacy_robot_from_file("robot", robot2_conf);
 
-	Eigen::MatrixXd tau_cmd_dyn(NJ, 1);
-	Eigen::MatrixXd tau_cmd_reg(NJ, 1);
-	Eigen::MatrixXd tau_cmd_regMat(NJ, 1);
 
-	// arguments
-	Eigen::VectorXd q(NJ), dq(NJ), dqr(NJ), ddqr(NJ);
-	Eigen::VectorXd x(NEJ), dx(NEJ), ddx(NEJ);
+	// - Properties - //
+	int NJ = robot->get<int>("numJoints");
+	int ndof = robot->get<int>("ndof");
+	int NJ_2 = robot2->get<int>("numJoints");
+	int ndof_2 = robot2->get<int>("ndof");
+	
+	string joint_ids;
+	cout << "### --- Robot 1 --- ###" << endl;
+	joint_ids = "{0";
+	for (int i=1; i<NJ; i++) joint_ids += ", " + std::to_string(i);
+	joint_ids += "}";
+	cout << "numJoints: " << NJ << endl;
+	cout << "ndof: " << ndof << endl;
+	cout << "jointsName: " << robot->properties["jointsName"].get_value_str() << endl;
+	cout << "joint_ids: " << joint_ids << endl;
+	cout << "jointsParent: " << robot->properties["jointsParent"].get_value_str() << endl;
+	cout << "jointsType: " << robot->properties["jointsType"].get_value_str() << endl;
+	cout << "jointsAvailable: " << robot->properties["jointsAvailable"].get_value_str() << endl;
+	cout << "jointsDerivatives: " << robot->properties["jointsDerivatives"].get_value_str() << endl;
+	cout << "jointsAxis: " << robot->properties["jointsAxis"].get_value_str() << endl;
+	cout << "jointsDimension: " << robot->properties["jointsDimension"].get_value_str() << endl;
+	cout << "### --- Robot 2 --- ###" << endl;
+	joint_ids = "{0";
+	for (int i=1; i<NJ_2; i++) joint_ids += ", " + std::to_string(i);
+	joint_ids += "}";
+	cout << "numJoints: " << NJ_2 << endl;
+	cout << "ndof: " << ndof_2 << endl;
+	cout << "jointsName: " << robot2->properties["jointsName"].get_value_str() << endl;
+	cout << "joint_ids: " << joint_ids << endl;
+	cout << "jointsParent: " << robot2->properties["jointsParent"].get_value_str() << endl;
+	cout << "jointsType: " << robot2->properties["jointsType"].get_value_str() << endl;
+	cout << "jointsAvailable: " << robot2->properties["jointsAvailable"].get_value_str() << endl;
+	cout << "jointsDerivatives: " << robot2->properties["jointsDerivatives"].get_value_str() << endl;
+	cout << "jointsAxis: " << robot2->properties["jointsAxis"].get_value_str() << endl;
+	cout << "jointsDimension: " << robot2->properties["jointsDimension"].get_value_str() << endl;
 
-	// get quantities
-	par_REG = robot.get_par_REG();
-	par_DYN = robot.get_par_DYN();
-	par_Dl = robot.get_arg("par_Dl");
-	par_K = robot.get_arg("par_K");
-	par_D = robot.get_arg("par_D");
-	par_Dm = robot.get_arg("par_Dm");
-	Eigen::VectorXd par_Mm = robot.get_arg("par_Mm");
-	Eigen::MatrixXd DHtable = robot.get("DHtable");
-	cout<<"DHtable:"<<endl<<DHtable.transpose()<<endl<<endl;
-	cout<<"par_DYN:"<<endl<<par_DYN.transpose()<<endl<<endl;
-	cout<<"par_REG:"<<endl<<par_REG.transpose()<<endl<<endl;
-	cout<<"par_Dl:"<<endl<<par_Dl.transpose()<<endl<<endl;
-	cout<<"par_K:"<<endl<<par_K.transpose()<<endl<<endl;
-	cout<<"par_D:"<<endl<<par_D.transpose()<<endl<<endl;
-	cout<<"par_Dm:"<<endl<<par_Dm.transpose()<<endl<<endl;
-	cout<<"par_Mm:"<<endl<<par_Mm.transpose()<<endl<<endl;
-	// // test change par
-	// robot.set_par_REG(par_REG);
-	// par_DYN = robot.get_par_DYN();
-	// cout<<"par_diff:"<<endl<<(par_REG-robot.get_par_REG()).transpose()<<endl<<endl;
+	
+	// NEJ = robot->get<int>("numSoftJoints");
+	// N_PARAM_K = NEJ*robot->get<int>("K_order");
+	// N_PARAM_D = NEJ*robot->get<int>("D_order");
+	// N_PARAM_DM = NEJ*robot->get<int>("Dm_order");
 
-	/* Test */
-	q.setOnes(); // setRandom();
-	dq.setZero(); // setRandom();
-	dqr.setZero(); // setRandom();
-	ddqr.setZero(); // setRandom();
-	x.setZero(); // = 2*x.setZero();// = Eigen::Vector<double,NJ>::Random();
-	dx.setZero(); // = 2*dx.setZero();// = Eigen::Vector<double,NJ>::Random();
-	ddx.setZero(); // = 2*ddx.setZero();// = Eigen::Vector<double,NJ>::Random();
+	// - set variables - //
+	robot->set("q", std::vector<double>(ndof, 1.0));
+	robot->set("dq", std::vector<double>(ndof, 1.0));
+	robot->set("dqr", std::vector<double>(ndof, 1.0));
+	robot->set("ddqr", std::vector<double>(ndof, 1.0));
+	// robot->set("x", std::vector<double>(NEJ,0));
+	// robot->set("dx", std::vector<double>(NEJ,0));
+	// robot->set("ddxr", std::vector<double>(NEJ,0));
+	robot2->set("q", std::vector<double>(ndof, 1.0));
+	robot2->set("dq", std::vector<double>(ndof, 1.0));
+	robot2->set("dqr", std::vector<double>(ndof, 1.0));
+	robot2->set("ddqr", std::vector<double>(ndof, 1.0));
 
-	robot.set_q(q);
-	robot.set_dq(dq);
-	robot.set_dqr(dqr);
-	// robot.set_ddq(ddqr);
-	robot.set_ddqr(ddqr);
-	robot.set_x(x);
-	robot.set_dx(dx);
-	robot.set_ddx(ddx);
-	// cout<<"ddqr set"<<endl;
-	// robot.set_par_DYN(par_DYN);
-	// cout<<"par_DYN set"<<endl<<robot.get_par_DYN()<<endl<<endl;
-	// cout<<"par_REG set"<<endl<<robot.get_par_REG()<<endl<<endl;
-	// robot.set_par_REG(par_REG);
-	// cout<<"par_DYN set"<<endl<<robot.get_par_DYN()<<endl<<endl;
-	// cout<<"par_REG set"<<endl<<robot.get_par_REG()<<endl<<endl;
-
-	Kin = robot.get("T_0_ee");
-	cout<<endl<<"Kin_ee\n"<<Kin<<endl;
-	Kin = robot.get("T_0_0");
-	cout<<endl<<"Kin0\n"<<Kin<<endl;
-	Kin = robot.get("T_0_1");
-	cout<<endl<<"Kin1\n"<<Kin<<endl;
-	Kin = robot.get("T_0_2");
-	cout<<endl<<"Kin2\n"<<Kin<<endl;
-	Kin = robot.get("T_0_3");
-	cout<<endl<<"Kin3\n"<<Kin<<endl;
-
-	Jac = robot.get("J_ee");
-	cout<<endl<<"Jac\n"<<Jac<<endl;
-	Jac = robot.get("J_1");
-	cout<<endl<<"Jac1\n"<<Jac<<endl;
-	Jac = robot.get("J_2");
-	cout<<endl<<"Jac2\n"<<Jac<<endl;
-	Jac = robot.get("J_3");
-	cout<<endl<<"Jac3\n"<<Jac<<endl;
-
-	M = robot.get("M");
-	cout<<endl<<"M\n"<<M<<endl;
-	C = robot.get("C");
-	cout<<endl<<"C\n"<<C<<endl;
-	C_std = robot.get("C_std");
-	cout<<endl<<"C_std\n"<<C_std<<endl;
-	G = robot.get("G");
-	cout<<endl<<"G\n"<<G<<endl;
-	if (robot.get_Dl_order()){
-		Dl = robot.get("dl");
-		cout<<endl<<"D_link\n"<<Dl<<endl;
-		reg_Dl = robot.get("reg_dl");
-		cout<<endl<<"reg_Dl\n"<<reg_Dl<<endl;
+	// - parameters - //
+	cout << "par_KIN:" << endl << robot->get("par_KIN") << endl << endl;
+	cout << "par_DYN:" << endl << robot->get("par_DYN") << endl << endl;
+	cout << "par_REG:" << endl << robot->get("par_REG") << endl << endl;
+	cout << "par_KIN_2:" << endl << robot2->get("par_KIN") << endl << endl;
+	cout << "par_DYN_2:" << endl << robot2->get("par_DYN") << endl << endl;
+	cout << "par_REG_2:" << endl << robot2->get("par_REG") << endl << endl;
+	// cout << "par_DYN_diff:" << endl << robot->get("par_DYN") - robot2->get("par_DYN") << endl << endl;
+	// cout << "dyn2reg:" << endl << robot->get("dyn2reg") << endl << endl;
+	// cout << "reg2dyn:" << endl << robot->get("reg2dyn") << endl << endl;
+	if (robot->get<int>("Dl_order")){
+		cout << "par_Dl:" << endl << robot->get("par_Dl") << endl << endl;
+		cout << "par_Dl symb:" << endl << robot->get_model("par_Dl") << endl << endl;
 	} else {
-		Dl.setZero();
+		cout<<endl<<"Robot have no Dl_order"<<endl;
 	}
-	if (robot.get_ELASTIC()){
-		K = robot.get("k");
-		cout<<endl<<"K\n"<<K<<endl;
-		D = robot.get("d");
-		cout<<endl<<"D_coupling\n"<<D<<endl;
-		Dm = robot.get("dm");
-		cout<<endl<<"D_motor\n"<<Dm<<endl;
-		Eigen::MatrixXd Mm = robot.get("Mm");
-		cout<<endl<<"M_motor\n"<<Mm<<endl;
-		reg_K = robot.get("reg_k");
-		reg_D = robot.get("reg_d");
-		reg_Dm = robot.get("reg_dm");
-		Eigen::MatrixXd reg_Mm = robot.get("reg_Mm");
-		cout<<endl<<"reg_K\n"<<reg_K<<endl;
-		cout<<endl<<"reg_Dm\n"<<reg_Dm<<endl;
-		cout<<endl<<"reg_D\n"<<reg_D<<endl;
-		cout<<endl<<"reg_Mm\n"<<reg_Mm<<endl;
+	// cout << "diff par_KIN:" << endl << robot->get("par_KIN") - robot2->get("par_KIN") << endl << endl;
+	// cout << "diff par_DYN:" << endl << robot->get("par_DYN") - robot2->get("par_DYN") << endl << endl;
+	// cout << "diff par_REG:" << endl << robot->get("par_REG") - robot2->get("par_REG") << endl << endl;
+	
+	cout << "par_gravity: " << endl << robot->get_model("par_gravity") << endl << endl;
+	cout << "par_gravity_2: " << endl << robot2->get_model("par_gravity") << endl << endl;
+
+	// - Transforms - //
+	for (int i=0; i<NJ-1; i++){
+		auto fun = robot->get("T_w_"+std::to_string(i));
+		cout << endl << "T_w_"+std::to_string(i)+": " << fun << endl << endl;
+		fun = robot2->get("T_w_"+std::to_string(i));
+		cout << endl << "T_w_2_"+std::to_string(i)+": " << fun << endl << endl;
+	}
+	// - Jacobians - //
+	for (int i=0; i<NJ-1; i++){
+		auto fun = robot->get("J_"+std::to_string(i));
+		cout << endl << "J_"+std::to_string(i)+": " << fun << endl << endl;
+		fun = robot2->get("J_"+std::to_string(i));
+		cout << endl << "J_2_"+std::to_string(i)+": " << fun << endl << endl;
 	}
 
-	Yr = robot.get("Yr");
-	reg_M = robot.get("reg_M");
-	reg_C = robot.get("reg_C");
-	reg_G = robot.get("reg_G");
+	// - dynamic matrices - //
+	cout << "M: " << robot->get("M") << endl << endl;
+	cout << "M_2: " << robot2->get("M") << endl << endl;
+	cout << "C: " << robot->get("C") << endl << endl;
+	cout << "C_std: " << robot->get("C_std") << endl << endl;
+	cout << "G: " << robot->get("G") << endl << endl;
+	cout << "G_2: " << robot2->get("G") << endl << endl;
+	if (robot->get<int>("Dl_order")){
+		cout << "dl: " << robot->get("dl") << endl << endl;
+		cout << "reg_dl: " << robot->get("reg_dl") << endl << endl;
+	} else {
+		cout<<endl<<"Robot have no Dl_order"<<endl;
+	}
+	if (robot->functions.count("Yr")) {
+		cout << "reg_M: " << robot->get("reg_M") << endl << endl;
+		cout << "reg_C: " << robot->get("reg_C") << endl << endl;
+		cout << "reg_G: " << robot->get("reg_G") << endl << endl;
+		cout << "Yr: " << robot->get("Yr") << endl << endl;
+	} else {
+		cout<<endl<<"Robot have no regressors"<<endl;
+	}
+	
 
-	// cout<<endl<<"Yr\n"<<Yr<<endl;
+	// if (robot->get<bool>("ELASTIC")){
+	// 	cout << "k: " << robot->get("k") << endl << endl;
+	// 	cout << "d: " << robot->get("d") << endl << endl;
+	// 	cout << "dm: " << robot->get("dm") << endl << endl;
+	// 	cout << "Mm: " << robot->get("Mm") << endl << endl;
+	// 	cout << "reg_k: " << robot->get("reg_k") << endl << endl;
+	// 	cout << "reg_D: " << robot->get("reg_D") << endl << endl;
+	// 	cout << "reg_dm: " << robot->get("reg_dm") << endl << endl;
+	// 	cout << "reg_Mm: " << robot->get("reg_Mm") << endl << endl;
+	// }
 
-	tau_cmd_dyn = M*ddqr + C*dqr + G;
-	tau_cmd_reg = Yr*par_REG;
-	// tau_cmd_regMat = (reg_M + reg_C + reg_G)*par_REG + reg_Dl*par_Dl;
+	auto M = robot->get("M");
+	auto C = robot->get("C");
+	auto G = robot->get("G");
+	auto tau_cmd_dyn = mtimes(M,robot->get("ddqr")) + mtimes(C,robot->get("dqr")) + G;
+	cout << endl << "tau_cmd_dyn:\n" << tau_cmd_dyn << endl;
+	// auto M_2 = robot2->get("M");
+	// auto C_2 = robot2->get("C");
+	// auto G_2 = robot2->get("G");
+	// auto tau_cmd_dyn_2 = mtimes(M_2,robot2->get("ddqr")) + mtimes(C_2,robot2->get("dqr")) + G_2;
+	// cout << endl << "tau_2_diff:\n" << tau_cmd_dyn - tau_cmd_dyn_2 << endl;
 
-	cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl<<endl;
+	if (robot->functions.count("Yr")) {
+		auto reg_M = robot->get("reg_M");
+		auto reg_C = robot->get("reg_C");
+		auto reg_G = robot->get("reg_G");
+		auto Yr = robot->get("Yr");
+		auto tau_cmd_reg = mtimes(Yr, robot->get("par_REG"));
+		auto tau_cmd_regMat = mtimes(reg_M + reg_C + reg_G, robot->get("par_REG")); // + mtimes(reg_Dl, par_Dl);
+		cout << endl << "tau_cmd_reg:\n" << tau_cmd_reg << endl;
+		cout << endl << "tau_cmd_regMat:\n" << tau_cmd_regMat << endl;
+		cout << endl << "err_dyn_reg:\n" << tau_cmd_dyn - tau_cmd_reg << endl;
+	}
+	
+	// // cout << "q0_dist: " << robot->get("q0_dist") << endl<<endl;
 
-	// cout << "q0_dist: " << robot.get("q0_dist") << endl<<endl;
+	// // auto par_error = robot->model["G"] - mtimes(robot->model["reg_G"], robot->model["par_REG"]);
+	// // cout<<"par_error: \n" << par_error << endl<<endl;
+	// // cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
 
-	// auto par_error = robot.model["G"] - mtimes(robot.model["reg_G"], robot.model["par_REG"]);
-	// cout<<"par_error: \n" << par_error << endl<<endl;
-	// cout<<endl<<"tau_cmd_regMat:\n"<<tau_cmd_regMat<<endl<<endl;
+	// // - symbolic quantities - //
+	// // cout << "par_DYN: " << robot->model["par_DYN"] << endl;
+	// // cout << "M_symb: " << robot->model["M"] << endl;
+	// // cout << "par_world2L0: " << robot->model["par_world2L0"] << endl<<endl;
+	// // cout << "par_Ln2EE: " << robot->model["par_Ln2EE"] << endl<<endl;
 
-	// - symbolic quantities - //
-	// cout << "par_DYN: " << robot.model["par_DYN"] << endl;
-	// cout << "M_symb: " << robot.model["M"] << endl;
-	// cout << "world2L0: " << robot.model["world2L0"] << endl<<endl;
-	// cout << "Ln2EE: " << robot.model["Ln2EE"] << endl<<endl;
-
-	// - kinematic regressors - //
-	// // Eigen::VectorXd wrench(6);
+	// // - kinematic regressors - //
+	// // casadi::DM wrench(6);
 	// // wrench << 1, 1, 1, 1, 1, 1;
-	// // robot.set_arg("w", wrench);
-	// auto reg_omega = robot.get("reg_Jdq");
-	// // auto reg_tau = robot.get("reg_JTw");
-	// // // auto reg_omega = robot.model["reg_Jdq"];
-	// // // auto reg_tau = robot.model["reg_JTw"];
+	// // robot->set_arg("w", wrench);
+	// auto reg_omega = robot->get("reg_Jdq");
+	// // auto reg_tau = robot->get("reg_JTw");
+	// // // auto reg_omega = robot->model["reg_Jdq"];
+	// // // auto reg_tau = robot->model["reg_JTw"];
 	// // cout << "reg_omega: " << endl << reg_omega << endl<<endl;
-	// auto par_dh = robot.get_arg("DHtable");
-	// auto par_base = robot.get_arg("world2L0");
-	// auto par_ee = robot.get_arg("Ln2EE");
-	// Eigen::VectorXd par(20,1);
-	// par << par_dh, par_base, par_ee;
-	// Eigen::VectorXd omega_reg = reg_omega * par;
-	// Eigen::VectorXd omega_kin = robot.get("J_ee")*dq;
-	// cout << "omega_reg: " << omega_reg.transpose() << endl;
-	// cout << "omega_kin: " << omega_kin.transpose() << endl;
+	// casadi::DM omega_reg = reg_omega * par;
+	// casadi::DM omega_kin = robot->get("J_ee")*dq;
+	// cout << "omega_reg: " << omega_reg.T() << endl;
+	// cout << "omega_kin: " << omega_kin.T() << endl;
 	// cout << "diff: " << omega_reg - omega_kin << endl;
 	// // cout << "reg_tau: " << endl << reg_tau << endl<<endl;
 
-	// // - Dynamic derivatives - //
-	// auto M_dot = robot.get("M_dot");
-	// auto M_ddot = robot.get("M_ddot");
-	// cout << "M_dot: " << endl << M_dot << endl<<endl;
-	// cout << "M_ddot: " << endl << M_ddot << endl<<endl;
+	// // // - Dynamic derivatives - //
+	// // auto M_dot = robot->get("M_dot");
+	// // auto M_ddot = robot->get("M_ddot");
+	// // cout << "M_dot: " << endl << M_dot << endl<<endl;
+	// // cout << "M_ddot: " << endl << M_ddot << endl<<endl;
 
-	// - save parameters - //
-	// robot.save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"world2L0", "Ln2EE"});
-	// robot.load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
-	// cout << "world2L0: " << robot.get_arg("world2L0") << endl<<endl;
-	// cout << "Ln2EE: " << robot.get_arg("Ln2EE") << endl<<endl;
+	// // - save parameters - //
+	// // robot->save_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {"par_world2L0", "par_Ln2EE"});
+	// // robot->load_par("../robots/RRR/RRR_generatedFiles/saved_par.yaml", {});
+	// // cout << "par_world2L0: " << robot->get_arg("par_world2L0") << endl<<endl;
+	// // cout << "par_Ln2EE: " << robot->get_arg("par_Ln2EE") << endl<<endl;
 
 	return 0;
 }

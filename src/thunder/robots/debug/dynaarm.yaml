@@ -1,0 +1,42 @@
+pipeline:
+  loaders:    ["urdf_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  generators: ["robot_generator"]
+
+urdf_loader:
+  # urdf_path: "dynaarm.urdf"
+  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/dynaarm.urdf"
+  base_link: "base"
+  ee_link: "wrist_2"
+  # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
+  # Can also be overridden per-link using a mask like:
+  # symbolic_kinematics:
+  #   base: [1, 1, 1, 1, 1, 1]
+  symbolic_kinematics: true
+  # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
+  # You can also override per-link, e.g.:
+  # symbolic_dynamics:
+  #   base: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+  symbolic_dynamics: true
+
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
+
+  # world to link_0
+  Base_to_L0:
+    symb: [0,0,0, 0,0,0]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  # Link_n to EE
+  Ln_to_EE:
+    symb: [0,0,0, 0,0,0]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+robot_generator:
+  gen_python:   false
+  gen_casadi:   true
+  gen_robot:    true
+  copy_gen:     true

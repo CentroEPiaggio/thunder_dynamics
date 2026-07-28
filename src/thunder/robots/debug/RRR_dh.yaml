@@ -1,0 +1,125 @@
+pipeline:
+  loaders:    ["dh_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  generators: ["robot_generator"]
+
+version: 1.0
+
+# --- Constants --- #
+PI_2: &PI_2           1.5707963267948966
+PI_2_neg: &PI_2_neg  -1.5707963267948966
+
+############################################
+robot_generator:
+  gen_python:   false
+  gen_casadi:   false
+  gen_robot:    true
+  copy_gen:     false
+
+############################################
+dh_loader:
+
+  # --- Hyperparameters --- #
+  num_joints: 3
+
+  # joint types: 'R': rotoidal, 'P': prismatic
+  joints_type: ['R', 'R', 'R']
+
+  # DH convention: a -> alpha -> d -> theta
+  DH:
+    symb: [0,0,0,0, 0,0,0,0, 0,0,0,0]
+    value: [0,   0,      1, 0,
+            1,  *PI_2,   0, 0,
+            1,   0,      0, 0]
+
+  # world to link_0
+  Base_to_L0:
+    symb: [1,1,1, 1,1,1]
+    xyz: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  # Link_n to EE
+  Ln_to_EE:
+    name: "ee"
+    symb: [1,1,1, 1,1,1]
+    xyz: [1, 0, 0]
+    ypr: [0, 0, *PI_2_neg]
+
+############################################
+dyn_loader:
+
+  # link friction
+  Dl_order: 2
+
+  # gravity vector
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
+
+  # inertial parameters expressed w.r.t. DH frames
+  dynamics:
+    link1:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    link2:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    link3:
+      inertial:
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    ee:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 0.0
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.0
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.0
+        Iyz: 0.0
+        Izz: 0.0
+
