@@ -6,7 +6,7 @@ pipeline:
 
 urdf_loader:
   # urdf_path: "franka.urdf"
-  urdf_path: "/home/thunder_dev/thunder_dynamics/src/thunder/robots/debug/franka.urdf"
+  urdf_path: "franka.urdf"
   base_link: "panda_link0"
   ee_link: "panda_link8"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
@@ -17,7 +17,7 @@ urdf_loader:
   #   panda_link1:
   #     xyz: [1, 1, 1]
   #     rpy: [0, 0, 0]
-  symbolic_kinematics: true
+  symbolic_kinematics: false
   # Set to false to force numeric-only dynamics parameters (par_DYN), otherwise symbolic.
   # Can also be overridden per-link via a mask of 10 values (mass, CoM, I).
   # Example:
@@ -36,18 +36,17 @@ urdf_loader:
 
   # world to link_0
   Base_to_L0:
-    symb: [0,0,0, 0,0,0]
+    symb: [1,1,1, 1,1,1]
     tr: [0, 0, 0]
     ypr: [0, 0, 0]
 
   # Link_n to EE
   Ln_to_EE:
-    symb: [0,0,0, 0,0,0]
+    symb: [1,1,1, 1,1,1]
     tr: [0, 0, 0]
     ypr: [0, 0, 0]
 
 robot_generator:
   gen_python:   false
-  gen_casadi:   true
+  gen_casadi:   false
   gen_robot:    true
-  copy_gen:     true

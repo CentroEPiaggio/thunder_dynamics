@@ -46,26 +46,29 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 
 int main(){
 
+	std::string robot_conf = "../robots/debug/franka.yaml";
+
+	// std::string robot2_conf = "../robots/debug/franka_dh.yaml";
+	std::string robot2_conf = "../robots/debug/franka_urdf.yaml";
+
 	// std::string robot_conf = "../robots/debug/RRR_dh.yaml";
-	std::string franka_urdf_conf = "../robots/debug/franka_urdf.yaml";
 	// std::string robot_conf = "../robots/debug/dynaarm.yaml";
 	// std::string robot_conf = "../robots/debug/serialRRR.yaml";
 	// std::string robot_conf = "../robots/debug/treeRRR.yaml";
-	std::string franka_dh_conf = "../robots/debug/franka_dh.yaml";
-	std::string franka_conf = "../robots/debug/franka.yaml";
 	// std::string robot_conf = "../robots/RRR_sea/seaRRR.yaml";
 	// std::string robot_conf = "../robots/ego/egoRightArm.yaml";
 	// std::string robot_conf = "../robots/frankaWrist/frankaWrist.yaml";
 	// std::string robot_conf = "../robots/testRobots/R9_noDynSymb.yaml";
-	auto robot = legacy_robot_from_file("robot", franka_conf);
-	auto robot_urdf = legacy_robot_from_file("robot", franka_urdf_conf);
+
+	auto robot = legacy_robot_from_file("robot", robot_conf);
+	auto robot2 = legacy_robot_from_file("robot", robot2_conf);
 
 
 	// - Properties - //
 	int NJ = robot->get<int>("numJoints");
 	int ndof = robot->get<int>("ndof");
-	int NJ_urdf = robot_urdf->get<int>("numJoints");
-	int ndof_urdf = robot_urdf->get<int>("ndof");
+	int NJ_2 = robot2->get<int>("numJoints");
+	int ndof_2 = robot2->get<int>("ndof");
 	
 	string joint_ids;
 	cout << "### --- Robot 1 --- ###" << endl;
@@ -84,18 +87,18 @@ int main(){
 	cout << "jointsDimension: " << robot->properties["jointsDimension"].get_value_str() << endl;
 	cout << "### --- Robot 2 --- ###" << endl;
 	joint_ids = "{0";
-	for (int i=1; i<NJ_urdf; i++) joint_ids += ", " + std::to_string(i);
+	for (int i=1; i<NJ_2; i++) joint_ids += ", " + std::to_string(i);
 	joint_ids += "}";
-	cout << "numJoints: " << NJ_urdf << endl;
-	cout << "ndof: " << ndof_urdf << endl;
-	cout << "jointsName: " << robot_urdf->properties["jointsName"].get_value_str() << endl;
+	cout << "numJoints: " << NJ_2 << endl;
+	cout << "ndof: " << ndof_2 << endl;
+	cout << "jointsName: " << robot2->properties["jointsName"].get_value_str() << endl;
 	cout << "joint_ids: " << joint_ids << endl;
-	cout << "jointsParent: " << robot_urdf->properties["jointsParent"].get_value_str() << endl;
-	cout << "jointsType: " << robot_urdf->properties["jointsType"].get_value_str() << endl;
-	cout << "jointsAvailable: " << robot_urdf->properties["jointsAvailable"].get_value_str() << endl;
-	cout << "jointsDerivatives: " << robot_urdf->properties["jointsDerivatives"].get_value_str() << endl;
-	cout << "jointsAxis: " << robot_urdf->properties["jointsAxis"].get_value_str() << endl;
-	cout << "jointsDimension: " << robot_urdf->properties["jointsDimension"].get_value_str() << endl;
+	cout << "jointsParent: " << robot2->properties["jointsParent"].get_value_str() << endl;
+	cout << "jointsType: " << robot2->properties["jointsType"].get_value_str() << endl;
+	cout << "jointsAvailable: " << robot2->properties["jointsAvailable"].get_value_str() << endl;
+	cout << "jointsDerivatives: " << robot2->properties["jointsDerivatives"].get_value_str() << endl;
+	cout << "jointsAxis: " << robot2->properties["jointsAxis"].get_value_str() << endl;
+	cout << "jointsDimension: " << robot2->properties["jointsDimension"].get_value_str() << endl;
 
 	
 	// NEJ = robot->get<int>("numSoftJoints");
@@ -111,19 +114,19 @@ int main(){
 	// robot->set("x", std::vector<double>(NEJ,0));
 	// robot->set("dx", std::vector<double>(NEJ,0));
 	// robot->set("ddxr", std::vector<double>(NEJ,0));
-	robot_urdf->set("q", std::vector<double>(ndof, 1.0));
-	robot_urdf->set("dq", std::vector<double>(ndof, 1.0));
-	robot_urdf->set("dqr", std::vector<double>(ndof, 1.0));
-	robot_urdf->set("ddqr", std::vector<double>(ndof, 1.0));
+	robot2->set("q", std::vector<double>(ndof, 1.0));
+	robot2->set("dq", std::vector<double>(ndof, 1.0));
+	robot2->set("dqr", std::vector<double>(ndof, 1.0));
+	robot2->set("ddqr", std::vector<double>(ndof, 1.0));
 
 	// - parameters - //
 	cout << "par_KIN:" << endl << robot->get("par_KIN") << endl << endl;
 	cout << "par_DYN:" << endl << robot->get("par_DYN") << endl << endl;
 	cout << "par_REG:" << endl << robot->get("par_REG") << endl << endl;
-	cout << "par_KIN_urdf:" << endl << robot_urdf->get("par_KIN") << endl << endl;
-	cout << "par_DYN_urdf:" << endl << robot_urdf->get("par_DYN") << endl << endl;
-	cout << "par_REG_urdf:" << endl << robot_urdf->get("par_REG") << endl << endl;
-	// cout << "par_DYN_diff:" << endl << robot->get("par_DYN") - robot_urdf->get("par_DYN") << endl << endl;
+	cout << "par_KIN_2:" << endl << robot2->get("par_KIN") << endl << endl;
+	cout << "par_DYN_2:" << endl << robot2->get("par_DYN") << endl << endl;
+	cout << "par_REG_2:" << endl << robot2->get("par_REG") << endl << endl;
+	// cout << "par_DYN_diff:" << endl << robot->get("par_DYN") - robot2->get("par_DYN") << endl << endl;
 	// cout << "dyn2reg:" << endl << robot->get("dyn2reg") << endl << endl;
 	// cout << "reg2dyn:" << endl << robot->get("reg2dyn") << endl << endl;
 	if (robot->get<int>("Dl_order")){
@@ -132,35 +135,35 @@ int main(){
 	} else {
 		cout<<endl<<"Robot have no Dl_order"<<endl;
 	}
-	// cout << "diff par_KIN:" << endl << robot->get("par_KIN") - robot_urdf->get("par_KIN") << endl << endl;
-	// cout << "diff par_DYN:" << endl << robot->get("par_DYN") - robot_urdf->get("par_DYN") << endl << endl;
-	// cout << "diff par_REG:" << endl << robot->get("par_REG") - robot_urdf->get("par_REG") << endl << endl;
+	// cout << "diff par_KIN:" << endl << robot->get("par_KIN") - robot2->get("par_KIN") << endl << endl;
+	// cout << "diff par_DYN:" << endl << robot->get("par_DYN") - robot2->get("par_DYN") << endl << endl;
+	// cout << "diff par_REG:" << endl << robot->get("par_REG") - robot2->get("par_REG") << endl << endl;
 	
 	cout << "par_gravity: " << endl << robot->get_model("par_gravity") << endl << endl;
-	cout << "par_gravity_urdf: " << endl << robot_urdf->get_model("par_gravity") << endl << endl;
+	cout << "par_gravity_2: " << endl << robot2->get_model("par_gravity") << endl << endl;
 
 	// - Transforms - //
 	for (int i=0; i<NJ-1; i++){
 		auto fun = robot->get("T_w_"+std::to_string(i));
 		cout << endl << "T_w_"+std::to_string(i)+": " << fun << endl << endl;
-		fun = robot_urdf->get("T_w_"+std::to_string(i));
-		cout << endl << "T_w_urdf_"+std::to_string(i)+": " << fun << endl << endl;
+		fun = robot2->get("T_w_"+std::to_string(i));
+		cout << endl << "T_w_2_"+std::to_string(i)+": " << fun << endl << endl;
 	}
 	// - Jacobians - //
 	for (int i=0; i<NJ-1; i++){
 		auto fun = robot->get("J_"+std::to_string(i));
 		cout << endl << "J_"+std::to_string(i)+": " << fun << endl << endl;
-		fun = robot_urdf->get("J_"+std::to_string(i));
-		cout << endl << "J_urdf_"+std::to_string(i)+": " << fun << endl << endl;
+		fun = robot2->get("J_"+std::to_string(i));
+		cout << endl << "J_2_"+std::to_string(i)+": " << fun << endl << endl;
 	}
 
 	// - dynamic matrices - //
 	cout << "M: " << robot->get("M") << endl << endl;
-	cout << "M_urdf: " << robot_urdf->get("M") << endl << endl;
+	cout << "M_2: " << robot2->get("M") << endl << endl;
 	cout << "C: " << robot->get("C") << endl << endl;
 	cout << "C_std: " << robot->get("C_std") << endl << endl;
 	cout << "G: " << robot->get("G") << endl << endl;
-	cout << "G_urdf: " << robot_urdf->get("G") << endl << endl;
+	cout << "G_2: " << robot2->get("G") << endl << endl;
 	if (robot->get<int>("Dl_order")){
 		cout << "dl: " << robot->get("dl") << endl << endl;
 		cout << "reg_dl: " << robot->get("reg_dl") << endl << endl;
@@ -193,11 +196,11 @@ int main(){
 	auto G = robot->get("G");
 	auto tau_cmd_dyn = mtimes(M,robot->get("ddqr")) + mtimes(C,robot->get("dqr")) + G;
 	cout << endl << "tau_cmd_dyn:\n" << tau_cmd_dyn << endl;
-	// auto M_urdf = robot_urdf->get("M");
-	// auto C_urdf = robot_urdf->get("C");
-	// auto G_urdf = robot_urdf->get("G");
-	// auto tau_cmd_dyn_urdf = mtimes(M_urdf,robot_urdf->get("ddqr")) + mtimes(C_urdf,robot_urdf->get("dqr")) + G_urdf;
-	// cout << endl << "tau_urdf_diff:\n" << tau_cmd_dyn - tau_cmd_dyn_urdf << endl;
+	// auto M_2 = robot2->get("M");
+	// auto C_2 = robot2->get("C");
+	// auto G_2 = robot2->get("G");
+	// auto tau_cmd_dyn_2 = mtimes(M_2,robot2->get("ddqr")) + mtimes(C_2,robot2->get("dqr")) + G_2;
+	// cout << endl << "tau_2_diff:\n" << tau_cmd_dyn - tau_cmd_dyn_2 << endl;
 
 	if (robot->functions.count("Yr")) {
 		auto reg_M = robot->get("reg_M");

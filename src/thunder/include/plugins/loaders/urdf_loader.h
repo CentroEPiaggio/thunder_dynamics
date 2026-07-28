@@ -41,6 +41,15 @@ namespace thunder_ns {
 			void add_joint(std::shared_ptr<urdf::Joint> joint);
 			bool chain_has_link(string link_name);
 			void add_chain_from(int parent, std::shared_ptr<urdf::Link> link);
+			void parse_frame_parameterization(
+				std::shared_ptr<Robot> robot,
+				const YAML::Node& frame_node,
+				const std::string& frame_prefix,
+				const std::vector<double>& default_xyzrpy,
+				const std::vector<short>& default_symb,
+				casadi::SX& frame_expr,
+				std::vector<std::string>& frame_args,
+				const std::string& description_prefix);
 
 		public:
 			UrdfLoader() : BaseLoader("URDF Loader", "Load a robot from URDF file.") {}

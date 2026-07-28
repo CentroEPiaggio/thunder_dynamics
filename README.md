@@ -448,6 +448,80 @@ You can also extract values from the yaml config file that is stored in `Robot::
 
 For a complete example, look for the files `userDefined.h/cpp`.
 
+## Orientation parameterization in YAML
+
+Thunder internally uses 6D frames in the form `[x, y, z, roll, pitch, yaw]` (RPY order for rotations).
+To define a frame in YAML, the loaders support the following equivalent input styles:
+
+* `xyzrpy: [x, y, z, r, p, y]`
+* `xyz: [x, y, z]` with `rpy: [r, p, y]`
+* `xyz: [x, y, z]` with `ypr: [y, p, r]` (automatically converted to RPY internally)
+
+You can also control symbolic selectivity with `symb: [sx, sy, sz, sr, sp, sy]`.
+
+### kin_loader
+
+In `kin_loader`, each entry of `kinematics` can use any of the three parameterizations above:
+
+```yaml
+kin_loader:
+  kinematics:
+    base:
+      parent: world
+      joint_type: FIXED
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, 0, 0, 0, 0, 0]
+    link1:
+      parent: base
+      joint_type: R
+      symb: [1,1,1,1,1,1]
+      xyz: [0, 0, 0.333]
+      ypr: [0, 0, 1.5708]
+```
+
+### dh_loader
+
+In `dh_loader`, frame offsets `Base_to_L0` and `Ln_to_EE` accept the same orientation parameterization options:
+
+```yaml
+dh_loader:
+  Base_to_L0:
+    symb: [0,0,0,0,0,0]
+    xyz: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  Ln_to_EE:
+    symb: [1,1,1,1,1,1]
+    xyzrpy: [0, 0, 0.107, 0, 0, 1.0]
+```
+
+### urdf_loader
+
+In `urdf_loader` there are two sources of kinematic frame data:
+
+* URDF joint `<origin>` (standard URDF): uses `xyz` + `rpy`.
+* YAML overrides (`urdf_loader.kinematics.<link_name>`): supports `xyzrpy`, `xyz+rpy`, and `xyz+ypr`.
+
+Additionally, `Base_to_L0` and `Ln_to_EE` in `urdf_loader` support the same three formats.
+For backward compatibility, `tr` is accepted as an alias of `xyz` in these two blocks.
+
+```yaml
+urdf_loader:
+  urdf_path: robot.urdf
+
+  kinematics:
+    panda_joint8:
+      symb: [1,1,1,1,1,1]
+      xyz: [0, 0, 0.107]
+      ypr: [0, 0, 1.0]
+
+  Base_to_L0:
+    xyzrpy: [0, 0, 0, 0, 0, 0]
+
+  Ln_to_EE:
+    tr: [0, 0, 0.103]   # alias of xyz
+    rpy: [0, 0, -0.785398163397]
+```
 ## Symbolic selectivity of parameters
 Each parameter specified in the config file can be symbolic or not based on the `symb:` control boxes in the specific parameter.
 For example, in the inertial parameters it is sufficient to write `symb: [1,1,1,1,1,1,1,1,1,1]` to enable the symbolic computation of the classical dynamics.
