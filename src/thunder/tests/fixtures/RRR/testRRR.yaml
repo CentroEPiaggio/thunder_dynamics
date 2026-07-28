@@ -65,7 +65,7 @@ dyn_loader:
 
   # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
-    link1:
+    joint1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -82,7 +82,7 @@ dyn_loader:
         symb: [1,1]
         Dl: [0.1, 0.01]
 
-    link2:
+    joint2:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -99,7 +99,7 @@ dyn_loader:
         symb: [1,1]
         Dl: [0.1, 0.01]
 
-    link3:
+    joint3:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0

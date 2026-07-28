@@ -52,7 +52,7 @@ class ThunderApiTests(unittest.TestCase):
         self.assertEqual(robot.get_string("unit_test_marker"), "ok")
 
     def test_pipeline_without_generation(self):
-        config_path = repo_root() / "src" / "thunder" / "robots" / "testRRR.yaml"
+        config_path = repo_root() / "src" / "thunder" / "tests" / "fixtures" / "RRR" / "testRRR.yaml"
         robot = Config(str(config_path)).execute(
             robot_name="py_pipeline_no_generation",
             no_generation=True,
@@ -85,7 +85,7 @@ class ThunderApiTests(unittest.TestCase):
         )
 
     def test_generator_smoke(self):
-        config_path = repo_root() / "src" / "thunder" / "robots" / "testRRR.yaml"
+        config_path = repo_root() / "src" / "thunder" / "tests" / "fixtures" / "RRR" / "testRRR.yaml"
         with config_path.open() as handle:
             data = yaml.safe_load(handle)
 

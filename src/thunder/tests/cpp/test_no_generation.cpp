@@ -31,8 +31,8 @@ TEST(ThunderPipeline, NoGenerationBuildsRobot) {
     EXPECT_EQ(joints_type.size(), 3U) << "Expected three joint types";
 
     EXPECT_GT(robot->properties.count("jointsName"), 0U) << "Missing jointsName property";
-    EXPECT_GT(robot->parameters.count("par_KIN"), 0U) << "Missing par_KIN parameter";
-    EXPECT_GT(robot->parameters.count("par_DYN"), 0U) << "Missing par_DYN parameter";
+    EXPECT_GT(robot->get("par_KIN").numel(), 0U) << "Missing par_KIN parameter";
+    EXPECT_GT(robot->get("par_DYN").numel(), 0U) << "Missing par_DYN parameter";
     EXPECT_GT(robot->functions.count("M"), 0U) << "Missing mass matrix function";
     EXPECT_GT(robot->functions.count("C"), 0U) << "Missing coriolis function";
     EXPECT_GT(robot->functions.count("G"), 0U) << "Missing gravity function";
