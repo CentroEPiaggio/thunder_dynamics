@@ -15,7 +15,6 @@ robot_generator:
   gen_python:   false
   gen_casadi:   false
   gen_robot:    true
-  copy_gen:     false
 
 ############################################
 dh_loader:
@@ -39,12 +38,14 @@ dh_loader:
 
   # world to link_0
   Base_to_L0:
-    symb: [0,0,0, 0,0,0]
+    name: "base"
+    symb: [1,1,1, 1,1,1]
     xyz: [0, 0, 0]
     ypr: [0, 0, 0]
 
   # Link_n to EE
   Ln_to_EE:
+    name: "ee"
     symb: [1,1,1, 1,1,1]
     xyz: [0, 0, 0]
     ypr: [0, 0, 0]
@@ -166,7 +167,7 @@ dyn_loader:
 
     link7:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 0.735522
         CoM_x: 1.0517e-02
         CoM_y: -4.252e-03
@@ -180,3 +181,17 @@ dyn_loader:
       friction:
         symb: [0,0]
         Dl: [0.1, 0.01]
+
+    ee:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 0.0
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.0
+        Iyy: 0.0
+        Izz: 0.0
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyz: 0.0
