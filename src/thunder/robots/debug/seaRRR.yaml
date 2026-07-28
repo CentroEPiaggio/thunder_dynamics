@@ -22,18 +22,21 @@ kin_loader:
   # --- Hyperparameters --- #
   num_joints: 3
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R_SEA', 'R_SEA', 'R_SEA']
-
   # joint positions (xyz-rpy)
   kinematics:
     joint1:
+      joint_type: 'R_SEA'
+      parent: "world"
       symb: [0,0,0,0,0,0]
       xyzrpy: [0,0,1, 0,0,0]
     joint2:
+      joint_type: 'R_SEA'
+      parent: "joint1"
       symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, *PI_2,0,0]
     joint3:
+      joint_type: 'R_SEA'
+      parent: "joint2"
       symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, 0,0,0]
 
