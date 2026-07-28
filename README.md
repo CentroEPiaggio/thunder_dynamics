@@ -96,7 +96,7 @@ cmake .. -DBUILD_PYTHON_PLUGINS=ON
 make
 ```
 
-This produces the `thunder_core` Python package (nanobind bindings for `Robot` and utilities, plus pure-Python modules for plugin base classes and pipeline execution) and enables the `py:` prefix in YAML pipeline configurations.
+This produces the `thunder_core` Python package (nanobind bindings for `Robot` and utilities, plus pure-Python modules for plugin base classes and pipeline execution) and enables the `py.` prefix in YAML pipeline configurations.
 
 ### `thunder_core` package structure
 
@@ -111,20 +111,20 @@ Everything from `_bindings` is re-exported at the top level, so `thunder_core.Ro
 
 ### Python plugin conventions
 
-Use the `py:module.ClassName` syntax in the pipeline YAML to reference Python plugins:
+Use the `py.module.ClassName` syntax in the pipeline YAML to reference Python plugins:
 
 ```yaml
 pipeline:
   loaders:    ["kin_loader", "dyn_loader"]
-  builders:   ["kin_builder", "dyn_builder", "py:my_plugins.MyBuilder"]
+  builders:   ["kin_builder", "dyn_builder", "py.my_plugins.MyBuilder"]
   generators: ["robot_generator"]
 
-# Config block for the Python plugin (key = full py: name)
-"py:my_plugins.MyBuilder":
+# Config block for the Python plugin (key = full py.module.Class name)
+"py.my_plugins.MyBuilder":
   my_param: 42
 ```
 
-Multiple Python plugins of the same type are supported — just add more `py:` entries.
+Multiple Python plugins of the same type are supported, just add more `py.` entries.
 
 The Python module file (e.g., `my_plugins.py`) should be placed **in the same directory as the YAML config file**. Standard `PYTHONPATH` and `sys.path` rules also apply.
 
@@ -258,7 +258,7 @@ thunder_core.R_z(angle)    # rotation about Z
 - **Shared Robot object**: Python plugins receive the same `Robot` instance as C++ plugins. Modifications (adding functions, setting parameters) persist across the pipeline.
 - **Dynamic attributes**: You can set arbitrary Python attributes on the Robot object (e.g., `robot.my_data = [1,2,3]`). These are visible to subsequent Python plugins but not to C++ plugins. Use `robot.add_property_*()` or `robot.add_parameter()` if C++ needs access.
 - **Error handling**: Python exceptions are caught and re-raised as C++ `std::runtime_error` with the full Python traceback.
-- **Config**: The YAML config block for a Python plugin is passed to `configure()` as a Python dict (or validated via pydantic if `ConfigModel` is defined). The key in the YAML must match the full `py:module.Class` name.
+- **Config**: The YAML config block for a Python plugin is passed to `configure()` as a Python dict (or validated via pydantic if `ConfigModel` is defined). The key in the YAML must match the full `py.module.Class` name.
 
 ### Example
 

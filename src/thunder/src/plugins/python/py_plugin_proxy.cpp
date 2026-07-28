@@ -14,15 +14,15 @@ namespace thunder_ns {
 // =========================================================================
 
 std::tuple<std::string, std::string> parse_py_plugin_name(const std::string& name) {
-    // Input: "PY.module.path.ClassName"
-    // Strip "PY." prefix
+    // Input: "py.module.path.ClassName"
+    // Strip "py." prefix
     std::string qualified = name.substr(3);
 
     // Split at last '.' to separate module from class
     auto last_dot = qualified.rfind('.');
     if (last_dot == std::string::npos) {
         throw std::runtime_error(
-            "Invalid Python plugin name '" + name + "': expected 'PY.module.ClassName'");
+            "Invalid Python plugin name '" + name + "': expected 'py.module.ClassName'");
     }
 
     return {qualified.substr(0, last_dot), qualified.substr(last_dot + 1)};
@@ -214,7 +214,7 @@ static void call_with_robot(PyObject* py_instance, const char* method_name,
 // =========================================================================
 
 PyLoaderProxy::PyLoaderProxy(const std::string& module_name, const std::string& class_name)
-    : BaseLoader("PY." + module_name + "." + class_name,
+    : BaseLoader("py." + module_name + "." + class_name,
                  "Python loader: " + module_name + "." + class_name),
       module_name_(module_name), class_name_(class_name) {}
 
@@ -250,7 +250,7 @@ std::shared_ptr<Robot> PyLoaderProxy::load(std::shared_ptr<Robot> robot) {
 // =========================================================================
 
 PyBuilderProxy::PyBuilderProxy(const std::string& module_name, const std::string& class_name)
-    : BaseBuilder("PY." + module_name + "." + class_name,
+    : BaseBuilder("py." + module_name + "." + class_name,
                   "Python builder: " + module_name + "." + class_name),
       module_name_(module_name), class_name_(class_name) {}
 
@@ -284,7 +284,7 @@ void PyBuilderProxy::build(std::shared_ptr<Robot> robot) {
 // =========================================================================
 
 PyGeneratorProxy::PyGeneratorProxy(const std::string& module_name, const std::string& class_name)
-    : BaseGenerator("PY." + module_name + "." + class_name,
+    : BaseGenerator("py." + module_name + "." + class_name,
                     "Python generator: " + module_name + "." + class_name),
       module_name_(module_name), class_name_(class_name) {}
 

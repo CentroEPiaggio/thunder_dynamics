@@ -70,7 +70,10 @@ class Config:
             self._temp_file = tempfile.NamedTemporaryFile(
                 mode='w', suffix='.yaml', delete=False, prefix='thunder_'
             )
-            yaml.dump(self.data, self._temp_file, default_flow_style=False)
+            # Order of elements in params is significant to loaders such as kin_loader.
+            # PyYAML sorts mappings by default, which differs from the dict.
+            # This is a problem when a configuration is supplied as a Python dict, so we disable sorting here.
+            yaml.dump(self.data, self._temp_file, default_flow_style=False, sort_keys=False)
             self._temp_file.close()
             self.yaml_path = self._temp_file.name
 
