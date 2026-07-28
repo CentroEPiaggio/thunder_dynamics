@@ -15,35 +15,28 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
   function_name: "cos_q"
 
 ############################################
-robot_generator:
-  gen_python:   false
-  gen_casadi:   true
-  gen_robot:    true
-  copy_gen:     true
-
-############################################
 kin_loader:
 
   # --- Hyperparameters --- #
   num_joints: 3
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R', 'R', 'R']
-
   # joint positions (xyz-rpy)
   kinematics:
     joint1:
       joint_type: R
+      parent: "world"
       symb: [0,0,0,0,0,0]
       xyz: [0,0,1]
       rpy: [0,0,0]
     joint2:
       joint_type: R
+      parent: "joint1"
       axis: [0,0,1]
       symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, *PI_2,0,0]
     joint3:
       joint_type: R
+      parent: "joint2"
       symb: [0,0,0,0,0,0]
       xyz: [1,0,0]
       ypr: [0,0,0]

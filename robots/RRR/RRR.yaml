@@ -21,32 +21,31 @@ kin_loader:
   # --- Hyperparameters --- #
   num_joints: 3
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R', 'R', 'R']
-
   # joint positions (xyz-rpy)
   kinematics:
-    joint1:
+    link0:
+      parent: "world"
+      joint_type: "R"
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,0,1, 0,0,0]
-    joint2:
+      xyz: [0,0,1]
+      rpy: [0,0,0]
+    link1:
+      parent: "link0"
+      joint_type: 'R'
+      axis: [0,0,1]
       symb: [0,0,0,0,0,0]
       xyzrpy: [1,0,0, *PI_2,0,0]
-    joint3:
+    link2:
+      parent: "link1"
+      joint_type: 'R'
       symb: [0,0,0,0,0,0]
-      xyzrpy: [1,0,0, 0,0,0]
-
-  # world to link_0
-  Base_to_L0:
-    symb: [0,0,0, 0,0,0]
-    xyz: [0, 0, 0]
-    ypr: [0, 0, 0]
-
-  # Link_n to EE
-  Ln_to_EE:
-    symb: [1,1,1, 1,1,1]
-    xyz: [1, 0, 0]
-    ypr: [0, 0, *PI_2_neg]
+      xyz: [1,0,0]
+      ypr: [0,0,0]
+    EE:
+      parent: "link2"
+      symb: [0,0,0,0,0,0]
+      xyz: [1,0,0]
+      ypr: [0,0,*PI_2_neg]
 
 ############################################
 dyn_loader:
@@ -61,9 +60,26 @@ dyn_loader:
 
   # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
+    link0:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
     link1:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
         CoM_x: 0.5
         CoM_y: 0.0
@@ -80,7 +96,7 @@ dyn_loader:
 
     link2:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
         CoM_x: 0.5
         CoM_y: 0.0
@@ -95,9 +111,9 @@ dyn_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
-    link3:
+    EE:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
         CoM_x: 0.5
         CoM_y: 0.0
@@ -108,7 +124,4 @@ dyn_loader:
         Iyy: 0.3
         Iyz: 0.0
         Izz: 0.3
-      friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
 

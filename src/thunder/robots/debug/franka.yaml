@@ -67,15 +67,8 @@ kin_loader:
       joint_type: "FIXED"
       symb: [1,1,1,1,1,1]
       xyzrpy: [0, 0, 0, 0, 0, 0]
-      available: false
-      derivatives: false
-    # link8:
-    #   parent: "link7"
-    #   joint_type: "FIXED"
-    #   symb: [1,1,1,1,1,1]
-    #   xyzrpy: [0, 0, 0, 0, 0, 0]
-    #   available: true
-    #   derivatives: true
+      available: true
+      derivatives: true
     
   # # world to link_0
   # Base_to_L0:

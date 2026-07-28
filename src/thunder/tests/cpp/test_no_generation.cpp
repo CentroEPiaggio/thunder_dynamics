@@ -16,7 +16,7 @@ TEST(ThunderPipeline, NoGenerationBuildsRobot) {
     GTEST_SKIP() << "THUNDER_SOURCE_DIR not defined.";
 #endif
 
-    const fs::path config_path = fs::path(THUNDER_SOURCE_DIR) / "src/thunder/robots/testRRR.yaml";
+    const fs::path config_path = fs::path(THUNDER_SOURCE_DIR) / "src/thunder/tests/fixtures/RRR/testRRR.yaml";
     YAML::Node config = YAML::LoadFile(config_path.string());
 
     PluginManager manager;
