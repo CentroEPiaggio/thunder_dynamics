@@ -13,6 +13,8 @@ RUN	apt-get update && apt-get install -y \
 	libeigen3-dev \
 	python3	\
 	python3-pip \
+	libboost-all-dev \
+	swig \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Create a new user
@@ -54,30 +56,34 @@ RUN git clone https://github.com/casadi/casadi.git casadi
 WORKDIR ${HOME}/casadi
 RUN mkdir -p build && \
 	cd build && \
-	cmake .. && \
+	cmake .. -DWITH_PYTHON=ON -DWITH_PYTHON3=ON && \
 	make && \
 	make install
 
-# Pybind11 installation (https://pybind11.readthedocs.io/en/stable/compiling.html#find-package-vs-add-subdirectory)
-WORKDIR ${HOME}
-RUN git clone https://github.com/pybind/pybind11.git pybind11
-WORKDIR ${HOME}/pybind11
-RUN pip install pytest && \
-	cmake -S . -B build && \
-	cmake --build build -j 2  && \
-	cmake --install build
+# # Pybind11 installation (https://pybind11.readthedocs.io/en/stable/compiling.html#find-package-vs-add-subdirectory)
+# WORKDIR ${HOME}
+# RUN git clone https://github.com/pybind/pybind11.git pybind11
+# WORKDIR ${HOME}/pybind11
+# RUN pip install pytest && \
+# 	cmake -S . -B build && \
+# 	cmake --build build -j 2  && \
+# 	cmake --install build
+
+# [Optional] Set the default user. Omit if you want to keep the default as root.
+USER ${USERNAME}
 
 # Thunder built from sources
 WORKDIR ${HOME}/..
-RUN mkdir -p thunder_dynamics_tmp
+RUN sudo mkdir -p thunder_dynamics_tmp
 COPY ../. ${HOME}/../thunder_dynamics_tmp
+RUN sudo chown -R ${USERNAME} thunder_dynamics_tmp
 WORKDIR ${HOME}/../thunder_dynamics_tmp/src/thunder
 RUN rm -r -f build && \
 	mkdir -p build && \
 	cd build && \
 	cmake .. && \
 	make && \
-	make install
+	sudo make install
 
 # # copy thunder binary and auxiliary files on the root folder, not possible here, made by postCreateCommand in devcontainer.json
 # WORKDIR ${HOME}/thunder_dev/thunder_dynamics
@@ -87,8 +93,6 @@ RUN rm -r -f build && \
 # 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/library/thunder_robot.h bin/neededFiles/thunder_robot.h && \
 # 	cp ${HOME}/../thunder_dynamics_tmp/src/thunder_robot/src/thunder_robot.cpp bin/neededFiles/thunder_robot.cpp
 
-# [Optional] Set the default user. Omit if you want to keep the default as root.
-USER ${USERNAME}
 WORKDIR ${HOME}
 
 # Change entrypoint to source ~/.bashrc and start in ~
@@ -97,6 +101,8 @@ RUN sudo chmod +x /entrypoint.sh ; sudo chown ${USERNAME} /entrypoint.sh \
     && echo "cd "${HOME} >> /entrypoint.sh \
     && echo 'exec bash -i -c $@' >> /entrypoint.sh \
     && cat /entrypoint.sh
+
+RUN pip install pyyaml
 
 # Clean image
 RUN sudo apt clean && sudo rm -rf /var/lib/apt/lists/*

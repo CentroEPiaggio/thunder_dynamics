@@ -1,0 +1,168 @@
+pipeline:
+  loaders:    ["kin_loader", "dyn_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  generators: ["robot_generator"]
+
+version: 1.0
+
+# --- Constants --- #
+PI_2: &PI_2           1.5707963267948966
+PI_2_neg: &PI_2_neg  -1.5707963267948966
+PI_4: &PI_4           0.785398163
+PI_4_neg: &PI_4_neg  -0.785398163
+
+############################################
+robot_generator:
+  gen_python:   false
+  gen_casadi:   true
+  gen_robot:    true
+  copy_gen:     true
+
+############################################
+kin_loader:
+
+  # --- Hyperparameters --- #
+  # num_joints: 3
+
+  # joint types: 'R': rotoidal, 'P': prismatic
+  # joints_type: ['R', 'R', 'R']
+
+  # Chain (each element is rigidBody+joint)
+  kinematics:
+    # world:
+    #   parent: null
+    base:
+      parent: 'world'
+      joint_type: 'R'
+      axis: [0,0,1]
+      symb: [0,0,0,0,0,0]
+      xyz: [0,0,1]
+      rpy: [0,0,0]
+    leftArm:
+      parent: 'base'
+      joint_type: 'R'
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0,1,1, *PI_2,0,0]
+    rightArm:
+      parent: 'base'
+      joint_type: 'R'
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0,-1,1, *PI_2,0,0]
+    leftEE:
+      parent: 'leftArm'
+      symb: [0,0,0,0,0,0]
+      xyz: [1,0,0]
+      rpy: [*PI_2_neg,0,0]
+      available: true
+      derivatives: true
+    rightEE:
+      parent: 'rightArm'
+      symb: [0,0,0,0,0,0]
+      xyz: [1,0,0]
+      rpy: [*PI_2_neg,0,0]
+      available: true
+
+  # # world to link_0
+  # Base_to_L0:
+  #   symb: [0,0,0, 0,0,0]
+  #   xyz: [0, 0, 0]
+  #   ypr: [0, 0, 0]
+
+  # # Link_n to EE
+  # Ln_to_EE:
+  #   symb: [0,0,0, 0,0,0]
+  #   xyz: [1, 0, 0]
+  #   ypr: [0, 0, *PI_2_neg]
+
+############################################
+dyn_loader:
+
+  # link friction
+  Dl_order: 2
+
+  # gravity vector
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
+
+  # inertial parameters expressed w.r.t. kinematic frames
+  dynamics:
+    base:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    leftArm:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    rightArm:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
+    leftEE:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+
+    rightEE:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 1.0
+        CoM_x: 0.5
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.3
+        Iyz: 0.0
+        Izz: 0.3
+

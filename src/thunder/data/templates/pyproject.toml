@@ -1,0 +1,14 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "thunder_<ROBOT>_py"
+version = "1.0.0"
+dependencies = [
+    "pybind11",
+]
+
+[tool.scikit-build]
+cmake.version = ">=3.15"
+wheel.packages = ["thunder_<ROBOT>_py"]

@@ -12,18 +12,18 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
-	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/${localWorkspaceFolderBasename},type=bind,consistency=cached", 
-	"workspaceFolder": "/home/thunder_dev/${localWorkspaceFolderBasename}",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/home/thunder_dev/thunder_dynamics,type=bind,consistency=cached", 
+	"workspaceFolder": "/home/thunder_dev/thunder_dynamics",
 
 	"mounts": [
-		{"source":"${localWorkspaceFolder}/.devcontainer","target":"/commandhistory","type":"bind"}
+		{"source":"${localWorkspaceFolder}/.devcontainer/commandhistory","target":"/commandhistory","type":"bind"}
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sudo chmod 777 -R . && cd .devcontainer && touch .bash_history",
+	"postCreateCommand": "mkdir -p .devcontainer/commandhistory && cd .devcontainer/commandhistory && sudo chmod 777 -R . && touch .bash_history",
 
 	// Configure tool-specific properties.
 	"customizations": {
