@@ -75,7 +75,7 @@ int main() {
     my_robot.set_dq(dq)
     my_robot.set_dqr(dq_r);
 
-    int numjoints = my_robot.ndof;
+    int ndof = my_robot.ndof;
 
     // Compute kinematic and dynamic quantities
     Eigen::MatrixXd T  = my_robot.get_T_0_ee(); // End-effector transformation matrix
@@ -99,8 +99,8 @@ import numpy as np
 from thunder_<robot>_py import thunder_<robot>
 
 robot = thunder_<robot>()
-robot.set_q(np.zeros(robot.get_numJoints()))
-robot.set_dq(np.random.rand(robot.get_numJoints()))
+robot.set_q(np.zeros(ndof))
+robot.set_dq(np.random.rand(ndof))
 
 T = robot.get_T_0_ee()
 J = robot.get_J_ee()
