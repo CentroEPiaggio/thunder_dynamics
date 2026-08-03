@@ -16,8 +16,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-# Set TRUE to build python bindings, default is OFF but will be handled in the pyproject
-option(BUILD_PYTHON_BINDINGS "Build python bindings" OFF)
+# Set TRUE to build python bindings
+option(BUILD_PYTHON_BINDINGS "Build python bindings" ON)
 
 set(CMAKE_CXX_STANDARD 14)
 

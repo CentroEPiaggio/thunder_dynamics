@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "thunder_<ROBOT>_py"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
     "pybind11",
 ]

@@ -22,9 +22,6 @@ kin_loader:
   # --- Hyperparameters --- #
   num_joints: 3
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R', 'R', 'R']
-
   # joint positions (xyz-rpy)
   kinematics:
     link0:
@@ -128,7 +125,4 @@ dyn_loader:
         Iyy: 0.3
         Iyz: 0.0
         Izz: 0.3
-      friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
 

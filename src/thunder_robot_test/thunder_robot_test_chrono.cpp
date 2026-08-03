@@ -10,7 +10,7 @@
 #include <chrono>
 // #include <yaml-cpp/yaml.h>
 
-#include "thunder_RRR.h"
+// #include "thunder_RRR.h"
 // #include "include/thunder_R3.h"
 // #include "include/thunder_R5.h"
 // #include "include/thunder_R7.h"
@@ -18,21 +18,21 @@
 // #include "include/thunder_R15.h"
 // #include "include/thunder_R30.h"
 // #include "thunder_robot.h"
-// #include "thunder_RRR.h"
+#include "thunder_RRR.h"
 // #include "thunder_treeRRR.h"
 // #include "thunder_franka.h"
-#include "thunder_franka_urdf.h"
+// #include "thunder_franka_urdf.h"
 // #include "thunder_seaRRR.h"
 // #include "thunder_egoArm.h"
 // #include "thunder_frankaWrist.h"
 
-#define thunder_robot thunder_franka_urdf
+#define thunder_robot thunder_RRR
 
 // const std::string par_file = "../robots/RRR_par.yaml";
 // const std::string par_file = "../robots/treeRRR_par.yaml";
 // const std::string par_file = "../robots/seaRRR_conf.yaml";
 // const std::string par_file = "../robots/franka_conf.yaml";
-const std::string par_file = "../robots/franka_urdf_conf.yaml";
+// const std::string par_file = "../robots/franka_urdf_conf.yaml";
 // const std::string par_file = "../robots/egoArm_conf.yaml";
 // const std::string par_file = "../robots/frankaWrist_conf.yaml";
 const std::string saved_inertial_file = "../robots/saved_par_tmp.yaml";

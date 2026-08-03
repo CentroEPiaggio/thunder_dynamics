@@ -9,6 +9,10 @@
 #include "plugin_interfaces.h"
 #include "plugin_registry.h"
 
+#ifdef THUNDER_PYTHON_PLUGINS
+#include "plugins/python/py_plugin_proxy.h"
+#endif
+
 namespace thunder_ns {
 
 	class PluginManager {
@@ -144,7 +148,16 @@ namespace thunder_ns {
 			all_plugins.insert(all_plugins.end(), generator_names.begin(), generator_names.end());
 
 			for (const auto &name : loader_names) {
-				auto plugin = find_loader(name);
+				std::shared_ptr<BaseLoader> plugin;
+#ifdef THUNDER_PYTHON_PLUGINS
+				if (name.size() > 3 && name.substr(0, 3) == "py.") {
+					auto [mod, cls] = parse_py_plugin_name(name);
+					plugin = std::make_shared<PyLoaderProxy>(mod, cls);
+				} else
+#endif
+				{
+					plugin = find_loader(name);
+				}
 				if (!plugin)
 					throw std::runtime_error("Loader not found: " + name);
 
@@ -154,7 +167,16 @@ namespace thunder_ns {
 			}
 
 			for (const auto &name : builder_names) {
-				auto plugin = find_builder(name);
+				std::shared_ptr<BaseBuilder> plugin;
+#ifdef THUNDER_PYTHON_PLUGINS
+				if (name.size() > 3 && name.substr(0, 3) == "py.") {
+					auto [mod, cls] = parse_py_plugin_name(name);
+					plugin = std::make_shared<PyBuilderProxy>(mod, cls);
+				} else
+#endif
+				{
+					plugin = find_builder(name);
+				}
 				if (!plugin)
 					throw std::runtime_error("Builder not found: " + name);
 
@@ -164,7 +186,16 @@ namespace thunder_ns {
 			}
 
 			for (const auto &name : generator_names) {
-				auto plugin = find_generator(name);
+				std::shared_ptr<BaseGenerator> plugin;
+#ifdef THUNDER_PYTHON_PLUGINS
+				if (name.size() > 3 && name.substr(0, 3) == "py.") {
+					auto [mod, cls] = parse_py_plugin_name(name);
+					plugin = std::make_shared<PyGeneratorProxy>(mod, cls);
+				} else
+#endif
+				{
+					plugin = find_generator(name);
+				}
 				if (!plugin)
 					throw std::runtime_error("Generator not found: " + name);
 

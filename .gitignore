@@ -1,4 +1,3 @@
-.devcontainer/.bash_history
 bin/
 **/tmp/
 **/build/
@@ -19,3 +18,5 @@ src/thunder_control/src/**
 !src/thunder_control/robots/.gitkeep
 !src/thunder_control/include/.gitkeep
 !src/thunder_control/src/.gitkeep
+.devcontainer/.bash_history
+.devcontainer/commandhistory/.bash_history

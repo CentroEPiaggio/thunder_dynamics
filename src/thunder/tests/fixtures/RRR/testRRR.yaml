@@ -22,18 +22,21 @@ kin_loader:
   # --- Hyperparameters --- #
   num_joints: 3
 
-  # joint types: 'R': rotoidal, 'P': prismatic
-  joints_type: ['R', 'R', 'R']
-
   # joint positions (xyz-rpy)
   kinematics:
     joint1:
+      parent: "world"
+      joint_type: "R"
       symb: [1,1,1, 1,1,1]
       xyzrpy: [0,0,1, 0,0,0]
     joint2:
+      parent: "joint1"
+      joint_type: "R"
       symb: [1,1,1, 1,1,1]
       xyzrpy: [1,0,0, *PI_2,0,0]
     joint3:
+      parent: "joint2"
+      joint_type: "R"
       symb: [1,1,1, 1,1,1]
       xyzrpy: [1,0,0, 0,0,0]
 
@@ -62,7 +65,7 @@ dyn_loader:
 
   # inertial parameters expressed w.r.t. kinematic frames
   dynamics:
-    link1:
+    joint1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -79,7 +82,7 @@ dyn_loader:
         symb: [1,1]
         Dl: [0.1, 0.01]
 
-    link2:
+    joint2:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -96,7 +99,7 @@ dyn_loader:
         symb: [1,1]
         Dl: [0.1, 0.01]
 
-    link3:
+    joint3:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0

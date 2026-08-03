@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_robot VERSION 0.2)
+project(thunder_robot VERSION 1.0.0)
 # project(library)
 
 # Specifica la cartella di output per i file compilati

@@ -9,7 +9,7 @@
 		{
 			"label": "makeThunder",
 			"type": "shell",
-			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder/ && mkdir -p build && cd build && cmake .. && make",
+			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder/ && mkdir -p build && cd build && cmake .. -DBUILD_PYTHON_PLUGINS=ON && make && sudo make install",
 			"group": {
 				"kind": "build",
 				"isDefault": true
@@ -28,6 +28,16 @@
 					"severity": 4,
 					"message": 5
 				}
+			}
+		},
+
+		{
+			"label": "testThunder",
+			"type": "shell",
+			"command": "cd /home/thunder_dev/thunder_dynamics/src/thunder/build && cmake .. -DWITH_TESTS=ON && make -j && ctest --output-on-failure",
+			"group": {
+				"kind": "test",
+				"isDefault": true
 			}
 		},
 		{
