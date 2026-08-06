@@ -89,12 +89,13 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 	"\t\t// ------------------ //\n"
 	"\t\t// --- Parameters --- //\n"
 	"\t\t// ------------------ //\n"
+	"\t\t// Parameters are initialized in robot constructor!\n"
 	"\n";
 	for (auto par : parameters){
 		if (par.second.symb_size() != 0){
 			parameters_str.append(
 				"\t\t// " + par.second.description + "\n"
-				"\t\tVector<double," + std::to_string(par.second.symb_size()) + "> " + par.second.name + " = " + par.second.get_value_str() + ";\n");
+				"\t\tMatrix<double," + std::to_string(par.second.symb_size()) + ",1> " + par.second.name + ";\n");
 			}
 		}
 	file_content_h.append(parameters_str + "\n");
@@ -134,7 +135,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			string fun_name = "get_" + par.second.name;
 			int out_size = par.second.symb_size();
 			functions_str.append("\t\t// get the parameter: " + par.second.name + "\n");
-			functions_str.append("\t\tVector<double," + std::to_string(out_size) + "> " + fun_name + "();\n");
+			functions_str.append("\t\tMatrix<double," + std::to_string(out_size) + ",1> " + fun_name + "();\n");
 		}
 	}
 
@@ -144,7 +145,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			string fun_name = "set_" + par.second.name;
 			int in_size = par.second.symb_size();
 			functions_str.append("\t\t// set the parameter: " + par.second.name + "\n");
-			functions_str.append("\t\tvoid " + fun_name + "(Vector<double,"+std::to_string(in_size)+"> value);\n");
+			functions_str.append("\t\tvoid " + fun_name + "(Matrix<double,"+std::to_string(in_size)+",1> value);\n");
 		}
 	}
 
@@ -182,9 +183,9 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		vector<FunArg> fun_expl_args = fun.second.explicit_args; 
 		string args_string = "(";
 		if (fun_expl_args.size()){
-			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size())+"> " + fun_expl_args[0].name);
+			args_string.append("Matrix<double,"+std::to_string(fun_expl_args[0].size())+",1> " + fun_expl_args[0].name);
 			for (int j=1; j<fun_expl_args.size(); j++){
-				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size())+"> " + fun_expl_args[j].name);
+				args_string.append(", Matrix<double,"+std::to_string(fun_expl_args[j].size())+",1> " + fun_expl_args[j].name);
 			}
 		}
 		args_string.append(")");
@@ -266,8 +267,15 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 
 	// --- insert functions --- //
 	// - constructor - //
-	functions_str = "\n"
-		"thunder_" + robot_name + "::thunder_" + robot_name + "(){}\n\n";
+	functions_str = "\nthunder_" + robot_name + "::thunder_" + robot_name + "(){\n";
+	// - parameters initialization - //
+	for (auto par : parameters){
+		if (par.second.symb_size() != 0){
+			string s = par.second.get_value_str();
+			functions_str.append("\t" + par.second.name + " << " + s.substr(1, s.size() - 2) + ";\n");
+			}
+		}
+	functions_str.append("}\n\n");
 
 	// - parameters gets - //
 	for (auto par : parameters){
@@ -276,7 +284,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			int out_size = par.second.symb_size();
 			functions_str.append("// get the parameter: " + par.second.name + "\n");
 			functions_str.append(
-				"Vector<double," + std::to_string(out_size) + "> " + thunder_robot_name + "::" + fun_name + "() {return " + par.second.name + ";}\n");
+				"Matrix<double," + std::to_string(out_size) + ",1> " + thunder_robot_name + "::" + fun_name + "() {return " + par.second.name + ";}\n");
 		}
 	}
 
@@ -287,7 +295,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			int in_size = par.second.symb_size();
 			functions_str.append("// set the parameter: " + par.second.name + "\n");
 			functions_str.append(
-				"void " + thunder_robot_name + "::" + fun_name + "(Vector<double,"+std::to_string(in_size)+"> value) {" + par.second.name + " = value;}\n");
+				"void " + thunder_robot_name + "::" + fun_name + "(Matrix<double,"+std::to_string(in_size)+",1> value) {" + par.second.name + " = value;}\n");
 		}
 	}
 
@@ -346,7 +354,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			"\tif ((par_list.size()==0)||(std::count(par_list.begin(), par_list.end(), \""+par_name+"\"))){\n"
 				"\t\tif (yamlFile[\""+par_name+"\"]){\n"
 					"\t\t\tvector<double> vec(yamlFile[\""+par_name+"\"].as<vector<double>>());\n"
-					"\t\t\t"+par_name+" = Eigen::Map<Vector<double,"+std::to_string(par.second.symb_size())+">>(vec.data(), vec.size());\n"
+					"\t\t\t"+par_name+" = Eigen::Map<Matrix<double,"+std::to_string(par.second.symb_size())+",1>>(vec.data(), vec.size());\n"
 				"\t\t} else {\n"
 					"\t\t\tstd::cerr << \"Error while loading parameters: "+par_name+" not found!\" << std::endl;\n"
 					"\t\t\treturn 0;\n"
@@ -374,9 +382,9 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		// explicit function arguments
 		string args_string = "(";
 		if (fun_expl_args.size()){
-			args_string.append("Vector<double,"+std::to_string(fun_expl_args[0].size())+"> " + fun_expl_args[0].name);
+			args_string.append("Matrix<double,"+std::to_string(fun_expl_args[0].size())+",1> " + fun_expl_args[0].name);
 			for (int j=1; j<fun_expl_args.size(); j++){
-				args_string.append(", Vector<double,"+std::to_string(fun_expl_args[j].size())+"> " + fun_expl_args[j].name);
+				args_string.append(", Matrix<double,"+std::to_string(fun_expl_args[j].size())+",1> " + fun_expl_args[j].name);
 			}
 		}
 		args_string.append(")");
