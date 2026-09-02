@@ -8,13 +8,27 @@ Open this directory in VS Code and select **Dev Containers: Reopen in
 Container**, then build and launch:
 
 ```bash
-source /opt/ros/humble/setup.bash
 colcon build --symlink-install
-source install/setup.bash
 ros2 launch <robot>_server <robot>_server.launch.py
 ```
+
+The dev container configures Bash to source ROS Humble and the workspace overlay
+automatically for new terminals.
 
 The container intentionally does not request real-time capabilities. A package
 configured with `real_time: true` will start normally if `SCHED_FIFO` priority
 25 is unavailable and will emit a warning. Grant `CAP_SYS_NICE` only in a test
 environment where real-time scheduling is required.
+
+## RRR manual service client
+
+`src/rrr_server_test` contains `rrr_service_client`, a small manual client for
+the generated `rrr_server`. Start the RRR server in one terminal, then run:
+
+```bash
+ros2 run rrr_server_test rrr_service_client
+```
+
+It sends `q = [0.1, 0.2, 0.3]` to `set_q`, reads it back with `get_q`, then
+calls `M` with the required empty `Compute` input and logs the flattened
+row-major mass matrix.

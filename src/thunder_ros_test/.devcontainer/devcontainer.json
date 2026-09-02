@@ -6,8 +6,16 @@
   "remoteUser": "ros",
   "customizations": {
     "vscode": {
-      "extensions": ["ms-iot.vscode-ros", "ms-vscode.cpptools", "ms-vscode.cmake-tools"]
+      "extensions": ["ms-iot.vscode-ros", "ms-vscode.cpptools", "ms-vscode.cmake-tools"],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash"
+          }
+        }
+      }
     }
   },
-  "postCreateCommand": "bash -lc 'source /opt/ros/humble/setup.bash && colcon build --symlink-install || true'"
+  "postCreateCommand": "bash -lc 'source /opt/ros/humble/setup.bash && colcon build --symlink-install'"
 }

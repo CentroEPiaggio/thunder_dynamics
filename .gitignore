@@ -21,3 +21,6 @@ src/thunder_ros_test/src/**
 !src/thunder_control/src/.gitkeep
 .devcontainer/.bash_history
 .devcontainer/commandhistory/.bash_history
+
+# Keep the hand-written RRR service client; generated ROS packages stay ignored.
+!src/thunder_ros_test/src/rrr_server_test/**

@@ -1,7 +1,7 @@
 pipeline:
   loaders:    ["dh_loader", "dyn_loader"]
   builders:   ["kin_builder", "dyn_builder"]
-  generators: ["ros_server_generator"]
+  generators: ["robot_generator", "ros_server_generator"]
 
 version: 1.0
 
@@ -10,6 +10,12 @@ PI_2: &PI_2           1.5707963267948966
 PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 ############################################
+robot_generator:
+  gen_python: false
+  gen_casadi: false
+  gen_robot: true
+  copy_gen: false
+
 ros_server_generator:
   frequency: 1000
   real_time: false

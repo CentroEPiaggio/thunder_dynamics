@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "plugins/generators/common/generator_utils.h"
 
 namespace fs = std::filesystem;
 
@@ -33,6 +32,16 @@ void write_file(const fs::path& path, const std::string& content) {
         throw std::runtime_error("Unable to write generated file: " + path.string());
     }
     output << content;
+}
+
+void move_generated_file(const fs::path& source, const fs::path& destination) {
+    if (!fs::exists(source)) {
+        throw std::runtime_error("Missing " + source.string() +
+            ". ros_server_generator requires robot_generator to run first with gen_robot: true.");
+    }
+    fs::create_directories(destination.parent_path());
+    fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
+    fs::remove(source);
 }
 
 bool is_valid_ros_package_name(const std::string& name) {
@@ -89,14 +98,6 @@ std::vector<std::string> selected_names(
     return result;
 }
 
-std::string join(const std::vector<std::string>& values, const std::string& separator) {
-    std::ostringstream result;
-    for (std::size_t index = 0; index < values.size(); ++index) {
-        if (index) result << separator;
-        result << values[index];
-    }
-    return result.str();
-}
 
 std::string package_xml(const std::string& package_name) {
     return "<?xml version=\"1.0\"?>\n"
@@ -299,17 +300,17 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     fs::create_directories(package_root / "launch");
     fs::create_directories(package_root / "config");
 
-    casadi::Dict options; options["cpp"] = true; options["with_header"] = true;
-    casadi::CodeGenerator code_generator(robot_name + "_gen", options);
-    for (const auto& function : robot->functions) code_generator.add(function.second.fun);
-    code_generator.generate(source_dir.string() + "/");
-    if (!create_thunder_robot(robot_name, *robot,
-                              (include_dir / ("thunder_" + robot_name + ".h")).string(),
-                              (source_dir / ("thunder_" + robot_name + ".cpp")).string(), false)) {
-        throw std::runtime_error("Unable to generate Thunder wrapper for ROS package.");
+    // The ROS generator consumes the C++ robot created by robot_generator.
+    // Moving these sources keeps one authoritative copy in the ROS package.
+    if (fs::exists(output_root / "pyproject.toml")) {
+        throw std::runtime_error("ros_server_generator cannot move a Python-enabled robot_generator output. Set robot_generator.gen_python to false.");
     }
-    robot->save_conf((package_root / "config" / (robot_name + "_conf.yaml")).string());
-    robot->save_par((package_root / "config" / (robot_name + "_par.yaml")).string());
+    move_generated_file(output_root / ("thunder_" + robot_name + ".h"), include_dir / ("thunder_" + robot_name + ".h"));
+    move_generated_file(output_root / ("thunder_" + robot_name + ".cpp"), source_dir / ("thunder_" + robot_name + ".cpp"));
+    move_generated_file(output_root / (robot_name + "_gen.h"), source_dir / (robot_name + "_gen.h"));
+    move_generated_file(output_root / (robot_name + "_gen.cpp"), source_dir / (robot_name + "_gen.cpp"));
+    move_generated_file(output_root / (robot_name + "_conf.yaml"), package_root / "config" / (robot_name + "_conf.yaml"));
+    move_generated_file(output_root / (robot_name + "_par.yaml"), package_root / "config" / (robot_name + "_par.yaml"));
 
     write_file(package_root / "package.xml", package_xml(package_name));
     write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name));
@@ -320,14 +321,9 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     write_file(source_dir / (robot_name + "_server_node.cpp"), server_source(package_name, robot_name, settings.frequency,
                settings.real_time, services, topics, settings.inputs, robot->functions, robot->parameters));
 
-    if (settings.copy_gen) {
-        fs::path COPY_PREFIX;
-        if (fs::current_path().filename() == "build") { // last directory name
-            COPY_PREFIX = fs::current_path() / "../../../";
-        } else {
-            COPY_PREFIX = "/home/thunder_dev/thunder_dynamics/";
-        }
-        const fs::path destination = COPY_PREFIX / "src" / "thunder_ros_test" / "src" / package_name;
+    if ((settings.copy_gen) && fs::exists("/home/thunder_dev/thunder_dynamics")) {
+        fs::path destination = "/home/thunder_dev/thunder_dynamics";
+        destination = destination / "src" / "thunder_ros_test" / "src" / package_name;
         fs::create_directories(destination.parent_path());
         fs::copy(package_root, destination, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
     }
