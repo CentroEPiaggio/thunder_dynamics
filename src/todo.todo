@@ -1,4 +1,5 @@
 general:
+	☐ if thunder is not executed into a container and there is the copy_gen flag, Some files could be created into "/home/thunder_dev/thunder_dynamics/"
 	✔ update robot yamls @done (7/28/2026, 1:57:34 PM)
 	☐ divide links and joints instead having one only element. kinematics creates joints, dynamics creates links. joint has also the link child field.
 	☐ add way to save parameter not present in robot, like a function value (i.e. par_DYN if parameters are DH)
@@ -109,6 +110,7 @@ plugins:
 	builders:
 		☐ mechanism to add function that have parameters different from casadi (difficult because it is needed the function body!)
 	generators:
+		☐ generator_utils is not general, put there the functions used by all generators, robot_generator should just call these functions and have inside create_thunder_robot()
 		☐ add file function_arguments.yaml is case of casadi generation that tells the argument of each function
 		☐ yaml generator, from a robot it recreates the initial configuration
 

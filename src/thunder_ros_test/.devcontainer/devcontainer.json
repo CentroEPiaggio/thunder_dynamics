@@ -1,0 +1,13 @@
+{
+  "name": "Thunder ROS 2 test workspace",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/workspaces/thunder_ros_test",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/thunder_ros_test,type=bind",
+  "remoteUser": "ros",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-iot.vscode-ros", "ms-vscode.cpptools", "ms-vscode.cmake-tools"]
+    }
+  },
+  "postCreateCommand": "bash -lc 'source /opt/ros/humble/setup.bash && colcon build --symlink-install || true'"
+}

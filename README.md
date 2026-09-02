@@ -126,7 +126,7 @@ Thunder features a 3-stage pipeline architecture:
 
 Plugins can be written in **C++** or directly in **Python** (prefixed with `py.`).
 
-### Built-in Plugins4
+### Built-in Plugins
 To inspect all available C++ plugins:
 ```bash
 thunder plugin list --verbose
@@ -144,6 +144,7 @@ thunder plugin list --verbose
 | **Builder** | `reg_builder` | Build kinematic and dynamic regressors |
 | **Builder** | `soft_builder` | Build elastic joint dynamics |
 | **Generator** | `robot_generator` | Generate standalone C++ library and Python bindings |
+| **Generator** | `ros_server_generator` | Generate a ROS 2 service and topic server package |
 
 ---
 
