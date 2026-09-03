@@ -111,10 +111,10 @@ namespace thunder_ns{
 		std::vector<short> is_symbolic;
 		casadi::SX symb;
 		casadi::DM num;
-		int size(){
+		int size() const{
 			return num.size1()*num.size2();
 		}
-		int symb_size(){
+		int symb_size() const{
 			int sz = 0;
 			for (short x : is_symbolic) sz = (x) ? sz+1 : sz;
 			return sz;
@@ -166,7 +166,7 @@ namespace thunder_ns{
 		public:
 		string name;
 		casadi::SX value;
-		int size() { return value.size1()*value.size2(); }
+		int size() const { return value.size1()*value.size2(); }
 		FunArg(string name, casadi::SX value) : name(name), value(value) {}
 	};
 
@@ -179,7 +179,7 @@ namespace thunder_ns{
 		casadi::SX expr;
 		casadi::Function fun;
 
-		std::vector<long> get_out_size(){
+		std::vector<long> get_out_size() const {
 			std::vector<long> out_size({expr.size1(), expr.size2()});
 			return out_size;
 		}
