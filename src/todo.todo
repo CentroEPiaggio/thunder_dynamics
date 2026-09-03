@@ -1,4 +1,5 @@
 general:
+	☐ check all the functions that does not change the class should be const (e.g. size())
 	☐ if thunder is not executed into a container and there is the copy_gen flag, Some files could be created into "/home/thunder_dev/thunder_dynamics/"
 	✔ update robot yamls @done (7/28/2026, 1:57:34 PM)
 	☐ divide links and joints instead having one only element. kinematics creates joints, dynamics creates links. joint has also the link child field.
@@ -83,7 +84,10 @@ thunder:
 	symbolic selectivity:
 		- if symb is not present default is 0 for parameters and 1 for variables
 		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
-
+	ros_server:
+		✔ add a ros_server that uses thunder_robot to compute quantities and expose them as services and topics @done (9/3/2026, 8:50:10 AM)
+		✔ copy thunder_robot in the package instead of moving @done (9/3/2026, 9:04:07 AM)
+		✔ force lowercase name for the ros_server, do not change the thunder_robot class name @done (9/3/2026, 9:48:31 AM)
 thunder_robot:
 	☐ create structured tests for the generated code
 	☐ possibility to return vector of eigen from a function (example T_0(i), usefull for cycles)
@@ -91,6 +95,7 @@ thunder_robot:
 	☐ save and load par in thunder_robot as generic functions
 
 plugins:
+	☐ plugin dependency system
 	☐ avoid create a plugin istance to use function outside of plugin (example 'dq_select' in regressors)
 	☐ plugin should takes all the config if there is no section with the plugin name?
 	☐ init function for plugins, needed because plugin constructors are called only once in a static map

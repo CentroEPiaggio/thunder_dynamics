@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <boost/algorithm/string.hpp>
 
 
 namespace fs = std::filesystem;
@@ -34,14 +35,14 @@ void write_file(const fs::path& path, const std::string& content) {
     output << content;
 }
 
-void move_generated_file(const fs::path& source, const fs::path& destination) {
+void copy_generated_file(const fs::path& source, const fs::path& destination) {
     if (!fs::exists(source)) {
         throw std::runtime_error("Missing " + source.string() +
             ". ros_server_generator requires robot_generator to run first with gen_robot: true.");
     }
     fs::create_directories(destination.parent_path());
     fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
-    fs::remove(source);
+    // fs::remove(source);
 }
 
 bool is_valid_ros_package_name(const std::string& name) {
@@ -163,7 +164,7 @@ std::string launch_file(const std::string& package_name, const std::string& robo
             "        Node(\n"
             "            package='" + package_name + "',\n"
             "            executable='" + robot_name + "_server_node',\n"
-            "            name='" + robot_name + "_server',\n"
+            "            name='" + package_name + "',\n"
             "            output='screen',\n"
             "        ),\n"
             "    ])\n";
@@ -180,6 +181,8 @@ std::string server_source(
     const std::map<std::string, Function>& functions,
     const std::map<std::string, Parameter>& parameters) {
     std::ostringstream code;
+    string robot_name_lowerCase = boost::algorithm::to_lower_copy(robot_name);
+
     code << "#include <algorithm>\n#include <chrono>\n#include <cstdint>\n#include <functional>\n#include <memory>\n#include <string>\n#include <vector>\n\n"
          << "#include <pthread.h>\n#include <sched.h>\n#include <rclcpp/rclcpp.hpp>\n#include <std_msgs/msg/float32_multi_array.hpp>\n#include <realtime_tools/realtime_buffer.hpp>\n"
          << "#include <" << package_name << "/srv/compute.hpp>\n#include <" << package_name << "/srv/get_parameter.hpp>\n#include <" << package_name << "/srv/set_parameter.hpp>\n"
@@ -270,7 +273,7 @@ std::string server_source(
     if (real_time) {
         code << "  sched_param priority{}; priority.sched_priority = 25;\n"
              << "  if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority) != 0) {\n"
-             << "    RCLCPP_WARN(rclcpp::get_logger(\"" << robot_name << "_server\"), \"Unable to enable SCHED_FIFO priority 25; continuing normally\");\n  }\n";
+             << "    RCLCPP_WARN(rclcpp::get_logger(\"" << package_name + "\"), \"Unable to enable SCHED_FIFO priority 25; continuing normally\");\n  }\n";
     }
     code << "  rclcpp::spin(std::make_shared<" << robot_name << "Server>());\n  rclcpp::shutdown();\n  return 0;\n}\n";
     return code.str();
@@ -281,7 +284,8 @@ std::string server_source(
 void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     const GeneratorConfig settings = parse_config(config_);
     const std::string robot_name = robot->robotName;
-    const std::string package_name = robot_name + "_server";
+    const std::string package_name = boost::algorithm::to_lower_copy(robot_name) + "_server";
+    std::cout << "Generating ROS 2 package '" << package_name << "' for robot '" << robot_name << "'...\n";
     if (!is_valid_ros_package_name(package_name)) {
         throw std::runtime_error("ROS 2 package names must be lowercase letters, digits, and underscores. Robot name '" +
                                  robot_name + "' cannot produce a standard package name.");
@@ -310,19 +314,21 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     if (fs::exists(output_root / "pyproject.toml")) {
         throw std::runtime_error("ros_server_generator cannot move a Python-enabled robot_generator output. Set robot_generator.gen_python to false.");
     }
-    move_generated_file(output_root / ("thunder_" + robot_name + ".h"), include_dir / ("thunder_" + robot_name + ".h"));
-    move_generated_file(output_root / ("thunder_" + robot_name + ".cpp"), source_dir / ("thunder_" + robot_name + ".cpp"));
-    move_generated_file(output_root / (robot_name + "_gen.h"), source_dir / (robot_name + "_gen.h"));
-    move_generated_file(output_root / (robot_name + "_gen.cpp"), source_dir / (robot_name + "_gen.cpp"));
-    move_generated_file(output_root / (robot_name + "_conf.yaml"), package_root / "config" / (robot_name + "_conf.yaml"));
-    move_generated_file(output_root / (robot_name + "_par.yaml"), package_root / "config" / (robot_name + "_par.yaml"));
+    copy_generated_file(output_root / ("thunder_" + robot_name + ".h"), include_dir / ("thunder_" + robot_name + ".h"));
+    copy_generated_file(output_root / (robot_name + "_gen.h"), include_dir / (robot_name + "_gen.h"));
+    copy_generated_file(output_root / ("thunder_" + robot_name + ".cpp"), source_dir / ("thunder_" + robot_name + ".cpp"));
+    copy_generated_file(output_root / (robot_name + "_gen.cpp"), source_dir / (robot_name + "_gen.cpp"));
+    copy_generated_file(output_root / (robot_name + "_conf.yaml"), package_root / "config" / (robot_name + "_conf.yaml"));
+    copy_generated_file(output_root / (robot_name + "_par.yaml"), package_root / "config" / (robot_name + "_par.yaml"));
 
     write_file(package_root / "package.xml", package_xml(package_name));
     write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name));
     write_file(package_root / "srv" / "Compute.srv", "float32[] input\n---\nfloat32[] output\n");
     write_file(package_root / "srv" / "GetParameter.srv", "---\nfloat32[] value\n");
     write_file(package_root / "srv" / "SetParameter.srv", "float32[] value\n---\nbool success\nstring message\n");
-    write_file(package_root / "launch" / (robot_name + "_server.launch.py"), launch_file(package_name, robot_name));
+    write_file(package_root / "launch" / (package_name + ".launch.py"), launch_file(package_name, robot_name));
+
+    // - write the ROS server node - //
     write_file(source_dir / (robot_name + "_server_node.cpp"), server_source(package_name, robot_name, settings.frequency,
                settings.real_time, services, topics, settings.inputs, robot->functions, robot->parameters));
 

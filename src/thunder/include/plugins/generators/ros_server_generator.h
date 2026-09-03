@@ -14,8 +14,6 @@ namespace thunder_ns {
 
 		public:
 			ROSServerGenerator() : BaseGenerator("ROS Server Generator", "Generates a ROS 2 package that exposes robot quantities through services and topics") {}
-			
-
 
 			void generate(const std::shared_ptr<Robot> robot) override;
 
