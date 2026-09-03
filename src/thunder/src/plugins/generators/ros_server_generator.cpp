@@ -134,6 +134,7 @@ std::string cmake_lists(const std::string& package_name, const std::string& robo
             "find_package(yaml-cpp REQUIRED)\n"
             "find_package(rosidl_default_generators REQUIRED)\n\n"
             "rosidl_generate_interfaces(${PROJECT_NAME}\n"
+            "  \"msg/Float32Array.msg\"\n"
             "  \"srv/Compute.srv\"\n"
             "  \"srv/GetParameter.srv\"\n"
             "  \"srv/SetParameter.srv\"\n"
@@ -184,10 +185,10 @@ std::string server_source(
     string robot_name_lowerCase = boost::algorithm::to_lower_copy(robot_name);
 
     code << "#include <algorithm>\n#include <chrono>\n#include <cstdint>\n#include <functional>\n#include <memory>\n#include <string>\n#include <vector>\n\n"
-         << "#include <pthread.h>\n#include <sched.h>\n#include <rclcpp/rclcpp.hpp>\n#include <std_msgs/msg/float32_multi_array.hpp>\n#include <realtime_tools/realtime_buffer.hpp>\n"
-         << "#include <" << package_name << "/srv/compute.hpp>\n#include <" << package_name << "/srv/get_parameter.hpp>\n#include <" << package_name << "/srv/set_parameter.hpp>\n"
+         << "#include <pthread.h>\n#include <sched.h>\n#include <rclcpp/rclcpp.hpp>\n#include <realtime_tools/realtime_buffer.hpp>\n"
+         << "#include <" << package_name << "/msg/float32_array.hpp>\n#include <" << package_name << "/srv/compute.hpp>\n#include <" << package_name << "/srv/get_parameter.hpp>\n#include <" << package_name << "/srv/set_parameter.hpp>\n"
          << "#include <" << package_name << "/thunder_" << robot_name << ".h>\n\n"
-         << "namespace {\nusing FloatArray = std_msgs::msg::Float32MultiArray;\n"
+         << "namespace {\nusing FloatArray = " << package_name << "::msg::Float32Array;\n"
          << "template<typename Matrix> std::vector<float> flatten_row_major(const Matrix& matrix) {\n"
          << "  std::vector<float> values; values.reserve(matrix.rows() * matrix.cols());\n"
          << "  for (Eigen::Index row = 0; row < matrix.rows(); ++row) for (Eigen::Index column = 0; column < matrix.cols(); ++column) values.push_back(static_cast<float>(matrix(row, column)));\n"
@@ -241,7 +242,7 @@ std::string server_source(
     }
 
     for (const auto& name : topics) {
-        code << "    " << name << "_publisher_ = create_publisher<FloatArray>(\"" << name << "\", rclcpp::QoS(1));\n";
+        code << "    " << name << "_publisher_ = create_publisher<FloatArray>(\"" << package_name << "/" <<name << "\", rclcpp::QoS(1));\n";
     }
     code << "    timer_ = create_wall_timer(std::chrono::microseconds(" << (1000000 / frequency)
          << "), std::bind(&" << robot_name << "Server::on_timer, this));\n  }\n\nprivate:\n"
@@ -305,6 +306,7 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     const fs::path source_dir = package_root / "src";
     fs::create_directories(include_dir);
     fs::create_directories(source_dir);
+    fs::create_directories(package_root / "msg");
     fs::create_directories(package_root / "srv");
     fs::create_directories(package_root / "launch");
     fs::create_directories(package_root / "config");
@@ -323,6 +325,7 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
 
     write_file(package_root / "package.xml", package_xml(package_name));
     write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name));
+    write_file(package_root / "msg" / "Float32Array.msg", "float32[] data\n");
     write_file(package_root / "srv" / "Compute.srv", "float32[] input\n---\nfloat32[] output\n");
     write_file(package_root / "srv" / "GetParameter.srv", "---\nfloat32[] value\n");
     write_file(package_root / "srv" / "SetParameter.srv", "float32[] value\n---\nbool success\nstring message\n");
