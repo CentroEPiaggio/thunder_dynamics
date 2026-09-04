@@ -85,7 +85,7 @@ thunder:
 		- if symb is not present default is 0 for parameters and 1 for variables
 		☐ check problem on some parameters, if symb: exists in conf and there are no values (example: D_order:0, symb:[0]). Have to robustify!
 	ros_server:
-		☐ substitute Get/SetParameter and Compute services with just Get.srv and Set.srv for all
+		✔ substitute Get/SetParameter and Compute services with just Get.srv and Set.srv for all @done (9/3/2026, 2:29:07 PM)
 		✔ add a ros_server that uses thunder_robot to compute quantities and expose them as services and topics @done (9/3/2026, 8:50:10 AM)
 		✔ copy thunder_robot in the package instead of moving @done (9/3/2026, 9:04:07 AM)
 		✔ force lowercase name for the ros_server, do not change the thunder_robot class name @done (9/3/2026, 9:48:31 AM)

@@ -135,9 +135,8 @@ std::string cmake_lists(const std::string& package_name, const std::string& robo
             "find_package(rosidl_default_generators REQUIRED)\n\n"
             "rosidl_generate_interfaces(${PROJECT_NAME}\n"
             "  \"msg/Float32Array.msg\"\n"
-            "  \"srv/Compute.srv\"\n"
-            "  \"srv/GetParameter.srv\"\n"
-            "  \"srv/SetParameter.srv\"\n"
+            "  \"srv/GetValue.srv\"\n"
+            "  \"srv/SetValue.srv\"\n"
             ")\n\n"
             "add_executable(" + robot_name + "_server_node\n"
             "  src/" + robot_name + "_server_node.cpp\n"
@@ -186,7 +185,7 @@ std::string server_source(
 
     code << "#include <algorithm>\n#include <chrono>\n#include <cstdint>\n#include <functional>\n#include <memory>\n#include <string>\n#include <vector>\n\n"
          << "#include <pthread.h>\n#include <sched.h>\n#include <rclcpp/rclcpp.hpp>\n#include <realtime_tools/realtime_buffer.hpp>\n"
-         << "#include <" << package_name << "/msg/float32_array.hpp>\n#include <" << package_name << "/srv/compute.hpp>\n#include <" << package_name << "/srv/get_parameter.hpp>\n#include <" << package_name << "/srv/set_parameter.hpp>\n"
+         << "#include <" << package_name << "/msg/float32_array.hpp>\n#include <" << package_name << "/srv/get_value.hpp>\n#include <" << package_name << "/srv/set_value.hpp>\n"
          << "#include <" << package_name << "/thunder_" << robot_name << ".h>\n\n"
          << "namespace {\nusing FloatArray = " << package_name << "::msg::Float32Array;\n"
          << "template<typename Matrix> std::vector<float> flatten_row_major(const Matrix& matrix) {\n"
@@ -208,10 +207,10 @@ std::string server_source(
             const Function& function = functions.at(name);
             int input_size = 0;
             for (const auto& argument : function.explicit_args) input_size += argument.size();
-            code << "    " << name << "_service_ = create_service<" << package_name << "::srv::Compute>(\"" << name
-                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::Compute::Request> request, std::shared_ptr<"
-                 << package_name << "::srv::Compute::Response> response) {\n"
-                 << "      if (request->input.size() != " << input_size << ") { RCLCPP_WARN(get_logger(), \"" << name
+            code << "    get_" << name << "_service_ = create_service<" << package_name << "::srv::GetValue>(\"" << package_name << "/get_" << name
+                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::GetValue::Request> request, std::shared_ptr<"
+                 << package_name << "::srv::GetValue::Response> response) {\n"
+                 << "      if (request->input.size() != " << input_size << ") { RCLCPP_WARN(get_logger(), \"get_" << name
                  << " expects " << input_size << " explicit input values\"); return; }\n";
             int offset = 0;
             for (const auto& argument : function.explicit_args) {
@@ -225,19 +224,21 @@ std::string server_source(
                 if (index) code << ", ";
                 code << function.explicit_args[index].name;
             }
-            code << "); response->output = flatten_row_major(result);\n    });\n";
-        } else {
+            code << "); response->value = flatten_row_major(result);\n    });\n";
+        } else if (parameters.count(name)) {
             const int size = parameters.at(name).symb_size();
-            code << "    get_" << name << "_service_ = create_service<" << package_name << "::srv::GetParameter>(\"get_" << name
-                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::GetParameter::Request>, std::shared_ptr<"
-                 << package_name << "::srv::GetParameter::Response> response) { const auto value = robot_.get_" << name
+            code << "    get_" << name << "_service_ = create_service<" << package_name << "::srv::GetValue>(\"" << package_name << "/get_" << name
+                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::GetValue::Request>, std::shared_ptr<"
+                 << package_name << "::srv::GetValue::Response> response) { const auto value = robot_.get_" << name
                  << "(); response->value.assign(value.data(), value.data() + " << size << "); });\n"
-                 << "    set_" << name << "_service_ = create_service<" << package_name << "::srv::SetParameter>(\"set_" << name
-                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::SetParameter::Request> request, std::shared_ptr<"
-                 << package_name << "::srv::SetParameter::Response> response) {\n"
+                 << "    set_" << name << "_service_ = create_service<" << package_name << "::srv::SetValue>(\"" << package_name << "/set_" << name
+                 << "\", [this](const std::shared_ptr<" << package_name << "::srv::SetValue::Request> request, std::shared_ptr<"
+                 << package_name << "::srv::SetValue::Response> response) {\n"
                  << "      if (request->value.size() != " << size << ") { response->success = false; response->message = \"Expected " << size << " values\"; return; }\n"
                  << "      Eigen::Matrix<double, " << size << ", 1> value; for (std::size_t index = 0; index < " << size << "; ++index) value(index) = request->value[index];\n"
                  << "      robot_.set_" << name << "(value); response->success = true;\n    });\n";
+        } else {
+            throw std::runtime_error("Internal error: unknown quantity '" + name + "' in ros_server_generator.services.");
         }
     }
 
@@ -265,9 +266,9 @@ std::string server_source(
              << "  rclcpp::Subscription<FloatArray>::SharedPtr " << input.first << "_subscription_;\n";
     }
     for (const auto& name : services) {
-        if (functions.count(name)) code << "  rclcpp::Service<" << package_name << "::srv::Compute>::SharedPtr " << name << "_service_;\n";
-        else code << "  rclcpp::Service<" << package_name << "::srv::GetParameter>::SharedPtr get_" << name << "_service_;\n"
-                  << "  rclcpp::Service<" << package_name << "::srv::SetParameter>::SharedPtr set_" << name << "_service_;\n";
+        if (functions.count(name)) code << "  rclcpp::Service<" << package_name << "::srv::GetValue>::SharedPtr get_" << name << "_service_;\n";
+        else code << "  rclcpp::Service<" << package_name << "::srv::GetValue>::SharedPtr get_" << name << "_service_;\n"
+                  << "  rclcpp::Service<" << package_name << "::srv::SetValue>::SharedPtr set_" << name << "_service_;\n";
     }
     for (const auto& name : topics) code << "  rclcpp::Publisher<FloatArray>::SharedPtr " << name << "_publisher_;\n";
     code << "};\n\nint main(int argc, char** argv) {\n  rclcpp::init(argc, argv);\n";
@@ -326,9 +327,9 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     write_file(package_root / "package.xml", package_xml(package_name));
     write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name));
     write_file(package_root / "msg" / "Float32Array.msg", "float32[] data\n");
-    write_file(package_root / "srv" / "Compute.srv", "float32[] input\n---\nfloat32[] output\n");
-    write_file(package_root / "srv" / "GetParameter.srv", "---\nfloat32[] value\n");
-    write_file(package_root / "srv" / "SetParameter.srv", "float32[] value\n---\nbool success\nstring message\n");
+    write_file(package_root / "srv" / "GetValue.srv", "float32[] input\n---\nfloat32[] value\n");
+    // write_file(package_root / "srv" / "GetValue.srv", "---\nfloat32[] value\n");
+    write_file(package_root / "srv" / "SetValue.srv", "float32[] value\n---\nbool success\nstring message\n");
     write_file(package_root / "launch" / (package_name + ".launch.py"), launch_file(package_name, robot_name));
 
     // - write the ROS server node - //

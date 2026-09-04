@@ -11,10 +11,7 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 ############################################
 robot_generator:
-  gen_python: false
-  gen_casadi: false
   gen_robot: true
-  copy_gen: false
 
 ros_server_generator:
   frequency: 1000

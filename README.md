@@ -1,5 +1,16 @@
 # ❗ ROS Plugin in Development 🔧
-The plugin will create a ROS 2 package that exposes the robot functions directly via services
+The plugin will create a ROS 2 package that exposes the robot functions directly via services and topics. Information are available [here](docs/plugins/ros_server_plugin.md). A working example follows these steps:
+- clone thunder `git clone --branch plugin/gs/ros https://github.com/CentroEPiaggio/thunder_dynamics.git`
+- open the folder with vscode and enter in the container with the Dev Container extension
+- in a new terminal: 
+  - go to the debug robots folder `cd src/thunder/robots/debug`
+  - create the robot files and package `thunder gen RRR_ros.yaml -n RRR`
+  - the package will be automatically copied in the thunder_ros_test folder
+- open the thunder_ros_test folder in another istance of vscode, opening the associated container
+- compile with colcon `colcon build --symlink-install`
+- source the new packages `source install/setup.bash`
+- launch the server `ros2 launch rrr_server rrr_server.launch.py`
+- check topics and services or run the test node `ros2 run rrr_server_test rrr_service_client`
 
 # ⚡ Thunder Dynamics (v1.0.1)
 
