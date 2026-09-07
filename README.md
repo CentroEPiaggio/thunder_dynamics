@@ -1,5 +1,11 @@
 # ❗ ROS Plugin in Development 🔧
-The plugin will create a ROS 2 package that exposes the robot functions directly via services and topics. Information are available [here](docs/plugins/ros_server_plugin.md). A working example follows these steps:
+The plugin will create a ROS 2 package that exposes the robot functions directly via services and topics. More information are available [here](docs/plugins/ros_server_plugin.md). A working example follows these steps:
+
+### Prerequisites
+- vscode
+- Dev Containers extension for vscode
+
+### Steps
 - clone thunder `git clone --branch plugin/gs/ros https://github.com/CentroEPiaggio/thunder_dynamics.git`
 - open the folder with vscode and enter in the container with the Dev Container extension
 - in a new terminal: 
@@ -12,7 +18,8 @@ The plugin will create a ROS 2 package that exposes the robot functions directly
 - launch the server `ros2 launch rrr_server rrr_server.launch.py`
 - check topics and services or run the test node `ros2 run rrr_server_test rrr_service_client`
 
-# ⚡ Thunder Dynamics (v1.0.1)
+
+# ⚡ Thunder Dynamics (v1.0.0 + 0.1.0)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 

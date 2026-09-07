@@ -11,7 +11,7 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 ############################################
 robot_generator:
-  gen_robot: true
+  gen_robot: true     # needed by ros_server_generator
 
 ros_server_generator:
   frequency: 1000
@@ -19,9 +19,9 @@ ros_server_generator:
   copy_gen: true
   inputs:
     q: '/robot/q'
-    dq: /robot/dq
-  services: [M, q]
-  topics: [M, q]
+    dq: '/robot/dq'
+  services: ['M', 'C', 'G', 'q']
+  topics: ['M', 'q']
 
 ############################################
 dh_loader:
@@ -56,7 +56,7 @@ dh_loader:
 dyn_loader:
 
   # link friction
-  Dl_order: 2
+  Dl_order: 1
 
   # gravity vector
   gravity:
@@ -79,8 +79,8 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
+        symb: [0]
+        Dl: [0.1]
 
     link2:
       inertial:
@@ -96,8 +96,8 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
+        symb: [0]
+        Dl: [0.1]
 
     link3:
       inertial:
@@ -113,20 +113,20 @@ dyn_loader:
         Iyz: 0.0
         Izz: 0.3
       friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
+        symb: [0]
+        Dl: [0.1]
 
     ee:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 0.0
-        CoM_x: 0.0
-        CoM_y: 0.0
-        CoM_z: 0.0
-        Ixx: 0.0
+        mass: 1.0
+        CoM_x: 0.1
+        CoM_y: 0.1
+        CoM_z: 0.5
+        Ixx: 0.02
         Ixy: 0.0
         Ixz: 0.0
-        Iyy: 0.0
+        Iyy: 0.5
         Iyz: 0.0
-        Izz: 0.0
+        Izz: 0.5
 
