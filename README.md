@@ -9,7 +9,7 @@ The plugin will create a ROS 2 package that exposes the robot functions directly
 - clone thunder `git clone --branch plugin/gs/ros https://github.com/CentroEPiaggio/thunder_dynamics.git`
 - open the folder with vscode and enter in the container with the Dev Container extension
 - in a new terminal: 
-  - go to the debug robots folder `cd src/thunder/robots/debug`
+  - go to the debug robots folder `cd src/thunder/robots/ROS`
   - create the robot files and package `thunder gen RRR_ros.yaml -n RRR`
   - the package will be automatically copied in the thunder_ros_test folder
 - open the thunder_ros_test folder in another istance of vscode, opening the associated container
