@@ -30,57 +30,50 @@ kin_loader:
     link0:
       parent: "base"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
+      symb: [0,0,0,0,0,0]
       xyzrpy: [0, 0, 0.333, 0, 0, 0]
     link1:
       parent: "link0"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [0, 0, 0, -1.5708, 0, 0]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, 0, 0, *PI_2_neg, 0, 0]
     link2:
       parent: "link1"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [0, -0.316, 0, 1.5708, 0, 0]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, -0.316, 0, *PI_2, 0, 0]
     link3:
       parent: "link2"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [0.0825, 0, 0, 1.5708, 0, 0]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0.0825, 0, 0, *PI_2, 0, 0]
     link4:
       parent: "link3"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [-0.0825, 0.384, 0, -1.5708, 0, 0]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [-0.0825, 0.384, 0, *PI_2_neg, 0, 0]
     link5:
       parent: "link4"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [0, 0, 0, 1.5708, 0, 0]
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, 0, 0, *PI_2, 0, 0]
     link6:
       parent: "link5"
       joint_type: "R"
-      symb: [1,1,1,1,1,1]
-      xyzrpy: [0.088, -0.107, 0, 1.5708, 0, 0]
-    EE:
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0.088, 0, 0, *PI_2, 0, 0]
+    flange:
       parent: "link6"
+      joint_type: "FIXED"
+      symb: [0,0,0,0,0,0]
+      xyzrpy: [0, 0, 0.107, 0, 0, 0]
+    EE:
+      parent: "flange"
       joint_type: "FIXED"
       symb: [1,1,1,1,1,1]
       xyzrpy: [0, 0, 0, 0, 0, 0]
       available: true
       derivatives: true
-    
-  # # world to link_0
-  # Base_to_L0:
-  #   symb: [0,0,0, 0,0,0]
-  #   xyz: [0, 0, 0]
-  #   ypr: [0, 0, 0]
-
-  # # Link_n to EE
-  # Ln_to_EE:
-  #   symb: [1,1,1, 1,1,1]
-  #   xyz: [0, 0, 0]
-  #   ypr: [0, 0, 0]
 
 ############################################
 dyn_loader:
@@ -93,11 +86,10 @@ dyn_loader:
     symb: [0,0,0]
     value: [0, 0, -9.81]
 
-  # inertial parameters expressed w.r.t. DH frames
   dynamics:
     link0:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 0.629769
         CoM: [-0.041018, -0.00014, 0.049974]
         Ixx: 0.00315
@@ -112,7 +104,7 @@ dyn_loader:
 
     link1:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 4.970684
         CoM_x: 3.875e-3
         CoM_y: 2.081e-3
@@ -129,7 +121,7 @@ dyn_loader:
 
     link2:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 0.646926
         CoM_x: -3.141e-3
         CoM_y: -2.872e-2
@@ -146,7 +138,7 @@ dyn_loader:
 
     link3:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 3.228604
         CoM_x: 2.7518e-02
         CoM_y: 3.9252e-02
@@ -163,7 +155,7 @@ dyn_loader:
 
     link4:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 3.587895
         CoM_x: -5.317e-02
         CoM_y: 1.04419e-01
@@ -180,7 +172,7 @@ dyn_loader:
 
     link5:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 1.225946
         CoM_x: -1.1953e-02
         CoM_y: 4.1065e-02
@@ -197,7 +189,7 @@ dyn_loader:
 
     link6:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 1.666555
         CoM_x: 6.0149e-02
         CoM_y: -1.4117e-02
@@ -212,19 +204,30 @@ dyn_loader:
         symb: [1,1]
         Dl: [0.1, 0.01]
 
-    EE:
+    flange:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
+        symb: [0,0,0,0,0,0,0,0,0,0]
         mass: 0.735522
         CoM_x: 1.0517e-02
         CoM_y: -4.252e-03
-        CoM_z: -4.5403e-02
+        CoM_z: 6.1597e-02
         Ixx: 1.2516e-02
         Iyy: 1.0027e-02
         Izz: 4.8150e-03
         Ixy: -4.2800e-04
         Ixz: -1.1960e-03
         Iyz: -7.4100e-04
-      friction:
-        symb: [1,1]
-        Dl: [0.1, 0.01]
+
+    EE:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 0.0
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.0
+        Iyy: 0.0
+        Izz: 0.0
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyz: 0.0
