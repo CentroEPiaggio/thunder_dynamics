@@ -1,4 +1,6 @@
 general:
+	☐ properties of robot should be static! They cannot change between istances.
+	✔ in generated library, there is "using eigen::Vector". Problem on ROS1? @done (9/29/2026, 8:42:31 AM)
 	☐ check all the functions that does not change the class should be const (e.g. size())
 	☐ if thunder is not executed into a container and there is the copy_gen flag, Some files could be created into "/home/thunder_dev/thunder_dynamics/"
 	✔ update robot yamls @done (7/28/2026, 1:57:34 PM)

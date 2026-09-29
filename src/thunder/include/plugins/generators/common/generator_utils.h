@@ -68,8 +68,8 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 		"using std::map;\n"
 		"using Eigen::MatrixXd;\n"
 		"using Eigen::VectorXd;\n"
-		"using Eigen::Matrix;\n"
-		"using Eigen::Vector;\n\n");
+		"using Eigen::Matrix;\n\n");
+		// "using Eigen::Vector;\n\n");
 	
 	// --- class and private members --- //
 	string thunder_robot_name = "thunder_" + robot_name;
