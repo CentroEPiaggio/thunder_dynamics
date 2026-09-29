@@ -19,7 +19,7 @@ The plugin will create a ROS 2 package that exposes the robot functions directly
 - check topics and services or run the test node `ros2 run rrr_server_test rrr_service_client`
 
 
-# ⚡ Thunder Dynamics (v1.0.0 + 0.1.0)
+# ⚡ Thunder Dynamics (v1.0.1 + 0.1.0)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
