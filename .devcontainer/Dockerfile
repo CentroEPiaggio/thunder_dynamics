@@ -41,7 +41,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
 WORKDIR ${HOME}
 
 # yaml-cpp installation
-RUN git clone https://github.com/jbeder/yaml-cpp.git yaml_cpp
+RUN git clone --branch yaml-cpp-0.9.0 https://github.com/jbeder/yaml-cpp.git yaml_cpp
 WORKDIR ${HOME}/yaml_cpp
 RUN mkdir -p build && \
 	cd build && \
@@ -52,7 +52,7 @@ RUN mkdir -p build && \
 
 # CasADi installation
 WORKDIR ${HOME}
-RUN git clone https://github.com/casadi/casadi.git casadi
+RUN git clone --branch 3.8.0 https://github.com/casadi/casadi.git casadi
 WORKDIR ${HOME}/casadi
 RUN mkdir -p build && \
 	cd build && \

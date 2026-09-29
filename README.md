@@ -1,4 +1,4 @@
-# ⚡ Thunder Dynamics (v1.0.0)
+# ⚡ Thunder Dynamics (v1.0.1)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
