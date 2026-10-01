@@ -157,4 +157,9 @@ INFO:
 		- Link i is solidal to joint i
 		- Link n is the end-effector
 		- Link 0 is considered only in case of moving base robot (not ready)
-
+	version update in:
+		- README.md
+		- CHANGELOG.md
+		- pyproject.toml
+		- CMakeLists.txt
+		- thunder_main.cpp

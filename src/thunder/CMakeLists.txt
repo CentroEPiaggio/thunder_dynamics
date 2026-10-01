@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_dynamics VERSION 1.0.1)
+project(thunder_dynamics VERSION 1.0.2)
 
 include(GNUInstallDirs)
 
