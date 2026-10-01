@@ -41,26 +41,27 @@ namespace thunder_ns {
 			int K_order = 0;
 			int D_order = 0;
 			int Dm_order = 0;
-			int Dl_order = 0;
 
 			// - Load from robot - //
 			int numJoints = robot->get<int>("numJoints");
+			int ndof = robot->get<int>("ndof");
 			vector<string> jointsType = robot->get<vector<string>>("jointsType");
 
 			// - identify elastic joints - //
 			int numSoftJoints = 0;
-			vector<short> isSoftJoint(numJoints);
-			// isSoftJoint.resize(numJoints);
-			int n_fixed = 0;	// have to be relative to ndof, not numJoints
+			vector<short> isSoftJoint;
+			isSoftJoint.reserve(ndof);	// isSoft is relative to ndof, not numJoints
 			for (int i = 0; i < numJoints; i++) {
 				if (jointsType[i] == "FIXED") {
-					n_fixed++;
+					continue;
 				}
-				if ((jointsType[i] == "R_SEA") || (jointsType[i] == "P_SEA")) {
-					isSoftJoint[i-n_fixed] = 1;
+				const bool isSoft = jointsType[i] == "R_SEA" ||
+									jointsType[i] == "P_SEA";
+				if (isSoft) {
+					isSoftJoint.push_back(1);
 					numSoftJoints++;
 				} else {
-					isSoftJoint[i-n_fixed] = 0;
+					isSoftJoint.push_back(0);
 				}
 			}
 

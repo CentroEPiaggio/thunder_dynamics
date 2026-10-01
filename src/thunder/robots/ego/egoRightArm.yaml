@@ -37,12 +37,14 @@ dh_loader:
 
   # world to link_0
   Base_to_L0:
+    name: "base"
     symb: [1,1,1, 0,0,0]
     xyz: [0, 0, 0]
     ypr: [0.174532922, 0.0, -0.1047197530]
 
   # Link_n to EE
   Ln_to_EE:
+    name: "EE"
     symb: [1,1,1, 0,0,0]
     xyz: [0, 0, 0.1]
     ypr: [*PI, *PI_2, 0]
@@ -60,7 +62,7 @@ dyn_loader:
     
   # inertial parameters expressed w.r.t. DH frames
   dynamics:
-    link1:
+    link0:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.5
@@ -77,7 +79,7 @@ dyn_loader:
         symb: [1]
         Dl: [0.1]
 
-    link2:
+    link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.6
@@ -94,7 +96,7 @@ dyn_loader:
         symb: [1]
         Dl: [0.1]
 
-    link3:
+    link2:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.6
@@ -111,7 +113,7 @@ dyn_loader:
         symb: [1]
         Dl: [0.1]
 
-    link4:
+    link3:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.6
@@ -128,7 +130,7 @@ dyn_loader:
         symb: [1]
         Dl: [0.1]
 
-    link5:
+    link4:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -152,6 +154,15 @@ soft_loader:
   D_order: 0
   Dm_order: 2
   joints:
+    joint0:
+      K: [2.5, 0.0, 50.0]
+      D: []
+      Dm: [10, 0.1]
+      Mm: 0.1
+      K_symb: [1,1,1]
+      D_symb: []
+      Dm_symb: [1,1]
+      Mm_symb: 1
     joint1:
       K: [2.5, 0.0, 50.0]
       D: []
@@ -180,15 +191,6 @@ soft_loader:
       Dm_symb: [1,1]
       Mm_symb: 1
     joint4:
-      K: [2.5, 0.0, 50.0]
-      D: []
-      Dm: [10, 0.1]
-      Mm: 0.1
-      K_symb: [1,1,1]
-      D_symb: []
-      Dm_symb: [1,1]
-      Mm_symb: 1
-    joint5:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
