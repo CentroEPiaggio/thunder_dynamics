@@ -108,7 +108,6 @@ if (CASADI_LIB_PATH)
   # Use $ORIGIN so the binary looks for the lib relative to its own path (bin/..)
   # We use the escaped version \$ORIGIN so it literalizes in the ELF header
   set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${THUNDER_PRIVATE_LIB_DIR}")
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   # Install CasADi files so they get included in the .deb
   file(GLOB CASADI_LIB_VARIANTS "${CASADI_LIB_DIR}/libcasadi.so*")
   install(FILES ${CASADI_LIB_VARIANTS} DESTINATION ${THUNDER_PRIVATE_LIB_DIR})
@@ -117,20 +116,20 @@ else()
 endif()
 
 set_target_properties(thunder PROPERTIES
+  BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
 )
 set_target_properties(thunder_test PROPERTIES
+  BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
 )
 set_target_properties(thunder_symbolic_test PROPERTIES
+  BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
 )
 set_target_properties(thunder_test_chrono PROPERTIES
+  BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
 )
 if(WITH_TESTS)
   enable_testing()
@@ -165,21 +164,21 @@ if(WITH_TESTS)
   )
 
   set_target_properties(thunder_robot_comparison_gtest PROPERTIES
+      BUILD_RPATH "${CASADI_LIB_DIR}"
       INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-      BUILD_WITH_INSTALL_RPATH TRUE
   )
 
   set_target_properties(thunder_no_generation_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
   )
   set_target_properties(thunder_generator_smoke_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
   )
   set_target_properties(thunder_tree_kinematics_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-    BUILD_WITH_INSTALL_RPATH TRUE
   )
 
   add_test(NAME thunder_no_generation_test COMMAND thunder_no_generation_test)
