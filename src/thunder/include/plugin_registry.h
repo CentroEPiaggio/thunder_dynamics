@@ -25,6 +25,7 @@
 
 // - Generators - //
 #include "plugins/generators/robot_generator.h"
+#include "plugins/generators/ros_server_generator.h"
 
 
 namespace thunder_ns {
@@ -59,6 +60,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 inline const std::map<std::string, std::shared_ptr<BaseGenerator>> GENERATORS = {
 	// TODO: ADD NEW GENERATORS HERE
 	{"robot_generator", std::make_shared<RobotGenerator>()},
+    {"ros_server_generator", std::make_shared<ROSServerGenerator>()},
 	
 };
 
