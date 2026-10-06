@@ -12,7 +12,7 @@ PI_2_neg: &PI_2_neg  -1.5707963267948966
 
 ############################################
 robot_generator:
-  gen_python:   true
+  gen_python:   false
   gen_casadi:   false
   gen_robot:    true
   copy_gen:     false
@@ -38,14 +38,14 @@ dh_loader:
   # world to link_0
   Base_to_L0:
     name: "base"
-    symb: [1,1,1, 0,0,0]
+    symb: [1,1,1, 1,1,1]
     xyz: [0, 0, 0]
     ypr: [0.174532922, 0.0, -0.1047197530]
 
   # Link_n to EE
   Ln_to_EE:
     name: "EE"
-    symb: [1,1,1, 0,0,0]
+    symb: [1,1,1, 1,1,1]
     xyz: [0, 0, 0.1]
     ypr: [*PI, *PI_2, 0]
 
@@ -146,6 +146,20 @@ dyn_loader:
       friction:
         symb: [1]
         Dl: [0.1]
+    
+    EE:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 0.1
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.01
+        Iyz: 0.0
+        Izz: 0.01
 
 ############################################
 soft_loader:
