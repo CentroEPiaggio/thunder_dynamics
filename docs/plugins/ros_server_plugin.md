@@ -1,6 +1,6 @@
 # ROS Server Generator Plugin
 
-`ros_server_generator` creates a standard ROS 2 C++ package around the C++ robot produced by `robot_generator`. It must run after `robot_generator`; it moves that generator's C++ sources into the ROS package, so there is a single authoritative copy of the generated robot code.
+`ros_server_generator` creates a standard ROS 2 C++ package around the C++ robot produced by `robot_generator`. It must run after `robot_generator`; it copies that C++ sources into the ROS package.
 
 ```yaml
 pipeline:

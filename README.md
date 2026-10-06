@@ -1,26 +1,4 @@
-# ❗ ROS Plugin in Development 🔧
-The plugin will create a ROS 2 package that exposes the robot functions directly via services and topics. More information are available [here](docs/plugins/ros_server_plugin.md). A working example follows these steps:
-
-### Prerequisites
-- Docker
-- vscode
-- Dev Containers extension for vscode
-
-### Steps
-- clone thunder `git clone --branch plugin/gs/ros https://github.com/CentroEPiaggio/thunder_dynamics.git`
-- open the folder with vscode and enter in the container with the Dev Container extension
-- in a new terminal: 
-  - go to the debug robots folder `cd src/thunder/robots/ROS`
-  - create the robot files and package `thunder gen RRR_ros.yaml -n RRR`
-  - the package will be automatically copied in the thunder_ros_test folder
-- open the thunder_ros_test folder in another istance of vscode, opening the associated container
-- compile with colcon `colcon build --symlink-install`
-- source the new packages `source install/setup.bash`
-- launch the server `ros2 launch rrr_server rrr_server.launch.py`
-- check topics and services or run the test node `ros2 run rrr_server_test rrr_service_client`
-
-
-# ⚡ Thunder Dynamics (v1.0.2 + 0.1.0)
+# ⚡ Thunder Dynamics (v1.1.2)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
@@ -79,7 +57,8 @@ thunder plugin list --verbose
 ## 📚 Documentation
 - 📐 [Architecture Overview](docs/architecture.md)
 - ⚙️ [Configuration Guide](docs/configuration.md)
-- 🧩 [Plugin Development Guide](docs/plugins.md)
+- 🧩 [Plugin Development Guide](docs/plugin_guide.md)
+- 📝 [Plugin Reference](docs/plugins.md)
 ---
 
 ## Using Generated Libraries
@@ -164,6 +143,8 @@ thunder plugin list --verbose
 | **Builder** | `soft_builder` | Build elastic joint dynamics |
 | **Generator** | `robot_generator` | Generate standalone C++ library and Python bindings |
 | **Generator** | `ros_server_generator` | Generate a ROS 2 service and topic server package |
+
+Docs for each plugin can be found in the [Plugin Reference](docs/plugins.md).
 
 ---
 

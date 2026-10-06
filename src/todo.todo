@@ -102,6 +102,7 @@ thunder_robot:
 	☐ save and load par in thunder_robot as generic functions
 
 plugins:
+	☐ fill plugin reference with existing plugins
 	☐ plugin dependency system
 	☐ avoid create a plugin istance to use function outside of plugin (example 'dq_select' in regressors)
 	☐ plugin should takes all the config if there is no section with the plugin name?
