@@ -1,0 +1,20 @@
+{
+  "name": "Thunder ROS 2 test workspace",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/workspaces/thunder_ros_test",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/thunder_ros_test,type=bind",
+  "remoteUser": "ros",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-iot.vscode-ros", "ms-vscode.cpptools", "ms-vscode.cmake-tools"],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 pipeline:
   loaders:    ["kin_loader", "dyn_loader"]
   builders:   ["kin_builder", "dyn_builder", "reg_builder"]
-  generators: ["robot_generator"]
+  generators: ["robot_generator", "ros_server_generator"]
 
 version: 1.0
 
@@ -15,7 +15,22 @@ robot_generator:
   gen_python:   false
   gen_casadi:   false
   gen_robot:    true
-  copy_gen:     true
+  copy_gen:     false
+
+ros_server_generator:
+  frequency: 1000
+  real_time: true
+  copy_gen: true
+  inputs:
+    q: '/controller/q'
+    dq: '/controller/dq'
+    ddq: '/controller/ddq'
+    dqr: '/controller/dqr'
+    ddqr: '/controller/ddqr'
+    par_REG: '/controller/par_REG'
+    par_DYN: '/controller/par_DYN'
+  services: ['par_KIN', 'par_REG', 'par_DYN']
+  topics: ['Yr', 'Y', 'reg_G', 'reg2dyn']
 
 ############################################
 kin_loader:
@@ -104,7 +119,7 @@ dyn_loader:
 
     link1:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 4.970684
         CoM_x: 3.875e-3
         CoM_y: 2.081e-3
@@ -121,7 +136,7 @@ dyn_loader:
 
     link2:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.646926
         CoM_x: -3.141e-3
         CoM_y: -2.872e-2
@@ -138,7 +153,7 @@ dyn_loader:
 
     link3:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 3.228604
         CoM_x: 2.7518e-02
         CoM_y: 3.9252e-02
@@ -155,7 +170,7 @@ dyn_loader:
 
     link4:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 3.587895
         CoM_x: -5.317e-02
         CoM_y: 1.04419e-01
@@ -172,7 +187,7 @@ dyn_loader:
 
     link5:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.225946
         CoM_x: -1.1953e-02
         CoM_y: 4.1065e-02
@@ -189,7 +204,7 @@ dyn_loader:
 
     link6:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.666555
         CoM_x: 6.0149e-02
         CoM_y: -1.4117e-02
@@ -206,7 +221,7 @@ dyn_loader:
 
     flange:
       inertial:
-        symb: [0,0,0,0,0,0,0,0,0,0]
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.735522
         CoM_x: 1.0517e-02
         CoM_y: -4.252e-03

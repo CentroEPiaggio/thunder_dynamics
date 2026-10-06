@@ -1,4 +1,4 @@
-# ⚡ Thunder Dynamics (v1.0.2)
+# ⚡ Thunder Dynamics (v1.1.2)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
@@ -57,7 +57,8 @@ thunder plugin list --verbose
 ## 📚 Documentation
 - 📐 [Architecture Overview](docs/architecture.md)
 - ⚙️ [Configuration Guide](docs/configuration.md)
-- 🧩 [Plugin Development Guide](docs/plugins.md)
+- 🧩 [Plugin Development Guide](docs/plugin_guide.md)
+- 📝 [Plugin Reference](docs/plugins.md)
 ---
 
 ## Using Generated Libraries
@@ -123,7 +124,7 @@ Thunder features a 3-stage pipeline architecture:
 
 Plugins can be written in **C++** or directly in **Python** (prefixed with `py.`).
 
-### Built-in Plugins4
+### Built-in Plugins
 To inspect all available C++ plugins:
 ```bash
 thunder plugin list --verbose
@@ -141,6 +142,9 @@ thunder plugin list --verbose
 | **Builder** | `reg_builder` | Build kinematic and dynamic regressors |
 | **Builder** | `soft_builder` | Build elastic joint dynamics |
 | **Generator** | `robot_generator` | Generate standalone C++ library and Python bindings |
+| **Generator** | `ros_server_generator` | Generate a ROS 2 service and topic server package |
+
+Docs for each plugin can be found in the [Plugin Reference](docs/plugins.md).
 
 ---
 

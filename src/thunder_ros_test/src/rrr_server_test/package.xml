@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rrr_server_test</name>
+  <version>0.1.0</version>
+  <description>Manual service client for the generated rrr_server package.</description>
+  <maintainer email="maintainer@example.com">Thunder Dynamics</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>rrr_server</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

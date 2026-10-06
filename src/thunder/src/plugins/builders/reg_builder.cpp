@@ -82,6 +82,7 @@ namespace thunder_ns {
 		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
+		auto ddq = robot->get_model("ddq");
 		auto dqr = robot->get_model("dqr");
 		auto ddqr = robot->get_model("ddqr");
 		auto par_gravity = robot->get_model("par_gravity");
@@ -100,6 +101,7 @@ namespace thunder_ns {
 		casadi::SX g = par_gravity;
 
 		casadi::SX Yr(ndof, nParLink*nj);
+		casadi::SX Y(ndof, nParLink*nj);
 		casadi::SX reg_M(ndof, nParLink*nj);
 		casadi::SX reg_C(ndof, nParLink*nj);
 		casadi::SX reg_G(ndof, nParLink*nj);
@@ -136,38 +138,66 @@ namespace thunder_ns {
 
 			// ------------------------- Y0r_i -------------------------- //
 			
+			// - Common terms - //
 			casadi::SX M0_i = mtimes(Jvi.T(),Jvi);
 			casadi::SX C = dyn.stdCmatrix(M0_i, q, dq, dq_sel_);
+			casadi::SX Z0_i = -mtimes(Jvi.T(),g);
 
+			// - Slotine-Li regressor - //
 			casadi::SX dX0r_i = mtimes(M0_i, ddqr);
 			casadi::SX W0r_i = -mtimes(C, dqr);
-			casadi::SX Z0r_i = -mtimes(Jvi.T(),g);
-			
-			casadi::SX Y0r_i = dX0r_i - W0r_i + Z0r_i;
-			
+			casadi::SX Y0r_i = dX0r_i - W0r_i + Z0_i;
+
+			// - Standard regressor - //
+			casadi::SX dX0_i = mtimes(M0_i, ddq);
+			casadi::SX W0_i = -mtimes(C, dq);
+			casadi::SX Y0_i = dX0_i - W0_i + Z0_i;
+
 			// ------------------------- Y1r_i -------------------------- //
 			
+			// - Common terms - //
+			casadi::SX Z1_i= -(jacobian(mtimes(Rwi.T(),g),q)).T();
+
+			// - Slotine-Li regressor - //
 			casadi::SX dX1r_i(ndof,3);
 			casadi::SX W1r_i(ndof,3);
 
+			// - Standard regressor - //
+			casadi::SX dX1_i(ndof,3);
+			casadi::SX W1_i(ndof,3);
+
 			for (int l=0; l<3; l++) {
 
+				// - Common terms - //
 				casadi::SX Ql = Q_[l];
 				casadi::SX M1l_i = casadi::SX::mtimes({Jwi.T(),Rwi,Ql,Rwi.T(),Jvi}) - 
 								   casadi::SX::mtimes({Jvi.T(),Rwi,Ql,Rwi.T(),Jwi});
 				casadi::SX C = dyn.stdCmatrix(M1l_i, q, dq, dq_sel_);
 
+				// - Slotine-Li regressor - //
 				dX1r_i(allRows,l) = mtimes(M1l_i, ddqr);
 				W1r_i(allRows,l) = -mtimes(C, dqr);
+
+				// - Standard regressor - //
+				dX1_i(allRows,l) = mtimes(M1l_i, ddq);
+				W1_i(allRows,l) = -mtimes(C, dq);
 			}
-			casadi::SX Z1r_i= -(jacobian(mtimes(Rwi.T(),g),q)).T();
 			
-			casadi::SX Y1r_i = dX1r_i - W1r_i + Z1r_i;
+			// - Slotine-Li regressor - //
+			casadi::SX Y1r_i = dX1r_i - W1r_i + Z1_i;
+
+			// - Standard regressor - //
+			casadi::SX Y1_i = dX1_i - W1_i + Z1_i;
 
 			// ------------------------- Y2r_i -------------------------- //
 
+			// - Slotine-Li regressor - //
 			casadi::SX dX2r_i(ndof,6);
 			casadi::SX W2r_i(ndof,6);
+
+			// - Standard regressor - //
+			casadi::SX dX2_i(ndof,6);
+			casadi::SX W2_i(ndof,6);
 			
 			for (int l=0; l<6; l++) {
 
@@ -175,31 +205,49 @@ namespace thunder_ns {
 				casadi::SX M2l_i = casadi::SX::mtimes({Jwi.T(),Rwi,El,Rwi.T(),Jwi});
 				casadi::SX C = dyn.stdCmatrix(M2l_i, q, dq, dq_sel_);
 
+				// - Slotine-Li regressor - //
 				dX2r_i(allRows,l) = mtimes(M2l_i, ddqr);
 				W2r_i(allRows,l) = -mtimes(C, dqr);
+
+				// - Standard regressor - //
+				dX2_i(allRows,l) = mtimes(M2l_i, ddq);
+				W2_i(allRows,l) = -mtimes(C, dq);
 			}
 
+			// - Slotine-Li regressor - //
 			casadi::SX Y2r_i = dX2r_i - W2r_i;
+
+			// - Standard regressor - //
+			casadi::SX Y2_i = dX2_i - W2_i;
 
 			// ------------------- matrix regressors ------------------- //
 			casadi::SX reg_M_i = horzcat(dX0r_i, dX1r_i, dX2r_i);
 			casadi::SX reg_C_i = horzcat(-W0r_i, -W1r_i, -W2r_i);
-			casadi::SX reg_G_i = horzcat(Z0r_i, Z1r_i, casadi::SX::zeros(ndof,6));
+			casadi::SX reg_G_i = horzcat(Z0_i, Z1_i, casadi::SX::zeros(ndof,6));
 
 			// ------------------------- Yr_i -------------------------- //
 
+			// - Slotine-Li regressor - //
 			casadi::SX Yr_i = horzcat(Y0r_i,Y1r_i,Y2r_i);
+
+			// - Standard regressor - //
+			casadi::SX Y_i = horzcat(Y0_i,Y1_i,Y2_i);
 			
-			// final regressors 
+			// - final regressors - //
 			casadi::Slice selCols(i*nParLink, (i+1)*nParLink);          // Select current columns of matrix regressor
 			Yr(allRows,selCols) = Yr_i;
+			Y(allRows,selCols) = Y_i;
 			reg_M(allRows,selCols) = reg_M_i;
 			reg_C(allRows,selCols) = reg_C_i;
 			reg_G(allRows,selCols) = reg_G_i;
 		}
+
+		// - add the Slotine-Li regressor - //
 		std::vector<std::string> arg_list;
 		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"};
-		if (!robot->add_function("Yr", Yr, arg_list, "Manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Yr", Yr, arg_list, "Slotine-Li manipulator regressor matrix")) return 0;
+		
+		// - add the matrices regressors - //
 		arg_list = {"q", "ddqr", "par_KIN"};
 		if (!robot->add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
 		arg_list = {"q", "dq", "dqr", "par_KIN"};
@@ -207,9 +255,13 @@ namespace thunder_ns {
 		arg_list = {"q", "par_KIN", "par_gravity"};
 		if (!robot->add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
 
+		// - add the standard regressor - //
+		arg_list = {"q", "dq", "ddq", "par_KIN", "par_gravity"};
+		if (!robot->add_function("Y", Y, arg_list, "Standard manipulator regressor matrix")) return 0;
+
 		return 1;
 	}
-
+	
 	int RegBuilder::compute_reg_Dl(std::shared_ptr<Robot> robot){
 		// parameters from robot
 		// int nj = robot->get<int>("numJoints");
