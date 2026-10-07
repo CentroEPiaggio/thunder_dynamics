@@ -27,6 +27,16 @@ namespace thunder_ns {
 			std::cerr << "Error adding joint function: T_JOINT_P_SEA" << std::endl;
 		}
 
+		// Motion subspaces, same as the rigid joints R and P
+		SX S_R = SX::vertcat({SX::zeros(3,1), axis / SX::norm_2(axis)});
+		if (!robot->add_function("S_JOINT_R_SEA", S_R, {}, "Motion subspace of rotoidal joint with elasticity", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_R_SEA" << std::endl;
+		}
+		SX S_P = SX::vertcat({axis, SX::zeros(3,1)});
+		if (!robot->add_function("S_JOINT_P_SEA", S_P, {}, "Motion subspace of prismatic joint with elasticity", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_P_SEA" << std::endl;
+		}
+
 	}
 
 	// --- Load function --- //

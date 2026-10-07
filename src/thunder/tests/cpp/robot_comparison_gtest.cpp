@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <tuple>
 
 #include <casadi/casadi.hpp>
 #include <yaml-cpp/yaml.h>
@@ -18,8 +19,8 @@ static void expectSame(const std::string& name, const casadi::DM& thunder, const
     EXPECT_LT(static_cast<double>(casadi::DM::norm_inf(diff)), tolerance) << name << " differs from pinocchio";
 }
 
-// Franka (7 R + fixed + 1 P) against pinocchio, for each dyn_builder dynamics_method
-class RobotComparison : public ::testing::TestWithParam<std::string> {};
+// Franka (7 R + fixed + 1 P) against pinocchio, for each dyn_builder dynamics_method and C_method
+class RobotComparison : public ::testing::TestWithParam<std::tuple<std::string, std::string>> {};
 
 TEST_P(RobotComparison, FrankaPinocchio) {
 #ifdef THUNDER_SOURCE_DIR
@@ -34,7 +35,8 @@ TEST_P(RobotComparison, FrankaPinocchio) {
 
     YAML::Node config = YAML::LoadFile(yamlPath);
     config["urdf_loader"]["urdf_path"] = urdfPath;
-    config["dyn_builder"]["dynamics_method"] = GetParam();
+    config["dyn_builder"]["dynamics_method"] = std::get<0>(GetParam());
+    config["dyn_builder"]["C_method"] = std::get<1>(GetParam());
 
     thunder_ns::PluginManager manager;
     manager.set_verbose(false);
@@ -65,4 +67,5 @@ TEST_P(RobotComparison, FrankaPinocchio) {
     expectSame("G", thunder.G, pinocchio.G, tolerance);
 }
 
-INSTANTIATE_TEST_SUITE_P(DynamicsMethod, RobotComparison, ::testing::Values("lagrange", "rnea"));
+INSTANTIATE_TEST_SUITE_P(DynamicsMethod, RobotComparison,
+                         ::testing::Combine(::testing::Values("lagrange", "rnea"), ::testing::Values("christoffel", "rnea")));

@@ -37,6 +37,6 @@ ctest -V -R thunder_.*_test
 ## Pinocchio Dependency
 
 `thunder_robot_comparison_gtest` compares M, C, Cdq and G against Pinocchio (via the Python helper),
-once for each `dyn_builder` `dynamics_method` (`lagrange`, `rnea`).
+for each combination of the `dyn_builder` options `dynamics_method` (`lagrange`, `rnea`) and `C_method` (`christoffel`, `rnea`).
 If Pinocchio is not available in the active Python environment, the test is skipped.
 Install it with `pip install --user pin`.

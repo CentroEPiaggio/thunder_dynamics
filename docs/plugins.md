@@ -5,6 +5,10 @@ Description index of documentation for each existing plugin.
 
 ## Builders
 
+[Dynamics Builder](plugins/dyn_builder_plugin.md): Builds `M`, `C`, `Cdq`, `G` (Lagrange or RNEA), link friction, time derivatives and parameter conversions.
+
+Joint types used by the builders, and how to add new ones: [Joint types](joints.md).
+
 ## Generators
 
 [ROS Server](plugins/ros_server_plugin.md): Creates a Ros 2 C++ package around the C++ robot produced by `robot_generator`.

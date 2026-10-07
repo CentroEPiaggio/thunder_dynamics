@@ -50,7 +50,19 @@ namespace thunder_ns {
 			return 0;
 		}
 
-		// Fixed joint
+		// Motion subspaces ([linear; angular] twist per unit joint velocity, in the joint frame), used by the rnea dynamics
+		SX S_R = SX::vertcat({SX::zeros(3,1), axis / SX::norm_2(axis)});	// R_aa normalises the axis
+		if (!robot->add_function("S_JOINT_R", S_R, {}, "Motion subspace of the general rotoidal joint R", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_R" << std::endl;
+			return 0;
+		}
+		SX S_P = SX::vertcat({axis, SX::zeros(3,1)});
+		if (!robot->add_function("S_JOINT_P", S_P, {}, "Motion subspace of the general prismatic joint P", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_P" << std::endl;
+			return 0;
+		}
+
+		// Fixed joint (no motion subspace, dimension 0)
 		Ti = SX::eye(4);
 		if (!robot->add_function("T_JOINT_FIXED", Ti, {}, "Template transformation of a fixed joint", {q_joint_arg, axis_arg})) {
 			std::cerr << "Error adding joint function: T_JOINT_FIXED" << std::endl;
