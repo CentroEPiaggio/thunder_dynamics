@@ -293,8 +293,8 @@ namespace thunder_ns {
 		SX S(6, q_joint.size1());
 		for (int k=0; k<q_joint.size1(); k++){
 			SX dR = SX::reshape(SX::jacobian(SX::reshape(R, 9, 1), q_joint(k)), 3, 3);
-			S(ang, k) = vect(mtimes(R.T(), dR));
 			S(lin, k) = mtimes(R.T(), SX::jacobian(T(sel3,3), q_joint(k)));
+			S(ang, k) = vect(mtimes(R.T(), dR));
 		}
 		return S;
 	}
