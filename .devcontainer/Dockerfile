@@ -104,6 +104,9 @@ RUN sudo chmod +x /entrypoint.sh ; sudo chown ${USERNAME} /entrypoint.sh \
 
 RUN pip install pyyaml
 
+# Pinocchio reference for the dynamics gtest (~380 MB); --user because the test helper looks in ~/.local
+# RUN pip install --user pin
+
 # Clean image
 RUN sudo apt clean && sudo rm -rf /var/lib/apt/lists/*
 

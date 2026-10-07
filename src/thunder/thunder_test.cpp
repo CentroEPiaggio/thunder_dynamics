@@ -161,7 +161,7 @@ int main(){
 	cout << "M: " << robot->get("M") << endl << endl;
 	cout << "M_2: " << robot2->get("M") << endl << endl;
 	cout << "C: " << robot->get("C") << endl << endl;
-	cout << "C_std: " << robot->get("C_std") << endl << endl;
+	if (robot->functions.count("C_std")) cout << "C_std: " << robot->get("C_std") << endl << endl;
 	cout << "G: " << robot->get("G") << endl << endl;
 	cout << "G_2: " << robot2->get("G") << endl << endl;
 	if (robot->get<int>("Dl_order")){
