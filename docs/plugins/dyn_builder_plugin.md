@@ -15,8 +15,8 @@ pipeline:
   generators: [robot_generator]
 
 dyn_builder:                  # plugin configuration, all keys optional
-  dynamics_method: rnea       # M, Cdq, G: "rnea" (default), "crba" or "lagrange"
-  C_method: rnea              # C: "rnea" (default) or "christoffel"
+  dynamics_method: auto       # M, Cdq, G: "auto" (default), "rnea", "crba" or "lagrange"
+  C_method: auto              # C: "auto" (default), "rnea" or "christoffel"
   compute_C_std: false        # also add C_std (default false)
   compute_J_cm: false         # also add J_cm_<i> (default false)
 ```
@@ -30,17 +30,21 @@ As with any plugin, these keys can also be written at the top level of the file,
 | `dynamics_method` | How it works |
 | --- | --- |
 | `lagrange` | Euler-Lagrange with the centre-of-mass Jacobians: `M = Σ m_i Jc_iᵀ Jc_i + Jω_iᵀ R_i I_i R_iᵀ Jω_i`, `G = -Σ m_i Jc_iᵀ g`, `Cdq = dM/dt dq - ½ ∂(dqᵀ M dq)/∂q`. |
-| `rnea` (default) | Recursive Newton-Euler on the kinematic tree, in spatial (6D) form and local frames. `M` is the Jacobian of `rnea(q, 0, ddq, 0)` with respect to `ddq`. `Cdq = rnea(q, dq, 0, 0)` and `G = rnea(q, 0, 0, g)`. |
-| `crba` | `M` from the composite rigid body algorithm, `Cdq` and `G` as `rnea`. |
+| `auto` (default) | `M` and `G` each from the cheaper of `rnea` and `crba`, `Cdq` as `rnea`. |
+| `rnea` | Recursive Newton-Euler on the kinematic tree, in spatial (6D) form and local frames. `M` is the Jacobian of `rnea(q, 0, ddq, 0)` with respect to `ddq`. `Cdq = rnea(q, dq, 0, 0)` and `G = rnea(q, 0, 0, g)`. |
+| `crba` | Composite rigid body algorithm: each joint sees the bodies it carries as one rigid body. `M` from their composite inertias, `G` from their composite mass and first moment. `Cdq` as `rnea` (velocity terms have no composite form). |
 
 ### `C_method`: the matrix C
 
 | `C_method` | How it works |
 | --- | --- |
-| `rnea` (default) | Modified RNEA (Niemeyer-Slotine). The RNEA is run with a reference velocity `dqr`, so that `tau = M ddqr + C(q, dq) dqr + G`, and `C = ∂tau/∂dqr`. |
+| `auto` (default) | The cheaper of `rnea` and `christoffel`. |
+| `rnea` | Modified RNEA (Niemeyer-Slotine). The RNEA is run with a reference velocity `dqr`, so that `tau = M ddqr + C(q, dq) dqr + G`, and `C = ∂tau/∂dqr`. |
 | `christoffel` | Christoffel symbols of the registered `M`, so it depends on `dynamics_method`. |
 
-Both give the same matrix, with `dM/dt - 2C` skew-symmetric. The two keys are independent: any combination gives the same `M`, `C`, `Cdq` and `G`. `thunder_robot_comparison_gtest` checks all six combinations against Pinocchio. They differ only in the size of the generated expressions, and so in build and evaluation time.
+Both give the same matrix, with `dM/dt - 2C` skew-symmetric. The two keys are independent: any combination gives the same `M`, `C`, `Cdq` and `G`. `thunder_robot_comparison_gtest` checks all twelve combinations against Pinocchio. They differ only in the size of the generated expressions, and so in build and evaluation time.
+
+`auto` measures "cheaper" as the number of CasADi instructions of each candidate (built with `cse`, as `add_function` does) and logs its choice, e.g. `auto: M by crba (rnea 7141, crba 6622 instructions)`. On the robots tested it picks `crba` for `M` and `G`, `christoffel` for `C` up to 7 dof and `rnea` for `C` on franka (8 dof). It costs little build time: up to 0.6 s more on franka, and less time on smaller robots, whose cheaper expressions make the derivatives faster to build.
 
 Franka with a prismatic finger (8 dof, symbolic parameters), in CasADi instructions:
 
@@ -48,14 +52,14 @@ Franka with a prismatic finger (8 dof, symbolic parameters), in CasADi instructi
 | --- | --- | --- | --- |
 | `M` | 13k | 7.1k | 6.6k |
 | `Cdq` | 66k | 2.9k | 2.9k |
-| `G` | 2.5k | 1.2k | 1.2k |
+| `G` | 2.5k | 1.2k | 0.9k |
 
 | | `christoffel` on `lagrange` M | `christoffel` on `rnea` M | `C_method: rnea` |
 | --- | --- | --- | --- |
 | `C` | 109k | 31k | 17k |
 | `C_dot` | 296k | 69k | 53k |
 
-`crba` gives a smaller `M` on serial chains (R7: -35%, franka: -7%) but can give a larger one on trees (+67% on a test tree with non-unit axes).
+`crba` gives a smaller `M` on serial chains (R7: -35%, franka: -7%) but can give a larger one on trees (+67% on a test tree with non-unit axes). Its `G` is smaller on every robot tested (-20% to -45%).
 
 On small robots (3 to 5 dof) `christoffel` on the `rnea` M is somewhat smaller than `C_method: rnea`, but both are a few hundred to a few thousand instructions.
 

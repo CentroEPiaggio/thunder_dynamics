@@ -384,9 +384,10 @@ namespace thunder_ns {
 		return tau;
 	}
 
-	casadi::SX DynBuilder::crba(std::shared_ptr<Robot> robot, const casadi::SX& par){
-		// Composite rigid body algorithm, same tree convention as rnea.
+	std::pair<casadi::SX, casadi::SX> DynBuilder::crba(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& g){
+		// Composite rigid body algorithm for M, and G from the composite mass and first moment. Same tree convention as rnea.
 		// Ic[k]: composite inertia of frame k = links attached to frame k + composite inertias of its child frames.
+		// m_c[k], h_c[k]: mass and first moment (in frame k) of the same bodies, all that G needs.
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
@@ -398,6 +399,8 @@ namespace thunder_ns {
 
 		casadi::Slice sel3(0,3);
 		casadi::SXVector X(nj), S(nj), Ic(nj, SX::zeros(6,6));
+		casadi::SXVector g_frame(nj);		// gravity in frame i
+		casadi::SXVector m_c(nj, SX::zeros(1,1)), h_c(nj, SX::zeros(3,1));
 		vector<casadi::Slice> qi(nj);
 		for (int i=0, dof_count=0; i<nj; i++){
 			if (jointsParent[i] >= i) throw std::runtime_error("crba: parent of joint " + std::to_string(i) + " must come before it");
@@ -405,14 +408,19 @@ namespace thunder_ns {
 			dof_count += jointsDimension[i];
 			SX T = robot->get_model("T_"+std::to_string(i));
 			X[i] = motion_transform(T(sel3,sel3), T(sel3,3));
+			g_frame[i] = mtimes(T(sel3,sel3).T(), (jointsParent[i] < 0) ? g : g_frame[jointsParent[i]]);
 			if (jointsDimension[i] > 0) S[i] = joint_subspace(robot, jointsType[i], q(qi[i]), SX(casadi::DM(jointsAxis[i])));
 		}
 
-		// --- Composite inertias, leaves to root --- //
+		// --- Composite inertias, mass and first moment, leaves to root --- //
 		for (int i=nj-1; i>=0; i--){
 			const int p = jointsParent[i];
 			if (p < 0) continue;
-			Ic[p] += spatial_inertia(par(casadi::Slice(nParLink*i, nParLink*(i+1)))) + SX::mtimes({X[i].T(), Ic[i], X[i]});
+			SX par_i = par(casadi::Slice(nParLink*i, nParLink*(i+1)));
+			Ic[p] += spatial_inertia(par_i) + SX::mtimes({X[i].T(), Ic[i], X[i]});
+			SX T = robot->get_model("T_"+std::to_string(i));
+			m_c[p] += par_i(0) + m_c[i];
+			h_c[p] += par_i(casadi::Slice(1,4)) + mtimes(T(sel3,sel3), h_c[i]) + m_c[i]*T(sel3,3);
 		}
 
 		// --- M: force of joint i moved up to each ancestor joint j --- //
@@ -430,10 +438,27 @@ namespace thunder_ns {
 				M(qi[i], qi[j]) = M_ji.T();
 			}
 		}
-		return M;
+
+		// --- G: weight of the subtree of joint i, Ic [-g; 0] with gravity as base acceleration as in rnea --- //
+		SX G = SX::zeros(ndof, 1);
+		for (int i=0; i<nj; i++){
+			if (jointsDimension[i] == 0) continue;
+			SX a = -g_frame[i];
+			G(qi[i]) = mtimes(S[i].T(), SX::vertcat({m_c[i]*a, cross(h_c[i], a)}));
+		}
+		return {M, G};
 	}
 
-	int DynBuilder::compute_dyn_rnea(std::shared_ptr<Robot> robot, bool M_from_crba){
+	casadi::SX DynBuilder::cheapest(const string& name, const casadi::SX& a, const string& a_method, const casadi::SX& b, const string& b_method){
+		// fewer CasADi instructions, counted as add_function builds the function (with cse)
+		auto instructions = [](const SX& e){ return casadi::Function("f", SX::symvar(e), {e}, casadi::Dict{{"cse", true}}).n_instructions(); };
+		const casadi_int n_a = instructions(a), n_b = instructions(b);
+		const bool pick_a = (n_a <= n_b);
+		debug_log("auto: " + name + " by " + (pick_a ? a_method : b_method) + " (" + a_method + " " + std::to_string(n_a) + ", " + b_method + " " + std::to_string(n_b) + " instructions)", VERB_INFO);
+		return pick_a ? a : b;
+	}
+
+	int DynBuilder::compute_dyn_rnea(std::shared_ptr<Robot> robot, const string& method){
 		const int ndof = robot->get<int>("ndof");
 		auto dq = robot->get_model("dq");
 		auto ddq = robot->get_model("ddq");
@@ -442,10 +467,19 @@ namespace thunder_ns {
 		SX zeros_n = SX::zeros(ndof,1);
 		SX zeros_g = SX::zeros(3,1);
 
-		// tau = M ddq + C dq + G, each term is one RNEA call with the others set to zero
-		SX M = M_from_crba ? crba(robot, par) : SX::jacobian(rnea(robot, par, zeros_n, SX(), ddq, zeros_g), ddq);	// tau is linear in ddq
+		// method "rnea": tau = M ddq + C dq + G, each term is one RNEA call with the others set to zero.
+		// method "crba": M and G from the composite inertias. "auto": M and G from the cheapest of the two.
+		// Cdq is always by RNEA (velocity terms have no composite form).
+		SX M_rnea, G_rnea, M_crba, G_crba;
+		if (method != "crba") {
+			M_rnea = SX::jacobian(rnea(robot, par, zeros_n, SX(), ddq, zeros_g), ddq);	// tau is linear in ddq
+			G_rnea = rnea(robot, par, zeros_n, SX(), zeros_n, par_gravity);
+		}
+		if (method != "rnea") std::tie(M_crba, G_crba) = crba(robot, par, par_gravity);
+
+		SX M = (method == "rnea") ? M_rnea : (method == "crba") ? M_crba : cheapest("M", M_rnea, "rnea", M_crba, "crba");
+		SX G = (method == "rnea") ? G_rnea : (method == "crba") ? G_crba : cheapest("G", G_rnea, "rnea", G_crba, "crba");
 		SX Cdq = rnea(robot, par, dq, SX(), zeros_n, zeros_g);
-		SX G = rnea(robot, par, zeros_n, SX(), zeros_n, par_gravity);
 
 		return add_dyn(robot, M, Cdq, G);
 	}
@@ -462,15 +496,16 @@ namespace thunder_ns {
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
 
-		SX C;
-		if (C_method == "christoffel") {
-			C = stdCmatrix(robot->get_model("M"), q, dq, dq_select(dq));
-		} else {
-			// modified RNEA is linear in the reference velocity: C = d tau / d dqr
+		// "christoffel": from the registered M. "rnea": the modified RNEA is linear in the reference velocity, C = d tau / d dqr.
+		// "auto": the cheapest of the two.
+		SX C_christoffel, C_rnea;
+		if (C_method != "rnea") C_christoffel = stdCmatrix(robot->get_model("M"), q, dq, dq_select(dq));
+		if (C_method != "christoffel") {
 			SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
 			SX dqr = SX::sym("dqr_C", ndof);
-			C = SX::jacobian(rnea(robot, par, dq, dqr, SX::zeros(ndof,1), SX::zeros(3,1)), dqr);
+			C_rnea = SX::jacobian(rnea(robot, par, dq, dqr, SX::zeros(ndof,1), SX::zeros(3,1)), dqr);
 		}
+		SX C = (C_method == "rnea") ? C_rnea : (C_method == "christoffel") ? C_christoffel : cheapest("C", C_rnea, "rnea", C_christoffel, "christoffel");
 		return robot->add_function("C", C, {"q", "dq", "par_KIN", "par_DYN"}, "Manipulator Coriolis matrix");
 	}
 
@@ -611,25 +646,26 @@ namespace thunder_ns {
     void DynBuilder::build(std::shared_ptr<Robot> robot) {
 		debug_log("Starting dynamic computations", VERB_INFO);
 
-		// dynamics_method: how M, Cdq, G are built, "rnea" (Newton-Euler), "crba" (M by CRBA, Cdq and G by RNEA) or "lagrange" (CoM Jacobians)
-		const string dynamics_method = config_["dynamics_method"] ? config_["dynamics_method"].as<string>() : "rnea";
-		// C_method: how the matrix C is built, "rnea" (modified Newton-Euler) or "christoffel" (from M)
-		const string C_method = config_["C_method"] ? config_["C_method"].as<string>() : "rnea";
+		// dynamics_method: how M, Cdq, G are built, "rnea" (Newton-Euler), "crba" (M and G from composite inertias, Cdq by RNEA),
+		// "auto" (M and G from the cheapest of rnea and crba) or "lagrange" (CoM Jacobians)
+		const string dynamics_method = config_["dynamics_method"] ? config_["dynamics_method"].as<string>() : "auto";
+		// C_method: how the matrix C is built, "rnea" (modified Newton-Euler), "christoffel" (from M) or "auto" (the cheapest)
+		const string C_method = config_["C_method"] ? config_["C_method"].as<string>() : "auto";
 		// compute_C_std: also add C_std, the element-wise Christoffel version of C (same matrix, slow to build)
 		const bool use_C_std = config_["compute_C_std"] ? config_["compute_C_std"].as<bool>() : false;
 		// compute_J_cm: also add the centre of mass Jacobians J_cm_<i>
 		const bool use_J_cm = config_["compute_J_cm"] ? config_["compute_J_cm"].as<bool>() : false;
 
-		if (dynamics_method != "rnea" && dynamics_method != "crba" && dynamics_method != "lagrange")
-			throw std::runtime_error("dyn_builder: unknown dynamics_method '" + dynamics_method + "' (use 'rnea', 'crba' or 'lagrange')");
-		if (C_method != "christoffel" && C_method != "rnea")
-			throw std::runtime_error("dyn_builder: unknown C_method '" + C_method + "' (use 'christoffel' or 'rnea')");
+		if (dynamics_method != "rnea" && dynamics_method != "crba" && dynamics_method != "auto" && dynamics_method != "lagrange")
+			throw std::runtime_error("dyn_builder: unknown dynamics_method '" + dynamics_method + "' (use 'rnea', 'crba', 'auto' or 'lagrange')");
+		if (C_method != "rnea" && C_method != "christoffel" && C_method != "auto")
+			throw std::runtime_error("dyn_builder: unknown C_method '" + C_method + "' (use 'rnea', 'christoffel' or 'auto')");
 
 		int ret = 1;
 		if (dynamics_method == "lagrange") {
 			if (!compute_dyn_lagrange(robot)) ret = 0;
 		} else {
-			if (!compute_dyn_rnea(robot, dynamics_method == "crba")) ret = 0;
+			if (!compute_dyn_rnea(robot, dynamics_method)) ret = 0;
 		}
 		if (!compute_C(robot, C_method)) ret = 0;
 		if (use_C_std) {

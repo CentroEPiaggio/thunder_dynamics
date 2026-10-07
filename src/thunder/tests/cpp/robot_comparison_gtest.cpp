@@ -71,7 +71,7 @@ TEST_P(RobotComparison, FrankaPinocchio) {
 }
 
 INSTANTIATE_TEST_SUITE_P(DynamicsMethod, RobotComparison,
-                         ::testing::Combine(::testing::Values("rnea", "crba", "lagrange"), ::testing::Values("rnea", "christoffel")));
+                         ::testing::Combine(::testing::Values("auto", "rnea", "crba", "lagrange"), ::testing::Values("auto", "rnea", "christoffel")));
 
 // Regressors times par_REG against pinocchio: Y p = M ddq + C dq + G, Yr p = M ddqr + C dqr + G
 class RegressorComparison : public ::testing::TestWithParam<std::string> {};
