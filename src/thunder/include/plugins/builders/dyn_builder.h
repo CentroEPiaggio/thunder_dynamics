@@ -18,8 +18,10 @@ namespace thunder_ns {
 			std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(std::shared_ptr<Robot> robot);
 			int compute_dyn_lagrange(std::shared_ptr<Robot> robot);
 			casadi::SX joint_subspace(std::shared_ptr<Robot> robot, const std::string& type, const casadi::SX& q_joint, const casadi::SX& axis);
-			casadi::SX rnea(std::shared_ptr<Robot> robot, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g);
-			int compute_dyn_rnea(std::shared_ptr<Robot> robot);
+			casadi::SX dyn2reg(const casadi::SX& par_DYN, int numJoints, int STD_PAR_LINK);
+			casadi::SX rnea(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g);
+			casadi::SX crba(std::shared_ptr<Robot> robot, const casadi::SX& par);
+			int compute_dyn_rnea(std::shared_ptr<Robot> robot, bool M_from_crba);
 			int add_dyn(std::shared_ptr<Robot> robot, const casadi::SX& M, const casadi::SX& Cdq, const casadi::SX& G);
 			int compute_C(std::shared_ptr<Robot> robot, const std::string& C_method);
 			int compute_C_std(std::shared_ptr<Robot> robot);

@@ -272,10 +272,22 @@ namespace thunder_ns {
 			SX f_lin = mtimes(R, f(lin));
 			return SX::vertcat({f_lin, mtimes(R, f(ang)) + cross(r, f_lin)});
 		}
-		// spatial inertia times a motion vector, body of mass m, centre of mass c, inertia Ic about c
-		SX inertia_times(const SX& m, const SX& c, const SX& Ic, const SX& u){
-			SX f = m*(u(lin) + cross(u(ang), c));
-			return SX::vertcat({f, mtimes(Ic, u(ang)) + cross(c, f)});
+		// link parameters p = [m, h = m CoM, I_O (Ixx Ixy Ixz Iyy Iyz Izz) about the frame origin], as par_REG
+		SX inertia_O(const SX& p){
+			return SX::vertcat({SX::horzcat({p(4), p(5), p(6)}), SX::horzcat({p(5), p(7), p(8)}), SX::horzcat({p(6), p(8), p(9)})});
+		}
+		// spatial inertia times a motion vector, linear in p
+		SX inertia_times(const SX& p, const SX& u){
+			SX h = p(casadi::Slice(1,4));
+			return SX::vertcat({p(0)*u(lin) + cross(u(ang), h), mtimes(inertia_O(p), u(ang)) + cross(h, u(lin))});
+		}
+		// 6x6 spatial inertia and motion transform (parent to child, R, r: child frame in the parent frame), for CRBA
+		SX spatial_inertia(const SX& p){
+			SX h_hat = hat(p(casadi::Slice(1,4)));
+			return SX::vertcat({SX::horzcat({p(0)*SX::eye(3), -h_hat}), SX::horzcat({h_hat, inertia_O(p)})});
+		}
+		SX motion_transform(const SX& R, const SX& r){
+			return SX::vertcat({SX::horzcat({R.T(), -mtimes(R.T(), hat(r))}), SX::horzcat({SX::zeros(3,3), R.T()})});
 		}
 	}
 
@@ -299,11 +311,12 @@ namespace thunder_ns {
 		return S;
 	}
 
-	casadi::SX DynBuilder::rnea(std::shared_ptr<Robot> robot, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g){
+	casadi::SX DynBuilder::rnea(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g){
 		// Modified RNEA (Niemeyer-Slotine): tau = M ddqr + C(q,dq) dqr + G, with C such that dM/dt - 2C is skew.
 		// Empty dqr: standard RNEA (dqr = dq) with the plain v x* I v term, smaller expressions. Derivation in notes.md.
 		// Same tree convention as compute_dyn_lagrange: joint i moves frame i (T_w_i) w.r.t. frame parent(i),
 		// link i is the body attached to frame parent(i) (world if -1). Spatial vectors of frame i are in frame i.
+		// par: link parameters in regressor form (dyn2reg), tau is linear in them.
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
@@ -312,13 +325,7 @@ namespace thunder_ns {
 		const vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
 		const vector<vector<double>> jointsAxis = robot->get<vector<vector<double>>>("jointsAxis");
 		auto q = robot->get_model("q");
-		auto par_DYN = robot->get_model("par_DYN");
 		const bool modified = !dqr.is_empty();
-
-		auto par_inertial = createInertialParameters(nj, nParLink, par_DYN);
-		casadi::SXVector mass = std::get<0>(par_inertial);
-		casadi::SXVector CoM = std::get<1>(par_inertial);
-		casadi::SXVector I = std::get<2>(par_inertial);
 
 		casadi::Slice sel3(0,3);
 		casadi::SXVector R(nj), r(nj);		// rotation and origin of frame i in frame parent(i)
@@ -366,7 +373,8 @@ namespace thunder_ns {
 			if (p < 0) continue;		// links on the world frame do not load any joint
 
 			// link i moves with frame p: f = I ar + B(v) vr, B(v) = 1/2 [v x* I + (I v) xbar - I v x], B(v) v = v x* I v
-			auto inertia = [&](const SX& u){ return inertia_times(mass[i], CoM[i], I[i], u); };
+			SX par_i = par(casadi::Slice(nParLink*i, nParLink*(i+1)));
+			auto inertia = [&](const SX& u){ return inertia_times(par_i, u); };
 			SX f_link = modified ?
 				inertia(ar[p]) + 0.5*(cross_force(v[p], inertia(vr[p])) + cross_force(vr[p], inertia(v[p])) - inertia(cross_motion(v[p], vr[p]))) :
 				inertia(ar[p]) + cross_force(v[p], inertia(v[p]));
@@ -376,18 +384,68 @@ namespace thunder_ns {
 		return tau;
 	}
 
-	int DynBuilder::compute_dyn_rnea(std::shared_ptr<Robot> robot){
+	casadi::SX DynBuilder::crba(std::shared_ptr<Robot> robot, const casadi::SX& par){
+		// Composite rigid body algorithm, same tree convention as rnea.
+		// Ic[k]: composite inertia of frame k = links attached to frame k + composite inertias of its child frames.
+		const int nj = robot->get<int>("numJoints");
+		const int ndof = robot->get<int>("ndof");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
+		const vector<string> jointsType = robot->get<vector<string>>("jointsType");
+		const vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
+		const vector<vector<double>> jointsAxis = robot->get<vector<vector<double>>>("jointsAxis");
+		auto q = robot->get_model("q");
+
+		casadi::Slice sel3(0,3);
+		casadi::SXVector X(nj), S(nj), Ic(nj, SX::zeros(6,6));
+		vector<casadi::Slice> qi(nj);
+		for (int i=0, dof_count=0; i<nj; i++){
+			if (jointsParent[i] >= i) throw std::runtime_error("crba: parent of joint " + std::to_string(i) + " must come before it");
+			qi[i] = casadi::Slice(dof_count, dof_count + jointsDimension[i]);
+			dof_count += jointsDimension[i];
+			SX T = robot->get_model("T_"+std::to_string(i));
+			X[i] = motion_transform(T(sel3,sel3), T(sel3,3));
+			if (jointsDimension[i] > 0) S[i] = joint_subspace(robot, jointsType[i], q(qi[i]), SX(casadi::DM(jointsAxis[i])));
+		}
+
+		// --- Composite inertias, leaves to root --- //
+		for (int i=nj-1; i>=0; i--){
+			const int p = jointsParent[i];
+			if (p < 0) continue;
+			Ic[p] += spatial_inertia(par(casadi::Slice(nParLink*i, nParLink*(i+1)))) + SX::mtimes({X[i].T(), Ic[i], X[i]});
+		}
+
+		// --- M: force of joint i moved up to each ancestor joint j --- //
+		SX M = SX::zeros(ndof, ndof);
+		for (int i=0; i<nj; i++){
+			if (jointsDimension[i] == 0) continue;
+			SX F = mtimes(Ic[i], S[i]);
+			M(qi[i], qi[i]) = mtimes(S[i].T(), F);
+			for (int j=i; jointsParent[j] >= 0; ){
+				F = mtimes(X[j].T(), F);		// force to parent coordinates
+				j = jointsParent[j];
+				if (jointsDimension[j] == 0) continue;
+				SX M_ji = mtimes(S[j].T(), F);
+				M(qi[j], qi[i]) = M_ji;
+				M(qi[i], qi[j]) = M_ji.T();
+			}
+		}
+		return M;
+	}
+
+	int DynBuilder::compute_dyn_rnea(std::shared_ptr<Robot> robot, bool M_from_crba){
 		const int ndof = robot->get<int>("ndof");
 		auto dq = robot->get_model("dq");
 		auto ddq = robot->get_model("ddq");
 		auto par_gravity = robot->get_model("par_gravity");
+		SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
 		SX zeros_n = SX::zeros(ndof,1);
 		SX zeros_g = SX::zeros(3,1);
 
 		// tau = M ddq + C dq + G, each term is one RNEA call with the others set to zero
-		SX M = SX::jacobian(rnea(robot, zeros_n, SX(), ddq, zeros_g), ddq);	// tau is linear in ddq
-		SX Cdq = rnea(robot, dq, SX(), zeros_n, zeros_g);
-		SX G = rnea(robot, zeros_n, SX(), zeros_n, par_gravity);
+		SX M = M_from_crba ? crba(robot, par) : SX::jacobian(rnea(robot, par, zeros_n, SX(), ddq, zeros_g), ddq);	// tau is linear in ddq
+		SX Cdq = rnea(robot, par, dq, SX(), zeros_n, zeros_g);
+		SX G = rnea(robot, par, zeros_n, SX(), zeros_n, par_gravity);
 
 		return add_dyn(robot, M, Cdq, G);
 	}
@@ -409,8 +467,9 @@ namespace thunder_ns {
 			C = stdCmatrix(robot->get_model("M"), q, dq, dq_select(dq));
 		} else {
 			// modified RNEA is linear in the reference velocity: C = d tau / d dqr
+			SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
 			SX dqr = SX::sym("dqr_C", ndof);
-			C = SX::jacobian(rnea(robot, dq, dqr, SX::zeros(ndof,1), SX::zeros(3,1)), dqr);
+			C = SX::jacobian(rnea(robot, par, dq, dqr, SX::zeros(ndof,1), SX::zeros(3,1)), dqr);
 		}
 		return robot->add_function("C", C, {"q", "dq", "par_KIN", "par_DYN"}, "Manipulator Coriolis matrix");
 	}
@@ -501,6 +560,24 @@ namespace thunder_ns {
 	}
 
 	// --- REG/DYN conversions --- //
+	casadi::SX DynBuilder::dyn2reg(const casadi::SX& par_DYN, int numJoints, int STD_PAR_LINK){
+		// per link [m, CoM, I about CoM] -> [m, m CoM, I about the frame origin] (parallel axis theorem)
+		SX par_REG = SX::zeros(par_DYN.size());
+		for (int i=0; i<numJoints; i++){
+			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
+			SX p_dyn(par_DYN(p_idx));
+			SX mass = p_dyn(0);
+			SX CoM = p_dyn(casadi::Slice(1,4));
+			SX mCoM = mass * p_dyn(casadi::Slice(1,4));
+			SX I_tmp = mass * SX::mtimes(hat(CoM).T(), hat(CoM));
+			SX I_dyn = p_dyn(casadi::Slice(4,10));
+			SX I_tmp_v = SX::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
+			SX I = I_dyn + I_tmp_v;
+			par_REG(p_idx) = SX::vertcat({mass, mCoM, I});
+		}
+		return par_REG;
+	}
+
 	int DynBuilder::compute_reg_dyn_conversions(std::shared_ptr<Robot> robot){
 		int numJoints = robot->get<int>("numJoints");
 		const int STD_PAR_LINK = robot->get<const int>("STD_PAR_LINK");
@@ -522,21 +599,8 @@ namespace thunder_ns {
 		robot->add_function("reg2dyn", reg2dyn, {"par_REG"}, "Conversion from regressor to dynamic parameters");
 
 		// - dyn2reg - //
-		SX par_DYN = robot->get_model("par_DYN");
-		SX dyn2reg = SX::zeros(par_DYN.size());
-		for (int i=0; i<numJoints; i++){
-			casadi::Slice p_idx(STD_PAR_LINK*i,STD_PAR_LINK*(i+1));
-			SX p_dyn(par_DYN(p_idx));
-			SX mass = p_dyn(0);
-			SX CoM = p_dyn(casadi::Slice(1,4));
-			SX mCoM = mass * p_dyn(casadi::Slice(1,4));
-			SX I_tmp = mass * SX::mtimes(hat(CoM).T(), hat(CoM));
-			SX I_dyn = p_dyn(casadi::Slice(4,10));
-			SX I_tmp_v = SX::vertcat({I_tmp(0,0), I_tmp(0,1), I_tmp(0,2), I_tmp(1,1), I_tmp(1,2), I_tmp(2,2)});
-			SX I = I_dyn + I_tmp_v;
-			dyn2reg(p_idx) = SX::vertcat({mass, mCoM, I});
-		}
-		robot->add_function("dyn2reg", dyn2reg, {"par_DYN"}, "Conversion from dynamic to regressor parameters");
+		SX dyn2reg_expr = dyn2reg(robot->get_model("par_DYN"), numJoints, STD_PAR_LINK);
+		robot->add_function("dyn2reg", dyn2reg_expr, {"par_DYN"}, "Conversion from dynamic to regressor parameters");
 
 		// - Update regressor parameters - //
 		robot->set("par_REG", robot->get("dyn2reg"));
@@ -547,8 +611,8 @@ namespace thunder_ns {
     void DynBuilder::build(std::shared_ptr<Robot> robot) {
 		debug_log("Starting dynamic computations", VERB_INFO);
 
-		// dynamics_method: how M, Cdq, G are built, "lagrange" (CoM Jacobians) or "rnea" (Newton-Euler)
-		const string dynamics_method = config_["dynamics_method"] ? config_["dynamics_method"].as<string>() : "lagrange";
+		// dynamics_method: how M, Cdq, G are built, "rnea" (Newton-Euler), "crba" (M by CRBA, Cdq and G by RNEA) or "lagrange" (CoM Jacobians)
+		const string dynamics_method = config_["dynamics_method"] ? config_["dynamics_method"].as<string>() : "rnea";
 		// C_method: how the matrix C is built, "rnea" (modified Newton-Euler) or "christoffel" (from M)
 		const string C_method = config_["C_method"] ? config_["C_method"].as<string>() : "rnea";
 		// compute_C_std: also add C_std, the element-wise Christoffel version of C (same matrix, slow to build)
@@ -556,8 +620,8 @@ namespace thunder_ns {
 		// compute_J_cm: also add the centre of mass Jacobians J_cm_<i>
 		const bool use_J_cm = config_["compute_J_cm"] ? config_["compute_J_cm"].as<bool>() : false;
 
-		if (dynamics_method != "lagrange" && dynamics_method != "rnea")
-			throw std::runtime_error("dyn_builder: unknown dynamics_method '" + dynamics_method + "' (use 'lagrange' or 'rnea')");
+		if (dynamics_method != "rnea" && dynamics_method != "crba" && dynamics_method != "lagrange")
+			throw std::runtime_error("dyn_builder: unknown dynamics_method '" + dynamics_method + "' (use 'rnea', 'crba' or 'lagrange')");
 		if (C_method != "christoffel" && C_method != "rnea")
 			throw std::runtime_error("dyn_builder: unknown C_method '" + C_method + "' (use 'christoffel' or 'rnea')");
 
@@ -565,7 +629,7 @@ namespace thunder_ns {
 		if (dynamics_method == "lagrange") {
 			if (!compute_dyn_lagrange(robot)) ret = 0;
 		} else {
-			if (!compute_dyn_rnea(robot)) ret = 0;
+			if (!compute_dyn_rnea(robot, dynamics_method == "crba")) ret = 0;
 		}
 		if (!compute_C(robot, C_method)) ret = 0;
 		if (use_C_std) {

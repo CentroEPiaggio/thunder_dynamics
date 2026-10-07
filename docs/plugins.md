@@ -5,7 +5,9 @@ Description index of documentation for each existing plugin.
 
 ## Builders
 
-[Dynamics Builder](plugins/dyn_builder_plugin.md): Builds `M`, `C`, `Cdq`, `G` (Lagrange or RNEA), link friction, time derivatives and parameter conversions.
+[Dynamics Builder](plugins/dyn_builder_plugin.md): Builds `M`, `C`, `Cdq`, `G` (RNEA, CRBA or Lagrange), link friction, time derivatives and parameter conversions.
+
+[Regressors Builder](plugins/reg_builder_plugin.md): Builds the dynamic regressors (`Yr`, `Y`, ...) and the kinematic, friction and elastic regressors.
 
 Joint types used by the builders, and how to add new ones: [Joint types](joints.md).
 

@@ -50,7 +50,7 @@ namespace thunder_ns {
 					// skip index 0 (base) and reserve last index for end-effector (ee)
 					jointsName[i+1] = dh_name_prefix + std::to_string(i);
 					jointsType[i+1] = jointsType_tmp[i];
-					jointsDimension[i+1] = 1;
+					jointsDimension[i+1] = (jointsType_tmp[i] == "FIXED") ? 0 : 1;	// a FIXED row keeps its DH frame, no joint variable
 					jointsParent[i+1] = i;
 					if (jointsType_tmp[i] != "FIXED") ndof++;
 				}

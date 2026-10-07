@@ -15,7 +15,7 @@ pipeline:
   generators: [robot_generator]
 
 dyn_builder:                  # plugin configuration, all keys optional
-  dynamics_method: rnea       # M, Cdq, G: "lagrange" (default) or "rnea"
+  dynamics_method: rnea       # M, Cdq, G: "rnea" (default), "crba" or "lagrange"
   C_method: rnea              # C: "rnea" (default) or "christoffel"
   compute_C_std: false        # also add C_std (default false)
   compute_J_cm: false         # also add J_cm_<i> (default false)
@@ -29,8 +29,9 @@ As with any plugin, these keys can also be written at the top level of the file,
 
 | `dynamics_method` | How it works |
 | --- | --- |
-| `lagrange` (default) | Euler-Lagrange with the centre-of-mass Jacobians: `M = Σ m_i Jc_iᵀ Jc_i + Jω_iᵀ R_i I_i R_iᵀ Jω_i`, `G = -Σ m_i Jc_iᵀ g`, `Cdq = dM/dt dq - ½ ∂(dqᵀ M dq)/∂q`. |
-| `rnea` | Recursive Newton-Euler on the kinematic tree, in spatial (6D) form and local frames. `M` is the Jacobian of `rnea(q, 0, ddq, 0)` with respect to `ddq`. `Cdq = rnea(q, dq, 0, 0)` and `G = rnea(q, 0, 0, g)`. |
+| `lagrange` | Euler-Lagrange with the centre-of-mass Jacobians: `M = Σ m_i Jc_iᵀ Jc_i + Jω_iᵀ R_i I_i R_iᵀ Jω_i`, `G = -Σ m_i Jc_iᵀ g`, `Cdq = dM/dt dq - ½ ∂(dqᵀ M dq)/∂q`. |
+| `rnea` (default) | Recursive Newton-Euler on the kinematic tree, in spatial (6D) form and local frames. `M` is the Jacobian of `rnea(q, 0, ddq, 0)` with respect to `ddq`. `Cdq = rnea(q, dq, 0, 0)` and `G = rnea(q, 0, 0, g)`. |
+| `crba` | `M` from the composite rigid body algorithm, `Cdq` and `G` as `rnea`. |
 
 ### `C_method`: the matrix C
 
@@ -39,20 +40,22 @@ As with any plugin, these keys can also be written at the top level of the file,
 | `rnea` (default) | Modified RNEA (Niemeyer-Slotine). The RNEA is run with a reference velocity `dqr`, so that `tau = M ddqr + C(q, dq) dqr + G`, and `C = ∂tau/∂dqr`. |
 | `christoffel` | Christoffel symbols of the registered `M`, so it depends on `dynamics_method`. |
 
-Both give the same matrix, with `dM/dt - 2C` skew-symmetric. The two keys are independent: any combination gives the same `M`, `C`, `Cdq` and `G`. `thunder_robot_comparison_gtest` checks all four combinations against Pinocchio. They differ only in the size of the generated expressions, and so in build and evaluation time.
+Both give the same matrix, with `dM/dt - 2C` skew-symmetric. The two keys are independent: any combination gives the same `M`, `C`, `Cdq` and `G`. `thunder_robot_comparison_gtest` checks all six combinations against Pinocchio. They differ only in the size of the generated expressions, and so in build and evaluation time.
 
 Franka with a prismatic finger (8 dof, symbolic parameters), in CasADi instructions:
 
-| | `lagrange` | `rnea` |
-| --- | --- | --- |
-| `M` | 23k | 7.0k |
-| `Cdq` | 94k | 2.8k |
-| `G` | 3.4k | 1.2k |
+| | `lagrange` | `rnea` | `crba` |
+| --- | --- | --- | --- |
+| `M` | 13k | 7.1k | 6.6k |
+| `Cdq` | 66k | 2.9k | 2.9k |
+| `G` | 2.5k | 1.2k | 1.2k |
 
 | | `christoffel` on `lagrange` M | `christoffel` on `rnea` M | `C_method: rnea` |
 | --- | --- | --- | --- |
-| `C` | 166k | 31k | 18k |
-| `C_dot` | 455k | 70k | 54k |
+| `C` | 109k | 31k | 17k |
+| `C_dot` | 296k | 69k | 53k |
+
+`crba` gives a smaller `M` on serial chains (R7: -35%, franka: -7%) but can give a larger one on trees (+67% on a test tree with non-unit axes).
 
 On small robots (3 to 5 dof) `christoffel` on the `rnea` M is somewhat smaller than `C_method: rnea`, but both are a few hundred to a few thousand instructions.
 
@@ -63,7 +66,7 @@ On small robots (3 to 5 dof) `christoffel` on the `rnea` M is somewhat smaller t
 - `compute_C_std` adds `C_std`, the Christoffel matrix built element by element from `M`. Its values equal `C` but it is far more expensive, so it is off by default and meant for comparisons.
 - `compute_J_cm` adds the centre-of-mass Jacobians `J_cm_<i>` (6 x ndof, linear velocity of the centre of mass on top of angular velocity). The `lagrange` method builds these Jacobians for `M` and `G` whether or not this option is set. The option only decides whether they are added as functions.
 
-### Requirements of RNEA
+### Requirements of RNEA and CRBA
 
 - Every joint must come after its parent in the joint list.
 - Each joint type must define `T_JOINT_<type>`, which `kin_builder` needs anyway, and preferably `S_JOINT_<type>`. See [Joint types](../joints.md) for how joints are defined and how to add new ones. All built-in types (`R`, `P`, `FIXED`, `R_SEA`, `P_SEA`) define both.

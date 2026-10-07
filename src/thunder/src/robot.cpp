@@ -294,7 +294,7 @@ namespace thunder_ns{
 		return 1;
 	}
 
-	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, vector<FunArg> explicit_args, bool overwrite){
+	int Robot::add_function(string f_name, casadi::SX expr, vector<string> args_raw, string descr, vector<FunArg> explicit_args, bool overwrite, bool cse){
 		if ((!overwrite) && functions.count(f_name)){
 			std::cerr << "Function already exist! set flag for overwrite " << std::endl;
 			return 0;
@@ -377,7 +377,7 @@ namespace thunder_ns{
 				arg_index++;
 			}
 
-			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)});
+			casadi::Function fun(robotName+"_"+f_name+"_fun", inputs, {densify(expr)}, casadi::Dict{{"cse", cse}});
 			// cout<<"fun: "<<fun<<endl;
 			function.fun = fun;
 			functions[f_name] = function;

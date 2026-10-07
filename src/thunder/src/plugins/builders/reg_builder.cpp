@@ -242,23 +242,42 @@ namespace thunder_ns {
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 
-		// - add the Slotine-Li regressor - //
-		std::vector<std::string> arg_list;
-		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"};
-		if (!robot->add_function("Yr", Yr, arg_list, "Slotine-Li manipulator regressor matrix")) return 0;
-		
-		// - add the matrices regressors - //
-		arg_list = {"q", "ddqr", "par_KIN"};
-		if (!robot->add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = {"q", "dq", "dqr", "par_KIN"};
-		if (!robot->add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = {"q", "par_KIN", "par_gravity"};
-		if (!robot->add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
+		return add_Yr(robot, Yr, Y, reg_M, reg_C, reg_G);
+	}
 
-		// - add the standard regressor - //
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_gravity"};
-		if (!robot->add_function("Y", Y, arg_list, "Standard manipulator regressor matrix")) return 0;
+	int RegBuilder::compute_Yr_rnea(std::shared_ptr<Robot> robot){
+		// The modified RNEA (DynBuilder::rnea) is linear in the link parameters in regressor form,
+		// so each regressor is its Jacobian w.r.t. them. Same parameters and order as par_REG.
+		const int nj = robot->get<int>("numJoints");
+		const int ndof = robot->get<int>("ndof");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		auto dq = robot->get_model("dq");
+		auto ddq = robot->get_model("ddq");
+		auto dqr = robot->get_model("dqr");
+		auto ddqr = robot->get_model("ddqr");
+		auto g = robot->get_model("par_gravity");
+		SX par = SX::sym("par", nParLink*nj);
+		SX zeros_n = SX::zeros(ndof,1);
+		SX zeros_g = SX::zeros(3,1);
+		DynBuilder dyn;
 
+		// empty reference velocity: standard RNEA (dqr = dq)
+		auto regressor = [&](const SX& v, const SX& vr, const SX& a, const SX& grav){ return SX::jacobian(dyn.rnea(robot, par, v, vr, a, grav), par); };
+		SX Yr = regressor(dq, dqr, ddqr, g);
+		SX Y = regressor(dq, SX(), ddq, g);
+		SX reg_M = regressor(zeros_n, SX(), ddqr, zeros_g);
+		SX reg_C = regressor(dq, dqr, zeros_n, zeros_g);
+		SX reg_G = regressor(zeros_n, SX(), zeros_n, g);
+
+		return add_Yr(robot, Yr, Y, reg_M, reg_C, reg_G);
+	}
+
+	int RegBuilder::add_Yr(std::shared_ptr<Robot> robot, const SX& Yr, const SX& Y, const SX& reg_M, const SX& reg_C, const SX& reg_G){
+		if (!robot->add_function("Yr", Yr, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}, "Slotine-Li manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Y", Y, {"q", "dq", "ddq", "par_KIN", "par_gravity"}, "Standard manipulator regressor matrix")) return 0;
+		if (!robot->add_function("reg_M", reg_M, {"q", "ddqr", "par_KIN"}, "Regressor matrix of term M*ddqr")) return 0;
+		if (!robot->add_function("reg_C", reg_C, {"q", "dq", "dqr", "par_KIN"}, "Regressor matrix of term C*dqr")) return 0;
+		if (!robot->add_function("reg_G", reg_G, {"q", "par_KIN", "par_gravity"}, "Regressor matrix of term G")) return 0;
 		return 1;
 	}
 	
@@ -427,7 +446,15 @@ namespace thunder_ns {
 		int numSoftJoints = (robot->properties.count("numSoftJoints")) ? robot->get<int>("numSoftJoints") : 0;
 		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 
-		if (!compute_Yr(robot)) ret=0;
+		// regressor_method: how Yr, Y, reg_M, reg_C, reg_G are built, "rnea" (modified Newton-Euler) or "lagrange" (per link Jacobians)
+		const std::string regressor_method = config_["regressor_method"] ? config_["regressor_method"].as<std::string>() : "rnea";
+		if (regressor_method == "rnea") {
+			if (!compute_Yr_rnea(robot)) ret=0;
+		} else if (regressor_method == "lagrange") {
+			if (!compute_Yr(robot)) ret=0;
+		} else {
+			throw std::runtime_error("reg_builder: unknown regressor_method '" + regressor_method + "' (use 'rnea' or 'lagrange')");
+		}
 		if (!compute_reg_J(robot)) ret=0;
 		if (Dl_order>0){
 			if (!compute_reg_Dl(robot)) ret=0;
