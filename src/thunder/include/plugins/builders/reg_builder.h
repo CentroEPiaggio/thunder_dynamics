@@ -16,6 +16,8 @@ namespace thunder_ns {
 			casadi::SXVector createQ();
 			casadi::SXVector createE();
 			int compute_Yr(std::shared_ptr<Robot> robot);
+			int compute_Yr_rnea(std::shared_ptr<Robot> robot);
+			int add_Yr(std::shared_ptr<Robot> robot, const casadi::SX& Yr, const casadi::SX& Y, const casadi::SX& reg_M, const casadi::SX& reg_C, const casadi::SX& reg_G);
 			int compute_reg_Dl(std::shared_ptr<Robot> robot);
 			int compute_reg_elastic(std::shared_ptr<Robot> robot);
 			int compute_reg_J(std::shared_ptr<Robot> robot);

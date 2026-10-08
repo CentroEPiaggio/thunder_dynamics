@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <robot name="panda">
+    <!-- franka.urdf without panda_ee and the right finger: a single chain, same model in thunder and pinocchio -->
     <!-- Panda link 0 -->
     <link name="panda_link0">
         <visual>
@@ -13,9 +14,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="-0.041018 -0.00014 0.049974" />
-            <mass value="0.629769" />
-            <inertia ixx="0.00315" ixy="8.2904e-07" ixz="0.00015" iyy="0.00388" iyz="8.2299e-06" izz="0.004285" />
+            <origin rpy="0.30 0.90 0.50" xyz="0.010 -0.020 0.015" />
+            <mass value="3.06" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 1 from link 0 to 1 -->
@@ -40,9 +41,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="0.003875 0.002081 -0.04762" />
-            <mass value="4.970684" />
-            <inertia ixx="0.70337" ixy="-0.000139" ixz="0.006772" iyy="0.70661" iyz="0.019169" izz="0.009117" />
+            <origin rpy="0.60 0.70 1.00" xyz="0.020 -0.020 0.030" />
+            <mass value="2.34" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 2 from link 1 to 2 -->
@@ -67,9 +68,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="-0.003141 -0.02872 0.003495" />
-            <mass value="0.646926" />
-            <inertia ixx="0.007962" ixy="-0.003925" ixz="0.010254" iyy="0.02811" iyz="0.000704" izz="0.025995" />
+            <origin rpy="0.90 0.50 1.50" xyz="0.030 -0.020 0.045" />
+            <mass value="2.36" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 3 from link 2 to 3 -->
@@ -94,9 +95,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="0.027518 0.039252 -0.066502" />
-            <mass value="3.228604" />
-            <inertia ixx="0.037242" ixy="-0.004761" ixz="-0.011396" iyy="0.036155" iyz="-0.012805" izz="0.01083" />
+            <origin rpy="1.20 0.30 0.00" xyz="0.040 -0.020 0.060" />
+            <mass value="2.38" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 4 from link 3 to 4 -->
@@ -121,9 +122,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="-0.05317 0.104419 0.027454" />
-            <mass value="3.587895" />
-            <inertia ixx="0.025853" ixy="0.007796" ixz="-0.001332" iyy="0.019552" iyz="0.008641" izz="0.028323" />
+            <origin rpy="0.00 0.10 0.50" xyz="0.050 -0.020 0.075" />
+            <mass value="2.43" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 5 from link 4 to 5 -->
@@ -148,9 +149,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="-0.011953 0.041065 -0.038437" />
-            <mass value="1.225946" />
-            <inertia ixx="0.035549" ixy="-0.002117" ixz="-0.004037" iyy="0.029474" iyz="0.000229" izz="0.008627" />
+            <origin rpy="0.30 1.00 1.00" xyz="0.060 -0.020 0.090" />
+            <mass value="3.5" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 6 from link 5 to 6 -->
@@ -175,9 +176,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="0.060149 -0.014117 -0.010517" />
-            <mass value="1.666555" />
-            <inertia ixx="0.001964" ixy="0.000109" ixz="-0.001158" iyy="0.004354" iyz="0.000341" izz="0.005433" />
+            <origin rpy="0.60 0.80 1.50" xyz="0.070 -0.020 0.105" />
+            <mass value="1.47" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint 7 from link 6 to 7 -->
@@ -201,7 +202,11 @@
                 <mesh filename="package://franka_description/meshes/collision/link7.stl" />
             </geometry>
         </collision>
-        <!-- no inertial: the body moved by joint 7 is panda_link8 (frame of the flange) -->
+        <inertial>
+            <origin rpy="0.90 0.60 0.00" xyz="0.080 -0.020 0.120" />
+            <mass value="0.45" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+        </inertial>
     </link>
     <!-- Fixed Joint 8 from link 7 to 8 -->
     <joint name="panda_joint8" type="fixed">
@@ -213,23 +218,9 @@
     <!-- Panda link 8 (not visualized) -->
     <link name="panda_link8">
         <inertial>
-            <origin rpy="0 0 0" xyz="0.010517 -0.004252 -0.045403" />
-            <mass value="0.735522" />
-            <inertia ixx="0.012516" ixy="-0.000428" ixz="-0.001196" iyy="0.010027" iyz="-0.000741" izz="0.004815" />
-        </inertial>
-    </link>
-    <!-- Fixed Joint from link 8 to EE -->
-    <joint name="panda_ee_joint" type="fixed">
-        <parent link="panda_link8" />
-        <child link="panda_ee" />
-        <origin rpy="0 0 -0.785398163397" xyz="0 0 0.103" />
-    </joint>
-    <!-- Panda EE (official) -->
-    <link name="panda_ee">
-        <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="1.20 0.40 0.50" xyz="0.090 -0.020 0.135" />
             <mass value="1e-10" />
-            <inertia ixx="1e-6" ixy="0.0" ixz="0.0" iyy="1e-6" iyz="0.0" izz="1e-6" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Fixed Joint Hand from link 8 to hand -->
@@ -251,9 +242,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="0.00 0.20 1.00" xyz="0.100 -0.020 0.150" />
             <mass value="0.68" />
-            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
     <!-- Joint from hand to left finger -->
@@ -263,15 +254,6 @@
         <origin rpy="0 0 0" xyz="0 0 0.0584" />
         <axis xyz="0 1 0" />
         <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
-    </joint>
-    <!-- Joint from hand to right finger -->
-    <joint name="panda_finger_joint2" type="prismatic">
-        <parent link="panda_hand" />
-        <child link="panda_rightfinger" />
-        <origin rpy="0 0 0" xyz="0 0 0.0584" />
-        <axis xyz="0 -1 0" />
-        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
-        <mimic joint="panda_finger_joint1" />
     </joint>
     <!-- Panda link left finger -->
     <link name="panda_leftfinger">
@@ -286,29 +268,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0" />
+            <origin rpy="0.30 0.00 1.50" xyz="0.110 -0.020 0.165" />
             <mass value="0.01" />
-            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
-        </inertial>
-    </link>
-    <!-- Panda link right finger -->
-    <link name="panda_rightfinger">
-        <visual>
-            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
-            <geometry>
-                <mesh filename="package://franka_description/meshes/visual/finger.dae" />
-            </geometry>
-        </visual>
-        <collision>
-            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
-            <geometry>
-                <mesh filename="package://franka_description/meshes/collision/finger.stl" />
-            </geometry>
-        </collision>
-        <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0" />
-            <mass value="0.01" />
-            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
         </inertial>
     </link>
 </robot>

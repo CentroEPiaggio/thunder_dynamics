@@ -181,7 +181,7 @@ NB_MODULE(_bindings, m) {
         // --- Function ---
         .def("add_function", &Robot::add_function,
             nb::arg("name"), nb::arg("expr"), nb::arg("args"), nb::arg("descr") = "",
-            nb::arg("explicit_args") = std::vector<FunArg>{}, nb::arg("overwrite") = true,
+            nb::arg("explicit_args") = std::vector<FunArg>{}, nb::arg("overwrite") = true, nb::arg("cse") = true,
             "Add a symbolic function to the robot model")
 
         // --- I/O ---

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <sys/wait.h>
 #include <filesystem>
 #include <memory>
 #include <sstream>
@@ -24,83 +25,46 @@ static std::shared_ptr<thunder_ns::Robot> loadRobotFromYaml(const std::string& y
     return manager.execute(p.stem().string());
 }
 
-static bool setSymbolicParameterDirect(const std::shared_ptr<thunder_ns::Robot>& robot,
-                                       const std::string& parameterName,
-                                       const casadi::DM& symbolicValues) {
-    if (!robot || robot->parameters.count(parameterName) == 0) {
-        return false;
-    }
+// Dynamics terms of tau = M ddq + C dq + G, with Cdq = C dq
+struct Dynamics {
+    casadi::DM M, C, Cdq, G;
+};
 
-    auto& parameter = robot->parameters.at(parameterName);
-    if (parameter.symb_size() != symbolicValues.numel()) {
-        return false;
-    }
-
-    int symbolicIndex = 0;
-    for (int i = 0; i < parameter.size(); ++i) {
-        if (parameter.is_symbolic[i]) {
-            parameter.num(i) = symbolicValues(symbolicIndex++);
-        }
-    }
-    return true;
+// Thunder dynamics at the q, dq currently set in the robot.
+static Dynamics computeThunderDynamics(const std::shared_ptr<thunder_ns::Robot>& robot) {
+    return {robot->get("M"), robot->get("C"), robot->get("Cdq"), robot->get("G")};
 }
 
-static bool computePinocchioTau(const std::string& urdfPath,
-                                const casadi::DM& q,
-                                const casadi::DM& dq,
-                                const casadi::DM& ddq,
-                                casadi::DM& tauOut) {
+// Pinocchio dynamics from the python helper.
+// Returns the helper exit code: 0 ok, 1 pinocchio not available, other values are errors.
+static int computePinocchioDynamics(const std::string& urdfPath,
+                                    const casadi::DM& q,
+                                    const casadi::DM& dq,
+                                    Dynamics& out) {
     std::ostringstream command;
+    command.precision(17);
     command << "python3 " << PINOCCHIO_HELPER_SCRIPT << " \"" << urdfPath << "\"";
-
-    auto appendValues = [&](const casadi::DM& value) {
-        for (int i = 0; i < value.numel(); ++i) {
-            command << " " << static_cast<double>(value(i));
-        }
-    };
-
-    appendValues(q);
-    appendValues(dq);
-    appendValues(ddq);
+    for (const casadi::DM* v : {&q, &dq}) {
+        for (int i = 0; i < v->numel(); ++i) command << " " << static_cast<double>((*v)(i));
+    }
 
     FILE* pipe = popen(command.str().c_str(), "r");
-    if (!pipe) {
-        return false;
-    }
-
+    if (!pipe) return -1;
     std::vector<double> values;
     double scalar = 0.0;
-    while (fscanf(pipe, "%lf", &scalar) == 1) {
-        values.push_back(scalar);
-    }
+    while (fscanf(pipe, "%lf", &scalar) == 1) values.push_back(scalar);
+    const int status = pclose(pipe);
+    const int exitCode = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    if (exitCode != 0) return exitCode;
 
-    const int returnCode = pclose(pipe);
-    if (returnCode != 0 || values.empty()) {
-        return false;
-    }
-
-    tauOut = casadi::DM(values);
-    return true;
-}
-
-static casadi::DM computeThunderTau(const std::shared_ptr<thunder_ns::Robot>& robot) {
-    casadi::DM M = robot->get("M");
-    casadi::DM C = robot->get("C");
-    casadi::DM G = robot->get("G");
-    casadi::DM dq = robot->get("dqr");
-    casadi::DM ddq = robot->get("ddqr");
-
-    auto ensureColumn = [](casadi::DM& value) {
-        if (value.size1() == 1 && value.size2() > 1) {
-            value = value.T();
-        }
+    // M and C column-major, then Cdq and G
+    const int n = q.numel();
+    if (static_cast<int>(values.size()) != 2 * n * n + 2 * n) return -1;
+    auto block = [&](int start, int rows, int cols) {
+        return casadi::DM::reshape(casadi::DM(std::vector<double>(values.begin() + start, values.begin() + start + rows * cols)), rows, cols);
     };
-
-    ensureColumn(dq);
-    ensureColumn(ddq);
-    ensureColumn(G);
-
-    return M * ddq + C * dq + G;
+    out = {block(0, n, n), block(n * n, n, n), block(2 * n * n, n, 1), block(2 * n * n + n, n, 1)};
+    return 0;
 }
 
 }  // namespace thunder_test

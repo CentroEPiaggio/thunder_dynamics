@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""Pinocchio reference for the thunder dynamics test.
+
+usage: pinocchio_helper.py <urdf> q_1..q_n dq_1..dq_n
+prints one line: M (column-major), C (column-major), Cdq, G
+exit 1: pinocchio not available (the test is skipped), other non-zero: error
+"""
 import os
 import sys
 
@@ -31,31 +37,21 @@ except ValueError:
     sys.stderr.write("[helper] failed to parse numeric values\n")
     sys.exit(3)
 
-if len(raw_values) % 3 != 0:
-    sys.stderr.write("[helper] values must be q + dq + ddq with equal lengths\n")
-    sys.exit(4)
-
-n = len(raw_values) // 3
-q = np.array(raw_values[:n])
-dq = np.array(raw_values[n : 2 * n])
-ddq = np.array(raw_values[2 * n : 3 * n])
-
 model = pin.buildModelFromUrdf(urdf_path)
 data = model.createData()
 
-if q.size != model.nq:
-    padded_q = np.zeros(model.nq)
-    padded_dq = np.zeros(model.nq)
-    padded_ddq = np.zeros(model.nq)
-    padded_q[: min(model.nq, q.size)] = q[: min(model.nq, q.size)]
-    padded_dq[: min(model.nq, dq.size)] = dq[: min(model.nq, dq.size)]
-    padded_ddq[: min(model.nq, ddq.size)] = ddq[: min(model.nq, ddq.size)]
-    q, dq, ddq = padded_q, padded_dq, padded_ddq
+# no padding: thunder and pinocchio must describe the same model
+if len(raw_values) != 2 * model.nq:
+    sys.stderr.write(f"[helper] expected q and dq of size {model.nq}, got {len(raw_values)} values\n")
+    sys.exit(4)
+q = np.array(raw_values[: model.nq])
+dq = np.array(raw_values[model.nq :])
 
-try:
-    tau = pin.rnea(model, data, q, dq, ddq)
-except Exception as exc:
-    sys.stderr.write(f"[helper] rnea failed: {exc}\n")
-    sys.exit(5)
+M = pin.crba(model, data, q)
+M = np.triu(M) + np.triu(M, 1).T  # crba fills only the upper triangle
+C = pin.computeCoriolisMatrix(model, data, q, dq)
+G = pin.computeGeneralizedGravity(model, data, q)
+Cdq = pin.nonLinearEffects(model, data, q, dq) - G
 
-print(" ".join(str(value) for value in tau.tolist()))
+values = np.concatenate([M.ravel(order="F"), C.ravel(order="F"), Cdq, G])
+print(" ".join(repr(float(v)) for v in values))

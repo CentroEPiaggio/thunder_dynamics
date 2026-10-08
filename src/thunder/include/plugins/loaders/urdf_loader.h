@@ -32,6 +32,7 @@ namespace thunder_ns {
 			vector<bool> jointsDerivatives;
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
+			vector<string> nodesUrdfJoint;		// URDF joint whose origin is the frame of each node ("" for terminal nodes)
 
 			void accumulateChain(std::shared_ptr<urdf::Link> link, const std::string& base, std::vector<std::shared_ptr<urdf::Link>>& chain);
 			casadi::SX to_casadi_sx(const urdf::Transform& T);

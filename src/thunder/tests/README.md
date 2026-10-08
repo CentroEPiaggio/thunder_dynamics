@@ -23,7 +23,7 @@ The test source and helpers are:
 - `cpp/robot_test_helpers.h`
 - `python/pinocchio_helper.py`
 - `fixtures/franka/franka_urdf.yaml`
-- `fixtures/franka/franka.urdf`
+- `fixtures/franka/franka_finger.urdf` (franka without `panda_ee` and the right finger, a single chain)
 
 ## Run From CLI
 
@@ -36,5 +36,8 @@ ctest -V -R thunder_.*_test
 
 ## Pinocchio Dependency
 
-The Google Test compares Thunder torques against Pinocchio (via the Python helper).
+`thunder_robot_comparison_gtest` compares M, C, Cdq and G against Pinocchio (via the Python helper),
+for each combination of the `dyn_builder` options `dynamics_method` (`auto`, `rnea`, `crba`, `lagrange`) and `C_method` (`auto`, `rnea`, `christoffel`),
+and the dynamic regressors times `par_REG` for each `reg_builder` `regressor_method` (`rnea`, `lagrange`).
 If Pinocchio is not available in the active Python environment, the test is skipped.
+Install it with `pip install --user pin`.

@@ -1,0 +1,28 @@
+# Fixture of thunder_symbolic_test: symbolic masks of urdf_loader from the YAML and from the URDF tags.
+# YAML masks are keyed by node (link) name and win over the URDF tags. In the URDF, <symbolic_kinematics>
+# inside a <joint> applies to the origin of that joint (frame of the node of its parent link),
+# <symbolic_dynamics> inside a <link> to the inertial parameters of that link. See franka_symbolic.urdf.
+pipeline:
+  loaders: ["urdf_loader"]
+  builders: []
+  generators: []
+
+urdf_loader:
+  urdf_path: "franka_symbolic.urdf"
+  base_link: "panda_link0"
+  ee_link: "panda_link8"
+  symbolic_kinematics:
+    default: 0
+    panda_link0: [0, 0, 0, 0, 0, 0]
+    panda_link1: 1
+    panda_link2:
+      xyz: [1, 0, 1]
+      rpy: [0, 1, 0]
+  symbolic_dynamics:
+    default: false
+    panda_link0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    panda_link1: true
+    panda_link2:
+      mass: 1
+      com: [0, 1, 0]
+      inertia: [1, 0, 1, 0, 1, 0]
