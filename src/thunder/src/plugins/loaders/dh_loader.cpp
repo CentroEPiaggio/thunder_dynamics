@@ -14,6 +14,7 @@ namespace thunder_ns {
 		try {
 			// Local properties for parsing
 			int numJoints;
+			int nRows = 0;		// rows of the DH table
 			int ndof = 0;
 			vector<string> jointsName;
 			vector<string> jointsType;
@@ -32,7 +33,9 @@ namespace thunder_ns {
 				vector<string> jointsType_tmp = config_["joints_type"].as<vector<string>>();
 				if ((config_["num_joints"]) && (config_["num_joints"].as<int>() != jointsType_tmp.size()))
 					throw std::runtime_error("Mismatch between 'num_joints' and the size of 'joints_type' vector.");
-				numJoints = jointsType_tmp.size() + 2;	// base frame and end-effector are fixed joints
+				// nodes: base, one per DH row, link<n> (the last link, it moves with the last row) and ee
+				nRows = jointsType_tmp.size();
+				numJoints = nRows + 3;
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 				jointsName.resize(numJoints, "");
 				jointsParent.resize(numJoints, -1);
@@ -46,14 +49,15 @@ namespace thunder_ns {
 				if (config_["DH"] && config_["DH"]["link_names"]) {
 					dh_name_prefix = config_["DH"]["link_names"].as<string>();
 				}
-				for (int i=0; i<numJoints-2; i++) {
-					// skip index 0 (base) and reserve last index for end-effector (ee)
+				for (int i=0; i<nRows; i++) {
+					// skip index 0 (base), the last two are link<n> and the end-effector (ee)
 					jointsName[i+1] = dh_name_prefix + std::to_string(i);
 					jointsType[i+1] = jointsType_tmp[i];
 					jointsDimension[i+1] = (jointsType_tmp[i] == "FIXED") ? 0 : 1;	// a FIXED row keeps its DH frame, no joint variable
 					jointsParent[i+1] = i;
 					if (jointsType_tmp[i] != "FIXED") ndof++;
 				}
+				jointsName[nRows+1] = dh_name_prefix + std::to_string(nRows);
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 				robot->add_property<int>("ndof", ndof, "int", "Number of degrees of freedom", true);
 			} else {
@@ -149,7 +153,7 @@ namespace thunder_ns {
 				vector<double> dh_num = dh_config["value"].as<vector<double>>();
 				int dh_size = dh_num.size();
 				const int nj_dh = dh_size/4;
-				if (nj_dh != numJoints-2) throw std::runtime_error("Mismatch joints - size DH.");
+				if (nj_dh != nRows) throw std::runtime_error("Mismatch joints - size DH.");
 				// - Symbolic selectivity - //
 				vector<short> dh_isSymb;
 				if (dh_config["symb"]) dh_isSymb = dh_config["symb"].as<vector<short>>();
@@ -247,7 +251,7 @@ namespace thunder_ns {
 			// - DH table - //
 			casadi::SX DH = robot->get_model("par_DHtable");
 			// use previously computed prefix if available (stored in local variable dh_name_prefix)
-			for (int i=0; i<numJoints-2; i++){
+			for (int i=0; i<nRows; i++){
 				jointsName[i+1] = dh_name_prefix + std::to_string(i);
 				jointsParent[i+1] = i;
 				// DH transformation:  T_a * T_alpha * T_d * T_theta
@@ -271,8 +275,11 @@ namespace thunder_ns {
 				par_KIN(idx_or) = rpy;
 			}
 
-			// - linkn to EE - //
-			jointsParent[numJoints-1] = numJoints-2;
+			// - link<n>: the body moved by the last row, its frame is the last DH frame (identity) - //
+			jointsParent[nRows+1] = nRows;
+
+			// - link<n> to EE - //
+			jointsParent[numJoints-1] = nRows+1;
 			jointsAvailable[numJoints-1] = true;
 			jointsDerivatives[numJoints-1] = true;
 			SX Ln2EE = robot->get_model("par_Ln2EE");
