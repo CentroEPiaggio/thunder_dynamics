@@ -57,7 +57,10 @@ OP_PYTORCH_DICT = {
     OP_FABS:                "\n        work[:, %d] = torch.abs(work[:, %d])",
     OP_SIGN:                "\n        work[:, %d] = torch.sign(work[:, %d])",
     OP_COPYSIGN:            "\n        work[:, %d] = torch.copysign(work[:, %d], work[:, %d])",
-    OP_IF_ELSE_ZERO:        "\n        work[:, %d] = (work[:, %d] == 0) ? 0 : work[:, %d]",
+    # Cusadi emits a C ternary here, which is a SyntaxError in Python and makes
+    # the whole generated module unimportable. Semantics: 0 when the condition
+    # operand is 0, otherwise the value operand.
+    OP_IF_ELSE_ZERO:        "\n        work[:, %d] = torch.where(work[:, %d] == 0, 0.0, work[:, %d])",
     OP_ERF:                 "\n        work[:, %d] = torch.erf(work[:, %d])",
     OP_FMIN:                "\n        work[:, %d] = torch.fmin(work[:, %d], work[:, %d])",
     OP_FMAX:                "\n        work[:, %d] = torch.fmax(work[:, %d], work[:, %d])",

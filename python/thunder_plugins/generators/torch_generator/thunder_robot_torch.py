@@ -123,6 +123,10 @@ class ThunderRobotTorch:
         }
         self.parameter_defaults = dict(parameter_defaults or {})
 
+        # Scatter indices for sparse function outputs, built on first use and
+        # rebuilt when the robot moves to another device (see ``to``).
+        self._nz_index_cache: Dict[str, tuple] = {}
+
         #! TODO: We could probably pass somehow this directly from the parameter ndof or njoints
         self.n_joints = int(
             self.parameter_sizes.get("q", n_joints if n_joints is not None else 0)
@@ -182,6 +186,22 @@ class ThunderRobotTorch:
             return _expand_to_batch(value, self.batch_size, size, self.device, self.dtype)
         except ValueError as exc:
             raise ValueError(f"Invalid explicit input '{name}': {exc}") from exc
+
+    def _nz_indices(self, key, row_idx: Sequence[int], col_idx: Sequence[int]):
+        """Return cached (row, col) index tensors for a sparse output.
+
+        Generated methods scatter CasADi's flat non-zero buffer into a dense
+        tensor. The index tensors depend only on the function's sparsity, so
+        they are built once per output rather than on every call.
+        """
+        cached = self._nz_index_cache.get(key)
+        if cached is None or cached[0].device != self.device:
+            cached = (
+                torch.as_tensor(row_idx, dtype=torch.long, device=self.device),
+                torch.as_tensor(col_idx, dtype=torch.long, device=self.device),
+            )
+            self._nz_index_cache[key] = cached
+        return cached
 
     def list_parameters(self) -> tuple[str, ...]:
         """Return the generated parameter names in deterministic order."""

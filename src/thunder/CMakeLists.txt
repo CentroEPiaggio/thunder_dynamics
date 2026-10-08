@@ -137,6 +137,22 @@ if(BUILD_PYTHON_PLUGINS)
   find_package(SWIG REQUIRED)
   include(${SWIG_USE_FILE})
 
+  # Python plugins import these at pipeline run time, inside the embedded
+  # interpreter. Without this check a build installs cleanly and then fails on
+  # the first `thunder gen` with a ModuleNotFoundError from C++.
+  foreach(_py_dep yaml pydantic)
+    execute_process(
+      COMMAND ${Python_EXECUTABLE} -c "import ${_py_dep}"
+      RESULT_VARIABLE _py_dep_missing
+      OUTPUT_QUIET ERROR_QUIET)
+    if(_py_dep_missing)
+      message(WARNING
+        "Python module '${_py_dep}' not found for ${Python_EXECUTABLE}. "
+        "Python plugins will fail at run time. Install with: "
+        "pip install -r python/requirements.txt")
+    endif()
+  endforeach()
+
   # Generate swigpyrun.h (SWIG runtime header for pointer extraction)
   set(SWIGPYRUN_DIR "${CMAKE_CURRENT_BINARY_DIR}/swigpyrun")
   set(SWIGPYRUN_OUTPUT "${SWIGPYRUN_DIR}/swigpyrun.h")
