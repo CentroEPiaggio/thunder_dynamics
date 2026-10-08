@@ -201,11 +201,7 @@
                 <mesh filename="package://franka_description/meshes/collision/link7.stl" />
             </geometry>
         </collision>
-        <inertial>
-            <origin rpy="0 0 0" xyz="0 0 0" />
-            <mass value="1e-10" />
-            <inertia ixx="1e-6" ixy="0.0" ixz="0.0" iyy="1e-6" iyz="0.0" izz="1e-6" />
-        </inertial>
+        <!-- no inertial: the body moved by joint 7 is panda_link8 (frame of the flange) -->
     </link>
     <!-- Fixed Joint 8 from link 7 to 8 -->
     <joint name="panda_joint8" type="fixed">

@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <robot name="panda">
-    <!-- franka.urdf without panda_ee and the right finger: a single chain, same model in thunder and pinocchio -->
     <!-- Panda link 0 -->
     <link name="panda_link0">
+        <!-- overridden by the YAML mask of panda_link0 -->
+        <symbolic_dynamics mass="1" com="1 1 1" inertia="1 1 1 1 1 1" />
         <visual>
             <geometry>
                 <mesh filename="package://franka_description/meshes/visual/link0.dae" />
@@ -14,13 +15,15 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.30 0.90 0.50" xyz="0.010 -0.020 0.015" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="3.06" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 1 from link 0 to 1 -->
     <joint name="panda_joint1" type="revolute">
+        <!-- overridden by the YAML mask of panda_link0 -->
+        <symbolic_kinematics xyz="1 1 1" rpy="1 1 1" />
         <origin rpy="0 0 0" xyz="0 0 0.333" />
         <parent link="panda_link0" />
         <child link="panda_link1" />
@@ -41,9 +44,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.60 0.70 1.00" xyz="0.020 -0.020 0.030" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="2.34" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 2 from link 1 to 2 -->
@@ -68,9 +71,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.90 0.50 1.50" xyz="0.030 -0.020 0.045" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="2.36" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 3 from link 2 to 3 -->
@@ -95,9 +98,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="1.20 0.30 0.00" xyz="0.040 -0.020 0.060" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="2.38" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 4 from link 3 to 4 -->
@@ -122,9 +125,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.00 0.10 0.50" xyz="0.050 -0.020 0.075" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="2.43" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 5 from link 4 to 5 -->
@@ -138,6 +141,7 @@
     </joint>
     <!-- Panda link 5 -->
     <link name="panda_link5">
+        <symbolic_dynamics mass="0" com="0 0 0" inertia="0 0 0 0 0 0" />
         <visual>
             <geometry>
                 <mesh filename="package://franka_description/meshes/visual/link5.dae" />
@@ -149,13 +153,14 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.30 1.00 1.00" xyz="0.060 -0.020 0.090" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="3.5" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 6 from link 5 to 6 -->
     <joint name="panda_joint6" type="revolute">
+        <symbolic_kinematics xyz="0 0 0" rpy="false false false" />
         <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
         <parent link="panda_link5" />
         <child link="panda_link6" />
@@ -165,6 +170,7 @@
     </joint>
     <!-- Panda link 6 -->
     <link name="panda_link6">
+        <symbolic_dynamics><mass>1</mass><com>1 1 1</com><inertia>true true true true true true</inertia></symbolic_dynamics>
         <visual>
             <geometry>
                 <mesh filename="package://franka_description/meshes/visual/link6.dae" />
@@ -176,13 +182,14 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.60 0.80 1.50" xyz="0.070 -0.020 0.105" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="1.47" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Joint 7 from link 6 to 7 -->
     <joint name="panda_joint7" type="revolute">
+        <symbolic_kinematics>1 1 1 1 1 1</symbolic_kinematics>
         <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
         <parent link="panda_link6" />
         <child link="panda_link7" />
@@ -192,6 +199,7 @@
     </joint>
     <!-- Panda link 7 -->
     <link name="panda_link7">
+        <symbolic_dynamics>1 0 1 0 1 0 1 0 1 0</symbolic_dynamics>
         <visual>
             <geometry>
                 <mesh filename="package://franka_description/meshes/visual/link7.dae" />
@@ -203,13 +211,14 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.90 0.60 0.00" xyz="0.080 -0.020 0.120" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="0.45" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
         </inertial>
     </link>
     <!-- Fixed Joint 8 from link 7 to 8 -->
     <joint name="panda_joint8" type="fixed">
+        <symbolic_kinematics><xyz>1 0 1</xyz><rpy>0 1 0</rpy></symbolic_kinematics>
         <origin rpy="0 0 0" xyz="0 0 0.107" />
         <parent link="panda_link7" />
         <child link="panda_link8" />
@@ -218,9 +227,23 @@
     <!-- Panda link 8 (not visualized) -->
     <link name="panda_link8">
         <inertial>
-            <origin rpy="1.20 0.40 0.50" xyz="0.090 -0.020 0.135" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="1e-10" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.3" ixy="0.0" ixz="0.0" iyy="0.3" iyz="0.0" izz="0.3" />
+        </inertial>
+    </link>
+    <!-- Fixed Joint from link 8 to EE -->
+    <joint name="panda_ee_joint" type="fixed">
+        <parent link="panda_link8" />
+        <child link="panda_ee" />
+        <origin rpy="0 0 -0.785398163397" xyz="0 0 0.103" />
+    </joint>
+    <!-- Panda EE (official) -->
+    <link name="panda_ee">
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="1e-10" />
+            <inertia ixx="1e-6" ixy="0.0" ixz="0.0" iyy="1e-6" iyz="0.0" izz="1e-6" />
         </inertial>
     </link>
     <!-- Fixed Joint Hand from link 8 to hand -->
@@ -242,9 +265,9 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.00 0.20 1.00" xyz="0.100 -0.020 0.150" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="0.68" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
         </inertial>
     </link>
     <!-- Joint from hand to left finger -->
@@ -254,6 +277,15 @@
         <origin rpy="0 0 0" xyz="0 0 0.0584" />
         <axis xyz="0 1 0" />
         <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+    </joint>
+    <!-- Joint from hand to right finger -->
+    <joint name="panda_finger_joint2" type="prismatic">
+        <parent link="panda_hand" />
+        <child link="panda_rightfinger" />
+        <origin rpy="0 0 0" xyz="0 0 0.0584" />
+        <axis xyz="0 -1 0" />
+        <limit effort="20" lower="0.0" upper="0.04" velocity="0.2" />
+        <mimic joint="panda_finger_joint1" />
     </joint>
     <!-- Panda link left finger -->
     <link name="panda_leftfinger">
@@ -268,9 +300,29 @@
             </geometry>
         </collision>
         <inertial>
-            <origin rpy="0.30 0.00 1.50" xyz="0.110 -0.020 0.165" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
             <mass value="0.01" />
-            <inertia ixx="0.300" ixy="0.010" ixz="-0.020" iyy="0.200" iyz="0.015" izz="0.150" />
+            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
+        </inertial>
+    </link>
+    <!-- Panda link right finger -->
+    <link name="panda_rightfinger">
+        <visual>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://franka_description/meshes/visual/finger.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin rpy="0 0 3.14159265359" xyz="0 0 0" />
+            <geometry>
+                <mesh filename="package://franka_description/meshes/collision/finger.stl" />
+            </geometry>
+        </collision>
+        <inertial>
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <mass value="0.01" />
+            <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1" />
         </inertial>
     </link>
 </robot>
