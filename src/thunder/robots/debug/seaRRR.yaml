@@ -19,38 +19,31 @@ robot_generator:
 ############################################
 kin_loader:
 
-  # --- Hyperparameters --- #
-  num_joints: 3
-
-  # joint positions (xyz-rpy)
+  # nodes: link0 ... link2 carry joints 1 ... 3, EE after them
   kinematics:
-    joint1:
-      joint_type: 'R_SEA'
+    link0:
       parent: "world"
+      joint_type: "R_SEA"
       symb: [0,0,0,0,0,0]
-      xyzrpy: [0,0,1, 0,0,0]
-    joint2:
-      joint_type: 'R_SEA'
-      parent: "joint1"
+      xyzrpy: [0, 0, 1, 0, 0, 0]
+    link1:
+      parent: "link0"
+      joint_type: "R_SEA"
       symb: [0,0,0,0,0,0]
-      xyzrpy: [1,0,0, *PI_2,0,0]
-    joint3:
-      joint_type: 'R_SEA'
-      parent: "joint2"
+      xyzrpy: [1, 0, 0, *PI_2, 0, 0]
+    link2:
+      parent: "link1"
+      joint_type: "R_SEA"
       symb: [0,0,0,0,0,0]
-      xyzrpy: [1,0,0, 0,0,0]
-
-  # world to link_0
-  Base_to_L0:
-    symb: [0,0,0, 0,0,0]
-    xyz: [0, 0, 0]
-    ypr: [0, 0, 0]
-
-  # Link_n to EE
-  Ln_to_EE:
-    symb: [0,0,0, 0,0,0]
-    xyz: [1, 0, 0]
-    ypr: [0, 0, *PI_2_neg]
+      xyzrpy: [1, 0, 0, 0, 0, 0]
+    EE:
+      parent: "link2"
+      joint_type: "FIXED"
+      symb: [0,0,0,0,0,0]
+      xyz: [1, 0, 0]
+      ypr: [0, 0, *PI_2_neg]
+      available: true
+      derivatives: true
 
 ############################################
 dyn_loader:
@@ -63,8 +56,18 @@ dyn_loader:
     symb: [0,0,0]
     value: [0, 0, -9.81]
 
-  # inertial parameters expressed w.r.t. kinematic frames
+  # inertial parameters: the body of each node is attached to the frame of its parent node
   dynamics:
+    link0:
+      inertial:                 # body on the world frame: it does not move
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 0.0
+        CoM: [0, 0, 0]
+        I: [0, 0, 0, 0, 0, 0]
+      friction:
+        symb: [0,0]
+        Dl: [0.1, 0.01]
+
     link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
@@ -99,7 +102,7 @@ dyn_loader:
         symb: [0,0]
         Dl: [0.1, 0.01]
 
-    link3:
+    EE:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
@@ -112,9 +115,6 @@ dyn_loader:
         Iyy: 0.3
         Iyz: 0.0
         Izz: 0.3
-      friction:
-        symb: [0,0]
-        Dl: [0.1, 0.01]
 
 ############################################
 soft_loader:
@@ -123,7 +123,7 @@ soft_loader:
   D_order: 0
   Dm_order: 1
   joints:
-    joint1:
+    link0:
       K: [10.0]
       D: []
       Dm: [0.1]
@@ -132,7 +132,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [0]
       Mm_symb: 0
-    joint2:
+    link1:
       K: [10.0]
       D: []
       Dm: [0.1]
@@ -141,7 +141,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [0]
       Mm_symb: 0
-    joint3:
+    link2:
       K: [10.0]
       D: []
       Dm: [0.1]

@@ -147,7 +147,7 @@ dyn_loader:
         symb: [1]
         Dl: [0.1]
     
-    EE:
+    link5:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.1
@@ -168,7 +168,7 @@ soft_loader:
   D_order: 0
   Dm_order: 2
   joints:
-    joint0:
+    link0:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
@@ -177,7 +177,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [1,1]
       Mm_symb: 1
-    joint1:
+    link1:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
@@ -186,7 +186,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [1,1]
       Mm_symb: 1
-    joint2:
+    link2:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
@@ -195,7 +195,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [1,1]
       Mm_symb: 1
-    joint3:
+    link3:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
@@ -204,7 +204,7 @@ soft_loader:
       D_symb: []
       Dm_symb: [1,1]
       Mm_symb: 1
-    joint4:
+    link4:
       K: [2.5, 0.0, 50.0]
       D: []
       Dm: [10, 0.1]
