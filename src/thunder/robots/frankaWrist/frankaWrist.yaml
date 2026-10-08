@@ -63,6 +63,16 @@ dyn_loader:
 
   # inertial parameters expressed w.r.t. DH frames
   dynamics:
+    link0:
+      inertial:                 # body on the base frame: it does not move
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 0.0
+        CoM: [0, 0, 0]
+        I: [0, 0, 0, 0, 0, 0]
+      friction:
+        symb: [1,1]
+        Dl: [0.1, 0.01]
+
     link1:
       inertial:
         symb: [0,0,0,0,0,0,0,0,0,0]
@@ -195,18 +205,16 @@ dyn_loader:
         Ixy: 0
         Ixz: 0
         Iyz: 0
-      friction:
-        symb: [1,1]
-        Dl: [0.1, 0.01]
 
 ############################################
+
 soft_loader:
 
   K_order: 1
   D_order: 0
   Dm_order: 2
   joints:
-    joint1:
+    link7:                # node of the elastic joint (8th DH joint)
       K: [2.5]
       D: []
       Dm: [10, 0.1]
