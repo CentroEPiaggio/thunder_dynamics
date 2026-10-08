@@ -28,6 +28,7 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 	try {
 		// Load YAML
 		YAML::Node config_node = YAML::LoadFile(file);
+		config_node["config_path"] = std::filesystem::absolute(file).string();	// relative paths in the config (e.g. urdf_path) from its directory
 
 		// Configure Manager
 		PluginManager manager;
