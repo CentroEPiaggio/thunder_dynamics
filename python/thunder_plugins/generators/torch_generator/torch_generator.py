@@ -238,6 +238,35 @@ def generate_pytorch_code(f: casadi.Function) -> str:
 
     return code + "\n"
 
+def describe_outputs(f: casadi.Function) -> List[Dict[str, Any]]:
+    """Describe every output of a CasADi function for the wrapper generator.
+
+    CasADi hands the generated code a flat buffer of *non-zeros* in
+    **column-major** order. Reconstructing the dense matrix therefore needs the
+    sparsity pattern, not just the shape: a dense output is a column-major
+    reshape (NOT the row-major one ``Tensor.reshape`` performs), and a sparse
+    output has to be scattered into a zero tensor.
+    """
+    described: List[Dict[str, Any]] = []
+    for i in range(f.n_out()):
+        sp = f.sparsity_out(i)
+        rows, cols = sp.size1(), sp.size2()
+        dense = sp.nnz() == rows * cols
+        described.append({
+            "index": i,
+            "name": f.name_out(i),
+            "rows": rows,
+            "cols": cols,
+            "nnz": sp.nnz(),
+            "dense": dense,
+            # Row/column index of each non-zero, in CasADi's flat order.
+            # Only needed for the sparse scatter path.
+            "row_idx": None if dense else list(sp.row()),
+            "col_idx": None if dense else list(sp.get_col()),
+        })
+    return described
+
+
 def get_robot_inventory(robot: Any) -> Dict[str, Any]:
     """Collect symbols after CasADi compilation.
 
@@ -357,7 +386,7 @@ def generate_wrapper_class(
     for meta in functions_meta:
         fname = meta["name"]
         iname = meta["internal_name"]
-        out_shape = meta["output_shape"]
+        outputs_meta = meta["outputs"]
         parameter_input_names = meta["parameter_input_names"]
         explicit_args = meta["explicit_args"]
         explicit_signature = ", ".join(arg["name"] for arg in explicit_args)
@@ -371,23 +400,57 @@ def generate_wrapper_class(
             + (f" + [{explicit_inputs}]" if explicit_inputs else "")
         )
 
+        # Reconstruct every output, not just the first: a function with
+        # n_out > 1 used to have its extra outputs silently dropped.
+        rebuild_lines = []
+        for out_meta in outputs_meta:
+            i, rows, cols = out_meta["index"], out_meta["rows"], out_meta["cols"]
+            if out_meta["dense"]:
+                # CasADi's flat buffer is column-major, Tensor.reshape is
+                # row-major: reshape transposed, then swap the last two axes.
+                rebuild_lines.append(
+                    f"out_{i} = outputs[{i}].reshape((B, {cols}, {rows})).transpose(-2, -1)"
+                )
+            else:
+                rebuild_lines.append(
+                    f"out_{i} = torch.zeros((B, {rows}, {cols}), device=self.device, dtype=self.dtype)"
+                )
+                rebuild_lines.append(
+                    f"_rows, _cols = self._nz_indices({(iname, i)!r}, {out_meta['row_idx']!r}, {out_meta['col_idx']!r})"
+                )
+                rebuild_lines.append(f"out_{i}[:, _rows, _cols] = outputs[{i}]")
+
+        if len(outputs_meta) == 1:
+            return_stmt = "return out_0"
+            returns_doc = (
+                f"torch.Tensor of shape (batch_size, "
+                f"{outputs_meta[0]['rows']}, {outputs_meta[0]['cols']})"
+            )
+        else:
+            return_stmt = "return " + ", ".join(f"out_{m['index']}" for m in outputs_meta)
+            returns_doc = "tuple of torch.Tensor with shapes " + ", ".join(
+                f"{m['name']}=(batch_size, {m['rows']}, {m['cols']})" for m in outputs_meta
+            )
+
+        rebuild_block = "\n            ".join(rebuild_lines)
+
         method = textwrap.dedent(f"""
         def {fname}({method_signature}):
             \"\"\"
             Compute {iname} using generated PyTorch code.
-            
+
             Returns:
-                torch.Tensor of shape (batch_size, {out_shape[0]}, {out_shape[1]})
+                {returns_doc}
             \"\"\"
             B = self.batch_size
             _NNZ_OUT = gen._{iname}_NNZ_OUT
             _SZ_W = gen._{iname}_SZ_W
-            
+
             # Function.args preserves the parameter order used to define this function.
             # We do not use gen._*_INPUT_NAMES because CasADi may
             # replace robot names with anonymous labels such as i0 and i1.
             inputs = {input_expression}
-            
+
             # CasADi instructions write flat non-zero output values. `work` is
             # the graph's temporary storage and is required even when no Python
             # intermediate values are visible at this level.
@@ -396,13 +459,13 @@ def generate_wrapper_class(
                 for n in _NNZ_OUT
             ]
             work = torch.empty((B, _SZ_W), device=self.device, dtype=self.dtype)
-            
+
             # Call generated computation
             gen._{iname}(outputs, inputs, work)
-            
+
             # Restore the dense matrix/vector shape promised by the Robot API.
-            out = outputs[0].reshape((B, {out_shape[0]}, {out_shape[1]}))
-            return out
+            {rebuild_block}
+            {return_stmt}
         """)
         methods.append(method)
 
@@ -451,13 +514,19 @@ def generate_pyproject(package_name: str) -> str:
     version = "0.1.0"
     description = "Auto-generated Thunder Dynamics PyTorch package"
     requires-python = ">=3.8"
+    # Only torch: the generated modules do not import CasADi at runtime.
+    # >=1.13 for the scalar overload of torch.where used by OP_IF_ELSE_ZERO.
     dependencies = [
-      "torch",
-      "casadi",
+      "torch>=1.13",
     ]
 
     [tool.setuptools]
-    py-modules = ["gen_torch_functions", "torch_robot_wrapper", "thunder_robot_torch"]
+    # The generated directory *is* the package, so map the package name onto it.
+    # Listing the files as py-modules instead would install them as top-level
+    # modules (gen_torch_functions, ...), which never provides
+    # `import {package_name}` and collides between two generated robots.
+    packages = ["{package_name}"]
+    package-dir = {{"{package_name}" = "."}}
     """).strip() + "\n"
 
 
@@ -564,10 +633,7 @@ class TorchGenerator(BaseGenerator):
 
                 # Collect metadata used by the high-level wrapper. The raw
                 # function is still needed for shapes and instruction code.
-                output_shape = (
-                    casadi_func.sparsity_out(0).size1(),
-                    casadi_func.sparsity_out(0).size2(),
-                )
+                outputs_meta = describe_outputs(casadi_func)
                 # `func_obj.args` have the names and order used by add_function()
                 # CasADi  `name_in()` only say i0, i1...
                 parameter_input_names = list(func_obj.args)
@@ -592,7 +658,7 @@ class TorchGenerator(BaseGenerator):
                     "explicit_args": explicit_args,
                     "output_names": [casadi_func.name_out(i) for i in range(casadi_func.n_out())],
                     "sz_w": casadi_func.sz_w(),
-                    "output_shape": output_shape,
+                    "outputs": outputs_meta,
                 })
 
                 successful += 1
@@ -677,22 +743,20 @@ class TorchGenerator(BaseGenerator):
         if self.config.generate_install_files:
             package_name = sanitize_package_name(output_dir.name)
             pyproject_file = output_dir / "pyproject.toml"
-            setup_file = output_dir / "setup.py"
 
             try:
                 with open(pyproject_file, "w") as f:
                     f.write(generate_pyproject(package_name))
 
-                setup_code = textwrap.dedent("""
-                from setuptools import setup
-
-                setup()
-                """).strip() + "\n"
-                with open(setup_file, "w") as f:
-                    f.write(setup_code)
+                # No setup.py shim: a bare setup() makes setuptools older than
+                # 61 ignore the [project] table entirely and build an empty
+                # "UNKNOWN-0.0.0" wheel instead of failing.
+                legacy_setup = output_dir / "setup.py"
+                if legacy_setup.exists():
+                    legacy_setup.unlink()
 
                 if self.config.verbose:
-                    print(f"[TorchGenerator] Generated install metadata: {pyproject_file}, {setup_file}")
+                    print(f"[TorchGenerator] Generated install metadata: {pyproject_file}")
             except Exception as e:
                 print(f"[TorchGenerator] WARNING: Could not generate install metadata: {e}")
 
