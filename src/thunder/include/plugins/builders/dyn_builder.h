@@ -17,7 +17,6 @@ namespace thunder_ns {
 			casadi::SX stdCmatrix_classic(const casadi::SX& M, const casadi::SX& q_, const casadi::SX& dq_, const casadi::SX& dq_sel_);
 			std::tuple<casadi::SXVector,casadi::SXVector> DHJacCM(std::shared_ptr<Robot> robot);
 			int compute_dyn_lagrange(std::shared_ptr<Robot> robot);
-			casadi::SX joint_subspace(std::shared_ptr<Robot> robot, const std::string& type, const casadi::SX& q_joint, const casadi::SX& axis);
 			casadi::SX dyn2reg(const casadi::SX& par_DYN, int numJoints, int STD_PAR_LINK);
 			casadi::SX rnea(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g);
 			std::pair<casadi::SX, casadi::SX> crba(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& g);

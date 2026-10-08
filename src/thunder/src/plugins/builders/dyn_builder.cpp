@@ -100,69 +100,32 @@ namespace thunder_ns {
 	}
 
 	std::tuple<casadi::SXVector,casadi::SXVector> DynBuilder::DHJacCM(std::shared_ptr<Robot> robot){
-		// parameters from robot
+		// Centre-of-mass Jacobians from the frame Jacobians of kin_builder: link i moves with frame parent(i),
+		// so its centre of mass, at r = R c from the frame origin, has linear velocity v_o + w x r = v_o - hat(r) w.
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
 		const int _nParLink_ = robot->get<const int>("STD_PAR_LINK");
 		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
-		const vector<string> jointsName = robot->get<vector<string>>("jointsName");
-		// vector<string> jointsType = robot->get<vector<string>>("jointsType");
-		// const auto& q = robot->model["q"];
-		// const auto& par_world2L0 = robot->model["par_world2L0"];
-		// const auto& par_DYN = robot->model["par_DYN"];
-		auto q = robot->get_model("q");
-		// auto par_world2L0 = robot->get_model("par_world2L0");
 		auto par_DYN = robot->get_model("par_DYN");
 
 		auto par_inertial = createInertialParameters(nj, _nParLink_, par_DYN);
-		// casadi::SXVector _mass_vec_ = std::get<0>(par_inertial);
 		casadi::SXVector _distCM_ = std::get<1>(par_inertial);
-		// casadi::SXVector _J_3x3_ = std::get<2>(par_inertial);
 
 		casadi::SXVector Ji_v(nj); // vector of matrix Ji_v
 		casadi::SXVector Ji_w(nj); // vector of matrix Ji_w
-		casadi::Slice r_tra_idx(0, 3);      // select translation vector of T()
-		casadi::Slice r_rot_idx(0, 3);      // select k versor of T()
-		casadi::Slice allRows;              // Select all rows
-		// auto world_rot = get_transform_ypr(par_world2L0)(r_rot_idx, r_rot_idx);
+		casadi::Slice lin(0,3), ang(3,6), all;
 
 		for (int i = 0; i < nj; i++) {
-			SX T_wi;
-			//get the parent transform
-			int parent_id = jointsParent[i];
-			if (parent_id == -1) {
-				T_wi = SX::eye(4);
-			} else {
-				T_wi = robot->get_model("T_w_"+std::to_string(parent_id));
+			const int parent_id = jointsParent[i];
+			if (parent_id == -1) {		// links on the world frame do not move
+				Ji_v[i] = SX::zeros(3, ndof);
+				Ji_w[i] = SX::zeros(3, ndof);
+				continue;
 			}
-
-			SX Rwi = T_wi(r_rot_idx, r_rot_idx);
-			// std::cout<<"Rwi: "<<Rwi<<std::endl;
-			SX d_Ci = T_wi(r_tra_idx, 3) + mtimes(Rwi,_distCM_[i]);		// center of mass distance
-			// std::cout<<"d_Ci: "<<d_Ci<<std::endl;
-			SX Jci_pos = SX::jacobian(d_Ci, q); 	// matrix of velocity jacobian
-			// std::cout<<"Jci_pos: "<<Jci_pos<<std::endl;
-			SX Ji_or(3, ndof);   				// matrix of omega jacobian
-
-			// Loop over joints and build columns
-			for (int j=0; j<ndof; ++j) {
-				// Partial derivative dR/dq_j  (3x3)
-				SX dR_dqj = SX::jacobian(SX::reshape(Rwi, 9, 1), q(j));
-				dR_dqj = SX::reshape(dR_dqj, 3, 3);
-
-				// S_j = dR/dq_j * R^T  (3x3 skew-symmetric)
-				SX Sj = SX::mtimes(dR_dqj, Rwi.T());
-
-				// Extract angular velocity vector from skew matrix
-				SX wj = vect(Sj);
-
-				// Set column j
-				Ji_or(allRows, j) = wj;
-			}
-			
-			Ji_v[i] = Jci_pos;
-			Ji_w[i] = Ji_or;
-
+			SX J = robot->get_model("J_"+std::to_string(parent_id));
+			SX Rwi = robot->get_model("T_w_"+std::to_string(parent_id))(lin, lin);
+			Ji_w[i] = J(ang, all);
+			Ji_v[i] = J(lin, all) - mtimes(hat(mtimes(Rwi, _distCM_[i])), Ji_w[i]);
 		}
 
 		return std::make_tuple(Ji_v, Ji_w);
@@ -291,26 +254,6 @@ namespace thunder_ns {
 		}
 	}
 
-	casadi::SX DynBuilder::joint_subspace(std::shared_ptr<Robot> robot, const string& type, const SX& q_joint, const SX& axis){
-		// The joint definition gives its motion subspace S_JOINT_<type> (6 x dim, [linear; angular], in the joint frame).
-		if (robot->functions.count("S_JOINT_"+type)) return robot->get_model("S_JOINT_"+type, {q_joint, axis});
-
-		// Fallback from T_JOINT_<type>: column k is the body twist of dT/dq_k, S = vee(T^-1 dT/dq).
-		// Exact, but trigonometric identities are not simplified, so it can be a q-dependent expression.
-		if (!robot->functions.count("T_JOINT_"+type)) throw std::runtime_error("rnea: joint type '" + type + "' has neither S_JOINT_ nor T_JOINT_ defined");
-		debug_log("S_JOINT_" + type + " not defined, derived from T_JOINT_" + type, VERB_DEBUG);
-		SX T = robot->get_model("T_JOINT_"+type, {q_joint, axis});
-		casadi::Slice sel3(0,3);
-		SX R = T(sel3,sel3);
-		SX S(6, q_joint.size1());
-		for (int k=0; k<q_joint.size1(); k++){
-			SX dR = SX::reshape(SX::jacobian(SX::reshape(R, 9, 1), q_joint(k)), 3, 3);
-			S(lin, k) = mtimes(R.T(), SX::jacobian(T(sel3,3), q_joint(k)));
-			S(ang, k) = vect(mtimes(R.T(), dR));
-		}
-		return S;
-	}
-
 	casadi::SX DynBuilder::rnea(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g){
 		// Modified RNEA (Niemeyer-Slotine): tau = M ddqr + C(q,dq) dqr + G, with C such that dM/dt - 2C is skew.
 		// Empty dqr: standard RNEA (dqr = dq) with the plain v x* I v term, smaller expressions. Derivation in notes.md.
@@ -351,7 +294,7 @@ namespace thunder_ns {
 			ar[i] = motion_to_child(R[i], r[i], (p < 0) ? SX::vertcat({-g, SX::zeros(3,1)}) : ar[p]);
 
 			if (dim > 0){
-				S[i] = joint_subspace(robot, jointsType[i], q(qi[i]), SX(casadi::DM(jointsAxis[i])));
+				S[i] = robot->get_model("S_JOINT_"+jointsType[i], {q(qi[i]), SX(casadi::DM(jointsAxis[i]))});
 				SX Sdq = mtimes(S[i], dq(qi[i]));
 				SX Sdqr = modified ? mtimes(S[i], dqr(qi[i])) : Sdq;
 				v[i] += Sdq;
@@ -409,7 +352,7 @@ namespace thunder_ns {
 			SX T = robot->get_model("T_"+std::to_string(i));
 			X[i] = motion_transform(T(sel3,sel3), T(sel3,3));
 			g_frame[i] = mtimes(T(sel3,sel3).T(), (jointsParent[i] < 0) ? g : g_frame[jointsParent[i]]);
-			if (jointsDimension[i] > 0) S[i] = joint_subspace(robot, jointsType[i], q(qi[i]), SX(casadi::DM(jointsAxis[i])));
+			if (jointsDimension[i] > 0) S[i] = robot->get_model("S_JOINT_"+jointsType[i], {q(qi[i]), SX(casadi::DM(jointsAxis[i]))});
 		}
 
 		// --- Composite inertias, mass and first moment, leaves to root --- //

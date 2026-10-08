@@ -68,7 +68,7 @@ On small robots (3 to 5 dof) `christoffel` on the `rnea` M is somewhat smaller t
 ### Other options
 
 - `compute_C_std` adds `C_std`, the Christoffel matrix built element by element from `M`. Its values equal `C` but it is far more expensive, so it is off by default and meant for comparisons.
-- `compute_J_cm` adds the centre-of-mass Jacobians `J_cm_<i>` (6 x ndof, linear velocity of the centre of mass on top of angular velocity). The `lagrange` method builds these Jacobians for `M` and `G` whether or not this option is set. The option only decides whether they are added as functions.
+- `compute_J_cm` adds the centre-of-mass Jacobians `J_cm_<i>` (6 x ndof, linear velocity of the centre of mass on top of angular velocity). They are the frame Jacobians of `kin_builder` moved to the centre of mass. The `lagrange` method builds these Jacobians for `M` and `G` whether or not this option is set. The option only decides whether they are added as functions.
 
 ### Requirements of RNEA and CRBA
 

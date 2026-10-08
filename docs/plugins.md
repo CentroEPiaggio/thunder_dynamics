@@ -5,6 +5,8 @@ Description index of documentation for each existing plugin.
 
 ## Builders
 
+[Kinematics Builder](plugins/kin_builder_plugin.md): Builds the transforms and Jacobians of the frames, the Jacobian derivatives and pseudo-inverse, and registers the built-in joint types.
+
 [Dynamics Builder](plugins/dyn_builder_plugin.md): Builds `M`, `C`, `Cdq`, `G` (RNEA, CRBA or Lagrange), link friction, time derivatives and parameter conversions.
 
 [Regressors Builder](plugins/reg_builder_plugin.md): Builds the dynamic regressors (`Yr`, `Y`, ...) and the kinematic, friction and elastic regressors.

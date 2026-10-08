@@ -5,7 +5,7 @@ A joint type is defined by two template functions stored in the robot. Builders 
 | Template | Size | Needed by | Meaning |
 | --- | --- | --- | --- |
 | `T_JOINT_<type>(q_joint, axis)` | 4 x 4 | `kin_builder` (always) | Transform added by the joint motion |
-| `S_JOINT_<type>(q_joint, axis)` | 6 x dim | `dyn_builder` with RNEA (optional) | Motion subspace of the joint |
+| `S_JOINT_<type>(q_joint, axis)` | 6 x dim | `kin_builder` (Jacobians), `dyn_builder` (RNEA, CRBA); optional | Motion subspace of the joint |
 
 Both templates take two explicit arguments:
 
@@ -30,9 +30,9 @@ where `X_i` is the fixed frame (`xyz`, `rpy`) of the joint and `T_JOINT` is the 
 S = vee(T_JOINT^-1 * dT_JOINT/dq_joint)       one column per joint variable
 ```
 
-For example, a revolute joint has `S = [0; axis/|axis|]` and a prismatic joint has `S = [axis; 0]`. The RNEA dynamics (`dynamics_method: rnea`, `C_method: rnea`) uses only `S`. When `S` depends on `q_joint`, its time derivative is handled automatically.
+For example, a revolute joint has `S = [0; axis/|axis|]` and a prismatic joint has `S = [axis; 0]`. The Jacobians of `kin_builder` and the RNEA and CRBA dynamics of `dyn_builder` use only `S`. When `S` depends on `q_joint`, its time derivative is handled automatically.
 
-`S_JOINT` is optional. If it is missing, `dyn_builder` derives it from `T_JOINT` with the formula above. The result is exact, but CasADi does not simplify trigonometric identities, so a derived `S` can be a q-dependent expression that is numerically constant. That makes the generated code larger: on a test tree with non-unit revolute axes, about 25% more instructions for `M` and almost twice as many for the Christoffel `C`. So define `S_JOINT` whenever you know it in closed form.
+`S_JOINT` is optional. If it is missing, `kin_builder` derives it from `T_JOINT` with the formula above and registers it as `S_JOINT_<type>`, for itself and for the later plugins. The result is exact, but CasADi does not simplify trigonometric identities, so a derived `S` can be a q-dependent expression that is numerically constant. That makes the generated code larger: on a test tree with non-unit revolute axes, about 25% more instructions for `M` and almost twice as many for the Christoffel `C`. So define `S_JOINT` whenever you know it in closed form.
 
 ## Existing joint types
 
@@ -84,4 +84,4 @@ The `_SEA` types are also recognised by `soft_loader` and `soft_builder`, which 
 
    `urdf_loader` maps only the URDF types revolute, continuous, prismatic and fixed.
 
-3. **Check it.** With `dyn_builder` the two methods must agree: build once with `dynamics_method: lagrange` and once with `rnea` and compare `M`, `C` and `G`. Lagrange uses only `T_JOINT`; RNEA uses `S_JOINT`. A wrong `S_JOINT` shows up as a mismatch. To check `S_JOINT` itself, compare it with the derived one by temporarily removing it.
+3. **Check it.** `S_JOINT` must agree with `T_JOINT`: the Jacobians and the RNEA use `S_JOINT`, the transforms use `T_JOINT`. To check it, compare it with the derived one by temporarily removing it, or compare the linear part of a frame Jacobian `J_<i>` with a finite difference of the origin of `T_w_<i>`.
