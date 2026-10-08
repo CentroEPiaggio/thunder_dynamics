@@ -67,6 +67,10 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 };
 ```
 
+### Starting from `example_builder`
+
+`example_builder` (`src/plugins/builders/example_builder.cpp`) is a registered builder that does nothing yet, meant as a starting point. Its `build()` calls `compute_userDefined()`, an empty function where a new expression can be tried without creating a plugin. `compute_example_fun()` shows the usual steps: read the size and variables from the robot, read an option from the configuration, build an expression and add it with `add_function`. To make a new builder, copy the two files, rename the class, and register it as above.
+
 ---
 
 ## 🐍 Writing Python Plugins

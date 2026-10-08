@@ -42,37 +42,94 @@ With `robot_generator`, each function becomes a `get_<name>()` method of the gen
 - **Jacobian.** `J_i` maps `dq` to `[v; w]`: `v` is the linear velocity of the origin of frame `i`, `w` the angular velocity of the frame. Both are in world coordinates. The linear part comes first, as in the motion subspaces and the spatial vectors of `dyn_builder`.
 - **Pseudo-inverse.** `J_<name>_pinv = Jᵀ (J Jᵀ + μ I)⁻¹` with `μ = 0.02` (`MU` in `kin_builder.cpp`).
 
-## How the Jacobians are computed
+## Mathematics
 
-Let `p_j` and `R_j` be the origin and orientation of frame `j` (from `T_w_j`) and `S_j` the motion subspace of joint `j` (`S_JOINT_<type>`, 6 x dim, in frame `j`). In world coordinates the subspace is `[L_j; z_j] = [R_j S_j,lin; R_j S_j,ang]`: `L_j` is the velocity of `p_j` and `z_j` the angular velocity per unit `dq_j`. For a revolute joint `L_j = 0` and `z_j` is the axis.
+Notation: `p_i` and `R_i` are the origin and orientation of frame `i` in the world (from `T_w_i`), `[a]` is the skew matrix with `[a] b = a x b`, and `dq_j` is the part of `dq` that belongs to joint `j` (`dim` entries). Every joint must come after its parent, so one pass from the root reaches each frame after its parent.
 
-**Jacobian.** Each joint `j` that moves frame `i` (frame `i` itself or one of its ancestors) gives the columns of its own `dq_j`:
+### Transforms
 
 ```
-J_i(:, q_j) = [ L_j + z_j x (p_i - p_j) ;  z_j ]
+T_i   = X_i(par_KIN) T_JOINT(q_i, axis_i)        frame parent(i) -> frame i, q_i: variables of joint i
+T_w_i = T_w_parent(i) T_i                        (T_w_parent = identity for the world)
 ```
 
-The other columns are zero. This is the geometric Jacobian, so no derivative of the transforms is needed.
+`X_i` is built from `[x, y, z, r, p, y]` as `R = R_x(r) R_y(p) R_z(y)` and the translation `[x, y, z]`.
 
-**Time derivative.** With `w_j` the angular velocity of frame `j` and `v_j` the velocity of its origin, both computed recursively from the root,
+### Motion subspace
+
+The motion subspace of joint `j` is its twist per unit joint velocity, in the frame after the joint (frame `j`), `[linear; angular]`. With `T = T_JOINT(q_j, axis_j)`:
+
+```
+S_j = vee(T^-1 dT/dq_j)      one column per joint variable:   T^-1 dT/dq = [ [w]  v ;  0  0 ]  ->  [v; w]
+```
+
+For the built-in types it is given in closed form: `R` is `[0; axis/|axis|]`, `P` is `[axis; 0]`. For a type that defines only `T_JOINT`, `kin_builder` evaluates the formula above symbolically and registers the result as `S_JOINT_<type>`.
+
+In world coordinates the subspace of joint `j` is
+
+```
+[L_j; z_j] = [R_j S_j,lin;  R_j S_j,ang]      (6 x dim)
+```
+
+`z_j` is the angular velocity of frame `j` per unit `dq_j` and `L_j` the velocity of its origin `p_j`. For a revolute joint `L_j = 0` and `z_j` is the axis in the world; for a prismatic one `z_j = 0` and `L_j` is the axis.
+
+### Jacobian
+
+Joint `j` moves frame `i` when `j = i` or `j` is an ancestor of `i`. Moving `dq_j` alone, the whole subtree of `j` moves rigidly with frame `j`: it turns with `w = z_j dq_j` about `p_j` and translates with `L_j dq_j`. The origin of frame `i` is a point of that subtree, so its velocity is `L_j dq_j + w x (p_i - p_j)`. Summing over the joints that move frame `i`:
+
+```
+[v_i; w_i] = J_i dq,      J_i(:, q_j) = [ L_j + z_j x (p_i - p_j) ;  z_j ]      (j = i or an ancestor of i)
+```
+
+and the other columns are zero. This is the geometric Jacobian: it needs only the frames and the subspaces, no derivative of the transforms.
+
+### Time derivative of the Jacobian
+
+The velocities of the frames are propagated from the root (`w`, `v` are zero for the world):
 
 ```
 w_j = w_parent + z_j dq_j
 v_j = v_parent + w_parent x (p_j - p_parent) + L_j dq_j
-d/dt [L_j; z_j] = [w_j x L_j; w_j x z_j] + R_j dS_j/dt
 ```
 
-and the derivative of each column is
+The second line is the velocity of the point `p_j` of the parent body, plus the sliding of the joint. Since `dR_j/dt = [w_j] R_j`, the subspace in the world changes as
+
+```
+d/dt [L_j; z_j] = [ w_j x L_j ;  w_j x z_j ] + [ R_j dS_j,lin/dt ;  R_j dS_j,ang/dt ]
+```
+
+`dS_j/dt = dS_j/dq dq` is computed with `jtimes`: it is structurally zero for a constant subspace (`R`, `P`), and exact for joints whose `S` depends on `q`. Differentiating the columns of `J_i` with `d/dt (p_i - p_j) = v_i - v_j`:
 
 ```
 dJ_i(:, q_j) = [ dL_j + dz_j x (p_i - p_j) + z_j x (v_i - v_j) ;  dz_j ]
 ```
 
-`dS_j/dt` is computed with `jtimes` and is zero for joints with a constant subspace (`R`, `P`). For joints whose `S` depends on `q` (e.g. a universal joint), it makes the result exact.
+### Second time derivative
 
-**Second derivative.** `J_<name>_ddot` is `jtimes` of `J_<name>_dot` with respect to `q` and `dq`: `∂J̇/∂q dq + ∂J̇/∂dq ddq`.
+`J_<name>_dot` depends on `q` and `dq`, so
 
-**Pseudo-inverse.** `Jᵀ (J Jᵀ + μ I)⁻¹` equals `(Jᵀ J + μ I)⁻¹ Jᵀ`, so the smaller of the two systems is solved: 6 x 6, or ndof x ndof when ndof < 6. Both matrices are positive definite for `μ > 0`, so an LDLᵀ factorisation without pivoting is used. It needs no square roots and gives smaller code than `SX::inv`.
+```
+ddJ = d/dt dJ = ∂dJ/∂q dq + ∂dJ/∂dq ddq
+```
+
+computed with two `jtimes` of the expression above.
+
+### Damped pseudo-inverse
+
+`J_<name>_pinv = Jᵀ (J Jᵀ + μ I_6)⁻¹`. From `Jᵀ (J Jᵀ + μ I_6) = (Jᵀ J + μ I_n) Jᵀ`, with `n = ndof`,
+
+```
+Jᵀ (J Jᵀ + μ I_6)⁻¹ = (Jᵀ J + μ I_n)⁻¹ Jᵀ
+```
+
+so the smaller system is solved: `(J Jᵀ + μ I_6) X = J`, `pinv = Xᵀ`, or `(Jᵀ J + μ I_n) X = Jᵀ` when `n < 6`. Both matrices are symmetric and positive definite for `μ > 0`, so they are factorised as `A = L D Lᵀ` (`L` unit lower triangular, `D` diagonal, all pivots `≥ μ`) without pivoting:
+
+```
+D_j  = A_jj - Σ_{m<j} L_jm² D_m
+L_ij = (A_ij - Σ_{m<j} L_im L_jm D_m) / D_j          i > j
+```
+
+followed by forward substitution with `L`, division by `D` and back substitution with `Lᵀ`. Unlike `SX::inv` (a QR factorisation) it needs no square roots and gives smaller code.
 
 ### Cost
 

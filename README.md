@@ -169,13 +169,17 @@ symbolic_dynamics:
     inertia: [1, 1, 1, 0, 0, 0]
 ```
 
-The same masks can also be embedded directly in the URDF (used if YAML does not override):
+The same masks can also be embedded directly in the URDF (used if YAML does not override): kinematic masks in a `<joint>` (they apply to its origin), dynamic masks in a `<link>`:
 
 ```xml
-<link name="base_link">
+<joint name="joint1" type="revolute">
   <!-- Values can be 0/1 or true/false -->
   <symbolic_kinematics xyz="1 1 1" rpy="0 0 0" />
+  ...
+</joint>
+<link name="base_link">
   <symbolic_dynamics mass="1" com="0 1 0" inertia="1 1 1 0 0 0" />
+  ...
 </link>
 ```
 
