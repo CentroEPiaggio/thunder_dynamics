@@ -12,6 +12,8 @@ namespace thunder_ns {
 			RegBuilder() : BaseBuilder("Regressors Builder", "Build the kinematic and dynamic regressors.") {}
 
 			void init(std::shared_ptr<Robot> robot);
+			int init_par_REG(std::shared_ptr<Robot> robot);
+			int compute_tau_reg(std::shared_ptr<Robot> robot);
 
 			casadi::SXVector createQ();
 			casadi::SXVector createE();

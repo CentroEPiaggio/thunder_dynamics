@@ -1060,7 +1060,10 @@ namespace thunder_ns {
 			// }
 
 			robot->add_parameter("par_DYN", casadi::SX::sym("par_DYN", STD_PAR_LINK * numJoints, 1), par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
-			robot->add_parameter("par_REG", casadi::SX::sym("par_REG", STD_PAR_LINK * numJoints, 1), std::vector<double>(STD_PAR_LINK * numJoints, 0), {1}, "Dynamic parameters for regressor", true);
+
+			// --- Reference velocity and acceleration (Slotine-Li) --- //
+			robot->add_variable("dqr", casadi::SX::sym("dqr", ndof, 1), std::vector<double>(ndof, 0), {1}, "Velocity reference", true);
+			robot->add_variable("ddqr", casadi::SX::sym("ddqr", ndof, 1), std::vector<double>(ndof, 0), {1}, "Acceleration reference", true);
 
 			// --- Gravity --- //
 			std::vector<double> gravity_num = {0.0, 0.0, 0.0}; // default no gravity

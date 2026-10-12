@@ -38,6 +38,7 @@ ctest -V -R thunder_.*_test
 
 `thunder_robot_comparison_gtest` compares M, C, Cdq and G against Pinocchio (via the Python helper),
 for each combination of the `dyn_builder` options `dynamics_method` (`auto`, `rnea`, `crba`, `lagrange`) and `C_method` (`auto`, `rnea`, `christoffel`),
-and the dynamic regressors times `par_REG` for each `reg_builder` `regressor_method` (`rnea`, `lagrange`).
+the dynamic regressors times `par_REG` for each `reg_builder` `regressor_method` (`rnea`, `lagrange`),
+and `tau_r` and `Yr par_REG` built by `reg_builder` alone (pipeline without `dyn_builder`).
 If Pinocchio is not available in the active Python environment, the test is skipped.
 Install it with `pip install --user pin`.

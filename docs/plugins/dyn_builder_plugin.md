@@ -6,7 +6,7 @@
 tau = M(q) ddq + C(q, dq) dq + G(q) + dl(dq)
 ```
 
-and adds them to the robot as symbolic functions. It also adds their time derivatives and the conversions between dynamic and regressor parameters. It needs the kinematics: run it after `kin_builder`, with the dynamic parameters loaded by `dyn_loader` or `urdf_loader`.
+and adds them to the robot as symbolic functions. It also adds their time derivatives, the regressor parameters `par_REG` and the conversions between dynamic and regressor parameters. The reference velocity and acceleration `dqr`, `ddqr` used by `tau_r` come from `dyn_loader` or `urdf_loader`. It needs the kinematics: run it after `kin_builder`, with the dynamic parameters loaded by `dyn_loader` or `urdf_loader`.
 
 ```yaml
 pipeline:
@@ -85,6 +85,8 @@ Functions added to the robot, with their arguments:
 | `C` | `q, dq, par_KIN, par_DYN` | Coriolis matrix, `dM/dt - 2C` skew-symmetric |
 | `Cdq` | `q, dq, par_KIN, par_DYN` | Coriolis and centrifugal vector `C dq` |
 | `G` | `q, par_KIN, par_gravity, par_DYN` | Gravity vector |
+| `tau` | `q, dq, ddq, par_KIN, par_gravity, par_DYN` | `M ddq + C dq + G`, one-pass RNEA |
+| `tau_r` | `q, dq, dqr, ddqr, par_KIN, par_gravity, par_DYN` | `M ddqr + C dqr + G`, one-pass modified RNEA |
 | `C_std` | `q, dq, par_KIN, par_DYN` | Element-wise Christoffel `C`, only with `compute_C_std: true` |
 | `J_cm_<i>` | `q, par_KIN, par_DYN` | Jacobian of the centre of mass of link `i`, only with `compute_J_cm: true` |
 | `dl` | `dq, par_Dl` | Link friction vector, only if `Dl_order > 0` |
@@ -92,7 +94,11 @@ Functions added to the robot, with their arguments:
 | `M_dot`, `M_ddot` | `q, dq, (ddq,) par_KIN, par_DYN` | First and second time derivatives of `M` |
 | `C_dot`, `C_ddot` | `q, dq, ddq, (d3q,) par_KIN, par_DYN` | First and second time derivatives of `C` |
 | `G_dot`, `G_ddot` | `q, dq, (ddq,) par_KIN, par_gravity, par_DYN` | First and second time derivatives of `G` |
-| `dyn2reg`, `reg2dyn` | `par_DYN` / `par_REG` | Conversions between dynamic and regressor parameters. `par_REG` is set from `dyn2reg`. |
+| `dyn2reg`, `reg2dyn` | `par_DYN` / `par_REG` | Conversions between dynamic and regressor parameters |
+
+`tau` and `tau_r` are always computed by the one-pass (modified) RNEA, whatever `dynamics_method` and `C_method` are, and do not include the link friction `dl`. Without `dyn_builder`, `reg_builder` adds them on `par_REG`.
+
+`dyn_builder` also adds the parameter `par_REG` (all symbolic), with value `dyn2reg(par_DYN)`; `reg_builder` can override that value from its configuration. `par_REG` only stores the parameters: changing it does not change the dynamics, which depend on `par_DYN`. To drive them with `par_REG`, set `par_DYN` from `reg2dyn`. See [`reg_builder`](reg_builder_plugin.md#par_reg).
 
 With `robot_generator`, each function becomes a `get_<name>()` method of the generated class, e.g. `get_M()` and `get_Cdq()`.
 

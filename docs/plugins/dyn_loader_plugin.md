@@ -56,5 +56,5 @@ Masks work as in every loader: `1` keeps the entry symbolic, `0` makes it a cons
 | | `Dl_order` | Order of the link friction |
 | Parameters | `par_gravity` | Gravity in the world frame, 3 x 1 |
 | | `par_DYN` | Inertial parameters, 10 per node, `[m, CoM, I]` as above |
-| | `par_REG` | The same parameters in regressor form (`[m, m CoM, I about the frame origin]`), all symbolic. `dyn_builder` sets its value from `par_DYN` |
 | | `par_Dl` | Link friction coefficients, `Dl_order` per joint variable, only if `Dl_order > 0` |
+| Variables | `dqr`, `ddqr` | Reference velocity and acceleration (Slotine-Li), ndof x 1, used by `tau_r` and the regressors |

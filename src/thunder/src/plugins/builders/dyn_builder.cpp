@@ -452,6 +452,22 @@ namespace thunder_ns {
 		return robot->add_function("C", C, {"q", "dq", "par_KIN", "par_DYN"}, "Manipulator Coriolis matrix");
 	}
 
+	int DynBuilder::compute_tau(std::shared_ptr<Robot> robot){
+		// one-pass RNEA in every dynamics_method: tau = M ddq + C dq + G, tau_r = M ddqr + C dqr + G
+		auto dq = robot->get_model("dq");
+		auto ddq = robot->get_model("ddq");
+		auto dqr = robot->get_model("dqr");
+		auto ddqr = robot->get_model("ddqr");
+		auto par_gravity = robot->get_model("par_gravity");
+		SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
+
+		SX tau = rnea(robot, par, dq, SX(), ddq, par_gravity);
+		SX tau_r = rnea(robot, par, dq, dqr, ddqr, par_gravity);
+		if (!robot->add_function("tau", tau, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"}, "Joint torques M*ddq + C*dq + G (RNEA)")) return 0;
+		if (!robot->add_function("tau_r", tau_r, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_DYN"}, "Reference joint torques M*ddqr + C*dqr + G (modified RNEA)")) return 0;
+		return 1;
+	}
+
 	int DynBuilder::compute_C_std(std::shared_ptr<Robot> robot){
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
@@ -560,6 +576,9 @@ namespace thunder_ns {
 		int numJoints = robot->get<int>("numJoints");
 		const int STD_PAR_LINK = robot->get<const int>("STD_PAR_LINK");
 
+		// - Regressor parameters, all symbolic, value set from par_DYN below - //
+		robot->add_parameter("par_REG", SX::sym("par_REG", STD_PAR_LINK*numJoints, 1), vector<double>(STD_PAR_LINK*numJoints, 0), {1}, "Dynamic parameters for regressor", true);
+
 		// - reg2dyn - //
 		SX par_REG = robot->get_model("par_REG");
 		SX reg2dyn = SX::zeros(par_REG.size());
@@ -611,6 +630,7 @@ namespace thunder_ns {
 			if (!compute_dyn_rnea(robot, dynamics_method)) ret = 0;
 		}
 		if (!compute_C(robot, C_method)) ret = 0;
+		if (!compute_tau(robot)) ret = 0;
 		if (use_C_std) {
 			if (!compute_C_std(robot)) ret = 0;
 		}

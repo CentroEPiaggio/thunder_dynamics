@@ -21,8 +21,10 @@ static void expectSame(const std::string& name, const casadi::DM& thunder, const
 
 // Franka (7 R + fixed + 1 P) fixture with the given builder options
 static std::shared_ptr<thunder_ns::Robot> loadFranka(const std::string& fixtureRoot, const std::string& dynamicsMethod,
-                                                     const std::string& CMethod, const std::string& regressorMethod) {
+                                                     const std::string& CMethod, const std::string& regressorMethod,
+                                                     bool withDynBuilder = true) {
     YAML::Node config = YAML::LoadFile(fixtureRoot + "/franka_urdf.yaml");
+    if (!withDynBuilder) config["pipeline"]["builders"] = std::vector<std::string>{"kin_builder", "reg_builder"};
     config["urdf_loader"]["urdf_path"] = fixtureRoot + "/franka_finger.urdf";
     config["dyn_builder"]["dynamics_method"] = dynamicsMethod;
     config["dyn_builder"]["C_method"] = CMethod;
@@ -52,8 +54,14 @@ TEST_P(RobotComparison, FrankaPinocchio) {
 
     const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
     const casadi::DM dq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddqr = 4 * casadi::DM::rand(ndof, 1) - 2;
     robot->set("q", q);
     robot->set("dq", dq);
+    robot->set("ddq", ddq);
+    robot->set("dqr", dqr);
+    robot->set("ddqr", ddqr);
     const Dynamics thunder = computeThunderDynamics(robot);
 
     Dynamics pinocchio;
@@ -68,6 +76,9 @@ TEST_P(RobotComparison, FrankaPinocchio) {
     expectSame("C", thunder.C, pinocchio.C, tolerance);
     expectSame("Cdq", thunder.Cdq, pinocchio.Cdq, tolerance);
     expectSame("G", thunder.G, pinocchio.G, tolerance);
+    // tau and tau_r are one-pass RNEA in every dynamics_method
+    expectSame("tau", robot->get("tau"), mtimes(pinocchio.M, ddq) + pinocchio.Cdq + pinocchio.G, tolerance);
+    expectSame("tau_r", robot->get("tau_r"), mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G, tolerance);
 }
 
 INSTANTIATE_TEST_SUITE_P(DynamicsMethod, RobotComparison,
@@ -117,3 +128,38 @@ TEST_P(RegressorComparison, FrankaPinocchio) {
 }
 
 INSTANTIATE_TEST_SUITE_P(RegressorMethod, RegressorComparison, ::testing::Values("rnea", "lagrange"));
+
+// Without dyn_builder (e.g. a Slotine-Li controller): reg_builder adds par_REG = dyn2reg(par_DYN) and tau_r on par_REG
+TEST(RegressorComparison, FrankaPinocchioWithoutDynBuilder) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, "auto", "auto", "rnea", false);
+    ASSERT_NE(robot, nullptr);
+    ASSERT_EQ(robot->functions.count("M"), 0U) << "dyn_builder should not have run";
+
+    const int ndof = robot->get<int>("ndof");
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+    robot->set("dq", dq);
+    robot->set("dqr", dqr);
+    robot->set("ddqr", ddqr);
+
+    Dynamics pinocchio;
+    const int helperCode = computePinocchioDynamics(fixtureRoot + "/franka_finger.urdf", q, dq, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
+    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
+
+    const double tolerance = 1e-9;
+    const casadi::DM tauRef = mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G;
+    expectSame("tau_r", robot->get("tau_r"), tauRef, tolerance);
+    expectSame("Yr par_REG", mtimes(robot->get("Yr"), robot->get("par_REG")), tauRef, tolerance);
+}

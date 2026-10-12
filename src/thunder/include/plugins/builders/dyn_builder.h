@@ -24,6 +24,7 @@ namespace thunder_ns {
 			int compute_dyn_rnea(std::shared_ptr<Robot> robot, const std::string& method);
 			int add_dyn(std::shared_ptr<Robot> robot, const casadi::SX& M, const casadi::SX& Cdq, const casadi::SX& G);
 			int compute_C(std::shared_ptr<Robot> robot, const std::string& C_method);
+			int compute_tau(std::shared_ptr<Robot> robot);
 			int compute_C_std(std::shared_ptr<Robot> robot);
 			int compute_J_cm(std::shared_ptr<Robot> robot);
 			int compute_Dl(std::shared_ptr<Robot> robot);

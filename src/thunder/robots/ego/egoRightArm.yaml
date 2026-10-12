@@ -64,17 +64,17 @@ dyn_loader:
   dynamics:
     link0:
       inertial:
-        symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 0.5
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 0.0
         CoM_x: 0.0
         CoM_y: 0.0
-        CoM_z: -0.085
-        Ixx: 0.01
+        CoM_z: 0.0
+        Ixx: 0.0
         Ixy: 0.0
         Ixz: 0.0
-        Iyy: 0.01
+        Iyy: 0.0
         Iyz: 0.0
-        Izz: 0.01
+        Izz: 0.0
       friction:
         symb: [1]
         Dl: [0.1]
@@ -82,10 +82,10 @@ dyn_loader:
     link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
-        mass: 0.6
+        mass: 0.5
         CoM_x: 0.0
         CoM_y: 0.0
-        CoM_z: 0.0
+        CoM_z: -0.085
         Ixx: 0.01
         Ixy: 0.0
         Ixz: 0.0
@@ -102,7 +102,7 @@ dyn_loader:
         mass: 0.6
         CoM_x: 0.0
         CoM_y: 0.0
-        CoM_z: -0.1
+        CoM_z: 0.0
         Ixx: 0.01
         Ixy: 0.0
         Ixz: 0.0
@@ -119,7 +119,7 @@ dyn_loader:
         mass: 0.6
         CoM_x: 0.0
         CoM_y: 0.0
-        CoM_z: 0.0
+        CoM_z: -0.1
         Ixx: 0.01
         Ixy: 0.0
         Ixz: 0.0
@@ -133,6 +133,23 @@ dyn_loader:
     link4:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
+        mass: 0.6
+        CoM_x: 0.0
+        CoM_y: 0.0
+        CoM_z: 0.0
+        Ixx: 0.01
+        Ixy: 0.0
+        Ixz: 0.0
+        Iyy: 0.01
+        Iyz: 0.0
+        Izz: 0.01
+      friction:
+        symb: [1]
+        Dl: [0.1]
+
+    link5:
+      inertial:
+        symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 1.0
         CoM_x: 0.0
         CoM_y: 0.0
@@ -143,11 +160,8 @@ dyn_loader:
         Iyy: 0.01
         Iyz: 0.0
         Izz: 0.01
-      friction:
-        symb: [1]
-        Dl: [0.1]
     
-    link5:
+    EE:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
         mass: 0.1
