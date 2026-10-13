@@ -72,9 +72,9 @@ int main(int argc, char* argv[]){
 	} catch (const std::runtime_error &err) {
 		std::cout << err.what() << std::endl;
 		std::cout << thunder_cli;
-		return 0;
+		return 1;
 	}
-	
+
 	// ----------------------------- //
 	// ------- PLUGIN MANAGER ------- //
 	// ----------------------------- //
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
 		}
 	}else{
 		std::cout << "Invalid config file." << std::endl;
-		return 0;
+		return 1;
 	}
 	// if --name is used, robot_name is overwritten
 	if (gen_command.is_used("--name")){
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
 	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(time_stop - time_start);
-	std::cout<<"done in "<<((double)duration.count())<<" ms!"<<endl; 
+	std::cout<<"done in "<<((double)duration.count())<<" ms!"<<endl;
 
-	return 1;
+	return 0;
 }
