@@ -20,7 +20,7 @@ namespace thunder_ns {
 			vector<string> jointsType;
 			vector<int> jointsParent;
 			vector<bool> jointsAvailable;
-			vector<bool> jointsDerivatives;
+			vector<int> jointsDerivatives;		// no per-node flag: -1, kin_builder decides
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
 			// optional prefix for naming DH links ("link" by default)
@@ -41,7 +41,7 @@ namespace thunder_ns {
 				jointsParent.resize(numJoints, -1);
 				jointsType.resize(numJoints, "FIXED");
 				jointsAvailable.resize(numJoints, false);
-				jointsDerivatives.resize(numJoints, false);
+				jointsDerivatives.resize(numJoints, -1);
 				jointsDimension.resize(numJoints, 0);
 				jointsAxis.resize(numJoints, vector<double>{0,0,1});
 
@@ -281,7 +281,6 @@ namespace thunder_ns {
 			// - link<n> to EE - //
 			jointsParent[numJoints-1] = nRows+1;
 			jointsAvailable[numJoints-1] = true;
-			jointsDerivatives[numJoints-1] = true;
 			SX Ln2EE = robot->get_model("par_Ln2EE");
 			par_KIN(Slice(6*(numJoints-1), 6+6*(numJoints-1))) = Ln2EE;
 
@@ -289,7 +288,7 @@ namespace thunder_ns {
 			robot->add_property<vector<string>>("jointsName", jointsName, "vector<string>", "Name of joints", true);
 			robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 			robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
-			robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
+			robot->add_property<vector<int>>("jointsDerivatives", jointsDerivatives, "vector<int>", "Create jacobian derivatives for these joints (1 yes, 0 no, -1 not set: kin_builder compute_derivatives)", true);
 			robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 			robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);

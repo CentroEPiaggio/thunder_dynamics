@@ -44,7 +44,7 @@ The chain becomes a [thunder tree](kin_loader_plugin.md#the-tree) with `n + 3` n
 
 So the `dynamics` entries follow the Craig numbering: `link<k>` is the link moved by joint `k`, in the frame of joint `k`, and `link0` is the base, which does not move. The body of each node is attached to the frame of its parent (see [the tree](kin_loader_plugin.md#the-tree)); the node `link<n>` exists so that the last link has its own entry and the end-effector stays free for what is added after it. A `friction` entry belongs to the joint of its node: `link<k>` holds the friction of joint `k + 1`, not of joint `k` that moves link `k`. This is temporary, until the link-joint structure is reorganised.
 
-The last node is marked `available` and `derivatives`, so it gets `T_w_<name>`, `J_<name>`, `J_<name>_dot`, `J_<name>_ddot` and `J_<name>_pinv`.
+The last node is marked `available`, so it gets `T_w_<name>`, `J_<name>` and `J_<name>_pinv`, and `J_<name>_dot`, `J_<name>_ddot` with `kin_builder: compute_derivatives: true`.
 
 ## Configuration
 

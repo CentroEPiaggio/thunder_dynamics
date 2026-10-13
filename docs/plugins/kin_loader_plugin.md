@@ -27,7 +27,7 @@ kin_loader:
       parent: link1
       joint_type: FIXED
       xyzrpy: [0, 0, 0.107, 0, 0, 0]
-      derivatives: true         # also J_EE_dot, J_EE_ddot, J_EE_pinv
+      derivatives: true         # also J_EE_dot, J_EE_ddot
 ```
 
 ## The tree
@@ -55,8 +55,8 @@ So the first node, with `parent: world`, is usually a fixed base frame, and the 
 | `xyz` + `rpy` | | The same, split in two vectors |
 | `xyz` + `ypr` | | Translation and `[yaw, pitch, roll]`, converted to `rpy` |
 | `symb` | `[0, 0, 0, 0, 0, 0]` | Which of the 6 frame entries stay symbolic (see below) |
-| `available` | `false` | Add `T_w_<name>` and `J_<name>` for this frame |
-| `derivatives` | `false` | Also add `J_<name>_dot`, `J_<name>_ddot`, `J_<name>_pinv`. Implies `available` |
+| `available` | `false` | Add `T_w_<name>`, `J_<name>` and `J_<name>_pinv` for this frame |
+| `derivatives` | not set | Also add `J_<name>_dot`, `J_<name>_ddot` (`true`) or not (`false`). Not set: the `compute_derivatives` of `kin_builder` decides, for `available` frames. `true` implies `available` |
 
 Each node needs either `xyzrpy` or `xyz` with `rpy` or `ypr`.
 
@@ -77,7 +77,7 @@ Keep entries numeric unless they really change at run time.
 | --- | --- | --- |
 | Properties | `numJoints`, `ndof` | Number of nodes, number of joint variables |
 | | `jointsName`, `jointsType`, `jointsParent`, `jointsAxis`, `jointsDimension` | Per node: name, joint type, parent index (`-1` for the world), axis, dimension |
-| | `jointsAvailable`, `jointsDerivatives` | Per node: the `available` and `derivatives` flags |
+| | `jointsAvailable`, `jointsDerivatives` | Per node: the `available` and `derivatives` flags (`jointsDerivatives`: 1, 0, or -1 when not set; `kin_builder` replaces -1 with its choice) |
 | Variables | `q`, `dq`, `ddq`, `d3q`, `d4q` | Joint position and its derivatives, `ndof x 1`, symbolic |
 | Parameters | `KIN_<name>_xyzrpy`, or `KIN_<name>_xyz` with `KIN_<name>_rpy` / `KIN_<name>_ypr` | Frame of each node, as written in the file |
 | Function | `par_KIN` | The frames of all nodes as `[x, y, z, r, p, y]`, `6 numJoints x 1`, the input of `kin_builder` |

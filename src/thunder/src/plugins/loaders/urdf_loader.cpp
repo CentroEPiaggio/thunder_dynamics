@@ -616,7 +616,7 @@ namespace thunder_ns {
 		jointsType.resize(0, "FIXED");
 		jointsDimension.resize(0, 0);
 		jointsAvailable.resize(0, false);
-		jointsDerivatives.resize(0, false);
+		jointsDerivatives.resize(0, -1);
 		jointsAxis.resize(0, {0,0,1});
 		nodesUrdfJoint.resize(0);
 		par_KIN_num.resize(0, 0);
@@ -647,7 +647,7 @@ namespace thunder_ns {
 			jointsAxis.push_back({0,0,0});
 			jointsDimension.push_back(0);
 			jointsAvailable.push_back(true);
-			jointsDerivatives.push_back(true);
+			jointsDerivatives.push_back(-1);
 			nodesUrdfJoint.push_back("");
 			for(int j=0; j<KIN_DIM; j++) par_KIN_num.push_back(0);
 		} else {								// have to explore deeply
@@ -666,7 +666,7 @@ namespace thunder_ns {
 					}
 					// joints origin
 					jointsAvailable.push_back(false);
-					jointsDerivatives.push_back(false);
+					jointsDerivatives.push_back(-1);
 					// extract kinematics from joint position
 					nodesUrdfJoint.push_back(joint->name);
 					auto par_KIN_link = extractKinematicsFromJoint(joint);
@@ -840,7 +840,7 @@ namespace thunder_ns {
 			robot->add_property<vector<string>>("jointsName", jointsName, "vector<string>", "Name of joints", true);
 			robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 			robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
-			robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
+			robot->add_property<vector<int>>("jointsDerivatives", jointsDerivatives, "vector<int>", "Create jacobian derivatives for these joints (1 yes, 0 no, -1 not set: kin_builder compute_derivatives)", true);
 			robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 			robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);

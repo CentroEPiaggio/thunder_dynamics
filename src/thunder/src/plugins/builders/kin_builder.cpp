@@ -223,7 +223,11 @@ namespace thunder_ns {
 		vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
 		vector<vector<double>> jointsAxis = robot->get<vector<vector<double>>>("jointsAxis");
 		vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
-		vector<bool> jointsDerivatives = robot->get<vector<bool>>("jointsDerivatives");
+		// compute_derivatives: default for the named frames that do not set derivatives (-1), the per-frame flag wins
+		const bool use_derivatives = config_["compute_derivatives"] ? config_["compute_derivatives"].as<bool>() : false;
+		vector<int> jointsDerivatives = robot->get<vector<int>>("jointsDerivatives");
+		for (int i=0; i<nj; i++) if (jointsDerivatives[i] < 0) jointsDerivatives[i] = (use_derivatives && jointsAvailable[i]);
+		robot->add_property<vector<int>>("jointsDerivatives", jointsDerivatives, "vector<int>", "Create jacobian derivatives for these joints", true);
 
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
@@ -260,7 +264,7 @@ namespace thunder_ns {
 			                      SX::mtimes(hat(w[i]), Sw[i](ang, all)) + SX::mtimes(R, dS(ang, all))});
 		}
 
-		// --- Jacobians of each frame, derivatives and pseudo-inverse where asked --- //
+		// --- Jacobians of each frame, pseudo-inverse of the named ones, derivatives where asked --- //
 		for (int i = 0; i < nj; i++) {
 			SX J = SX::zeros(6, ndof);
 			for (int j=i; j>=0; j=jointsParent[j]){
@@ -273,6 +277,7 @@ namespace thunder_ns {
 			if (!robot->add_function("J_"+std::to_string(i), J, arg_list, "Jacobian of frame "+std::to_string(i))) return 0;
 			if (jointsAvailable[i]){
 				if (!robot->add_function("J_"+jointsName[i], J, arg_list, "Jacobian of frame "+jointsName[i])) return 0;
+				if (!robot->add_function("J_"+jointsName[i]+"_pinv", damped_pinv(J, MU), arg_list, "Pseudo-Inverse of jacobian matrix of frame "+jointsName[i])) return 0;
 			}
 			if (!jointsDerivatives[i]) continue;
 
@@ -289,8 +294,6 @@ namespace thunder_ns {
 			if (!robot->add_function("J_"+jointsName[i]+"_dot", dJ, arg_list, "Time derivative of jacobian matrix of frame "+jointsName[i])) return 0;
 			arg_list = {"q", "dq", "ddq", "par_KIN"};
 			if (!robot->add_function("J_"+jointsName[i]+"_ddot", ddJ, arg_list, "Time second derivative of jacobian matrix of frame "+jointsName[i])) return 0;
-			arg_list = {"q", "par_KIN"};
-			if (!robot->add_function("J_"+jointsName[i]+"_pinv", damped_pinv(J, MU), arg_list, "Pseudo-Inverse of jacobian matrix of frame "+jointsName[i])) return 0;
 		}
 
 		return 1;

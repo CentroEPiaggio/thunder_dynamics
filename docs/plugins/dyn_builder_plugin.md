@@ -6,7 +6,7 @@
 tau = M(q) ddq + C(q, dq) dq + G(q) + dl(dq)
 ```
 
-and adds them to the robot as symbolic functions. It also adds their time derivatives, the regressor parameters `par_REG` and the conversions between dynamic and regressor parameters. The reference velocity and acceleration `dqr`, `ddqr` used by `tau_r` come from `dyn_loader` or `urdf_loader`. It needs the kinematics: run it after `kin_builder`, with the dynamic parameters loaded by `dyn_loader` or `urdf_loader`.
+and adds them to the robot as symbolic functions. It also adds their time derivatives (with `compute_derivatives: true`), the regressor parameters `par_REG` and the conversions between dynamic and regressor parameters. The reference velocity and acceleration `dqr`, `ddqr` used by `tau_r` come from `dyn_loader` or `urdf_loader`. It needs the kinematics: run it after `kin_builder`, with the dynamic parameters loaded by `dyn_loader` or `urdf_loader`.
 
 ```yaml
 pipeline:
@@ -19,6 +19,7 @@ dyn_builder:                  # plugin configuration, all keys optional
   C_method: auto              # C: "auto" (default), "rnea" or "christoffel"
   compute_C_std: false        # also add C_std (default false)
   compute_J_cm: false         # also add J_cm_<i> (default false)
+  compute_derivatives: false  # also add M, C, G _dot and _ddot (default false)
 ```
 
 As with any plugin, these keys can also be written at the top level of the file, outside the `dyn_builder` block.
@@ -69,6 +70,7 @@ On small robots (3 to 5 dof) `christoffel` on the `rnea` M is somewhat smaller t
 
 - `compute_C_std` adds `C_std`, the Christoffel matrix built element by element from `M`. Its values equal `C` but it is far more expensive, so it is off by default and meant for comparisons.
 - `compute_J_cm` adds the centre-of-mass Jacobians `J_cm_<i>` (6 x ndof, linear velocity of the centre of mass on top of angular velocity). They are the frame Jacobians of `kin_builder` moved to the centre of mass. The `lagrange` method builds these Jacobians for `M` and `G` whether or not this option is set. The option only decides whether they are added as functions.
+- `compute_derivatives` adds the first and second time derivatives `M_dot`, `M_ddot`, `C_dot`, `C_ddot`, `G_dot`, `G_ddot`. They are off by default because they are large (`C_ddot` is one of the largest expressions) and cost build and compile time.
 
 ### Requirements of RNEA and CRBA
 
@@ -91,9 +93,9 @@ Functions added to the robot, with their arguments:
 | `J_cm_<i>` | `q, par_KIN, par_DYN` | Jacobian of the centre of mass of link `i`, only with `compute_J_cm: true` |
 | `dl` | `dq, par_Dl` | Link friction vector, only if `Dl_order > 0` |
 | `Dl1` ... `Dl<order>` | `par_Dl` | Link friction matrices of each order, only if `Dl_order > 0` |
-| `M_dot`, `M_ddot` | `q, dq, (ddq,) par_KIN, par_DYN` | First and second time derivatives of `M` |
-| `C_dot`, `C_ddot` | `q, dq, ddq, (d3q,) par_KIN, par_DYN` | First and second time derivatives of `C` |
-| `G_dot`, `G_ddot` | `q, dq, (ddq,) par_KIN, par_gravity, par_DYN` | First and second time derivatives of `G` |
+| `M_dot`, `M_ddot` | `q, dq, (ddq,) par_KIN, par_DYN` | First and second time derivatives of `M`, only with `compute_derivatives: true` |
+| `C_dot`, `C_ddot` | `q, dq, ddq, (d3q,) par_KIN, par_DYN` | First and second time derivatives of `C`, only with `compute_derivatives: true` |
+| `G_dot`, `G_ddot` | `q, dq, (ddq,) par_KIN, par_gravity, par_DYN` | First and second time derivatives of `G`, only with `compute_derivatives: true` |
 | `dyn2reg`, `reg2dyn` | `par_DYN` / `par_REG` | Conversions between dynamic and regressor parameters |
 
 `tau` and `tau_r` are always computed by the one-pass (modified) RNEA, whatever `dynamics_method` and `C_method` are, and do not include the link friction `dl`. Without `dyn_builder`, `reg_builder` adds them on `par_REG`.

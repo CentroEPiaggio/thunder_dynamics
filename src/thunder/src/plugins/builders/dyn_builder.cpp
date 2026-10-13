@@ -617,6 +617,8 @@ namespace thunder_ns {
 		const bool use_C_std = config_["compute_C_std"] ? config_["compute_C_std"].as<bool>() : false;
 		// compute_J_cm: also add the centre of mass Jacobians J_cm_<i>
 		const bool use_J_cm = config_["compute_J_cm"] ? config_["compute_J_cm"].as<bool>() : false;
+		// compute_derivatives: also add the first and second time derivatives of M, C, G
+		const bool use_derivatives = config_["compute_derivatives"] ? config_["compute_derivatives"].as<bool>() : false;
 
 		if (dynamics_method != "rnea" && dynamics_method != "crba" && dynamics_method != "auto" && dynamics_method != "lagrange")
 			throw std::runtime_error("dyn_builder: unknown dynamics_method '" + dynamics_method + "' (use 'rnea', 'crba', 'auto' or 'lagrange')");
@@ -639,7 +641,7 @@ namespace thunder_ns {
 		}
 		if (!compute_Dl(robot)) ret = 0;
 		if (!compute_reg_dyn_conversions(robot)) ret = 0;
-		if (1){
+		if (use_derivatives) {
 			if (!compute_dyn_derivatives(robot)) ret = 0;
 		}
 

@@ -26,7 +26,7 @@ Each URDF link of the selected chain becomes a node of the [thunder tree](kin_lo
 
 - the frame `X_i` of the node is the `<origin>` of that joint, its type and axis are those of the joint;
 - frame `<link>` (`T_w_<link>`) is therefore the frame after that joint, i.e. the frame of the next link;
-- a link without children in the chain (or `ee_link`) becomes a `FIXED` node with an identity frame. These terminal nodes are marked `available` and `derivatives`, so they get `T_w_<link>`, `J_<link>`, `J_<link>_dot`, `J_<link>_ddot` and `J_<link>_pinv`.
+- a link without children in the chain (or `ee_link`) becomes a `FIXED` node with an identity frame. These terminal nodes are marked `available`, so they get `T_w_<link>`, `J_<link>` and `J_<link>_pinv`, and `J_<link>_dot`, `J_<link>_ddot` with `kin_builder: compute_derivatives: true`.
 
 When a link has more than one child joint in the chain (a tree), the first branch continues from the node `<link>` and every other branch starts from a node `<link>_<k>`, a frame with no mass attached to the same parent.
 

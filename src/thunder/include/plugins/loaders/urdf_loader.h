@@ -29,7 +29,7 @@ namespace thunder_ns {
 			vector<string> jointsParentStr;
 			vector<int> jointsParent;
 			vector<bool> jointsAvailable;
-			vector<bool> jointsDerivatives;
+			vector<int> jointsDerivatives;		// no per-node flag: -1, kin_builder decides
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
 			vector<string> nodesUrdfJoint;		// URDF joint whose origin is the frame of each node ("" for terminal nodes)

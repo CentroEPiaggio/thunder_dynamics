@@ -1,22 +1,26 @@
 # Kinematics Builder Plugin
 
-`kin_builder` builds the kinematics of the robot: the transform of every frame, its Jacobian, and, for the frames that ask for it, the time derivatives and the damped pseudo-inverse of the Jacobian. It also registers the built-in joint types. It reads the kinematic structure loaded by `kin_loader`, `urdf_loader` or `dh_loader`, and must run before `dyn_builder` and `reg_builder`, which use its frames and joint types.
+`kin_builder` builds the kinematics of the robot: the transform of every frame, its Jacobian, the damped pseudo-inverse of the Jacobian of the named frames and, for the frames that ask for it, the time derivatives of the Jacobian. It also registers the built-in joint types. It reads the kinematic structure loaded by `kin_loader`, `urdf_loader` or `dh_loader`, and must run before `dyn_builder` and `reg_builder`, which use its frames and joint types.
 
 ```yaml
 pipeline:
   loaders: [kin_loader, dyn_loader]
   builders: [kin_builder, dyn_builder]
   generators: [robot_generator]
+
+kin_builder:                  # plugin configuration, all keys optional
+  compute_derivatives: false  # J_<name>_dot, J_<name>_ddot for the named frames (default false)
 ```
 
-`kin_builder` has no configuration keys.
+`compute_derivatives` is the default of the named (`available`) frames that do not set `derivatives` themselves. A frame's own `derivatives` flag (`kin_loader`) always wins, `true` or `false`. `urdf_loader` and `dh_loader` set no per-frame flag, so their named frames follow `compute_derivatives`. As with any plugin, the key can also be written at the top level of the file.
 
 ## What it does
 
 1. **Joint types.** It registers `T_JOINT_<type>` and `S_JOINT_<type>` for the built-in types `R`, `P` and `FIXED`. For a joint type that defines only `T_JOINT_<type>` (registered by another plugin), it derives `S_JOINT_<type>` and registers it, so that every later plugin finds it. See [Joint types](../joints.md).
 2. **Transforms.** `T_i = X_i(par_KIN) T_JOINT_<type>(q_i, axis_i)` from frame `parent(i)` to frame `i`, where `X_i` is the fixed frame of the joint (`xyz`, `rpy`). `T_w_i` is the product along the tree from the world frame.
 3. **Jacobians** of every frame, from the motion subspaces of the joints that move it (below).
-4. **Jacobian derivatives and pseudo-inverse**, only for the frames with `derivatives: true`.
+4. **Pseudo-inverse** of the Jacobian of every named (`available`) frame.
+5. **Jacobian derivatives** of the frames with `derivatives: true`, or of the named frames without the flag when `compute_derivatives: true`.
 
 ## Functions
 
@@ -30,7 +34,7 @@ pipeline:
 | `J_<name>_ddot` | `q, dq, ddq, par_KIN` | Second time derivative of the Jacobian |
 | `J_<name>_pinv` | `q, par_KIN` | Damped pseudo-inverse of the Jacobian, ndof x 6 |
 
-`<i>` is the index of the frame, `<name>` its name. The functions with `<name>` exist only for the frames marked `available` (`T_w_<name>`, `J_<name>`) or `derivatives` (all of them, and `derivatives` implies `available`). With `kin_loader` these are the `available` and `derivatives` keys of each joint. `urdf_loader` marks the end-effector frames, and `dh_loader` the last frame.
+`<i>` is the index of the frame, `<name>` its name. The functions with `<name>` exist only for the frames marked `available` (`T_w_<name>`, `J_<name>`, `J_<name>_pinv`) or `derivatives` (also `J_<name>_dot`, `J_<name>_ddot`; `derivatives` implies `available`). With `kin_loader` these are the `available` and `derivatives` keys of each joint. `urdf_loader` marks the end-effector frames, and `dh_loader` the last frame.
 
 As everywhere in thunder, only the symbolic entries of `par_KIN` are arguments of the generated functions. The numeric ones are constants in the expressions.
 
