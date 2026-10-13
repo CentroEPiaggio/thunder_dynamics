@@ -73,9 +73,9 @@ Masks decide which parameters stay symbols in the generated code (see [symbolic 
        inertia: [0, 0, 0, 0, 0, 0]
    ```
 
-   A kinematic mask under `<link>` applies to the frame of node `<link>`, i.e. to the origin of the joint that leaves `<link>`.
+   A kinematic mask under `<link>` applies to the frame of node `<link>`, i.e. to the origin of the joint that leaves `<link>`. The frame of a branch node `<link>_<k>` is the origin of the joint of that branch.
 
-3. **In the URDF**, used when the YAML does not set that link. Values can be `0`/`1` or `true`/`false`:
+3. **In the URDF**, used when the YAML does not set that node. Values can be `0`/`1` or `true`/`false`:
 
    ```xml
    <joint name="panda_joint4" type="revolute">
@@ -89,6 +89,10 @@ Masks decide which parameters stay symbols in the generated code (see [symbolic 
    ```
 
    Both tags also accept child elements (`<xyz>1 1 1</xyz>`) or a flat list of 6 or 10 values.
+
+The YAML and the URDF name the same frame in two ways: the YAML key is the thunder node, the URDF tag sits on the URDF joint whose `<origin>` that node holds. Above, `<symbolic_kinematics>` in `panda_joint4` (from `panda_link3` to `panda_link4`) and the YAML key `panda_link3` both set the frame of node `panda_link3`, not of `panda_link4`. Dynamic masks have no such shift: `<symbolic_dynamics>` in `<link>` and the YAML key `<link>` both set the body of `<link>`.
+
+The URDF tag is matched by joint name, so it always applies to the origin of its joint, also if the way links and joints become nodes ([above](#from-urdf-links-to-thunder-nodes)) changes in a future version. A YAML kinematic key follows that mapping instead: after such a change, check which joint origin each node holds.
 
 ## What it adds to the robot
 

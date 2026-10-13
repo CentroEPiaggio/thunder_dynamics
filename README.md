@@ -169,6 +169,8 @@ symbolic_dynamics:
     inertia: [1, 1, 1, 0, 0, 0]
 ```
 
+A kinematic key `<link>` sets the frame of the thunder node `<link>`, i.e. the origin of the joint that leaves `<link>` (see the [URDF loader docs](docs/plugins/urdf_loader_plugin.md#symbolic-masks)).
+
 The same masks can also be embedded directly in the URDF (used if YAML does not override): kinematic masks in a `<joint>` (they apply to its origin), dynamic masks in a `<link>`:
 
 ```xml
