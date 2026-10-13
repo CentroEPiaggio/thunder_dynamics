@@ -4,11 +4,11 @@ Documentation of each built-in plugin. Plugins run in the order of the `pipeline
 
 ## Loaders
 
-[Kinematics Loader](plugins/kin_loader_plugin.md) (`kin_loader`): Loads the tree of frames and joints written in the YAML file. Also defines the tree conventions and the symbolic masks used by all loaders.
+[Kinematics Loader](plugins/kin_loader_plugin.md) (`kin_loader`): Loads the kinematic structure of the robot.
 
 [Dynamics Loader](plugins/dyn_loader_plugin.md) (`dyn_loader`): Loads the inertial parameters of the bodies, gravity and the link friction.
 
-[URDF Loader](plugins/urdf_loader_plugin.md) (`urdf_loader`): Loads structure, frames and inertial parameters from a URDF, with symbolic masks per link.
+[URDF Loader](plugins/urdf_loader_plugin.md) (`urdf_loader`): Loads structure, frames and inertial parameters from a URDF, with the addition of symbolic masks per link.
 
 [DH Loader](plugins/dh_loader_plugin.md) (`dh_loader`): Loads a serial chain from a modified Denavit-Hartenberg table.
 
