@@ -634,10 +634,9 @@ namespace thunder_ns {
 	void UrdfLoader::add_chain_from(int parent, std::shared_ptr<urdf::Link> link) {
 		// - Fill thunder structures - //
 		numJoints++;
-		int link_id = jointsName.size();
+		int node = jointsName.size();		// node of the current branch (main node, then ghost nodes)
 		jointsName.push_back(link->name);
 		jointsParent.push_back(parent);
-		parent = link_id++;					// new link index
 		auto par_DYN_link = extractInertiaFromLink(link);
 		for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(static_cast<double>(par_DYN_link(j,0)));
 
@@ -658,7 +657,7 @@ namespace thunder_ns {
 					if (i > 0) {
 						// Initialize ghost node for branches
 						// cout << "_" + std::to_string(i);
-						link_id++;
+						node = jointsName.size();
 						numJoints++;
 						jointsName.push_back(link->name + "_" + std::to_string(i));
 						jointsParent.push_back(parent); 							// Attached to same parent as main node
@@ -675,7 +674,7 @@ namespace thunder_ns {
 					// cout << endl;
 					// add childrens
 					if (chain_has_link(joint->child_link_name)) {
-						add_chain_from(parent, urdf_model->getLink(joint->child_link_name));
+						add_chain_from(node, urdf_model->getLink(joint->child_link_name));
 					}
 					i++;
 				}
