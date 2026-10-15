@@ -48,7 +48,7 @@ kin_loader:
 ############################################
 dyn_loader:
 
-  dynamics_method: rnea     # default: lagrange
+  dynamics_method: rnea     # default: auto
   compute_C_std: false
 
   # link friction

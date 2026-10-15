@@ -2,6 +2,7 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <casadi/casadi.hpp>
 #include <yaml-cpp/yaml.h>
@@ -9,7 +10,9 @@
 #include "robot_test_helpers.h"
 
 using thunder_test::Dynamics;
+using thunder_test::Frame;
 using thunder_test::computePinocchioDynamics;
+using thunder_test::computePinocchioFrames;
 using thunder_test::computeThunderDynamics;
 
 static void expectSame(const std::string& name, const casadi::DM& thunder, const casadi::DM& pinocchio, double tolerance) {
@@ -162,4 +165,59 @@ TEST(RegressorComparison, FrankaPinocchioWithoutDynBuilder) {
     const casadi::DM tauRef = mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G;
     expectSame("tau_r", robot->get("tau_r"), tauRef, tolerance);
     expectSame("Yr par_REG", mtimes(robot->get("Yr"), robot->get("par_REG")), tauRef, tolerance);
+}
+
+// T_w_<i> and J_<i> of every node against pinocchio, and T_w_<name>, J_<name> of the available ones.
+// The frame of node <link> is after the joint that leaves <link>: it is the frame of the next URDF link,
+// the name of the child node, or of <link> itself for a terminal node (FIXED, identity frame).
+TEST(KinematicsComparison, FrankaPinocchio) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, "auto", "auto", "rnea");
+    ASSERT_NE(robot, nullptr);
+
+    const int ndof = robot->get<int>("ndof");
+    ASSERT_GT(ndof, 0);
+    const auto names = robot->get<std::vector<std::string>>("jointsName");
+    const auto parents = robot->get<std::vector<int>>("jointsParent");
+    const auto available = robot->get<std::vector<bool>>("jointsAvailable");
+    const int numJoints = names.size();
+
+    // URDF link whose frame is the frame of each node
+    std::vector<std::string> links(names);
+    for (int i = 0; i < numJoints; ++i) {
+        int children = 0;
+        for (int c = 0; c < numJoints; ++c) {
+            if (parents[c] != i) continue;
+            links[i] = names[c];
+            ++children;
+        }
+        ASSERT_LE(children, 1) << names[i] << ": the fixture should be a chain";
+    }
+
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+
+    std::vector<Frame> pinocchio;
+    const int helperCode = computePinocchioFrames(fixtureRoot + "/franka_finger.urdf", q, links, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
+    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
+
+    const double tolerance = 1e-9;
+    for (int i = 0; i < numJoints; ++i) {
+        SCOPED_TRACE("node " + std::to_string(i) + " " + names[i] + ", frame of link " + links[i]);
+        const std::string id = std::to_string(i);
+        expectSame("T_w_" + id, robot->get("T_w_" + id), pinocchio[i].T, tolerance);
+        expectSame("J_" + id, robot->get("J_" + id), pinocchio[i].J, tolerance);
+        if (available[i]) {
+            expectSame("T_w_" + names[i], robot->get("T_w_" + names[i]), pinocchio[i].T, tolerance);
+            expectSame("J_" + names[i], robot->get("J_" + names[i]), pinocchio[i].J, tolerance);
+        }
+    }
 }

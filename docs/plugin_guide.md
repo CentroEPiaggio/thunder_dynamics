@@ -134,3 +134,7 @@ pipeline:
 - **Dynamic attributes**: You can set arbitrary Python attributes on the Robot object (e.g., `robot.my_data = [1,2,3]`). These are visible to subsequent Python plugins but not to C++ plugins. Use `robot.add_property_*()` or `robot.add_parameter()` if C++ needs access.
 - **Error handling**: Python exceptions are caught and re-raised as C++ `std::runtime_error` with the full Python traceback.
 - **Config**: The YAML config block for a Python plugin is passed to `configure()` as a Python dict (or validated via pydantic if `ConfigModel` is defined). The key in the YAML must match the full `py:module.Class` name.
+
+## Testing a plugin
+
+The automatic tests, their fixtures and how to add a test are described in [src/thunder/tests/README.md](../src/thunder/tests/README.md).

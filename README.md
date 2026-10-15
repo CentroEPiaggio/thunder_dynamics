@@ -59,6 +59,7 @@ thunder plugin list --verbose
 - ⚙️ [Configuration Guide](docs/configuration.md)
 - 🧩 [Plugin Development Guide](docs/plugin_guide.md)
 - 📝 [Plugin Reference](docs/plugins.md)
+- 🧪 [Tests](src/thunder/tests/README.md)
 ---
 
 ## Using Generated Libraries

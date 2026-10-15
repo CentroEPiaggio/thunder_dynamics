@@ -71,10 +71,6 @@ target_link_libraries(thunder_test library)
 add_executable(thunder_test_chrono ${CMAKE_SOURCE_DIR}/thunder_test_chrono.cpp)
 target_link_libraries(thunder_test_chrono library)
 
-add_executable(thunder_symbolic_test ${CMAKE_SOURCE_DIR}/symbolic_mask_test.cpp)
-target_link_libraries(thunder_symbolic_test library)
-target_compile_definitions(thunder_symbolic_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
-
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
 
@@ -123,10 +119,6 @@ set_target_properties(thunder_test PROPERTIES
   BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
 )
-set_target_properties(thunder_symbolic_test PROPERTIES
-  BUILD_RPATH "${CASADI_LIB_DIR}"
-    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-)
 set_target_properties(thunder_test_chrono PROPERTIES
   BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
@@ -154,6 +146,10 @@ if(WITH_TESTS)
   target_link_libraries(thunder_tree_kinematics_test PRIVATE library gtest_main)
   target_compile_definitions(thunder_tree_kinematics_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
 
+  add_executable(thunder_symbolic_masks_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_symbolic_masks.cpp)
+  target_link_libraries(thunder_symbolic_masks_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_symbolic_masks_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
   add_executable(thunder_robot_comparison_gtest
     ${CMAKE_SOURCE_DIR}/tests/cpp/robot_comparison_gtest.cpp
   )
@@ -180,16 +176,22 @@ if(WITH_TESTS)
     BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
   )
+  set_target_properties(thunder_symbolic_masks_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+  )
 
   add_test(NAME thunder_no_generation_test COMMAND thunder_no_generation_test)
   add_test(NAME thunder_generator_smoke_test COMMAND thunder_generator_smoke_test)
   add_test(NAME thunder_tree_kinematics_test COMMAND thunder_tree_kinematics_test)
+  add_test(NAME thunder_symbolic_masks_test COMMAND thunder_symbolic_masks_test)
   add_test(NAME thunder_robot_comparison_gtest COMMAND thunder_robot_comparison_gtest)
 
   set_tests_properties(
     thunder_no_generation_test
     thunder_generator_smoke_test
     thunder_tree_kinematics_test
+    thunder_symbolic_masks_test
     thunder_robot_comparison_gtest
     PROPERTIES
       ENVIRONMENT "LD_LIBRARY_PATH=${CASADI_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
