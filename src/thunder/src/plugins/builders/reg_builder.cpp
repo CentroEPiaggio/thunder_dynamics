@@ -22,11 +22,52 @@ namespace thunder_ns {
 		}
 
 		// --- Variables --- //
-		// - Slotine regressor - //
-		robot->add_variable("dqr", SX::sym("dqr",ndof,1), vector<double>(ndof,0), {1}, "Velocity reference", true);
-		robot->add_variable("ddqr", SX::sym("ddqr",ndof,1), vector<double>(ndof,0), {1}, "Acceleration reference", true);
+		// dqr, ddqr (Slotine regressor) are created by dyn_loader or urdf_loader
 		// - Kinematic regressor - //
 		robot->add_variable("w", SX::sym("w",6,1), vector<double>(6,0), {1}, "Wrench", true);
+	}
+
+	int RegBuilder::init_par_REG(std::shared_ptr<Robot> robot){
+		// par_REG value: reg_builder config > dyn2reg(par_DYN) > zero. All entries symbolic.
+		// dyn_builder creates par_REG with the dyn2reg value; without dyn_builder it is created here.
+		const int nj = robot->get<int>("numJoints");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		const int size = nParLink*nj;
+		if (!robot->parameters.count("par_REG")) {
+			vector<double> value(size, 0);
+			if (robot->parameters.count("par_DYN")) {
+				DynBuilder dyn;
+				value = SX::evalf(dyn.dyn2reg(SX(robot->parameters["par_DYN"].num), nj, nParLink)).get_elements();
+			}
+			robot->add_parameter("par_REG", SX::sym("par_REG", size, 1), value, {1}, "Dynamic parameters for regressor", true);
+		}
+		if (config_["par_REG"]) {
+			vector<double> value = config_["par_REG"].as<vector<double>>();
+			if ((int)value.size() != size) throw std::runtime_error("reg_builder: par_REG must have " + std::to_string(size) + " values (" + std::to_string(nParLink) + " per link)");
+			robot->set("par_REG", value);
+		}
+		return 1;
+	}
+
+	int RegBuilder::compute_tau_reg(std::shared_ptr<Robot> robot){
+		// tau and tau_r from par_REG, only if dyn_builder did not add them (there they depend on par_DYN)
+		auto dq = robot->get_model("dq");
+		auto ddq = robot->get_model("ddq");
+		auto dqr = robot->get_model("dqr");
+		auto ddqr = robot->get_model("ddqr");
+		auto g = robot->get_model("par_gravity");
+		SX par = robot->get_model("par_REG");
+		DynBuilder dyn;
+
+		if (!robot->functions.count("tau")) {
+			SX tau = dyn.rnea(robot, par, dq, SX(), ddq, g);
+			if (!robot->add_function("tau", tau, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_REG"}, "Joint torques M*ddq + C*dq + G (RNEA on par_REG)")) return 0;
+		}
+		if (!robot->functions.count("tau_r")) {
+			SX tau_r = dyn.rnea(robot, par, dq, dqr, ddqr, g);
+			if (!robot->add_function("tau_r", tau_r, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_REG"}, "Reference joint torques M*ddqr + C*dqr + G (modified RNEA on par_REG)")) return 0;
+		}
+		return 1;
 	}
 
 	casadi::SXVector RegBuilder::createQ() {
@@ -242,23 +283,42 @@ namespace thunder_ns {
 			reg_G(allRows,selCols) = reg_G_i;
 		}
 
-		// - add the Slotine-Li regressor - //
-		std::vector<std::string> arg_list;
-		arg_list = {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"};
-		if (!robot->add_function("Yr", Yr, arg_list, "Slotine-Li manipulator regressor matrix")) return 0;
-		
-		// - add the matrices regressors - //
-		arg_list = {"q", "ddqr", "par_KIN"};
-		if (!robot->add_function("reg_M", reg_M, arg_list, "Regressor matrix of term M*ddqr")) return 0;
-		arg_list = {"q", "dq", "dqr", "par_KIN"};
-		if (!robot->add_function("reg_C", reg_C, arg_list, "Regressor matrix of term C*dqr")) return 0;
-		arg_list = {"q", "par_KIN", "par_gravity"};
-		if (!robot->add_function("reg_G", reg_G, arg_list, "Regressor matrix of term G")) return 0;
+		return add_Yr(robot, Yr, Y, reg_M, reg_C, reg_G);
+	}
 
-		// - add the standard regressor - //
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_gravity"};
-		if (!robot->add_function("Y", Y, arg_list, "Standard manipulator regressor matrix")) return 0;
+	int RegBuilder::compute_Yr_rnea(std::shared_ptr<Robot> robot){
+		// The modified RNEA (DynBuilder::rnea) is linear in the link parameters in regressor form,
+		// so each regressor is its Jacobian w.r.t. them. Same parameters and order as par_REG.
+		const int nj = robot->get<int>("numJoints");
+		const int ndof = robot->get<int>("ndof");
+		const int nParLink = robot->get<const int>("STD_PAR_LINK");
+		auto dq = robot->get_model("dq");
+		auto ddq = robot->get_model("ddq");
+		auto dqr = robot->get_model("dqr");
+		auto ddqr = robot->get_model("ddqr");
+		auto g = robot->get_model("par_gravity");
+		SX par = SX::sym("par", nParLink*nj);
+		SX zeros_n = SX::zeros(ndof,1);
+		SX zeros_g = SX::zeros(3,1);
+		DynBuilder dyn;
 
+		// empty reference velocity: standard RNEA (dqr = dq)
+		auto regressor = [&](const SX& v, const SX& vr, const SX& a, const SX& grav){ return SX::jacobian(dyn.rnea(robot, par, v, vr, a, grav), par); };
+		SX Yr = regressor(dq, dqr, ddqr, g);
+		SX Y = regressor(dq, SX(), ddq, g);
+		SX reg_M = regressor(zeros_n, SX(), ddqr, zeros_g);
+		SX reg_C = regressor(dq, dqr, zeros_n, zeros_g);
+		SX reg_G = regressor(zeros_n, SX(), zeros_n, g);
+
+		return add_Yr(robot, Yr, Y, reg_M, reg_C, reg_G);
+	}
+
+	int RegBuilder::add_Yr(std::shared_ptr<Robot> robot, const SX& Yr, const SX& Y, const SX& reg_M, const SX& reg_C, const SX& reg_G){
+		if (!robot->add_function("Yr", Yr, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}, "Slotine-Li manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Y", Y, {"q", "dq", "ddq", "par_KIN", "par_gravity"}, "Standard manipulator regressor matrix")) return 0;
+		if (!robot->add_function("reg_M", reg_M, {"q", "ddqr", "par_KIN"}, "Regressor matrix of term M*ddqr")) return 0;
+		if (!robot->add_function("reg_C", reg_C, {"q", "dq", "dqr", "par_KIN"}, "Regressor matrix of term C*dqr")) return 0;
+		if (!robot->add_function("reg_G", reg_G, {"q", "par_KIN", "par_gravity"}, "Regressor matrix of term G")) return 0;
 		return 1;
 	}
 	
@@ -271,6 +331,10 @@ namespace thunder_ns {
 		if (Dl_order==0) return 0;
 		auto par_Dl = robot->get_model("par_Dl");
 		auto par_Dl_isSymb = robot->parameters["par_Dl"].is_symbolic;
+		if (!robot->functions.count("dl")) {
+			debug_log("Warning: reg_dl skipped, dl not found (it is added by dyn_builder)", VERB_INFO);
+			return 1;
+		}
 		auto Dl = robot->get_model("dl");
 
 		// - symbolic par construction - //
@@ -311,6 +375,14 @@ namespace thunder_ns {
 		auto par_Dm_isSymb = robot->parameters["par_Dm"].is_symbolic;
 		auto par_Mm_isSymb = robot->parameters["par_Mm"].is_symbolic;
 
+		// k, d, dm, Mm are added by soft_builder
+		for (string f : {"k", "d", "dm", "Mm"}) {
+			const bool needed = (f == "k") ? K_order : (f == "d") ? D_order : (f == "dm") ? Dm_order : true;
+			if (needed && !robot->functions.count(f)) {
+				debug_log("Warning: elastic regressors skipped, " + f + " not found (it is added by soft_builder)", VERB_INFO);
+				return 1;
+			}
+		}
 		auto K = K_order ? robot->get_model("k") : 0;
 		auto D = D_order ? robot->get_model("d") : 0;
 		auto Dm = Dm_order ? robot->get_model("dm") : 0;
@@ -427,7 +499,24 @@ namespace thunder_ns {
 		int numSoftJoints = (robot->properties.count("numSoftJoints")) ? robot->get<int>("numSoftJoints") : 0;
 		int Dl_order = (robot->properties.count("Dl_order")) ? robot->get<int>("Dl_order") : 0;
 
-		if (!compute_Yr(robot)) ret=0;
+		// regressor_method: how Yr, Y, reg_M, reg_C, reg_G are built, "rnea" (modified Newton-Euler) or "lagrange" (per link Jacobians)
+		const std::string regressor_method = config_["regressor_method"] ? config_["regressor_method"].as<std::string>() : "rnea";
+		if (regressor_method != "rnea" && regressor_method != "lagrange")
+			throw std::runtime_error("reg_builder: unknown regressor_method '" + regressor_method + "' (use 'rnea' or 'lagrange')");
+
+		// dynamic part (par_REG, dynamic regressors, tau, tau_r) needs what dyn_loader or urdf_loader add
+		const bool has_dynamics = robot->parameters.count("par_gravity") && robot->parameters.count("dqr") && robot->parameters.count("ddqr");
+		if (has_dynamics) {
+			if (!init_par_REG(robot)) ret=0;
+			if (regressor_method == "rnea") {
+				if (!compute_Yr_rnea(robot)) ret=0;
+			} else {
+				if (!compute_Yr(robot)) ret=0;
+			}
+			if (!compute_tau_reg(robot)) ret=0;
+		} else {
+			debug_log("Warning: dynamic regressors skipped, par_gravity, dqr or ddqr not found (they are added by dyn_loader or urdf_loader)", VERB_INFO);
+		}
 		if (!compute_reg_J(robot)) ret=0;
 		if (Dl_order>0){
 			if (!compute_reg_Dl(robot)) ret=0;

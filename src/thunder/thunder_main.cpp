@@ -23,7 +23,7 @@ using std::cout;
 using std::endl;
 
 #define MU_JACOB 0.0
-#define VERSION "1.1.2"
+#define VERSION "1.2.3"
 
 
 // --- paths and files (default) --- //
@@ -72,9 +72,9 @@ int main(int argc, char* argv[]){
 	} catch (const std::runtime_error &err) {
 		std::cout << err.what() << std::endl;
 		std::cout << thunder_cli;
-		return 0;
+		return 1;
 	}
-	
+
 	// ----------------------------- //
 	// ------- PLUGIN MANAGER ------- //
 	// ----------------------------- //
@@ -99,19 +99,13 @@ int main(int argc, char* argv[]){
 	config_file = gen_command.get<std::string>("config_file");
 
 	// - check config_file and name - //
-	int index_yaml = config_file.find_last_of(".yaml");
-	if (index_yaml > 0){
-		int index_path = config_file.find_last_of("/");
-		if (index_path == std::string::npos){ // no occurrence
-			path_robot = "./";
-			robot_name = config_file.substr(0, index_yaml+1-5); // 5 stands for ".yaml"
-		}else{
-			path_robot = config_file.substr(0, index_path+1);
-			robot_name = config_file.substr(index_path+1, index_yaml-index_path-5); // 5 stands for ".yaml"
-		}
+	std::filesystem::path config_path(config_file);
+	if (!config_path.stem().empty()){
+		path_robot = config_path.has_parent_path() ? config_path.parent_path().string() + "/" : "./";
+		robot_name = config_path.stem().string();
 	}else{
 		std::cout << "Invalid config file." << std::endl;
-		return 0;
+		return 1;
 	}
 	// if --name is used, robot_name is overwritten
 	if (gen_command.is_used("--name")){
@@ -140,7 +134,7 @@ int main(int argc, char* argv[]){
 	// --- elapsed time --- //
 	auto time_stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(time_stop - time_start);
-	std::cout<<"done in "<<((double)duration.count())<<" ms!"<<endl; 
+	std::cout<<"done in "<<((double)duration.count())<<" ms!"<<endl;
 
-	return 1;
+	return 0;
 }

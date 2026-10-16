@@ -65,6 +65,16 @@ dyn_loader:
 
   # inertial parameters expressed w.r.t. DH frames
   dynamics:
+    link0:
+      inertial:                 # body on the base frame: it does not move
+        symb: [0,0,0,0,0,0,0,0,0,0]
+        mass: 0.0
+        CoM: [0, 0, 0]
+        I: [0, 0, 0, 0, 0, 0]
+      friction:
+        symb: [1,1]
+        Dl: [0.1, 0.01]
+
     link1:
       inertial:
         symb: [1,1,1,1,1,1,1,1,1,1]
@@ -198,6 +208,3 @@ dyn_loader:
         Iyy: 0.0001771856800241
         Iyz: 0.0000874407022322
         Izz: 0.0000599319059965
-      friction:
-        symb: [1,1]
-        Dl: [0.1, 0.01]

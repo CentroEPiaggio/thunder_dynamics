@@ -28,6 +28,7 @@ std::shared_ptr<Robot> legacy_robot_from_file(string robot_name, string file){
 	try {
 		// Load YAML
 		YAML::Node config_node = YAML::LoadFile(file);
+		config_node["config_path"] = std::filesystem::absolute(file).string();	// relative paths in the config (e.g. urdf_path) from its directory
 
 		// Configure Manager
 		PluginManager manager;
@@ -161,7 +162,7 @@ int main(){
 	cout << "M: " << robot->get("M") << endl << endl;
 	cout << "M_2: " << robot2->get("M") << endl << endl;
 	cout << "C: " << robot->get("C") << endl << endl;
-	cout << "C_std: " << robot->get("C_std") << endl << endl;
+	if (robot->functions.count("C_std")) cout << "C_std: " << robot->get("C_std") << endl << endl;
 	cout << "G: " << robot->get("G") << endl << endl;
 	cout << "G_2: " << robot2->get("G") << endl << endl;
 	if (robot->get<int>("Dl_order")){

@@ -5,11 +5,11 @@ pipeline:
 
 
 urdf_loader:
-  # urdf_path: "franka.urdf"
   # The gtest sets this to the fixture-local absolute path at runtime.
-  urdf_path: "franka.urdf"
+  urdf_path: "franka_finger.urdf"
   base_link: "panda_link0"
-  ee_link: "panda_link8"
+  # single chain down to the left finger (7 R + fixed + 1 P), same model as pinocchio loads
+  ee_link: "panda_leftfinger"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
   # Alternatively, set per-link masks using the link name.
   # Example:

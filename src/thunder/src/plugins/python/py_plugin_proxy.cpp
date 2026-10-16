@@ -108,6 +108,15 @@ static PyObject* import_and_instantiate(const std::string& module_name, const st
     return py_instance;
 }
 
+/// Add the directory of the config file to sys.path, or the current working directory
+/// when the config has no file (e.g. a dict from thunder_core.pipeline.Config), as urdf_loader does
+static void add_config_dir_to_sys_path(const YAML::Node& config) {
+    std::filesystem::path dir = config["config_path"]
+        ? std::filesystem::path(config["config_path"].as<std::string>()).parent_path()
+        : std::filesystem::current_path();
+    PythonInterpreter::instance().add_to_sys_path(dir.string());
+}
+
 /// Call py_instance.configure(config_dict) where config is a YAML::Node
 /// converted to a Python dict via the yaml_to_python helper.
 static void call_configure(PyObject* py_instance, const YAML::Node& config) {
@@ -220,12 +229,7 @@ PyLoaderProxy::PyLoaderProxy(const std::string& module_name, const std::string& 
 
 void PyLoaderProxy::ensure_instance() {
     if (!py_instance_) {
-        // Add the config file directory to sys.path
-        if (config_["config_path"]) {
-            std::string config_path = config_["config_path"].as<std::string>();
-            std::filesystem::path dir = std::filesystem::path(config_path).parent_path();
-            PythonInterpreter::instance().add_to_sys_path(dir.string());
-        }
+        add_config_dir_to_sys_path(config_);
         py_instance_ = import_and_instantiate(module_name_, class_name_);
         call_configure(py_instance_, config_);
     }
@@ -256,11 +260,7 @@ PyBuilderProxy::PyBuilderProxy(const std::string& module_name, const std::string
 
 void PyBuilderProxy::ensure_instance() {
     if (!py_instance_) {
-        if (config_["config_path"]) {
-            std::string config_path = config_["config_path"].as<std::string>();
-            std::filesystem::path dir = std::filesystem::path(config_path).parent_path();
-            PythonInterpreter::instance().add_to_sys_path(dir.string());
-        }
+        add_config_dir_to_sys_path(config_);
         py_instance_ = import_and_instantiate(module_name_, class_name_);
         call_configure(py_instance_, config_);
     }
@@ -290,11 +290,7 @@ PyGeneratorProxy::PyGeneratorProxy(const std::string& module_name, const std::st
 
 void PyGeneratorProxy::ensure_instance() {
     if (!py_instance_) {
-        if (config_["config_path"]) {
-            std::string config_path = config_["config_path"].as<std::string>();
-            std::filesystem::path dir = std::filesystem::path(config_path).parent_path();
-            PythonInterpreter::instance().add_to_sys_path(dir.string());
-        }
+        add_config_dir_to_sys_path(config_);
         py_instance_ = import_and_instantiate(module_name_, class_name_);
         call_configure(py_instance_, config_);
     }

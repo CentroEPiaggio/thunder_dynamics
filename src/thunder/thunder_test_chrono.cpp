@@ -129,15 +129,17 @@ int main(){
 		}
 		cout<<"time C: "<<(double)min_dur/1000<<" us"<<endl;
 
-		min_dur = 999999999;
-		for (int i=0; i<n_rep; i++){
-			time_start = high_resolution_clock::now();
-			myC_std = robot->get("C_std");
-			time_stop = high_resolution_clock::now();
-			duration = duration_cast<nanoseconds>(time_stop - time_start).count();
-			min_dur = (duration<min_dur) ? duration : min_dur;
+		if (robot->functions.count("C_std")){	// only with dyn_builder: compute_C_std: true
+			min_dur = 999999999;
+			for (int i=0; i<n_rep; i++){
+				time_start = high_resolution_clock::now();
+				myC_std = robot->get("C_std");
+				time_stop = high_resolution_clock::now();
+				duration = duration_cast<nanoseconds>(time_stop - time_start).count();
+				min_dur = (duration<min_dur) ? duration : min_dur;
+			}
+			cout<<"time C_std: "<<(double)min_dur/1000<<" us"<<endl;
 		}
-		cout<<"time C_std: "<<(double)min_dur/1000<<" us"<<endl;
 
 		min_dur = 999999999;
 		for (int i=0; i<n_rep; i++){

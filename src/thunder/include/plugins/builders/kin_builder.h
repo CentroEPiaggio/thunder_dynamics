@@ -15,7 +15,7 @@ namespace thunder_ns {
 			SX apply_joint(std::shared_ptr<Robot> robot, const SX& frame, string joint_type, const SX& qi, const SX& axis);
 			int compute_chain(std::shared_ptr<Robot> robot);
 			int compute_jacobians(std::shared_ptr<Robot> robot);
-			int compute_kin_adv(std::shared_ptr<Robot> robot);
+			int derive_subspaces(std::shared_ptr<Robot> robot);
 
 			int create_std_joints(std::shared_ptr<Robot> robot);
 

@@ -35,9 +35,12 @@ namespace thunder_ns {
 			} else {
 				robot->add_property<int>("Dm_order", Dm_order, "int", "Number of soft joints", true);
 			}
-			const auto& q = robot->get_model("q");
+			// link side of each elastic joint: the entries of q and dq flagged in isSoftJoint, in the order of x
+			std::vector<casadi_int> soft_idx;
+			for (int k=0; k<(int)isSoftJoint.size(); k++) if (isSoftJoint[k]) soft_idx.push_back(k);
+			const casadi::SX q = robot->get_model("q")(soft_idx);
 			const auto& x = robot->get_model("x");
-			const auto& dq = robot->get_model("dq");
+			const casadi::SX dq = robot->get_model("dq")(soft_idx);
 			const auto& dx = robot->get_model("dx");
 			const auto& par_K = robot->get_model("par_K");
 			const auto& par_D = robot->get_model("par_D");

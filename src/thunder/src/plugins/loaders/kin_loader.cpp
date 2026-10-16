@@ -106,7 +106,7 @@ namespace thunder_ns {
 			vector<string> jointsParentStr;
 			vector<int> jointsParent;
 			vector<bool> jointsAvailable;
-			vector<bool> jointsDerivatives;
+			vector<int> jointsDerivatives;		// 1 yes, 0 no, -1 not set (kin_builder decides)
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
 
@@ -132,7 +132,7 @@ namespace thunder_ns {
 					jointsType.push_back(joint.second["joint_type"] ? joint.second["joint_type"].as<string>() : "FIXED");
 					jointsParentStr.push_back(joint.second["parent"] ? joint.second["parent"].as<string>() : "world");
 					jointsAvailable.push_back(joint.second["available"] ? joint.second["available"].as<bool>() : false);
-					jointsDerivatives.push_back(joint.second["derivatives"] ? joint.second["derivatives"].as<bool>() : false);
+					jointsDerivatives.push_back(joint.second["derivatives"] ? joint.second["derivatives"].as<bool>() : -1);
 					jointsAxis.push_back(joint.second["axis"] ? joint.second["axis"].as<vector<double>>() : vector<double>{0,0,1});
 					int jointDof = 0;
 					if (joint.second["dimension"]) {
@@ -150,7 +150,7 @@ namespace thunder_ns {
 				}
 				numJoints = jointsType.size();
 				// if derivatives set available
-				for (int i=0; i<numJoints; i++) if (jointsDerivatives[i]) jointsAvailable[i]=true;
+				for (int i=0; i<numJoints; i++) if (jointsDerivatives[i] == 1) jointsAvailable[i]=true;
 				// add properties
 				robot->add_property<int>("numJoints", numJoints, "int", "Number of joints", true);
 				robot->add_property<int>("ndof", ndof, "int", "Number of degrees of freedom", true);
@@ -158,7 +158,7 @@ namespace thunder_ns {
 				robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 				// robot->add_property<vector<string>>("jointsParentStr", jointsParentStr, "vector<string>", "Parent of joints", true);
 				robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
-				robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
+				robot->add_property<vector<int>>("jointsDerivatives", jointsDerivatives, "vector<int>", "Create jacobian derivatives for these joints (1 yes, 0 no, -1 not set: kin_builder compute_derivatives)", true);
 				robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 				robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			

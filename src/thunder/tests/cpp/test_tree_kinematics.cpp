@@ -52,10 +52,10 @@ static void check_tree_robot(const std::shared_ptr<Robot>& robot) {
     ASSERT_GE(ghost, 0) << "tree robot should contain a branch ghost node";
 
     EXPECT_EQ(parents[left], base) << "left_link should be attached to base_link";
-    EXPECT_EQ(parents[right], base) << "right_link should be attached to base_link";
+    EXPECT_EQ(parents[right], ghost) << "right_link should be attached to the branch ghost node of base_link";
     EXPECT_EQ(parents[left_tip], left) << "left_tip should be attached to left_link";
     EXPECT_EQ(parents[right_tip], right) << "right_tip should be attached to right_link";
-    EXPECT_EQ(parents[ghost], base) << "ghost node should reuse base_link parent";
+    EXPECT_EQ(parents[ghost], parents[base]) << "ghost node should reuse base_link parent";
 
     EXPECT_FALSE(available[ghost]) << "ghost node should not be available for alias functions";
     EXPECT_EQ(robot->functions.count("T_w_left_tip"), 1U) << "missing left_tip world transform";

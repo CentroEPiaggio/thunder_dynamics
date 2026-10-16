@@ -26,8 +26,7 @@ All plugins inherit from a core plugin base class:
 
 #include <yaml-cpp/yaml.h>
 
-#include "../plugin_interfaces.h"
-#include "../../library/robot.h"
+#include "plugin_interfaces.h"
 
 namespace thunder_ns {
 
@@ -35,16 +34,11 @@ namespace thunder_ns {
     public:
         MyBuilder() : BaseBuilder("my_builder", "Custom C++ builder plugin.") {}
 
-        int configure(const YAML::Node& config) override {
-            if (config["my_param"]) {
-                double val = config["my_param"].as<double>();
-            }
-            return 1;
-        }
-
         void build(std::shared_ptr<Robot> robot) override {
+            // the plugin's YAML block is stored in config_ before build() is called
+            const double scale = config_["my_param"] ? config_["my_param"].as<double>() : 1.0;
             auto q = robot->get_model("q");
-            casadi::SX expr = q(0) * q(0);
+            casadi::SX expr = scale * q(0) * q(0);
             robot->add_function("my_custom_func", expr, {"q"}, "Squared first joint angle");
         }
     };
@@ -66,6 +60,10 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
     {"my_builder", std::make_shared<MyBuilder>()},
 };
 ```
+
+### Starting from `example_builder`
+
+`example_builder` (`src/plugins/builders/example_builder.cpp`) is a registered builder that does nothing yet, meant as a starting point. Its `build()` calls `compute_userDefined()`, an empty function where a new expression can be tried without creating a plugin. `compute_example_fun()` shows the usual steps: read the size and variables from the robot, read an option from the configuration, build an expression and add it with `add_function`. To make a new builder, copy the two files, rename the class, and register it as above.
 
 ---
 
@@ -130,3 +128,7 @@ pipeline:
 - **Dynamic attributes**: You can set arbitrary Python attributes on the Robot object (e.g., `robot.my_data = [1,2,3]`). These are visible to subsequent Python plugins but not to C++ plugins. Use `robot.add_property_*()` or `robot.add_parameter()` if C++ needs access.
 - **Error handling**: Python exceptions are caught and re-raised as C++ `std::runtime_error` with the full Python traceback.
 - **Config**: The YAML config block for a Python plugin is passed to `configure()` as a Python dict (or validated via pydantic if `ConfigModel` is defined). The key in the YAML must match the full `py:module.Class` name.
+
+## Testing a plugin
+
+The automatic tests, their fixtures and how to add a test are described in [src/thunder/tests/README.md](../src/thunder/tests/README.md).

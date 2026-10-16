@@ -1,4 +1,4 @@
-# ⚡ Thunder Dynamics (v1.1.2)
+# ⚡ Thunder Dynamics (v1.2.3)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
@@ -38,8 +38,8 @@ pipeline:
 
 urdf_loader:
   urdf_path: "robots/panda/panda.urdf"
-  base_link: "panda_link0"
-  ee_link: "panda_link8"
+  base_link: "base"
+  ee_link: "ee_link"
 
 robot_generator:
   gen_robot: true
@@ -59,6 +59,7 @@ thunder plugin list --verbose
 - ⚙️ [Configuration Guide](docs/configuration.md)
 - 🧩 [Plugin Development Guide](docs/plugin_guide.md)
 - 📝 [Plugin Reference](docs/plugins.md)
+- 🧪 [Tests](src/thunder/tests/README.md)
 ---
 
 ## Using Generated Libraries
@@ -69,22 +70,20 @@ thunder plugin list --verbose
 #include <eigen3/Eigen/Dense>
 
 int main() {
-    Eigen::VectorXd q, dq, dq_r;
+    Eigen::VectorXd q, dq;
     // Instantiate generated robot wrapper
     thunder_<robot> my_robot;
     my_robot.set_q(q);
-    my_robot.set_dq(dq)
-    my_robot.set_dqr(dq_r);
+    my_robot.set_dq(dq);
 
     int ndof = my_robot.ndof;
 
     // Compute kinematic and dynamic quantities
-    Eigen::MatrixXd T  = my_robot.get_T_0_ee(); // End-effector transformation matrix
-    Eigen::MatrixXd J  = my_robot.get_J_ee();    // End-effector Jacobian
+    Eigen::MatrixXd T  = my_robot.get_T_w_ee_link(); // End-effector (ee_link) transformation matrix
+    Eigen::MatrixXd J  = my_robot.get_J_ee_link();   // End-effector Jacobian
     Eigen::MatrixXd M  = my_robot.get_M();       // Mass matrix
     Eigen::MatrixXd C  = my_robot.get_C();       // Coriolis matrix
     Eigen::MatrixXd G  = my_robot.get_G();       // Gravity vector
-    Eigen::MatrixXd Yr = my_robot.get_Yr();      // Dynamic regressor matrix
 }
 ```
 
@@ -103,12 +102,11 @@ robot = thunder_<robot>()
 robot.set_q(np.zeros(ndof))
 robot.set_dq(np.random.rand(ndof))
 
-T = robot.get_T_0_ee()
-J = robot.get_J_ee()
+T = robot.get_T_w_ee_link()
+J = robot.get_J_ee_link()
 M = robot.get_M()
 C = robot.get_C()
 G = robot.get_G()
-Yr = robot.get_Yr()
 
 help(robot)
 ```
@@ -169,13 +167,19 @@ symbolic_dynamics:
     inertia: [1, 1, 1, 0, 0, 0]
 ```
 
-The same masks can also be embedded directly in the URDF (used if YAML does not override):
+A kinematic key `<link>` sets the frame of the thunder node `<link>`, i.e. the origin of the joint that leaves `<link>` (see the [URDF loader docs](docs/plugins/urdf_loader_plugin.md#symbolic-masks)).
+
+The same masks can also be embedded directly in the URDF (used if YAML does not override): kinematic masks in a `<joint>` (they apply to its origin), dynamic masks in a `<link>`:
 
 ```xml
-<link name="base_link">
+<joint name="joint1" type="revolute">
   <!-- Values can be 0/1 or true/false -->
   <symbolic_kinematics xyz="1 1 1" rpy="0 0 0" />
+  ...
+</joint>
+<link name="base_link">
   <symbolic_dynamics mass="1" com="0 1 0" inertia="1 1 1 0 0 0" />
+  ...
 </link>
 ```
 

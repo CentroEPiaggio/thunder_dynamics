@@ -27,6 +27,16 @@ namespace thunder_ns {
 			std::cerr << "Error adding joint function: T_JOINT_P_SEA" << std::endl;
 		}
 
+		// Motion subspaces, same as the rigid joints R and P
+		SX S_R = SX::vertcat({SX::zeros(3,1), axis / SX::norm_2(axis)});
+		if (!robot->add_function("S_JOINT_R_SEA", S_R, {}, "Motion subspace of rotoidal joint with elasticity", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_R_SEA" << std::endl;
+		}
+		SX S_P = SX::vertcat({axis, SX::zeros(3,1)});
+		if (!robot->add_function("S_JOINT_P_SEA", S_P, {}, "Motion subspace of prismatic joint with elasticity", {q_joint_arg, axis_arg})) {
+			std::cerr << "Error adding joint function: S_JOINT_P_SEA" << std::endl;
+		}
+
 	}
 
 	// --- Load function --- //
@@ -46,22 +56,22 @@ namespace thunder_ns {
 			int numJoints = robot->get<int>("numJoints");
 			int ndof = robot->get<int>("ndof");
 			vector<string> jointsType = robot->get<vector<string>>("jointsType");
+			vector<string> jointsName = robot->get<vector<string>>("jointsName");
+			vector<int> jointsDimension = robot->get<vector<int>>("jointsDimension");
 
 			// - identify elastic joints - //
+			// isSoftJoint has one flag per joint variable (entry of q): soft_builder takes the link side of each elastic joint from it
 			int numSoftJoints = 0;
 			vector<short> isSoftJoint;
-			isSoftJoint.reserve(ndof);	// isSoft is relative to ndof, not numJoints
+			vector<string> softJointsName;		// in tree order, the order of x and of the parameters
+			isSoftJoint.reserve(ndof);
 			for (int i = 0; i < numJoints; i++) {
-				if (jointsType[i] == "FIXED") {
-					continue;
-				}
-				const bool isSoft = jointsType[i] == "R_SEA" ||
-									jointsType[i] == "P_SEA";
+				const bool isSoft = jointsType[i] == "R_SEA" || jointsType[i] == "P_SEA";
+				if (isSoft && jointsDimension[i] != 1) throw std::runtime_error("Elastic joint '" + jointsName[i] + "' must have dimension 1.");
+				for (int k = 0; k < jointsDimension[i]; k++) isSoftJoint.push_back(isSoft);
 				if (isSoft) {
-					isSoftJoint.push_back(1);
+					softJointsName.push_back(jointsName[i]);
 					numSoftJoints++;
-				} else {
-					isSoftJoint.push_back(0);
 				}
 			}
 
@@ -100,17 +110,17 @@ namespace thunder_ns {
 				par_D_num.resize(numSoftJoints*D_order);
 				par_Dm_num.resize(numSoftJoints*Dm_order);
 				par_Mm_num.resize(numSoftJoints);
-				YAML::Node elastic_joints = config_["joints"];
-				int i = 0;
-				for (const auto& node : elastic_joints) {
-					if (i==numSoftJoints) break; // break if nore joints defined
-					string jointName = node.first.as<string>();
+				for (int i = 0; i < numSoftJoints; i++) {
+					// parameters of each elastic joint, by node name
+					const string& jointName = softJointsName[i];
+					const YAML::Node joint_cfg = config_["joints"][jointName];
+					if (!joint_cfg) throw std::runtime_error("No entry in soft_loader 'joints' for elastic joint '" + jointName + "'.");
 
 					// Helper lambda to parse a symbolic vector
 					auto parse_symb_vector = [&](const string& key, int order) {
 						vector<short> vec;
-						if (node.second[key]){
-							vec = node.second[key].as<vector<short>>();
+						if (joint_cfg[key]){
+							vec = joint_cfg[key].as<vector<short>>();
 							vec.resize(order);
 						} else vec.assign(order, 0);
 						return vec;
@@ -119,32 +129,31 @@ namespace thunder_ns {
 					// - Numeric - //
 					// stiffness
 					if (K_order > 0){
-						vector<double> K = node.second["K"].as<vector<double>>();
+						vector<double> K = joint_cfg["K"].as<vector<double>>();
 						for (int j=0; j<K_order; j++) par_K_num[K_order*i+j] = K[j];
 					}
 					// coupling friction
 					if (D_order > 0){
-						vector<double> D = node.second["D"].as<vector<double>>();
+						vector<double> D = joint_cfg["D"].as<vector<double>>();
 						for (int j=0; j<D_order; j++) par_D_num[D_order*i + j] = D[j];
 					}
 					// motor friction
 					if (Dm_order > 0){
-						vector<double> Dm = node.second["Dm"].as<vector<double>>();
+						vector<double> Dm = joint_cfg["Dm"].as<vector<double>>();
 						for (int j=0; j<Dm_order; j++) par_Dm_num[Dm_order*i + j] = Dm[j];
 					}
 					// motor inertia
-					par_Mm_num[i] = node.second["Mm"].as<double>();
+					par_Mm_num[i] = joint_cfg["Mm"].as<double>();
 					
 					// - Symbolic selectivity - //
 					vector<short> K_symb = parse_symb_vector("K_symb", K_order);
 					vector<short> D_symb = parse_symb_vector("D_symb", D_order);
 					vector<short> Dm_symb = parse_symb_vector("Dm_symb", Dm_order);
-					short Mm_symb = node.second["Mm_symb"] ? node.second["Mm_symb"].as<int>() : 0;
+					short Mm_symb = joint_cfg["Mm_symb"] ? joint_cfg["Mm_symb"].as<int>() : 0;
 					if (K_order > 0) par_K_isSymb.insert(par_K_isSymb.end(), K_symb.begin(), K_symb.end());
 					if (D_order > 0) par_D_isSymb.insert(par_D_isSymb.end(), D_symb.begin(), D_symb.end());
 					if (Dm_order > 0) par_Dm_isSymb.insert(par_Dm_isSymb.end(), Dm_symb.begin(), Dm_symb.end());
 					par_Mm_isSymb.push_back(Mm_symb);
-					i++;
 				}
 				// - Models - //
 				SX par_K_symb = SX::sym("par_K", numSoftJoints*K_order,1);

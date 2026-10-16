@@ -1,83 +1,223 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
-#include <cmath>
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include <casadi/casadi.hpp>
 #include <yaml-cpp/yaml.h>
 
 #include "robot_test_helpers.h"
 
-using thunder_test::computePinocchioTau;
-using thunder_test::computeThunderTau;
-using thunder_test::setSymbolicParameterDirect;
+using thunder_test::Dynamics;
+using thunder_test::Frame;
+using thunder_test::computePinocchioDynamics;
+using thunder_test::computePinocchioFrames;
+using thunder_test::computeThunderDynamics;
 
-static casadi::DM randomColumnVector(int n) {
-    return casadi::DM::rand(n, 1);
+static void expectSame(const std::string& name, const casadi::DM& thunder, const casadi::DM& pinocchio, double tolerance) {
+    ASSERT_EQ(thunder.size1(), pinocchio.size1()) << name << " rows";
+    ASSERT_EQ(thunder.size2(), pinocchio.size2()) << name << " cols";
+    const casadi::DM diff = casadi::DM::reshape(thunder - pinocchio, -1, 1);
+    EXPECT_LT(static_cast<double>(casadi::DM::norm_inf(diff)), tolerance) << name << " differs from pinocchio";
 }
 
-TEST(RobotComparison, FrankaUrdfRNEA) {
-#ifdef THUNDER_SOURCE_DIR
-    const std::string sourceRoot = THUNDER_SOURCE_DIR;
-#else
-    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
-#endif
-
-    const std::string fixtureRoot = sourceRoot + "/src/thunder/tests/fixtures/franka";
-    const std::string yamlPath = fixtureRoot + "/franka_urdf.yaml";
-    const std::string urdfPath = fixtureRoot + "/franka.urdf";
-
-    YAML::Node config = YAML::LoadFile(yamlPath);
-    config["urdf_loader"]["urdf_path"] = urdfPath;
+// Franka (7 R + fixed + 1 P) fixture with the given builder options
+static std::shared_ptr<thunder_ns::Robot> loadFranka(const std::string& fixtureRoot, const std::string& dynamicsMethod,
+                                                     const std::string& CMethod, const std::string& regressorMethod,
+                                                     bool withDynBuilder = true) {
+    YAML::Node config = YAML::LoadFile(fixtureRoot + "/franka_urdf.yaml");
+    if (!withDynBuilder) config["pipeline"]["builders"] = std::vector<std::string>{"kin_builder", "reg_builder"};
+    config["urdf_loader"]["urdf_path"] = fixtureRoot + "/franka_finger.urdf";
+    config["dyn_builder"]["dynamics_method"] = dynamicsMethod;
+    config["dyn_builder"]["C_method"] = CMethod;
+    config["reg_builder"]["regressor_method"] = regressorMethod;
 
     thunder_ns::PluginManager manager;
     manager.set_verbose(false);
     manager.configure_pipeline(config, 1);
-    auto robot = manager.execute("franka_fixture");
+    return manager.execute("franka_fixture");
+}
+
+// M, C, Cdq, G against pinocchio, for each dyn_builder dynamics_method and C_method
+class RobotComparison : public ::testing::TestWithParam<std::tuple<std::string, std::string>> {};
+
+TEST_P(RobotComparison, FrankaPinocchio) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, std::get<0>(GetParam()), std::get<1>(GetParam()), "rnea");
     ASSERT_NE(robot, nullptr);
 
     const int ndof = robot->get<int>("ndof");
     ASSERT_GT(ndof, 0);
 
-    int stateSize = ndof;
-    if (robot->parameters.count("q") > 0) {
-        stateSize = std::max(stateSize, robot->parameters.at("q").symb_size());
-    }
-    stateSize = std::max(stateSize, 1);
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+    robot->set("dq", dq);
+    robot->set("ddq", ddq);
+    robot->set("dqr", dqr);
+    robot->set("ddqr", ddqr);
+    const Dynamics thunder = computeThunderDynamics(robot);
 
-    casadi::DM q = randomColumnVector(stateSize);
-    casadi::DM dq = randomColumnVector(stateSize);
-    casadi::DM ddq = randomColumnVector(stateSize);
-
-    // Prefer direct symbolic writes to avoid warnings from partial vector updates.
-    if (!setSymbolicParameterDirect(robot, "q", q)) {
-        robot->set("q", q);
+    Dynamics pinocchio;
+    const int helperCode = computePinocchioDynamics(fixtureRoot + "/franka_finger.urdf", q, dq, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
     }
-    if (!setSymbolicParameterDirect(robot, "dqr", dq)) {
-        robot->set("dqr", dq);
-    }
-    if (!setSymbolicParameterDirect(robot, "ddqr", ddq)) {
-        robot->set("ddqr", ddq);
-    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
 
-    casadi::DM tauThunder = computeThunderTau(robot);
-
-    casadi::DM tauPinocchio;
-    const bool pinocchioOk = computePinocchioTau(urdfPath, q, dq, ddq, tauPinocchio);
-    if (!pinocchioOk) {
-        GTEST_SKIP() << "Pinocchio helper failed or pinocchio is unavailable";
-    }
-
-    const int compareSize = std::min(tauThunder.numel(), tauPinocchio.numel());
-    ASSERT_GT(compareSize, 0);
-
-    const double tolerance = 1e-2;
-    for (int i = 0; i < compareSize; ++i) {
-        const double thunderValue = static_cast<double>(tauThunder(i));
-        const double pinocchioValue = static_cast<double>(tauPinocchio(i));
-        EXPECT_NEAR(thunderValue, pinocchioValue, tolerance)
-            << "Mismatch at torque component " << i;
-    }
+    const double tolerance = 1e-9;
+    expectSame("M", thunder.M, pinocchio.M, tolerance);
+    expectSame("C", thunder.C, pinocchio.C, tolerance);
+    expectSame("Cdq", thunder.Cdq, pinocchio.Cdq, tolerance);
+    expectSame("G", thunder.G, pinocchio.G, tolerance);
+    // tau and tau_r are one-pass RNEA in every dynamics_method
+    expectSame("tau", robot->get("tau"), mtimes(pinocchio.M, ddq) + pinocchio.Cdq + pinocchio.G, tolerance);
+    expectSame("tau_r", robot->get("tau_r"), mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G, tolerance);
 }
 
+INSTANTIATE_TEST_SUITE_P(DynamicsMethod, RobotComparison,
+                         ::testing::Combine(::testing::Values("auto", "rnea", "crba", "lagrange"), ::testing::Values("auto", "rnea", "christoffel")));
+
+// Regressors times par_REG against pinocchio: Y p = M ddq + C dq + G, Yr p = M ddqr + C dqr + G
+class RegressorComparison : public ::testing::TestWithParam<std::string> {};
+
+TEST_P(RegressorComparison, FrankaPinocchio) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, "rnea", "rnea", GetParam());
+    ASSERT_NE(robot, nullptr);
+
+    const int ndof = robot->get<int>("ndof");
+    ASSERT_GT(ndof, 0);
+
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+    robot->set("dq", dq);
+    robot->set("ddq", ddq);
+    robot->set("dqr", dqr);
+    robot->set("ddqr", ddqr);
+    const casadi::DM par = robot->get("par_REG");
+
+    Dynamics pinocchio;
+    const int helperCode = computePinocchioDynamics(fixtureRoot + "/franka_finger.urdf", q, dq, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
+    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
+
+    const double tolerance = 1e-9;
+    expectSame("Y par_REG", mtimes(robot->get("Y"), par), mtimes(pinocchio.M, ddq) + pinocchio.Cdq + pinocchio.G, tolerance);
+    expectSame("Yr par_REG", mtimes(robot->get("Yr"), par), mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G, tolerance);
+    expectSame("reg_M par_REG", mtimes(robot->get("reg_M"), par), mtimes(pinocchio.M, ddqr), tolerance);
+    expectSame("reg_C par_REG", mtimes(robot->get("reg_C"), par), mtimes(pinocchio.C, dqr), tolerance);
+    expectSame("reg_G par_REG", mtimes(robot->get("reg_G"), par), pinocchio.G, tolerance);
+}
+
+INSTANTIATE_TEST_SUITE_P(RegressorMethod, RegressorComparison, ::testing::Values("rnea", "lagrange"));
+
+// Without dyn_builder (e.g. a Slotine-Li controller): reg_builder adds par_REG = dyn2reg(par_DYN) and tau_r on par_REG
+TEST(RegressorComparison, FrankaPinocchioWithoutDynBuilder) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, "auto", "auto", "rnea", false);
+    ASSERT_NE(robot, nullptr);
+    ASSERT_EQ(robot->functions.count("M"), 0U) << "dyn_builder should not have run";
+
+    const int ndof = robot->get<int>("ndof");
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dq = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM dqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    const casadi::DM ddqr = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+    robot->set("dq", dq);
+    robot->set("dqr", dqr);
+    robot->set("ddqr", ddqr);
+
+    Dynamics pinocchio;
+    const int helperCode = computePinocchioDynamics(fixtureRoot + "/franka_finger.urdf", q, dq, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
+    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
+
+    const double tolerance = 1e-9;
+    const casadi::DM tauRef = mtimes(pinocchio.M, ddqr) + mtimes(pinocchio.C, dqr) + pinocchio.G;
+    expectSame("tau_r", robot->get("tau_r"), tauRef, tolerance);
+    expectSame("Yr par_REG", mtimes(robot->get("Yr"), robot->get("par_REG")), tauRef, tolerance);
+}
+
+// T_w_<i> and J_<i> of every node against pinocchio, and T_w_<name>, J_<name> of the available ones.
+// The frame of node <link> is after the joint that leaves <link>: it is the frame of the next URDF link,
+// the name of the child node, or of <link> itself for a terminal node (FIXED, identity frame).
+TEST(KinematicsComparison, FrankaPinocchio) {
+#ifdef THUNDER_SOURCE_DIR
+    const std::string fixtureRoot = std::string(THUNDER_SOURCE_DIR) + "/src/thunder/tests/fixtures/franka";
+#else
+    GTEST_SKIP() << "THUNDER_SOURCE_DIR is not defined";
+#endif
+
+    auto robot = loadFranka(fixtureRoot, "auto", "auto", "rnea");
+    ASSERT_NE(robot, nullptr);
+
+    const int ndof = robot->get<int>("ndof");
+    ASSERT_GT(ndof, 0);
+    const auto names = robot->get<std::vector<std::string>>("jointsName");
+    const auto parents = robot->get<std::vector<int>>("jointsParent");
+    const auto available = robot->get<std::vector<bool>>("jointsAvailable");
+    const int numJoints = names.size();
+
+    // URDF link whose frame is the frame of each node
+    std::vector<std::string> links(names);
+    for (int i = 0; i < numJoints; ++i) {
+        int children = 0;
+        for (int c = 0; c < numJoints; ++c) {
+            if (parents[c] != i) continue;
+            links[i] = names[c];
+            ++children;
+        }
+        ASSERT_LE(children, 1) << names[i] << ": the fixture should be a chain";
+    }
+
+    const casadi::DM q = 4 * casadi::DM::rand(ndof, 1) - 2;
+    robot->set("q", q);
+
+    std::vector<Frame> pinocchio;
+    const int helperCode = computePinocchioFrames(fixtureRoot + "/franka_finger.urdf", q, links, pinocchio);
+    if (helperCode == 1) {
+        GTEST_SKIP() << "Pinocchio is not available";
+    }
+    ASSERT_EQ(helperCode, 0) << "Pinocchio helper failed";
+
+    const double tolerance = 1e-9;
+    for (int i = 0; i < numJoints; ++i) {
+        SCOPED_TRACE("node " + std::to_string(i) + " " + names[i] + ", frame of link " + links[i]);
+        const std::string id = std::to_string(i);
+        expectSame("T_w_" + id, robot->get("T_w_" + id), pinocchio[i].T, tolerance);
+        expectSame("J_" + id, robot->get("J_" + id), pinocchio[i].J, tolerance);
+        if (available[i]) {
+            expectSame("T_w_" + names[i], robot->get("T_w_" + names[i]), pinocchio[i].T, tolerance);
+            expectSame("J_" + names[i], robot->get("J_" + names[i]), pinocchio[i].J, tolerance);
+        }
+    }
+}
