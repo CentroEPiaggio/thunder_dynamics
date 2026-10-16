@@ -293,8 +293,10 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
                                  robot_name + "' cannot produce a standard package name.");
     }
 
-    const std::vector<std::string> services = selected_names(config_["services"], robot->functions, robot->parameters, "services", true);
-    const std::vector<std::string> topics = selected_names(config_["topics"], robot->functions, robot->parameters, "topics", false);
+    // functions marked ignore have no getter in the generated robot class
+    const std::map<std::string, Function> functions = generated_functions(*robot);
+    const std::vector<std::string> services = selected_names(config_["services"], functions, robot->parameters, "services", true);
+    const std::vector<std::string> topics = selected_names(config_["topics"], functions, robot->parameters, "topics", false);
     for (const auto& input : settings.inputs) {
         if (!robot->parameters.count(input.first)) throw std::runtime_error("ros_server_generator.inputs contains unknown parameter '" + input.first + "'.");
         if (robot->parameters.at(input.first).symb_size() == 0) throw std::runtime_error("Input parameter '" + input.first + "' has no runtime entries.");
@@ -334,7 +336,7 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
 
     // - write the ROS server node - //
     write_file(source_dir / (robot_name + "_server_node.cpp"), server_source(package_name, robot_name, settings.frequency,
-               settings.real_time, services, topics, settings.inputs, robot->functions, robot->parameters));
+               settings.real_time, services, topics, settings.inputs, functions, robot->parameters));
 
     if ((settings.copy_gen) && fs::exists("/home/thunder_dev/thunder_dynamics")) {
         fs::path destination = "/home/thunder_dev/thunder_dynamics";
