@@ -23,7 +23,7 @@ using std::cout;
 using std::endl;
 
 #define MU_JACOB 0.0
-#define VERSION "1.1.2"
+#define VERSION "1.2.3"
 
 
 // --- paths and files (default) --- //
