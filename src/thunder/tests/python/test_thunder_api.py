@@ -64,25 +64,30 @@ class ThunderApiTests(unittest.TestCase):
         self.assertIn("G", robot.functions)
 
     def test_dict_config_preserves_kinematic_frame_order(self):
-        config = Config({
-            "pipeline": {"loaders": ["kin_loader"]},
+        robot = Config({
+            "pipeline": {"loaders": ["kin_loader"], "builders": [], "generators": []},
             "kin_loader": {
-                "num_joints": 2,
-                "joints_type": ["R", "R"],
                 "kinematics": {
                     "base_joint": {"xyzrpy": [0, 0, 0, 0, 0, 0]},
-                    "tool_joint": {"xyzrpy": [1, 0, 0, 0, 0, 0]},
+                    "tool_joint": {"parent": "base_joint", "xyzrpy": [1, 0, 0, 0, 0, 0]},
                 },
             },
-        })
-        temporary_yaml = config._ensure_yaml_file()
-        with open(temporary_yaml) as handle:
-            written = yaml.safe_load(handle)
+        }).execute(robot_name="py_dict_order")
 
         self.assertEqual(
-            list(written["kin_loader"]["kinematics"]),
+            robot.get_vector_string("jointsName"),
             ["base_joint", "tool_joint"],
         )
+
+    def test_dict_config_relative_path_from_cwd(self):
+        urdf_dir = repo_root() / "src" / "thunder" / "tests" / "fixtures" / "urdf"
+        with temporary_cwd(str(urdf_dir)):
+            robot = Config({
+                "pipeline": {"loaders": ["urdf_loader"], "builders": [], "generators": []},
+                "urdf_loader": {"urdf_path": "serial_chain.urdf"},
+            }).execute(robot_name="py_dict_relative_urdf")
+
+        self.assertGreater(robot.get_int("numJoints"), 0)
 
     def test_generator_smoke(self):
         config_path = repo_root() / "src" / "thunder" / "tests" / "fixtures" / "RRR" / "testRRR.yaml"

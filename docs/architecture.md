@@ -43,12 +43,12 @@ Thunder supports writing plugins in Python, via the `thunder_core` Python packag
 thunder_core                  # Python package
 ├── _bindings                 # Compiled C++ nanobind module (Robot, PluginManager, utils)
 ├── plugins                   # ABC base classes: BaseLoader, BaseBuilder, BaseGenerator
-└── pipeline                  # Config class and run_pipeline() for pipeline execution
+└── pipeline                  # Config class for pipeline execution
 ```
 
 Everything from `_bindings` is re-exported at the top level, so `thunder_core.Robot`, `thunder_core.PluginManager`, etc. work directly.
 
-The Python module file (e.g., `my_plugins.py`) should be placed **in the same directory as the YAML config file**. Standard `PYTHONPATH` and `sys.path` rules also apply.
+The Python module file (e.g., `my_plugins.py`) should be placed **in the same directory as the YAML config file**, or in the current working directory when the configuration is a dict (`Config({...})`). Standard `PYTHONPATH` and `sys.path` rules also apply.
 
 
 Thunder supports plugins written directly in Python alongside C++ plugins:
@@ -62,26 +62,28 @@ Thunder supports plugins written directly in Python alongside C++ plugins:
 Use `thunder_core.pipeline` to run a pipeline from Python code or Jupyter notebooks:
 
 ```python
-from thunder_core.pipeline import Config, run_pipeline
+from thunder_core.pipeline import Config
 
-# Quick one-liner from a YAML file
-robot = run_pipeline("path/to/robot.yaml", robot_name="my_robot")
+# From a YAML file
+robot = Config("path/to/robot.yaml").execute(robot_name="my_robot")
 
 # Or from a dict
-robot = run_pipeline({
+robot = Config({
     "pipeline": {
         "loaders": ["kin_loader"],
         "builders": ["kin_builder"],
         "generators": []
     },
     "kin_loader": { "num_joints": 2, "joints_type": ["R", "R"] }
-}, robot_name="RR")
+}).execute(robot_name="RR")
 
-# Or use Config directly for more control
+# The Config can be inspected before running it
 cfg = Config("path/to/robot.yaml")
 print(cfg)
 robot = cfg.execute(robot_name="RR", verbose=True)
 ```
+
+`execute()` skips the generators by default (`no_generation=True`), to get the symbolic model only; pass `no_generation=False` to run them.
 
 ### Available Robot API in Python
 

@@ -26,8 +26,7 @@ All plugins inherit from a core plugin base class:
 
 #include <yaml-cpp/yaml.h>
 
-#include "../plugin_interfaces.h"
-#include "../../library/robot.h"
+#include "plugin_interfaces.h"
 
 namespace thunder_ns {
 
@@ -35,16 +34,11 @@ namespace thunder_ns {
     public:
         MyBuilder() : BaseBuilder("my_builder", "Custom C++ builder plugin.") {}
 
-        int configure(const YAML::Node& config) override {
-            if (config["my_param"]) {
-                double val = config["my_param"].as<double>();
-            }
-            return 1;
-        }
-
         void build(std::shared_ptr<Robot> robot) override {
+            // the plugin's YAML block is stored in config_ before build() is called
+            const double scale = config_["my_param"] ? config_["my_param"].as<double>() : 1.0;
             auto q = robot->get_model("q");
-            casadi::SX expr = q(0) * q(0);
+            casadi::SX expr = scale * q(0) * q(0);
             robot->add_function("my_custom_func", expr, {"q"}, "Squared first joint angle");
         }
     };

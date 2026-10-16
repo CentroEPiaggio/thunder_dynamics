@@ -212,6 +212,10 @@ NB_MODULE(_bindings, m) {
             static_cast<void (PluginManager::*)(const std::string&, int)>(&PluginManager::configure_pipeline),
             nb::arg("config_path"), nb::arg("no_generation") = 0,
             "Configure pipeline from a YAML file path")
+        .def("configure_pipeline",
+            static_cast<void (PluginManager::*)(const YAML::Node&, int)>(&PluginManager::configure_pipeline),
+            nb::arg("config"), nb::arg("no_generation") = 0,
+            "Configure pipeline from a dict. Relative paths are resolved from the current working directory")
         .def("execute", &PluginManager::execute,
             nb::arg("robot_name") = "robot",
             "Execute the pipeline and return the Robot")

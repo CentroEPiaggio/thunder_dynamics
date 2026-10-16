@@ -98,6 +98,7 @@ inline YAML::Node python_to_yaml(nb::handle obj) {
     }
 
     if (nb::isinstance<nb::list>(obj) || nb::isinstance<nb::tuple>(obj)) {
+        node = YAML::Node(YAML::NodeType::Sequence);	// an empty list stays a sequence, not a null node
         for (nb::handle item : obj) {
             node.push_back(python_to_yaml(item));
         }
@@ -106,6 +107,7 @@ inline YAML::Node python_to_yaml(nb::handle obj) {
 
     if (nb::isinstance<nb::dict>(obj)) {
         nb::dict d = nb::borrow<nb::dict>(obj);
+        node = YAML::Node(YAML::NodeType::Map);		// an empty dict stays a map, not a null node
         for (auto [key, val] : d) {
             std::string key_str = nb::cast<std::string>(nb::str(key));
             node[key_str] = python_to_yaml(val);

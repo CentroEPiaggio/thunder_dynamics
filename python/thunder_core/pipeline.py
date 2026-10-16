@@ -6,13 +6,13 @@ using either a YAML file or a Python dict as configuration.
 
 Example::
 
-    from thunder_core.pipeline import Config, run_pipeline
+    from thunder_core.pipeline import Config
 
     # From YAML file
-    robot = run_pipeline("path/to/robot.yaml", robot_name="my_robot")
+    robot = Config("path/to/robot.yaml").execute(robot_name="my_robot")
 
     # From dict
-    robot = run_pipeline({
+    robot = Config({
         "pipeline": {
             "loaders": ["kin_loader"],
             "builders": ["kin_builder"],
@@ -22,16 +22,15 @@ Example::
             "num_joints": 2,
             "joints_type": ["R", "R"],
         }
-    }, robot_name="RR")
+    }).execute(robot_name="RR")
 
-    # Or use Config directly for more control
+    # The Config can be inspected before running it
     cfg = Config("path/to/robot.yaml")
     print(cfg)
     robot = cfg.execute(robot_name="RR")
 """
 
 import os
-import tempfile
 
 import yaml
 import thunder_core
@@ -41,7 +40,9 @@ class Config:
     """Thunder pipeline configuration.
 
     Can be created from a YAML file path or a Python dict.
-    Handles conversion to a temporary YAML file for the C++ PluginManager.
+    Relative paths in the configuration (e.g. ``urdf_path``, modules of ``py.`` plugins)
+    are resolved from the directory of the YAML file, or from the current working
+    directory for a dict.
 
     Args:
         config: Either a file path (str) to a YAML file, or a dict with
@@ -53,31 +54,11 @@ class Config:
             self.yaml_path = os.path.abspath(config)
             with open(self.yaml_path) as f:
                 self.data = yaml.safe_load(f)
-            self._temp_file = None
         elif isinstance(config, dict):
             self.data = config
             self.yaml_path = None
-            self._temp_file = None
         else:
             raise TypeError(f"Config expects str (file path) or dict, got {type(config).__name__}")
-
-    def _ensure_yaml_file(self):
-        """Create a temporary YAML file from dict config if needed."""
-        if self.yaml_path is not None:
-            return self.yaml_path
-
-        if self._temp_file is None:
-            self._temp_file = tempfile.NamedTemporaryFile(
-                mode='w', suffix='.yaml', delete=False, prefix='thunder_'
-            )
-            # Order of elements in params is significant to loaders such as kin_loader.
-            # PyYAML sorts mappings by default, which differs from the dict.
-            # This is a problem when a configuration is supplied as a Python dict, so we disable sorting here.
-            yaml.dump(self.data, self._temp_file, default_flow_style=False, sort_keys=False)
-            self._temp_file.close()
-            self.yaml_path = self._temp_file.name
-
-        return self.yaml_path
 
     def execute(self, robot_name="robot", no_generation=True, verbose=False):
         """Run the pipeline and return the Robot.
@@ -94,16 +75,10 @@ class Config:
         """
         pm = thunder_core.PluginManager()
         pm.set_verbose(verbose)
-        pm.configure_pipeline(self._ensure_yaml_file(), int(no_generation))
+        # a file keeps its path (config_path), a dict is passed as it is, keeping the order of its keys
+        source = self.yaml_path if self.yaml_path is not None else self.data
+        pm.configure_pipeline(source, int(no_generation))
         return pm.execute(robot_name)
-
-    def __del__(self):
-        """Clean up temporary YAML file."""
-        if self._temp_file is not None:
-            try:
-                os.unlink(self._temp_file.name)
-            except OSError:
-                pass
 
     def __repr__(self):
         src = self.yaml_path or "dict"
