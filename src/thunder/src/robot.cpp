@@ -92,8 +92,9 @@ namespace thunder_ns{
 				int size_symbolic = parameters[name].symb_size();
 				if (value.size1() == size_symbolic){
 					DM& num = parameters[name].num;
-					int i=0;
-					for (short x : parameters[name].is_symbolic) num(i) = (x)?value(i++):num(i);
+					const vector<short>& is_symb = parameters[name].is_symbolic;
+					int j=0;	// index over value (symbolic entries only)
+					for (int i=0; i<is_symb.size(); i++) if (is_symb[i]) num(i) = value(j++);
 				} else {
 					std::cerr << "Size mismatch when setting parameter: " << name << endl;
 					return 0;
