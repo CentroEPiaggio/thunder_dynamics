@@ -102,7 +102,7 @@ RUN sudo chmod +x /entrypoint.sh ; sudo chown ${USERNAME} /entrypoint.sh \
     && echo 'exec bash -i -c $@' >> /entrypoint.sh \
     && cat /entrypoint.sh
 
-RUN pip install pyyaml
+RUN pip install pyyaml numpy pydantic
 
 # Pinocchio reference for the dynamics gtest (~380 MB); --user because the test helper looks in ~/.local
 # RUN pip install --user pin

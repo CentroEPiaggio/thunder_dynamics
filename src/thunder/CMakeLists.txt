@@ -46,7 +46,7 @@ include(FetchContent)
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG master 
+  GIT_TAG yaml-cpp-0.9.0
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
@@ -54,7 +54,7 @@ FetchContent_MakeAvailable(yaml-cpp)
 FetchContent_Declare(
     urdfparser
     GIT_REPOSITORY https://github.com/tolomeis/URDF_Parser.git
-    GIT_TAG dev/eigen
+    GIT_TAG 44c082968dac868fb380bb5790d654d12d6694e2  # no tags in this repository: last commit of branch dev/eigen (2026-10-15)
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
 
@@ -78,6 +78,7 @@ target_link_libraries(thunder library)
 FetchContent_Declare(
     argparse
     GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    GIT_TAG v3.2
 )
 FetchContent_MakeAvailable(argparse)
 target_link_libraries(thunder argparse)
@@ -129,7 +130,7 @@ if(WITH_TESTS)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG main
+    GIT_TAG v1.18.0
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
