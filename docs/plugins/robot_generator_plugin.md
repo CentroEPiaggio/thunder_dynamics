@@ -17,6 +17,15 @@ robot_generator:              # all keys optional
 
 `<robot>` is the robot name: with the CLI, the name of the YAML file, or the one given with `thunder gen -n <name>`.
 
+To leave a function out of the generated code, mark it `ignore` under `functions`:
+
+```yaml
+functions:                    # top level: read by robot_generator and ros_server_generator
+  J_EE_pinv: {ignore: true}
+```
+
+The builders still build it, so the functions that depend on it are not affected; only its C code and its `get_` method are not generated. Written at the top level, the key also reaches `ros_server_generator`, which then exposes no service or topic for it. Written inside the `robot_generator` block, it applies to `robot_generator` only.
+
 ## Output
 
 Everything is written to `<robot>_generatedFiles/`, in the working directory.
