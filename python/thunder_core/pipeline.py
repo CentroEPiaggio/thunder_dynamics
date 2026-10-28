@@ -40,9 +40,10 @@ class Config:
     """Thunder pipeline configuration.
 
     Can be created from a YAML file path or a Python dict.
-    Relative paths in the configuration (e.g. ``urdf_path``, modules of ``py.`` plugins)
-    are resolved from the directory of the YAML file, or from the current working
-    directory for a dict.
+    Relative paths in the configuration (e.g. ``urdf_path``) are resolved from the
+    directory of the YAML file, or from the current working directory for a dict.
+    The module files of ``py.`` plugins are looked up in the same directory, see
+    :func:`thunder_core.plugins.load_plugin`.
 
     Args:
         config: Either a file path (str) to a YAML file, or a dict with

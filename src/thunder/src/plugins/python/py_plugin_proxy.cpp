@@ -77,23 +77,30 @@ static std::string fetch_python_error() {
     return msg;
 }
 
-/// Import a Python module and instantiate a class from it.
+/// Load the plugin class with thunder_core.plugins.load_plugin and instantiate it.
+/// The module is looked up first in the directory of the config file (the working directory when
+/// the config has no file), without changing sys.path; kind is "loader", "builder" or "generator".
 /// Returns a new reference to the instance (caller must DECREF).
-static PyObject* import_and_instantiate(const std::string& module_name, const std::string& class_name) {
+static PyObject* import_and_instantiate(const std::string& module_name, const std::string& class_name,
+                                        const YAML::Node& config, const char* kind) {
     PythonInterpreter::instance().ensure_initialized();
 
-    PyObject* py_module = PyImport_ImportModule(module_name.c_str());
-    if (!py_module) {
+    PyObject* plugins_module = PyImport_ImportModule("thunder_core.plugins");
+    if (!plugins_module) {
         std::string err = fetch_python_error();
-        throw std::runtime_error("Failed to import Python module '" + module_name + "': " + err);
+        throw std::runtime_error("Failed to import thunder_core.plugins (required for Python plugins): " + err);
     }
 
-    PyObject* py_class = PyObject_GetAttrString(py_module, class_name.c_str());
-    Py_DECREF(py_module);
+    std::string base_dir = config["config_path"]
+        ? std::filesystem::absolute(config["config_path"].as<std::string>()).parent_path().string()
+        : std::filesystem::current_path().string();
+    std::string qualified = module_name + "." + class_name;
+    PyObject* py_class = PyObject_CallMethod(plugins_module, "load_plugin", "(sss)",
+                                             qualified.c_str(), base_dir.c_str(), kind);
+    Py_DECREF(plugins_module);
     if (!py_class) {
         std::string err = fetch_python_error();
-        throw std::runtime_error(
-            "Class '" + class_name + "' not found in module '" + module_name + "': " + err);
+        throw std::runtime_error("Failed to load Python plugin '" + qualified + "': " + err);
     }
 
     // Instantiate: py_instance = py_class()
@@ -101,20 +108,10 @@ static PyObject* import_and_instantiate(const std::string& module_name, const st
     Py_DECREF(py_class);
     if (!py_instance) {
         std::string err = fetch_python_error();
-        throw std::runtime_error(
-            "Failed to instantiate '" + module_name + "." + class_name + "': " + err);
+        throw std::runtime_error("Failed to instantiate '" + qualified + "': " + err);
     }
 
     return py_instance;
-}
-
-/// Add the directory of the config file to sys.path, or the current working directory
-/// when the config has no file (e.g. a dict from thunder_core.pipeline.Config), as urdf_loader does
-static void add_config_dir_to_sys_path(const YAML::Node& config) {
-    std::filesystem::path dir = config["config_path"]
-        ? std::filesystem::path(config["config_path"].as<std::string>()).parent_path()
-        : std::filesystem::current_path();
-    PythonInterpreter::instance().add_to_sys_path(dir.string());
 }
 
 /// Call py_instance.configure(config_dict) where config is a YAML::Node
@@ -229,8 +226,7 @@ PyLoaderProxy::PyLoaderProxy(const std::string& module_name, const std::string& 
 
 void PyLoaderProxy::ensure_instance() {
     if (!py_instance_) {
-        add_config_dir_to_sys_path(config_);
-        py_instance_ = import_and_instantiate(module_name_, class_name_);
+        py_instance_ = import_and_instantiate(module_name_, class_name_, config_, "loader");
         call_configure(py_instance_, config_);
     }
 }
@@ -260,8 +256,7 @@ PyBuilderProxy::PyBuilderProxy(const std::string& module_name, const std::string
 
 void PyBuilderProxy::ensure_instance() {
     if (!py_instance_) {
-        add_config_dir_to_sys_path(config_);
-        py_instance_ = import_and_instantiate(module_name_, class_name_);
+        py_instance_ = import_and_instantiate(module_name_, class_name_, config_, "builder");
         call_configure(py_instance_, config_);
     }
 }
@@ -290,8 +285,7 @@ PyGeneratorProxy::PyGeneratorProxy(const std::string& module_name, const std::st
 
 void PyGeneratorProxy::ensure_instance() {
     if (!py_instance_) {
-        add_config_dir_to_sys_path(config_);
-        py_instance_ = import_and_instantiate(module_name_, class_name_);
+        py_instance_ = import_and_instantiate(module_name_, class_name_, config_, "generator");
         call_configure(py_instance_, config_);
     }
 }

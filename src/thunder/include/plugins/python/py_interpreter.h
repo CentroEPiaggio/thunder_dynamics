@@ -35,24 +35,6 @@ public:
         }
     }
 
-    /// Add a directory to sys.path.
-    /// Must be called after ensure_initialized().
-    /// Acquires and releases the GIL internally.
-    void add_to_sys_path(const std::string& path) {
-        PyGILState_STATE gstate = PyGILState_Ensure();
-
-        PyObject* sys_path = PySys_GetObject("path");
-        if (sys_path) {
-            PyObject* py_path = PyUnicode_FromString(path.c_str());
-            if (!PySequence_Contains(sys_path, py_path)) {
-                PyList_Insert(sys_path, 0, py_path);
-            }
-            Py_DECREF(py_path);
-        }
-
-        PyGILState_Release(gstate);
-    }
-
     bool is_initialized() const { return Py_IsInitialized(); }
 
 private:

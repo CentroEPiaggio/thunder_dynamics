@@ -69,7 +69,7 @@ inline const std::map<std::string, std::shared_ptr<BaseBuilder>> POPULATORS = {
 
 ## 🐍 Writing Python Plugins
 
-Python plugins do **not** require manual C++ compilation or registry modification. Place the `.py` file in your working directory or Python path and reference it in YAML with `py.module.ClassName`.
+Python plugins do **not** require manual C++ compilation or registry modification. Place the `.py` file next to the YAML file (or in the working directory when using a dict config), or install it as a package, and reference it in YAML with `py.module.ClassName`. See [architecture.md](architecture.md) for how the file is found and reloaded.
 
 ### Implementation
 
