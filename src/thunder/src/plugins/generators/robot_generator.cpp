@@ -60,7 +60,9 @@ namespace thunder_ns {
 		casadi::CodeGenerator myCodeGen = casadi::CodeGenerator(robot_name_gen, opts);
 		// cout<<"casadi_fun: "<<casadi_fun<<endl;
 
-		for (const auto& f : robot->functions) {
+		// functions marked ignore in the configuration are left out of the generated code
+		const std::map<string, Function> functions = generated_functions(*robot);
+		for (const auto& f : functions) {
 			myCodeGen.add(f.second.fun);
 			// cout<<"f_name: "<<f.first<<endl;
 			// cout<<"fun: "<<f.second<<endl<<endl;
@@ -77,7 +79,7 @@ namespace thunder_ns {
 				std::cout<<"Problem creating directory casadi_functions/"<<std::endl;
 			}
 			// Save CasADi functions
-			for (const auto& f : robot->functions) {
+			for (const auto& f : functions) {
 				std::string function_file = absolutePath + "/casadi_functions/" + f.first + ".casadi";
 				f.second.fun.save(function_file);
 			}
@@ -142,7 +144,9 @@ namespace thunder_ns {
 			}
 
 			// --- Create thunder_<robot> --- //
-			int robot_generated = create_thunder_robot(robot_name, *robot, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
+			Robot robot_gen = *robot;
+			robot_gen.functions = functions;
+			int robot_generated = create_thunder_robot(robot_name, robot_gen, absolutePath+"thunder_"+robot_name+".h", absolutePath+"thunder_"+robot_name+".cpp", GEN_PYTHON);
 			if (!robot_generated) {
 				debug_log("Problem on creating thunder_robot", VERB_INFO);
 				return;

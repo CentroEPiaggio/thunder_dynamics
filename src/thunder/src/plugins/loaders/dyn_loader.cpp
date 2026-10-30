@@ -42,7 +42,6 @@ namespace thunder_ns {
 
 			// --- Dynamics (Inertial) --- //
 			vector<double> par_DYN_num(STD_PAR_LINK*numJoints, 0);
-			vector<double> par_REG_num(STD_PAR_LINK*numJoints, 0);
 			vector<short> par_DYN_isSymb(STD_PAR_LINK*numJoints, 0);
 			YAML::Node dynamics = config_["dynamics"];
 
@@ -92,11 +91,13 @@ namespace thunder_ns {
 
 			// - Model - //
 			SX par_DYN_symb = SX::sym("par_DYN", STD_PAR_LINK*numJoints,1);
-			SX par_REG_symb = SX::sym("par_REG", STD_PAR_LINK*numJoints,1);
 			// - Add to parameters - //
 			robot->add_parameter("par_DYN", par_DYN_symb, par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
-			// vector<short> par_REG_isSymb = par_DYN_isSymb;
-			robot->add_parameter("par_REG", par_REG_symb, par_REG_num, {1}, "Dynamic parameters for regressor", true);
+
+
+			// --- Reference velocity and acceleration (Slotine-Li) --- //
+			robot->add_variable("dqr", SX::sym("dqr",ndof,1), vector<double>(ndof,0), {1}, "Velocity reference", true);
+			robot->add_variable("ddqr", SX::sym("ddqr",ndof,1), vector<double>(ndof,0), {1}, "Acceleration reference", true);
 
 
 			// --- Link friction --- //

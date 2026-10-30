@@ -104,17 +104,6 @@ namespace thunder_ns{
 	 * and adds new functions to the Robot using `registrer_function`.
 	 */
 	class BaseBuilder : public BasePlugin {
-		
-  		protected:
-		// Check if the function f_name has to be ignored
-		bool should_ignore(std::string f_name) {
-			if (config_["functions"] && config_["functions"][f_name]) {
-				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
-					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
-					return false;
-				}
-			}
-		}
 
 		public:
 
@@ -138,6 +127,29 @@ namespace thunder_ns{
 	 * It reads functions and generates output files
 	 */
 	class BaseGenerator : public BasePlugin {
+
+		protected:
+		// Check if the function f_name has to be ignored (functions: {f_name: {ignore: true}} in config)
+		bool should_ignore(const std::string& f_name) const {
+			if (config_["functions"] && config_["functions"][f_name]) {
+				if (config_["functions"][f_name]["ignore"].as<bool>(false)) {
+					debug_log("Skipping function '" + f_name + "' (ignored in config)", VERB_INFO);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// Robot functions to generate: all except the ignored ones. Builders register every function,
+		// since later builders may use them, the ignored ones are only left out of the generated code.
+		std::map<std::string, Function> generated_functions(const Robot& robot) const {
+			std::map<std::string, Function> functions;
+			for (const auto& f : robot.functions) {
+				if (!should_ignore(f.first)) functions.insert(f);
+			}
+			return functions;
+		}
+
 		public:
 
 		/**

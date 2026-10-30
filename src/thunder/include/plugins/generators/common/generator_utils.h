@@ -227,6 +227,7 @@ int create_thunder_robot(const string robot_name, Robot& robot, const string fil
 			"#ifdef ENABLE_PYBIND11\n"
 			"#include <pybind11/pybind11.h>\n"
 			"#include <pybind11/eigen.h>\n"
+			"#include <pybind11/stl.h>\n"
 			"\n"
 			"// --------------------------- //\n"
 			"// ----- Python bindings ----- //\n"

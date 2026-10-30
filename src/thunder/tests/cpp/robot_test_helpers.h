@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <sys/wait.h>
 #include <filesystem>
 #include <memory>
 #include <sstream>
@@ -24,83 +25,88 @@ static std::shared_ptr<thunder_ns::Robot> loadRobotFromYaml(const std::string& y
     return manager.execute(p.stem().string());
 }
 
-static bool setSymbolicParameterDirect(const std::shared_ptr<thunder_ns::Robot>& robot,
-                                       const std::string& parameterName,
-                                       const casadi::DM& symbolicValues) {
-    if (!robot || robot->parameters.count(parameterName) == 0) {
-        return false;
-    }
+// Dynamics terms of tau = M ddq + C dq + G, with Cdq = C dq
+struct Dynamics {
+    casadi::DM M, C, Cdq, G;
+};
 
-    auto& parameter = robot->parameters.at(parameterName);
-    if (parameter.symb_size() != symbolicValues.numel()) {
-        return false;
-    }
-
-    int symbolicIndex = 0;
-    for (int i = 0; i < parameter.size(); ++i) {
-        if (parameter.is_symbolic[i]) {
-            parameter.num(i) = symbolicValues(symbolicIndex++);
-        }
-    }
-    return true;
+// Thunder dynamics at the q, dq currently set in the robot.
+static Dynamics computeThunderDynamics(const std::shared_ptr<thunder_ns::Robot>& robot) {
+    return {robot->get("M"), robot->get("C"), robot->get("Cdq"), robot->get("G")};
 }
 
-static bool computePinocchioTau(const std::string& urdfPath,
-                                const casadi::DM& q,
-                                const casadi::DM& dq,
-                                const casadi::DM& ddq,
-                                casadi::DM& tauOut) {
+// Runs the python helper on the URDF with the given options and vectors, reads the printed values.
+// Returns the helper exit code: 0 ok, 1 pinocchio not available, other values are errors.
+static int runPinocchioHelper(const std::string& urdfPath,
+                              const std::string& options,
+                              const std::vector<const casadi::DM*>& vectors,
+                              std::vector<double>& values) {
     std::ostringstream command;
-    command << "python3 " << PINOCCHIO_HELPER_SCRIPT << " \"" << urdfPath << "\"";
-
-    auto appendValues = [&](const casadi::DM& value) {
-        for (int i = 0; i < value.numel(); ++i) {
-            command << " " << static_cast<double>(value(i));
-        }
-    };
-
-    appendValues(q);
-    appendValues(dq);
-    appendValues(ddq);
+    command.precision(17);
+    command << "python3 " << PINOCCHIO_HELPER_SCRIPT << " \"" << urdfPath << "\" " << options;
+    for (const casadi::DM* v : vectors) {
+        for (int i = 0; i < v->numel(); ++i) command << " " << static_cast<double>((*v)(i));
+    }
 
     FILE* pipe = popen(command.str().c_str(), "r");
-    if (!pipe) {
-        return false;
-    }
-
-    std::vector<double> values;
+    if (!pipe) return -1;
+    values.clear();
     double scalar = 0.0;
-    while (fscanf(pipe, "%lf", &scalar) == 1) {
-        values.push_back(scalar);
-    }
-
-    const int returnCode = pclose(pipe);
-    if (returnCode != 0 || values.empty()) {
-        return false;
-    }
-
-    tauOut = casadi::DM(values);
-    return true;
+    while (fscanf(pipe, "%lf", &scalar) == 1) values.push_back(scalar);
+    const int status = pclose(pipe);
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-static casadi::DM computeThunderTau(const std::shared_ptr<thunder_ns::Robot>& robot) {
-    casadi::DM M = robot->get("M");
-    casadi::DM C = robot->get("C");
-    casadi::DM G = robot->get("G");
-    casadi::DM dq = robot->get("dqr");
-    casadi::DM ddq = robot->get("ddqr");
+// Pinocchio dynamics from the python helper.
+// Returns the helper exit code: 0 ok, 1 pinocchio not available, other values are errors.
+static int computePinocchioDynamics(const std::string& urdfPath,
+                                    const casadi::DM& q,
+                                    const casadi::DM& dq,
+                                    Dynamics& out) {
+    std::vector<double> values;
+    const int exitCode = runPinocchioHelper(urdfPath, "", {&q, &dq}, values);
+    if (exitCode != 0) return exitCode;
 
-    auto ensureColumn = [](casadi::DM& value) {
-        if (value.size1() == 1 && value.size2() > 1) {
-            value = value.T();
-        }
+    // M and C column-major, then Cdq and G
+    const int n = q.numel();
+    if (static_cast<int>(values.size()) != 2 * n * n + 2 * n) return -1;
+    auto block = [&](int start, int rows, int cols) {
+        return casadi::DM::reshape(casadi::DM(std::vector<double>(values.begin() + start, values.begin() + start + rows * cols)), rows, cols);
     };
+    out = {block(0, n, n), block(n * n, n, n), block(2 * n * n, n, 1), block(2 * n * n + n, n, 1)};
+    return 0;
+}
 
-    ensureColumn(dq);
-    ensureColumn(ddq);
-    ensureColumn(G);
+// Pose in the world and Jacobian ([linear velocity of the origin; angular velocity], world axes) of a frame
+struct Frame {
+    casadi::DM T, J;
+};
 
-    return M * ddq + C * dq + G;
+// Pinocchio frames of the given URDF links from the python helper.
+// Returns the helper exit code: 0 ok, 1 pinocchio not available, other values are errors.
+static int computePinocchioFrames(const std::string& urdfPath,
+                                  const casadi::DM& q,
+                                  const std::vector<std::string>& links,
+                                  std::vector<Frame>& out) {
+    std::string options = "--frames ";
+    for (size_t k = 0; k < links.size(); ++k) options += (k ? "," : "") + links[k];
+    std::vector<double> values;
+    const int exitCode = runPinocchioHelper(urdfPath, options, {&q}, values);
+    if (exitCode != 0) return exitCode;
+
+    // for each link: T (4x4) and J (6 x n), column-major
+    const int n = q.numel();
+    const int perFrame = 16 + 6 * n;
+    if (values.size() != links.size() * perFrame) return -1;
+    auto block = [&](int start, int rows, int cols) {
+        return casadi::DM::reshape(casadi::DM(std::vector<double>(values.begin() + start, values.begin() + start + rows * cols)), rows, cols);
+    };
+    out.clear();
+    for (size_t k = 0; k < links.size(); ++k) {
+        const int start = k * perFrame;
+        out.push_back({block(start, 4, 4), block(start + 16, 6, n)});
+    }
+    return 0;
 }
 
 }  // namespace thunder_test

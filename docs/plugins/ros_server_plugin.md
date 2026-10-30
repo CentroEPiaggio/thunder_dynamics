@@ -43,7 +43,7 @@ inputs:
 
 Input messages are float32[] and the message is in the package folder. Runtime parameters are normally vectors. If a matrix parameter is added in a future model, its data is also accepted as a flattened row-major array. A parameter must have symbolic entries in the configuration yaml file to appear in `inputs`, `services`, or `topics`.
 
-`services` is a list of function and parameter names. When omitted, every function and every runtime parameter is exposed. An explicitly empty list creates no services. `topics` is a list of function and parameter names and defaults to no publishers. Unknown, duplicate, or non-runtime parameter names are rejected during generation.
+`services` is a list of function and parameter names. When omitted, every function and every runtime parameter is exposed. An explicitly empty list creates no services. `topics` is a list of function and parameter names and defaults to no publishers. Unknown, duplicate, or non-runtime parameter names are rejected during generation. Functions marked `ignore` (see [`robot_generator`](robot_generator_plugin.md)) have no getter in the robot class, so they are left out and count as unknown.
 
 Generated service and topic names are relative to the current ROS namespace (the root namespace by default):
 

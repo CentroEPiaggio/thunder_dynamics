@@ -7,14 +7,17 @@ endif()
 
 project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
 
-include(FetchContent)
-
-FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG master
-)
-FetchContent_MakeAvailable(yaml-cpp)
+# yaml-cpp: installed one if available (>= 0.8 exports yaml-cpp::yaml-cpp), else fetched
+find_package(yaml-cpp 0.8 CONFIG QUIET)
+if(NOT yaml-cpp_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG yaml-cpp-0.9.0
+  )
+  FetchContent_MakeAvailable(yaml-cpp)
+endif()
 
 # Set TRUE to build python bindings
 option(BUILD_PYTHON_BINDINGS "Build python bindings" ON)
@@ -28,6 +31,12 @@ if(BUILD_PYTHON_BINDINGS)
   set(Python_FIND_VIRTUALENV FIRST)
   find_package(Python 3.7 COMPONENTS Interpreter Development REQUIRED)
   find_package(pybind11 REQUIRED)
+
+  # pybind11 enables LTO when this is not defined. On the large generated file the link step needs
+  # several times the memory of a normal build (>16 GB for a 14 MB file) and the code is not faster.
+  if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+  endif()
 
   add_compile_definitions(ENABLE_PYBIND11)
 

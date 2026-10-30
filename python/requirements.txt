@@ -1,0 +1,20 @@
+# Runtime dependencies of the Thunder Python plugin system.
+#
+# These are imported while a pipeline runs, not while Thunder builds, so a
+# build that installs without them succeeds and then fails at `thunder gen`
+# time with a bare ModuleNotFoundError from inside the embedded interpreter.
+#
+#   pip install -r python/requirements.txt
+
+# Used by PyLoaderProxy/PyBuilderProxy/PyGeneratorProxy to hand a plugin its
+# YAML config block as a Python dict.
+pyyaml
+
+# Used by thunder_core.plugins for optional ConfigModel validation, and
+# required by every plugin that declares one (the torch generator does).
+pydantic>=2
+
+# Only needed to RUN the code the torch generator emits, never to generate it.
+# The generated package declares this itself, so install it here only if you
+# want to use the generated wrapper from this checkout.
+# torch>=1.13

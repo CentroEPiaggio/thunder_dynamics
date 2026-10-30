@@ -292,24 +292,22 @@ static std::unordered_map<std::string, std::vector<short>> parseSymbolicKinemati
 		size_t block_end = (close_pos == std::string::npos) ? joint_end + 1 : close_pos + 8;
 		std::string joint_block = urdf_text.substr(joint_pos, block_end - joint_pos);
 
-		// Extract child link name
-		std::string child_link;
-		size_t child_pos = joint_block.find("<child");
-		if (child_pos != std::string::npos) {
-			size_t name_pos = joint_block.find("link=\"", child_pos);
-			if (name_pos != std::string::npos) {
-				name_pos += 6;
-				size_t name_end = joint_block.find('"', name_pos);
-				if (name_end != std::string::npos) {
-					child_link = joint_block.substr(name_pos, name_end - name_pos);
-				}
+		// Joint name, from the opening tag: the mask applies to the origin of this joint
+		std::string joint_name;
+		const std::string opening_tag = urdf_text.substr(joint_pos, joint_end - joint_pos);
+		size_t name_pos = opening_tag.find("name=\"");
+		if (name_pos != std::string::npos) {
+			name_pos += 6;
+			size_t name_end = opening_tag.find('"', name_pos);
+			if (name_end != std::string::npos) {
+				joint_name = opening_tag.substr(name_pos, name_end - name_pos);
 			}
 		}
 
-		if (!child_link.empty()) {
+		if (!joint_name.empty()) {
 			auto vec = parseKinematicSymbolicFromXml(joint_block, global_default);
 			if (!vec.empty()) {
-				result[child_link] = vec;
+				result[joint_name] = vec;
 			}
 		}
 
@@ -599,13 +597,13 @@ namespace thunder_ns {
 		casadi::Slice first3(0, 3);
 		casadi::DM CoM = T_li(first3, 3);
 
-		casadi::DM Icom = casadi::SX::zeros(6, 1);
-		Icom(0) = link->inertial->ixx;
-		Icom(1) = link->inertial->ixy;
-		Icom(2) = link->inertial->ixz;
-		Icom(3) = link->inertial->iyy;
-		Icom(4) = link->inertial->iyz;
-		Icom(5) = link->inertial->izz;
+		// URDF inertia is about the CoM in the <inertial><origin> frame, par_DYN wants it in the link frame: I = R I_origin R^T
+		const auto& in = *link->inertial;
+		casadi::DM I_origin = casadi::DM({{in.ixx, in.ixy, in.ixz}, {in.ixy, in.iyy, in.iyz}, {in.ixz, in.iyz, in.izz}});
+		casadi::DM R = T_li(first3, first3);
+		casadi::DM I = casadi::DM::mtimes({R, I_origin, R.T()});
+
+		casadi::DM Icom = casadi::DM::vertcat({I(0,0), I(0,1), I(0,2), I(1,1), I(1,2), I(2,2)});
 
 		return casadi::DM::vertcat({m, CoM, Icom});
 	}
@@ -618,8 +616,9 @@ namespace thunder_ns {
 		jointsType.resize(0, "FIXED");
 		jointsDimension.resize(0, 0);
 		jointsAvailable.resize(0, false);
-		jointsDerivatives.resize(0, false);
+		jointsDerivatives.resize(0, -1);
 		jointsAxis.resize(0, {0,0,1});
+		nodesUrdfJoint.resize(0);
 		par_KIN_num.resize(0, 0);
 		par_DYN_num.resize(0, 0);
 	}
@@ -635,10 +634,9 @@ namespace thunder_ns {
 	void UrdfLoader::add_chain_from(int parent, std::shared_ptr<urdf::Link> link) {
 		// - Fill thunder structures - //
 		numJoints++;
-		int link_id = jointsName.size();
+		int node = jointsName.size();		// node of the current branch (main node, then ghost nodes)
 		jointsName.push_back(link->name);
 		jointsParent.push_back(parent);
-		parent = link_id++;					// new link index
 		auto par_DYN_link = extractInertiaFromLink(link);
 		for(int j=0; j<DYN_DIM; j++) par_DYN_num.push_back(static_cast<double>(par_DYN_link(j,0)));
 
@@ -648,7 +646,8 @@ namespace thunder_ns {
 			jointsAxis.push_back({0,0,0});
 			jointsDimension.push_back(0);
 			jointsAvailable.push_back(true);
-			jointsDerivatives.push_back(true);
+			jointsDerivatives.push_back(-1);
+			nodesUrdfJoint.push_back("");
 			for(int j=0; j<KIN_DIM; j++) par_KIN_num.push_back(0);
 		} else {								// have to explore deeply
 			// add kinematic properties for joints
@@ -658,7 +657,7 @@ namespace thunder_ns {
 					if (i > 0) {
 						// Initialize ghost node for branches
 						// cout << "_" + std::to_string(i);
-						link_id++;
+						node = jointsName.size();
 						numJoints++;
 						jointsName.push_back(link->name + "_" + std::to_string(i));
 						jointsParent.push_back(parent); 							// Attached to same parent as main node
@@ -666,15 +665,16 @@ namespace thunder_ns {
 					}
 					// joints origin
 					jointsAvailable.push_back(false);
-					jointsDerivatives.push_back(false);
+					jointsDerivatives.push_back(-1);
 					// extract kinematics from joint position
+					nodesUrdfJoint.push_back(joint->name);
 					auto par_KIN_link = extractKinematicsFromJoint(joint);
 					for(int j=0; j<KIN_DIM; j++) par_KIN_num.push_back(static_cast<double>(par_KIN_link(j,0)));
 					add_joint(joint);
 					// cout << endl;
 					// add childrens
 					if (chain_has_link(joint->child_link_name)) {
-						add_chain_from(parent, urdf_model->getLink(joint->child_link_name));
+						add_chain_from(node, urdf_model->getLink(joint->child_link_name));
 					}
 					i++;
 				}
@@ -704,22 +704,8 @@ namespace thunder_ns {
 				jointsDimension.push_back(1);
 				jointsAxis.push_back({joint->axis.x(), joint->axis.y(), joint->axis.z()});
 				break;
-			case urdf::JointType::FLOATING:
-				jointsType.push_back("F");
-				// panic
-				break;
-			case urdf::JointType::PLANAR:
-				jointsType.push_back("XY");
-				jointsDimension.push_back(2);
-				jointsAxis.push_back({0,0,0});
-				// panic
-				break;
-			default:
-				debug_log("Detected non-standard joint type for joint '" + joint->name + "'", VERB_INFO);
-				jointsType.push_back("UNKNOWN");
-				jointsDimension.push_back(0);
-				jointsAxis.push_back({0,0,0});
-				break;
+			default:	// floating, planar, unknown: no thunder joint type yet (see notes.md)
+				throw std::runtime_error("URDF joint '" + joint->name + "' has an unsupported type: only revolute, continuous, prismatic and fixed are supported.");
 		}
 		ndof += jointsDimension[jointsDimension.size()-1];
 	}
@@ -853,7 +839,7 @@ namespace thunder_ns {
 			robot->add_property<vector<string>>("jointsName", jointsName, "vector<string>", "Name of joints", true);
 			robot->add_property<vector<string>>("jointsType", jointsType, "vector<string>", "Type of joints", true);
 			robot->add_property<vector<bool>>("jointsAvailable", jointsAvailable, "vector<bool>", "Joints that are available in the generated library", true);
-			robot->add_property<vector<bool>>("jointsDerivatives", jointsDerivatives, "vector<bool>", "Create jacobian derivatives for these joints", true);
+			robot->add_property<vector<int>>("jointsDerivatives", jointsDerivatives, "vector<int>", "Create jacobian derivatives for these joints (1 yes, 0 no, -1 not set: kin_builder compute_derivatives)", true);
 			robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 			robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);
@@ -938,7 +924,7 @@ namespace thunder_ns {
 			for (int i = 0; i < numJoints; ++i) {
 				const auto& link_name = jointsName[i];
 				auto it_yaml = yaml_kin_map.find(link_name);
-				auto it_urdf = urdf_kin_map.find(link_name);
+				auto it_urdf = urdf_kin_map.find(nodesUrdfJoint[i]);		// <symbolic_kinematics> of the joint whose origin is this frame
 				if (it_yaml != yaml_kin_map.end()) {
 					for (int j = 0; j < 6; ++j) {
 						par_KIN_isSymb[6 * i + j] = (j < (int)it_yaml->second.size()) ? it_yaml->second[j] : kin_symb_global;
@@ -1073,7 +1059,10 @@ namespace thunder_ns {
 			// }
 
 			robot->add_parameter("par_DYN", casadi::SX::sym("par_DYN", STD_PAR_LINK * numJoints, 1), par_DYN_num, par_DYN_isSymb, "Dynamic parameters", true);
-			robot->add_parameter("par_REG", casadi::SX::sym("par_REG", STD_PAR_LINK * numJoints, 1), std::vector<double>(STD_PAR_LINK * numJoints, 0), {1}, "Dynamic parameters for regressor", true);
+
+			// --- Reference velocity and acceleration (Slotine-Li) --- //
+			robot->add_variable("dqr", casadi::SX::sym("dqr", ndof, 1), std::vector<double>(ndof, 0), {1}, "Velocity reference", true);
+			robot->add_variable("ddqr", casadi::SX::sym("ddqr", ndof, 1), std::vector<double>(ndof, 0), {1}, "Acceleration reference", true);
 
 			// --- Gravity --- //
 			std::vector<double> gravity_num = {0.0, 0.0, 0.0}; // default no gravity

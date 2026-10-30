@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # project
-project(thunder_dynamics VERSION 1.1.2)
+project(thunder_dynamics VERSION 1.2.3)
 
 include(GNUInstallDirs)
 
@@ -46,7 +46,7 @@ include(FetchContent)
 FetchContent_Declare(
   yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG master 
+  GIT_TAG yaml-cpp-0.9.0
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
@@ -54,7 +54,7 @@ FetchContent_MakeAvailable(yaml-cpp)
 FetchContent_Declare(
     urdfparser
     GIT_REPOSITORY https://github.com/tolomeis/URDF_Parser.git
-    GIT_TAG dev/eigen
+    GIT_TAG 44c082968dac868fb380bb5790d654d12d6694e2  # no tags in this repository: last commit of branch dev/eigen (2026-10-15)
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static libs" FORCE)
 
@@ -71,10 +71,6 @@ target_link_libraries(thunder_test library)
 add_executable(thunder_test_chrono ${CMAKE_SOURCE_DIR}/thunder_test_chrono.cpp)
 target_link_libraries(thunder_test_chrono library)
 
-add_executable(thunder_symbolic_test ${CMAKE_SOURCE_DIR}/symbolic_mask_test.cpp)
-target_link_libraries(thunder_symbolic_test library)
-target_compile_definitions(thunder_symbolic_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
-
 add_executable(thunder ${CMAKE_SOURCE_DIR}/thunder_main.cpp)
 target_link_libraries(thunder library)
 
@@ -82,6 +78,7 @@ target_link_libraries(thunder library)
 FetchContent_Declare(
     argparse
     GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    GIT_TAG v3.2
 )
 FetchContent_MakeAvailable(argparse)
 target_link_libraries(thunder argparse)
@@ -123,10 +120,6 @@ set_target_properties(thunder_test PROPERTIES
   BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
 )
-set_target_properties(thunder_symbolic_test PROPERTIES
-  BUILD_RPATH "${CASADI_LIB_DIR}"
-    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
-)
 set_target_properties(thunder_test_chrono PROPERTIES
   BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
@@ -137,7 +130,7 @@ if(WITH_TESTS)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG main
+    GIT_TAG v1.18.0
   )
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
@@ -153,6 +146,10 @@ if(WITH_TESTS)
   add_executable(thunder_tree_kinematics_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_tree_kinematics.cpp)
   target_link_libraries(thunder_tree_kinematics_test PRIVATE library gtest_main)
   target_compile_definitions(thunder_tree_kinematics_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+
+  add_executable(thunder_symbolic_masks_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_symbolic_masks.cpp)
+  target_link_libraries(thunder_symbolic_masks_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_symbolic_masks_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
 
   add_executable(thunder_robot_comparison_gtest
     ${CMAKE_SOURCE_DIR}/tests/cpp/robot_comparison_gtest.cpp
@@ -180,16 +177,22 @@ if(WITH_TESTS)
     BUILD_RPATH "${CASADI_LIB_DIR}"
     INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
   )
+  set_target_properties(thunder_symbolic_masks_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+  )
 
   add_test(NAME thunder_no_generation_test COMMAND thunder_no_generation_test)
   add_test(NAME thunder_generator_smoke_test COMMAND thunder_generator_smoke_test)
   add_test(NAME thunder_tree_kinematics_test COMMAND thunder_tree_kinematics_test)
+  add_test(NAME thunder_symbolic_masks_test COMMAND thunder_symbolic_masks_test)
   add_test(NAME thunder_robot_comparison_gtest COMMAND thunder_robot_comparison_gtest)
 
   set_tests_properties(
     thunder_no_generation_test
     thunder_generator_smoke_test
     thunder_tree_kinematics_test
+    thunder_symbolic_masks_test
     thunder_robot_comparison_gtest
     PROPERTIES
       ENVIRONMENT "LD_LIBRARY_PATH=${CASADI_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
