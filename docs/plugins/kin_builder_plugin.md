@@ -14,6 +14,8 @@ kin_builder:                  # plugin configuration, all keys optional
 
 `compute_derivatives` is the default of the named (`available`) frames that do not set `derivatives` themselves. A frame's own `derivatives` flag (`kin_loader`) always wins, `true` or `false`. `urdf_loader` and `dh_loader` set no per-frame flag, so their named frames follow `compute_derivatives`. As with any plugin, the key can also be written at the top level of the file.
 
+With a floating base ([`floating_loader`](floating_loader_plugin.md)), `T_w_<i>` depends on `pose_base` and every Jacobian has `6 + ndof` columns, the base first. The functions also take the base variables (`pose_base`, `twist_base`, ...), each right before its joint counterpart. See [Floating base](../floating_base.md).
+
 ## What it does
 
 1. **Joint types.** It registers `T_JOINT_<type>` and `S_JOINT_<type>` for the built-in types `R`, `P` and `FIXED`. For a joint type that defines only `T_JOINT_<type>` (registered by another plugin), it derives `S_JOINT_<type>` and registers it, so that every later plugin finds it. See [Joint types](../joints.md).

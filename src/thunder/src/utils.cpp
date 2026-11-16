@@ -190,5 +190,15 @@ namespace thunder_ns{
 		return euler;
 	}
 
+	casadi::SX quat_mult(const casadi::SX& a, const casadi::SX& b){
+		casadi::SX av = a(lin), bv = b(lin), aw = a(3), bw = b(3);
+		return casadi::SX::vertcat({aw*bv + bw*av + casadi::SX::cross(av, bv), aw*bw - casadi::SX::dot(av, bv)});
+	}
+
+	casadi::SX quat2rot(const casadi::SX& quat){
+		// exact on |quat| = 1 only: the caller normalises
+		casadi::SX v = quat(lin), w = quat(3);
+		return (w*w - casadi::SX::dot(v, v))*casadi::SX::eye(3) + 2*casadi::SX::mtimes(v, v.T()) + 2*w*hat(v);
+	}
 
 }

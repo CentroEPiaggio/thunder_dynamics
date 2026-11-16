@@ -24,6 +24,8 @@ dyn_builder:                  # plugin configuration, all keys optional
 
 As with any plugin, these keys can also be written at the top level of the file, outside the `dyn_builder` block.
 
+With a floating base ([`floating_loader`](floating_loader_plugin.md)), `M` and `C` are `(6 + ndof) x (6 + ndof)`, `Cdq`, `G`, `tau`, `tau_r` have `6 + ndof` rows and `J_cm_<i>` has `6 + ndof` columns, the base first. The functions also take the base variables, each right before its joint counterpart. `lagrange`, `christoffel` and `compute_C_std` are refused. See [Floating base](../floating_base.md).
+
 ## Configuration
 
 ### `dynamics_method`: M, Cdq, G

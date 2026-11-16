@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "plugins/builders/reg_builder.h"
 #include "plugins/builders/dyn_builder.h"
-#include "floating_base.h"
+#include "plugins/loaders/floating_loader.h"
 #include "utils.h"
 
 using std::string;
@@ -63,11 +63,11 @@ namespace thunder_ns {
 
 		if (!robot->functions.count("tau")) {
 			SX tau = dyn.rnea(robot, par, dq, SX(), ddq, g);
-			if (!robot->add_function("tau", tau, floating::args(robot, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_REG"}, {"pose_base", "twist_base", "acc_base"}), "Joint torques M*ddq + C*dq + G (RNEA on par_REG)")) return 0;
+			if (!robot->add_function("tau", tau, floating::add_base_args(robot, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_REG"}), "Joint torques M*ddq + C*dq + G (RNEA on par_REG)")) return 0;
 		}
 		if (!robot->functions.count("tau_r")) {
 			SX tau_r = dyn.rnea(robot, par, dq, dqr, ddqr, g);
-			if (!robot->add_function("tau_r", tau_r, floating::args(robot, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_REG"}, {"pose_base", "twist_base", "twist_base_r", "acc_base_r"}), "Reference joint torques M*ddqr + C*dqr + G (modified RNEA on par_REG)")) return 0;
+			if (!robot->add_function("tau_r", tau_r, floating::add_base_args(robot, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_REG"}), "Reference joint torques M*ddqr + C*dqr + G (modified RNEA on par_REG)")) return 0;
 		}
 		return 1;
 	}
@@ -315,12 +315,11 @@ namespace thunder_ns {
 	}
 
 	int RegBuilder::add_Yr(std::shared_ptr<Robot> robot, const SX& Yr, const SX& Y, const SX& reg_M, const SX& reg_C, const SX& reg_G){
-		auto args = [&](std::vector<std::string> list, const std::vector<std::string>& base){ return floating::args(robot, list, base); };
-		if (!robot->add_function("Yr", Yr, args({"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}, {"pose_base", "twist_base", "twist_base_r", "acc_base_r"}), "Slotine-Li manipulator regressor matrix")) return 0;
-		if (!robot->add_function("Y", Y, args({"q", "dq", "ddq", "par_KIN", "par_gravity"}, {"pose_base", "twist_base", "acc_base"}), "Standard manipulator regressor matrix")) return 0;
-		if (!robot->add_function("reg_M", reg_M, args({"q", "ddqr", "par_KIN"}, {"pose_base", "acc_base_r"}), "Regressor matrix of term M*ddqr")) return 0;
-		if (!robot->add_function("reg_C", reg_C, args({"q", "dq", "dqr", "par_KIN"}, {"pose_base", "twist_base", "twist_base_r"}), "Regressor matrix of term C*dqr")) return 0;
-		if (!robot->add_function("reg_G", reg_G, args({"q", "par_KIN", "par_gravity"}, {"pose_base"}), "Regressor matrix of term G")) return 0;
+		if (!robot->add_function("Yr", Yr, floating::add_base_args(robot, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}), "Slotine-Li manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Y", Y, floating::add_base_args(robot, {"q", "dq", "ddq", "par_KIN", "par_gravity"}), "Standard manipulator regressor matrix")) return 0;
+		if (!robot->add_function("reg_M", reg_M, floating::add_base_args(robot, {"q", "ddqr", "par_KIN"}), "Regressor matrix of term M*ddqr")) return 0;
+		if (!robot->add_function("reg_C", reg_C, floating::add_base_args(robot, {"q", "dq", "dqr", "par_KIN"}), "Regressor matrix of term C*dqr")) return 0;
+		if (!robot->add_function("reg_G", reg_G, floating::add_base_args(robot, {"q", "par_KIN", "par_gravity"}), "Regressor matrix of term G")) return 0;
 		return 1;
 	}
 	
@@ -484,11 +483,11 @@ namespace thunder_ns {
 					// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 					std::vector<std::string> arg_list;
-					arg_list = floating::args(robot, {"q", "dq", "par_KIN"}, {"pose_base", "twist_base"});
+					arg_list = floating::add_base_args(robot, {"q", "dq", "par_KIN"});
 					// std::cout << "par_list: " << par_symb << std::endl;
 					if (!robot->add_function("reg_Jdq_"+jointsName[i], reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq of link "+jointsName[i])) return 0;
 
-					arg_list = floating::args(robot, {"q", "w", "par_KIN"}, {"pose_base"});
+					arg_list = floating::add_base_args(robot, {"q", "w", "par_KIN"});
 					if (!robot->add_function("reg_JTw_"+jointsName[i], reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w of link "+jointsName[i])) return 0;
 				}
 			}

@@ -17,6 +17,8 @@ reg_builder:                  # plugin configuration, optional
   par_REG: [...]              # initial value of par_REG, 10 per link (optional)
 ```
 
+With a floating base ([`floating_loader`](floating_loader_plugin.md)), the dynamic regressors, `tau` and `tau_r` have `6 + ndof` rows, the base first, and the parameters of the base body enter them. The functions also take the base variables, each right before its joint counterpart. `regressor_method: lagrange` is refused. See [Floating base](../floating_base.md).
+
 ## Dynamic regressors
 
 They need `par_gravity`, `dqr` and `ddqr`, added by `dyn_loader` or `urdf_loader`. Without them `reg_builder` skips this whole part (dynamic regressors, `par_REG`, `tau`, `tau_r`) with a warning and builds only the other regressors.

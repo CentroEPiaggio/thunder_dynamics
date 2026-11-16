@@ -170,7 +170,7 @@ class TestFloatingBase(unittest.TestCase):
         for twist in ("world", "body"):
             cls.models[f"biped_tree/{twist}"] = FloatingModel(
                 FIXTURES / "floating" / "biped_tree.urdf", "base_link", twist=twist,
-                kin={"compute_derivatives": True}, dyn={"compute_derivatives": True})
+                kin={"compute_derivatives": True}, dyn={"compute_derivatives": True, "compute_J_cm": True})
             cls.models[f"franka_finger/{twist}"] = FloatingModel(
                 FIXTURES / "franka" / "franka_finger.urdf", "panda_link0", "panda_leftfinger", twist=twist)
 
@@ -227,6 +227,25 @@ class TestFloatingBase(unittest.TestCase):
                         if f"J_{name}_dot" in functions:
                             dJ_pin = pin.getFrameJacobianTimeVariation(m.model, m.data, fid, lwa)
                             self.assertClose(m.get(f"J_{name}_dot"), dJ_pin @ m.T + J_pin @ m.dT, f"J_{name}_dot")
+
+    def test_com_jacobians(self):
+        # J_cm_<i> (centre of mass of link i, the base body included) against Pinocchio's Jacobian of the centre of
+        # mass of the whole robot: sum_i m_i J_cm_i (linear rows) / m = J_com_pin T. biped_tree loads every link;
+        # node <link> holds the body of <link>, a branch node <link>_<k> has no mass (par_DYN is numeric, so read the URDF).
+        rng = np.random.default_rng(3)
+        for twist in ("world", "body"):
+            m = self.models[f"biped_tree/{twist}"]
+            link_mass = {l.get("name"): float(l.find("inertial/mass").get("value"))
+                         for l in ET.parse(m.urdf).getroot().iter("link") if l.find("inertial") is not None}
+            masses = np.array([link_mass.get(name, 0.0) for name in m.names])
+            for trial in range(3):
+                with self.subTest(twist=twist, trial=trial):
+                    pose, q, u, _ = random_state(rng, m.n)
+                    m.set_state(pose, q, u)
+                    J_com_pin = pin.jacobianCenterOfMass(m.model, m.data, m.q_pin)
+                    self.assertClose(masses.sum(), pin.computeTotalMass(m.model), "total mass")
+                    J_com = sum(mi * m.get(f"J_cm_{i}")[:3] for i, mi in enumerate(masses)) / masses.sum()
+                    self.assertClose(J_com, J_com_pin @ m.T, "sum m_i J_cm_i / m")
 
     def test_properties_and_derivatives(self):
         # skew dM/dt - 2C, C u = Cdq, and M_dot, G_dot against central finite differences along the exact motion

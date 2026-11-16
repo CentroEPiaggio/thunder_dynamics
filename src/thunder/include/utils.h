@@ -226,7 +226,12 @@ namespace thunder_ns{
 	casadi::SX get_transform_rpy(casadi::SX frame_rpy);
 	casadi::SX get_transform_ypr(casadi::SX frame_ypr);
 	casadi::SX get_euler_rpy(casadi::SX T);
-	
+
+	// rows of a spatial vector (6 x n), linear part first: motion [v; w], force [f; n]
+	inline const casadi::Slice lin(0,3), ang(3,6);
+	casadi::SX quat_mult(const casadi::SX& a, const casadi::SX& b);	// Hamilton product, xyzw
+	casadi::SX quat2rot(const casadi::SX& quat);						// rotation matrix of a unit quaternion, xyzw
+
 } // namespace thunder_ns
 
 #endif
