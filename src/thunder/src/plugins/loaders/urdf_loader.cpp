@@ -704,7 +704,10 @@ namespace thunder_ns {
 				jointsDimension.push_back(1);
 				jointsAxis.push_back({joint->axis.x(), joint->axis.y(), joint->axis.z()});
 				break;
-			default:	// floating, planar, unknown: no thunder joint type yet (see notes.md)
+			case urdf::JointType::FLOATING:	// a floating base is not a joint: it is declared by floating_loader
+				throw std::runtime_error("URDF joint '" + joint->name + "' is floating: remove it (and its world link) from the URDF, "
+				                         "set base_link to its child and add floating_loader after urdf_loader (docs/floating_base.md)");
+			default:	// planar, unknown: no thunder joint type yet (docs/plugins/urdf_loader_plugin.md)
 				throw std::runtime_error("URDF joint '" + joint->name + "' has an unsupported type: only revolute, continuous, prismatic and fixed are supported.");
 		}
 		ndof += jointsDimension[jointsDimension.size()-1];

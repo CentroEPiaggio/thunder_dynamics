@@ -1,3 +1,13 @@
+☐ floating base into floating?
+☐ in floating_base define Slice lin, ang make no sense
+☐ check for useless definitions and compact floating
+☐ stacked not general but regard floating, every plugin call floating::quantity to obtain floating or not. Different name like float_stacked?
+☐ the actual structure is a bit confusing, q, dq, ddq should not contain base? control floating inside the plugins and maintain separate.
+☐ what time_derivative in floating_base do?
+☐ quat_mul and quat2rot could be general in utils
+☐ offset not clear, it is used in the plugins, check the paths
+☐ since dq is floating::velocity then in some way it has to use offset? can we do other way?
+
 general:
 	☐ properties of robot should be static! They cannot change between istances.
 	☐ check all the functions that does not change the class should be const (e.g. size())

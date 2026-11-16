@@ -206,6 +206,8 @@ Why this split:
 
 This `C` is the one of the Christoffel symbols of the first kind (Echeandia and Wensing): it equals `christoffel` and Pinocchio's `computeCoriolisMatrix` to machine precision. For one body about its centre of mass, with angular velocities `w` and `wr`, the moment part of `B(v) vr` is `1/2 [ w x (I_c wr) + wr x (I_c w) - I_c (w x wr) ]`, which is `w x I_c w` at `wr = w`; the naive `w x (I_c wr)` gives the same torques but not a skew-symmetric `dM/dt - 2C`.
 
+In the code, one function `rnea(par, dq, dqr, ddqr, g)` serves every quantity: `M = ∂rnea(0, -, ddq, 0)/∂ddq`, `Cdq = rnea(dq, -, 0, 0)`, `G = rnea(0, -, 0, g)`, `C = ∂rnea(dq, dqr, 0, 0)/∂dqr`. An empty `dqr` (`-`) runs the standard RNEA, with the plain `v x* I v` term. Calling the modified pass with `dqr = dq` gives the same numbers, but almost twice the instructions for `Cdq`: CasADi SX merges neither the duplicated reference-velocity pass nor the three terms of `B(v) v`.
+
 ### CRBA (`dynamics_method: crba`)
 
 Each joint carries the bodies after it as one rigid body. The composite inertia of frame `k`, in frame `k`, is

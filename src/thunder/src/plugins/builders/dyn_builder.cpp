@@ -1,4 +1,5 @@
 #include "plugins/builders/dyn_builder.h"
+#include "floating_base.h"
 #include "utils.h"
 
 using std::string;
@@ -256,12 +257,17 @@ namespace thunder_ns {
 
 	casadi::SX DynBuilder::rnea(std::shared_ptr<Robot> robot, const casadi::SX& par, const casadi::SX& dq, const casadi::SX& dqr, const casadi::SX& ddqr, const casadi::SX& g){
 		// Modified RNEA (Niemeyer-Slotine): tau = M ddqr + C(q,dq) dqr + G, with C such that dM/dt - 2C is skew.
-		// Empty dqr: standard RNEA (dqr = dq) with the plain v x* I v term, smaller expressions. Derivation in notes.md.
+		// Empty dqr: standard RNEA (dqr = dq) with the plain v x* I v term, smaller expressions. Derivation in docs/plugins/dyn_builder_plugin.md.
 		// Same tree convention as compute_dyn_lagrange: joint i moves frame i (T_w_i) w.r.t. frame parent(i),
 		// link i is the body attached to frame parent(i) (world if -1). Spatial vectors of frame i are in frame i.
 		// par: link parameters in regressor form (dyn2reg), tau is linear in them.
+		// Floating base (floating_base.h): dq, dqr, ddqr are the generalized vectors [base; joints] of size nv, frame -1
+		// is the base (its twist is the motion of frame -1), the links on it are the base body and the first 6 rows of
+		// tau are the base wrench at the base origin, in the axes of twist_base (docs/floating_base.md).
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
+		const int off = floating::offset(robot);
+		const int nv = ndof + off;
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
 		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		const vector<string> jointsType = robot->get<vector<string>>("jointsType");
@@ -270,10 +276,36 @@ namespace thunder_ns {
 		auto q = robot->get_model("q");
 		const bool modified = !dqr.is_empty();
 
+		// joint part of the generalized vectors
+		const casadi::Slice joints(off, nv), base(0, 6);
+		SX dq_j = dq(joints), ddqr_j = ddqr(joints);
+		SX dqr_j = modified ? SX(dqr(joints)) : SX();
+
+		// --- Frame -1: the still world (gravity enters as its acceleration), or the floating base --- //
+		SX v_root = SX::zeros(6,1), vr_root = SX::zeros(6,1), ar_root = SX::vertcat({-g, SX::zeros(3,1)});
+		SX R_b = floating::R_base(robot);
+		const bool body = floating::body_twist(robot);
+		auto to_base = [&](const SX& m){ return SX::vertcat({mtimes(R_b.T(), m(lin)), mtimes(R_b.T(), m(ang))}); };
+		if (off) {
+			SX gravity = SX::vertcat({-mtimes(R_b.T(), g), SX::zeros(3,1)});
+			if (body) {
+				// body twist: the base block has S = I in base coordinates, like a joint with its self term v x S dqr
+				v_root = dq(base);
+				vr_root = modified ? SX(dqr(base)) : v_root;
+				ar_root = ddqr(base) + cross_motion(v_root, vr_root) + gravity;
+			} else {
+				// world twist: rotated to base coordinates; the rotation of the frame and the self term of the
+				// base block sum to [v_b x w_r,b; 0]
+				v_root = to_base(dq(base));
+				vr_root = modified ? to_base(dqr(base)) : v_root;
+				ar_root = to_base(ddqr(base)) + SX::vertcat({cross(v_root(lin), vr_root(ang)), SX::zeros(3,1)}) + gravity;
+			}
+		}
+
 		casadi::Slice sel3(0,3);
 		casadi::SXVector R(nj), r(nj);		// rotation and origin of frame i in frame parent(i)
 		casadi::SXVector S(nj);				// joint motion subspace, 6 x dim
-		vector<casadi::Slice> qi(nj);		// entries of joint i in q
+		vector<casadi::Slice> qi(nj), ti(nj);	// entries of joint i in q, and its rows in tau
 		casadi::SXVector v(nj), vr(nj), ar(nj);	// velocity, reference velocity, reference acceleration of frame i
 
 		// --- Forward pass --- //
@@ -282,47 +314,54 @@ namespace thunder_ns {
 			if (p >= i) throw std::runtime_error("rnea: parent of joint " + std::to_string(i) + " must come before it");
 			const int dim = jointsDimension[i];
 			qi[i] = casadi::Slice(dof_count, dof_count + dim);
+			ti[i] = casadi::Slice(off + dof_count, off + dof_count + dim);
 			dof_count += dim;
 
 			SX T = robot->get_model("T_"+std::to_string(i));
 			R[i] = T(sel3,sel3);
 			r[i] = T(sel3,3);
 
-			// world frame is still, gravity enters as base acceleration
-			v[i] = (p < 0) ? SX::zeros(6,1) : motion_to_child(R[i], r[i], v[p]);
-			if (modified) vr[i] = (p < 0) ? SX::zeros(6,1) : motion_to_child(R[i], r[i], vr[p]);
-			ar[i] = motion_to_child(R[i], r[i], (p < 0) ? SX::vertcat({-g, SX::zeros(3,1)}) : ar[p]);
+			v[i] = motion_to_child(R[i], r[i], (p < 0) ? v_root : v[p]);
+			if (modified) vr[i] = motion_to_child(R[i], r[i], (p < 0) ? vr_root : vr[p]);
+			ar[i] = motion_to_child(R[i], r[i], (p < 0) ? ar_root : ar[p]);
 
 			if (dim > 0){
 				S[i] = robot->get_model("S_JOINT_"+jointsType[i], {q(qi[i]), SX(casadi::DM(jointsAxis[i]))});
-				SX Sdq = mtimes(S[i], dq(qi[i]));
-				SX Sdqr = modified ? mtimes(S[i], dqr(qi[i])) : Sdq;
+				SX Sdq = mtimes(S[i], dq_j(qi[i]));
+				SX Sdqr = modified ? mtimes(S[i], dqr_j(qi[i])) : Sdq;
 				v[i] += Sdq;
 				if (modified) vr[i] += Sdqr;
 				// jtimes is the dS/dt dqr term, zero when S is constant (R, P joints)
-				ar[i] += mtimes(S[i], ddqr(qi[i])) + SX::jtimes(Sdqr, q, dq) + cross_motion(v[i], Sdqr);
+				ar[i] += mtimes(S[i], ddqr_j(qi[i])) + SX::jtimes(Sdqr, q, dq_j) + cross_motion(v[i], Sdqr);
 			}
 			if (!modified) vr[i] = v[i];
 		}
 
 		// --- Backward pass: f[i] is the force across joint i, in frame i --- //
 		casadi::SXVector f(nj, SX::zeros(6,1));
-		SX tau = SX::zeros(ndof,1);
+		SX f_root = SX::zeros(6,1);			// force on the floating base, in base coordinates
+		SX tau = SX::zeros(nv,1);
 		for (int i=nj-1; i>=0; i--){
 			// all children of frame i have index > i, so f[i] is complete here
-			if (jointsDimension[i] > 0) tau(qi[i]) = mtimes(S[i].T(), f[i]);
+			if (jointsDimension[i] > 0) tau(ti[i]) = mtimes(S[i].T(), f[i]);
 
 			const int p = jointsParent[i];
-			if (p < 0) continue;		// links on the world frame do not load any joint
+			if (p < 0 && !off) continue;		// links on the still world do not load any joint
+			const SX& v_p = (p < 0) ? v_root : v[p];
+			const SX& vr_p = (p < 0) ? vr_root : vr[p];
+			const SX& ar_p = (p < 0) ? ar_root : ar[p];
 
 			// link i moves with frame p: f = I ar + B(v) vr, B(v) = 1/2 [v x* I + (I v) xbar - I v x], B(v) v = v x* I v
 			SX par_i = par(casadi::Slice(nParLink*i, nParLink*(i+1)));
 			auto inertia = [&](const SX& u){ return inertia_times(par_i, u); };
 			SX f_link = modified ?
-				inertia(ar[p]) + 0.5*(cross_force(v[p], inertia(vr[p])) + cross_force(vr[p], inertia(v[p])) - inertia(cross_motion(v[p], vr[p]))) :
-				inertia(ar[p]) + cross_force(v[p], inertia(v[p]));
-			f[p] += f_link + force_to_parent(R[i], r[i], f[i]);
+				inertia(ar_p) + 0.5*(cross_force(v_p, inertia(vr_p)) + cross_force(vr_p, inertia(v_p)) - inertia(cross_motion(v_p, vr_p))) :
+				inertia(ar_p) + cross_force(v_p, inertia(v_p));
+			SX f_up = f_link + force_to_parent(R[i], r[i], f[i]);
+			if (p < 0) f_root += f_up;
+			else f[p] += f_up;
 		}
+		if (off) tau(base) = body ? f_root : SX::vertcat({mtimes(R_b, f_root(lin)), mtimes(R_b, f_root(ang))});	// axes of twist_base
 
 		return tau;
 	}
@@ -331,8 +370,12 @@ namespace thunder_ns {
 		// Composite rigid body algorithm for M, and G from the composite mass and first moment. Same tree convention as rnea.
 		// Ic[k]: composite inertia of frame k = links attached to frame k + composite inertias of its child frames.
 		// m_c[k], h_c[k]: mass and first moment (in frame k) of the same bodies, all that G needs.
+		// Floating base: frame -1 is the base, its composite inertia gives the base block of M and its composite mass
+		// the base rows of G, in base coordinates, rotated to world axes for a world twist (docs/floating_base.md).
 		const int nj = robot->get<int>("numJoints");
 		const int ndof = robot->get<int>("ndof");
+		const int off = floating::offset(robot);
+		const int nv = ndof + off;
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
 		const vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
 		const vector<string> jointsType = robot->get<vector<string>>("jointsType");
@@ -340,55 +383,77 @@ namespace thunder_ns {
 		const vector<vector<double>> jointsAxis = robot->get<vector<vector<double>>>("jointsAxis");
 		auto q = robot->get_model("q");
 
+		const SX R_b = floating::R_base(robot);
+		const SX g_root = mtimes(R_b.T(), g);		// gravity in frame -1 (the world itself without floating base)
+		// base coordinates -> axes of twist_base: identity for a body twist, blkdiag(R, R) for a world twist
+		const bool body = floating::body_twist(robot);
+		auto to_twist = [&](const SX& m){
+			if (body) return m;
+			return SX(SX::vertcat({mtimes(R_b, m(lin, casadi::Slice())), mtimes(R_b, m(ang, casadi::Slice()))}));
+		};
+		const casadi::Slice base(0, 6);
+
 		casadi::Slice sel3(0,3);
 		casadi::SXVector X(nj), S(nj), Ic(nj, SX::zeros(6,6));
 		casadi::SXVector g_frame(nj);		// gravity in frame i
 		casadi::SXVector m_c(nj, SX::zeros(1,1)), h_c(nj, SX::zeros(3,1));
-		vector<casadi::Slice> qi(nj);
+		vector<casadi::Slice> qi(nj), ci(nj);	// entries of joint i in q, and its rows/columns in M
 		for (int i=0, dof_count=0; i<nj; i++){
 			if (jointsParent[i] >= i) throw std::runtime_error("crba: parent of joint " + std::to_string(i) + " must come before it");
 			qi[i] = casadi::Slice(dof_count, dof_count + jointsDimension[i]);
+			ci[i] = casadi::Slice(off + dof_count, off + dof_count + jointsDimension[i]);
 			dof_count += jointsDimension[i];
 			SX T = robot->get_model("T_"+std::to_string(i));
 			X[i] = motion_transform(T(sel3,sel3), T(sel3,3));
-			g_frame[i] = mtimes(T(sel3,sel3).T(), (jointsParent[i] < 0) ? g : g_frame[jointsParent[i]]);
+			g_frame[i] = mtimes(T(sel3,sel3).T(), (jointsParent[i] < 0) ? g_root : g_frame[jointsParent[i]]);
 			if (jointsDimension[i] > 0) S[i] = robot->get_model("S_JOINT_"+jointsType[i], {q(qi[i]), SX(casadi::DM(jointsAxis[i]))});
 		}
 
 		// --- Composite inertias, mass and first moment, leaves to root --- //
+		SX Ic_root = SX::zeros(6,6), m_root = SX::zeros(1,1), h_root = SX::zeros(3,1);		// frame -1
 		for (int i=nj-1; i>=0; i--){
 			const int p = jointsParent[i];
-			if (p < 0) continue;
+			if (p < 0 && !off) continue;
 			SX par_i = par(casadi::Slice(nParLink*i, nParLink*(i+1)));
-			Ic[p] += spatial_inertia(par_i) + SX::mtimes({X[i].T(), Ic[i], X[i]});
 			SX T = robot->get_model("T_"+std::to_string(i));
-			m_c[p] += par_i(0) + m_c[i];
-			h_c[p] += par_i(casadi::Slice(1,4)) + mtimes(T(sel3,sel3), h_c[i]) + m_c[i]*T(sel3,3);
+			SX Ic_up = spatial_inertia(par_i) + SX::mtimes({X[i].T(), Ic[i], X[i]});
+			SX m_up = par_i(0) + m_c[i];
+			SX h_up = par_i(casadi::Slice(1,4)) + mtimes(T(sel3,sel3), h_c[i]) + m_c[i]*T(sel3,3);
+			if (p < 0) { Ic_root += Ic_up; m_root += m_up; h_root += h_up; }
+			else { Ic[p] += Ic_up; m_c[p] += m_up; h_c[p] += h_up; }
 		}
 
-		// --- M: force of joint i moved up to each ancestor joint j --- //
-		SX M = SX::zeros(ndof, ndof);
+		// --- M: force of joint i moved up to each ancestor joint j, and to the base --- //
+		SX M = SX::zeros(nv, nv);
 		for (int i=0; i<nj; i++){
 			if (jointsDimension[i] == 0) continue;
 			SX F = mtimes(Ic[i], S[i]);
-			M(qi[i], qi[i]) = mtimes(S[i].T(), F);
-			for (int j=i; jointsParent[j] >= 0; ){
+			M(ci[i], ci[i]) = mtimes(S[i].T(), F);
+			int j = i;
+			while (jointsParent[j] >= 0){
 				F = mtimes(X[j].T(), F);		// force to parent coordinates
 				j = jointsParent[j];
 				if (jointsDimension[j] == 0) continue;
 				SX M_ji = mtimes(S[j].T(), F);
-				M(qi[j], qi[i]) = M_ji;
-				M(qi[i], qi[j]) = M_ji.T();
+				M(ci[j], ci[i]) = M_ji;
+				M(ci[i], ci[j]) = M_ji.T();
+			}
+			if (off) {		// j is a root: force to frame -1, base motion subspace I
+				SX M_bi = to_twist(mtimes(X[j].T(), F));
+				M(base, ci[i]) = M_bi;
+				M(ci[i], base) = M_bi.T();
 			}
 		}
+		if (off) M(base, base) = to_twist(to_twist(Ic_root).T()).T();		// world twist: blkdiag(R,R) Ic blkdiag(R,R)^T
 
 		// --- G: weight of the subtree of joint i, Ic [-g; 0] with gravity as base acceleration as in rnea --- //
-		SX G = SX::zeros(ndof, 1);
+		SX G = SX::zeros(nv, 1);
 		for (int i=0; i<nj; i++){
 			if (jointsDimension[i] == 0) continue;
 			SX a = -g_frame[i];
-			G(qi[i]) = mtimes(S[i].T(), SX::vertcat({m_c[i]*a, cross(h_c[i], a)}));
+			G(ci[i]) = mtimes(S[i].T(), SX::vertcat({m_c[i]*a, cross(h_c[i], a)}));
 		}
+		if (off) G(base) = to_twist(SX::vertcat({-m_root*g_root, -cross(h_root, g_root)}));
 		return {M, G};
 	}
 
@@ -402,12 +467,11 @@ namespace thunder_ns {
 	}
 
 	int DynBuilder::compute_dyn_rnea(std::shared_ptr<Robot> robot, const string& method){
-		const int ndof = robot->get<int>("ndof");
-		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
+		auto dq = floating::velocity(robot);			// [twist_base; dq] with floating base
+		auto ddq = floating::acceleration(robot);
 		auto par_gravity = robot->get_model("par_gravity");
 		SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
-		SX zeros_n = SX::zeros(ndof,1);
+		SX zeros_n = SX::zeros(floating::nv(robot),1);
 		SX zeros_g = SX::zeros(3,1);
 
 		// method "rnea": tau = M ddq + C dq + G, each term is one RNEA call with the others set to zero.
@@ -428,16 +492,16 @@ namespace thunder_ns {
 	}
 
 	int DynBuilder::add_dyn(std::shared_ptr<Robot> robot, const casadi::SX& M, const casadi::SX& Cdq, const casadi::SX& G){
-		if (!robot->add_function("M", M, {"q", "par_KIN", "par_DYN"}, "Manipulator mass matrix")) return 0;
-		if (!robot->add_function("Cdq", Cdq, {"q", "dq", "par_KIN", "par_DYN"}, "Manipulator Coriolis and centrifugal terms C*dq")) return 0;
-		if (!robot->add_function("G", G, {"q", "par_KIN", "par_gravity", "par_DYN"}, "Manipulator gravity terms")) return 0;
+		if (!robot->add_function("M", M, floating::args(robot, {"q", "par_KIN", "par_DYN"}, {"pose_base"}), "Manipulator mass matrix")) return 0;
+		if (!robot->add_function("Cdq", Cdq, floating::args(robot, {"q", "dq", "par_KIN", "par_DYN"}, {"pose_base", "twist_base"}), "Manipulator Coriolis and centrifugal terms C*dq")) return 0;
+		if (!robot->add_function("G", G, floating::args(robot, {"q", "par_KIN", "par_gravity", "par_DYN"}, {"pose_base"}), "Manipulator gravity terms")) return 0;
 		return 1;
 	}
 
 	int DynBuilder::compute_C(std::shared_ptr<Robot> robot, const string& C_method){
-		const int ndof = robot->get<int>("ndof");
+		const int nv = floating::nv(robot);
 		auto q = robot->get_model("q");
-		auto dq = robot->get_model("dq");
+		auto dq = floating::velocity(robot);
 
 		// "christoffel": from the registered M. "rnea": the modified RNEA is linear in the reference velocity, C = d tau / d dqr.
 		// "auto": the cheapest of the two.
@@ -445,26 +509,26 @@ namespace thunder_ns {
 		if (C_method != "rnea") C_christoffel = stdCmatrix(robot->get_model("M"), q, dq, dq_select(dq));
 		if (C_method != "christoffel") {
 			SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
-			SX dqr = SX::sym("dqr_C", ndof);
-			C_rnea = SX::jacobian(rnea(robot, par, dq, dqr, SX::zeros(ndof,1), SX::zeros(3,1)), dqr);
+			SX dqr = SX::sym("dqr_C", nv);
+			C_rnea = SX::jacobian(rnea(robot, par, dq, dqr, SX::zeros(nv,1), SX::zeros(3,1)), dqr);
 		}
 		SX C = (C_method == "rnea") ? C_rnea : (C_method == "christoffel") ? C_christoffel : cheapest("C", C_rnea, "rnea", C_christoffel, "christoffel");
-		return robot->add_function("C", C, {"q", "dq", "par_KIN", "par_DYN"}, "Manipulator Coriolis matrix");
+		return robot->add_function("C", C, floating::args(robot, {"q", "dq", "par_KIN", "par_DYN"}, {"pose_base", "twist_base"}), "Manipulator Coriolis matrix");
 	}
 
 	int DynBuilder::compute_tau(std::shared_ptr<Robot> robot){
 		// one-pass RNEA in every dynamics_method: tau = M ddq + C dq + G, tau_r = M ddqr + C dqr + G
-		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
-		auto dqr = robot->get_model("dqr");
-		auto ddqr = robot->get_model("ddqr");
+		auto dq = floating::velocity(robot);
+		auto ddq = floating::acceleration(robot);
+		auto dqr = floating::ref_velocity(robot);
+		auto ddqr = floating::ref_acceleration(robot);
 		auto par_gravity = robot->get_model("par_gravity");
 		SX par = dyn2reg(robot->get_model("par_DYN"), robot->get<int>("numJoints"), robot->get<const int>("STD_PAR_LINK"));
 
 		SX tau = rnea(robot, par, dq, SX(), ddq, par_gravity);
 		SX tau_r = rnea(robot, par, dq, dqr, ddqr, par_gravity);
-		if (!robot->add_function("tau", tau, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"}, "Joint torques M*ddq + C*dq + G (RNEA)")) return 0;
-		if (!robot->add_function("tau_r", tau_r, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_DYN"}, "Reference joint torques M*ddqr + C*dqr + G (modified RNEA)")) return 0;
+		if (!robot->add_function("tau", tau, floating::args(robot, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"}, {"pose_base", "twist_base", "acc_base"}), "Joint torques M*ddq + C*dq + G (RNEA)")) return 0;
+		if (!robot->add_function("tau_r", tau_r, floating::args(robot, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_DYN"}, {"pose_base", "twist_base", "twist_base_r", "acc_base_r"}), "Reference joint torques M*ddqr + C*dqr + G (modified RNEA)")) return 0;
 		return 1;
 	}
 
@@ -517,38 +581,30 @@ namespace thunder_ns {
 	}
 
 	int DynBuilder::compute_dyn_derivatives(std::shared_ptr<Robot> robot){
-		auto q = robot->get_model("q");
-		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
-		auto d3q = robot->get_model("d3q");
-		auto d4q = robot->get_model("d4q");
+		// time derivatives along the motion (floating::time_derivative: jtimes over q, dq, ddq, and the base state)
 		auto M = robot->get_model("M");
 		auto C = robot->get_model("C");
 		auto G = robot->get_model("G");
+		auto dt = [&](const SX& e){ return floating::time_derivative(robot, e); };
+		auto args = [&](std::vector<std::string> list, const std::vector<std::string>& base){ return floating::args(robot, list, base); };
 
 		// - Mass derivatives - //
-		casadi::SX dM = casadi::SX::jtimes(M,q,dq);
-		casadi::SX ddM = casadi::SX::jtimes(dM,q,dq) + casadi::SX::jtimes(dM,dq,ddq);
-		std::vector<std::string> arg_list = {"q", "dq", "par_KIN", "par_DYN"};
-		robot->add_function("M_dot", dM, arg_list, "Time derivative of the mass matrix");
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_DYN"};
-		robot->add_function("M_ddot", ddM, arg_list, "Second time derivative of the mass matrix");
+		casadi::SX dM = dt(M);
+		casadi::SX ddM = dt(dM);
+		robot->add_function("M_dot", dM, args({"q", "dq", "par_KIN", "par_DYN"}, {"pose_base", "twist_base"}), "Time derivative of the mass matrix");
+		robot->add_function("M_ddot", ddM, args({"q", "dq", "ddq", "par_KIN", "par_DYN"}, {"pose_base", "twist_base", "acc_base"}), "Second time derivative of the mass matrix");
 
 		// - Coriolis derivatives - //
-		casadi::SX dC = casadi::SX::jtimes(C,q,dq) + casadi::SX::jtimes(C,dq,ddq);
-		casadi::SX ddC = casadi::SX::jtimes(dC,q,dq) + casadi::SX::jtimes(dC,dq,ddq) + casadi::SX::jtimes(dC,ddq,d3q);
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_DYN"};
-		robot->add_function("C_dot", dC, arg_list, "Time derivative of the Coriolis matrix");
-		arg_list = {"q", "dq", "ddq", "d3q", "par_KIN", "par_DYN"};
-		robot->add_function("C_ddot", ddC, arg_list, "Second time derivative of the Coriolis matrix");
+		casadi::SX dC = dt(C);
+		casadi::SX ddC = dt(dC);
+		robot->add_function("C_dot", dC, args({"q", "dq", "ddq", "par_KIN", "par_DYN"}, {"pose_base", "twist_base", "acc_base"}), "Time derivative of the Coriolis matrix");
+		robot->add_function("C_ddot", ddC, args({"q", "dq", "ddq", "d3q", "par_KIN", "par_DYN"}, {"pose_base", "twist_base", "acc_base", "jerk_base"}), "Second time derivative of the Coriolis matrix");
 
 		// - Gravity derivatives - //
-		casadi::SX dG = casadi::SX::jtimes(G,q,dq);
-		casadi::SX ddG = casadi::SX::jtimes(dG,q,dq) + casadi::SX::jtimes(dG,dq,ddq);
-		arg_list = {"q", "dq", "par_KIN", "par_gravity", "par_DYN"};
-		robot->add_function("G_dot", dG, arg_list, "Time derivative of the gravity vector");
-		arg_list = {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"};
-		robot->add_function("G_ddot", ddG, arg_list, "Second time derivative of the gravity vector");
+		casadi::SX dG = dt(G);
+		casadi::SX ddG = dt(dG);
+		robot->add_function("G_dot", dG, args({"q", "dq", "par_KIN", "par_gravity", "par_DYN"}, {"pose_base", "twist_base"}), "Time derivative of the gravity vector");
+		robot->add_function("G_ddot", ddG, args({"q", "dq", "ddq", "par_KIN", "par_gravity", "par_DYN"}, {"pose_base", "twist_base", "acc_base"}), "Second time derivative of the gravity vector");
 
 		return 1;
 	}
@@ -625,13 +681,23 @@ namespace thunder_ns {
 		if (C_method != "rnea" && C_method != "christoffel" && C_method != "auto")
 			throw std::runtime_error("dyn_builder: unknown C_method '" + C_method + "' (use 'rnea', 'christoffel' or 'auto')");
 
+		// Floating base: the base angular velocity is not the derivative of coordinates, so the Lagrangian forms
+		// (Christoffel C, Lagrange Cdq) miss the w x (I w) terms of the base. Refused, and auto uses the rnea ones.
+		const bool floating_base = floating::is_floating(robot);
+		if (floating_base) {
+			if (dynamics_method == "lagrange" || C_method == "christoffel" || use_C_std || use_J_cm)
+				throw std::runtime_error("dyn_builder: with a floating base use dynamics_method rnea/crba/auto and C_method rnea/auto, "
+				                         "without compute_C_std and compute_J_cm (docs/floating_base.md)");
+		}
+		const string C_method_used = floating_base ? "rnea" : C_method;
+
 		int ret = 1;
 		if (dynamics_method == "lagrange") {
 			if (!compute_dyn_lagrange(robot)) ret = 0;
 		} else {
 			if (!compute_dyn_rnea(robot, dynamics_method)) ret = 0;
 		}
-		if (!compute_C(robot, C_method)) ret = 0;
+		if (!compute_C(robot, C_method_used)) ret = 0;
 		if (!compute_tau(robot)) ret = 0;
 		if (use_C_std) {
 			if (!compute_C_std(robot)) ret = 0;

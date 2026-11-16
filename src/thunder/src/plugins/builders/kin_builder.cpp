@@ -1,4 +1,5 @@
 #include "plugins/builders/kin_builder.h"
+#include "floating_base.h"
 #include "utils.h"
 
 using std::string;
@@ -152,6 +153,7 @@ namespace thunder_ns {
 
 		auto q = robot->get_model("q");
 		auto par_KIN = robot->get_model("par_KIN");
+		const SX T_base = floating::T_base(robot);		// identity without floating base
 		// auto par_world2L0 = robot->get_model("par_world2L0");
 		// auto par_Ln2EE = robot->get_model("par_Ln2EE");
 
@@ -184,14 +186,15 @@ namespace thunder_ns {
 
 			int parent_id = jointsParent[i];
 			if (parent_id == -1) {
-				Twi[i] = Ti[i];
+				Twi[i] = casadi::SX::mtimes({T_base, Ti[i]});		// frame -1: world, or the floating base
 			} else {
 				Twi[i] = casadi::SX::mtimes({Twi[parent_id], Ti[i]});
 			}
-			
+
 			// add functions
 			arg_list = {"q", "par_KIN"};
 			if (!robot->add_function("T_"+std::to_string(i), Ti[i], arg_list, "relative transformation from frame"+ std::to_string(i-1) +"to frame "+std::to_string(i))) return 0;
+			arg_list = floating::args(robot, arg_list, {"pose_base"});		// world transforms depend on the base pose
 			if (!robot->add_function("T_w_"+std::to_string(i), Twi[i], arg_list, "absolute transformation from frame world to frame "+std::to_string(i))) return 0;
 			if (jointsAvailable[i]) {
 				if (!robot->add_function("T_w_"+jointsName[i], Twi[i], arg_list, "absolute transformation from frame world to frame "+jointsName[i])) return 0;
@@ -213,10 +216,14 @@ namespace thunder_ns {
 		// Geometric Jacobians, [linear velocity of the frame origin; angular velocity], both in world coordinates.
 		// Joint j (frame j or one of its ancestors) gives the columns [L_j + z_j x (p_i - p_j); z_j] of frame i,
 		// with [L_j; z_j] = R_w_j S_j its motion subspace in world coordinates. Derivation in docs/plugins/kin_builder_plugin.md.
+		// Floating base: the base twist (at the base origin p_b) is one more block at the root, with motion subspace
+		// Sw_b in world coordinates, I for a world twist, blkdiag(R, R) for a body twist, so it enters the same formulas
+		// as the joints: the first 6 columns of J are [Sw_b_lin + (p_b - p_i)^ Sw_b_ang; Sw_b_ang] (docs/floating_base.md).
 
 		// parameters from robot
 		const int nj = robot->get<int>("numJoints");
-		const int ndof = robot->get<int>("ndof");
+		const int off = floating::offset(robot);		// 6 with floating base, else 0
+		const int nv = floating::nv(robot);			// columns of J
 		vector<string> jointsName = robot->get<vector<string>>("jointsName");
 		vector<string> jointsType = robot->get<vector<string>>("jointsType");
 		vector<int> jointsParent = robot->get<vector<int>>("jointsParent");
@@ -231,15 +238,31 @@ namespace thunder_ns {
 
 		auto q = robot->get_model("q");
 		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
+
+		// frame -1: the still world, or the floating base (origin, origin velocity, angular velocity in world)
+		SX p_root = SX::zeros(3,1), v_root = SX::zeros(3,1), w_root = SX::zeros(3,1);
+		SX Sw_b = SX::eye(6), dSw_b = SX::zeros(6,6);		// base motion subspace in world coordinates, d/dt
+		if (off) {
+			SX pose = robot->get_model("pose_base"), twist = robot->get_model("twist_base");
+			if (floating::body_twist(robot)) {
+				SX R = floating::R_base(robot);
+				Sw_b = SX::diagcat({R, R});
+			}
+			p_root = pose(lin);
+			v_root = SX::mtimes(Sw_b(lin, lin), twist(lin));
+			w_root = SX::mtimes(Sw_b(ang, ang), twist(ang));
+			if (floating::body_twist(robot)) dSw_b = SX::diagcat({SX::mtimes(hat(w_root), Sw_b(lin, lin)), SX::mtimes(hat(w_root), Sw_b(ang, ang))});
+		}
+		const casadi::Slice base(0,6);		// columns of the base block
 
 		// --- Frames and joint subspaces in world coordinates, frame velocities --- //
 		casadi::SXVector p(nj), Sw(nj);		// origin of frame i, motion subspace of joint i (6 x dim)
 		casadi::SXVector w(nj), v(nj), dSw(nj);	// angular velocity and origin velocity of frame i, d/dt Sw (for J_dot)
-		vector<casadi::Slice> qi(nj);		// entries of joint i in q
+		vector<casadi::Slice> qi(nj), ci(nj);	// entries of joint i in q, and its columns in J
 		for (int i=0, dof_count=0; i<nj; i++){
 			const int dim = jointsDimension[i];
 			qi[i] = casadi::Slice(dof_count, dof_count + dim);
+			ci[i] = casadi::Slice(off + dof_count, off + dof_count + dim);
 			dof_count += dim;
 
 			SX T_wi = robot->get_model("T_w_"+std::to_string(i));
@@ -247,9 +270,9 @@ namespace thunder_ns {
 			p[i] = T_wi(lin, 3);
 
 			const int pa = jointsParent[i];
-			SX w_p = (pa < 0) ? SX::zeros(3,1) : w[pa];
-			SX v_p = (pa < 0) ? SX::zeros(3,1) : v[pa];
-			SX p_p = (pa < 0) ? SX::zeros(3,1) : p[pa];
+			SX w_p = (pa < 0) ? w_root : w[pa];
+			SX v_p = (pa < 0) ? v_root : v[pa];
+			SX p_p = (pa < 0) ? p_root : p[pa];
 			w[i] = w_p;
 			v[i] = v_p + SX::cross(w_p, p[i] - p_p);
 			if (dim == 0) continue;
@@ -266,14 +289,18 @@ namespace thunder_ns {
 
 		// --- Jacobians of each frame, pseudo-inverse of the named ones, derivatives where asked --- //
 		for (int i = 0; i < nj; i++) {
-			SX J = SX::zeros(6, ndof);
+			SX J = SX::zeros(6, nv);
 			for (int j=i; j>=0; j=jointsParent[j]){
 				if (jointsDimension[j] == 0) continue;
-				J(lin, qi[j]) = Sw[j](lin, all) + SX::mtimes(hat(p[j] - p[i]), Sw[j](ang, all));
-				J(ang, qi[j]) = Sw[j](ang, all);
+				J(lin, ci[j]) = Sw[j](lin, all) + SX::mtimes(hat(p[j] - p[i]), Sw[j](ang, all));
+				J(ang, ci[j]) = Sw[j](ang, all);
+			}
+			if (off) {		// base block, Sw_b at p_root
+				J(lin, base) = Sw_b(lin, all) + SX::mtimes(hat(p_root - p[i]), Sw_b(ang, all));
+				J(ang, base) = Sw_b(ang, all);
 			}
 
-			std::vector<std::string> arg_list = {"q", "par_KIN"};
+			std::vector<std::string> arg_list = floating::args(robot, {"q", "par_KIN"}, {"pose_base"});
 			if (!robot->add_function("J_"+std::to_string(i), J, arg_list, "Jacobian of frame "+std::to_string(i))) return 0;
 			if (jointsAvailable[i]){
 				if (!robot->add_function("J_"+jointsName[i], J, arg_list, "Jacobian of frame "+jointsName[i])) return 0;
@@ -282,17 +309,21 @@ namespace thunder_ns {
 			if (!jointsDerivatives[i]) continue;
 
 			// time derivative of the columns of J
-			SX dJ = SX::zeros(6, ndof);
+			SX dJ = SX::zeros(6, nv);
 			for (int j=i; j>=0; j=jointsParent[j]){
 				if (jointsDimension[j] == 0) continue;
-				dJ(lin, qi[j]) = dSw[j](lin, all) + SX::mtimes(hat(p[j] - p[i]), dSw[j](ang, all)) + SX::mtimes(hat(v[j] - v[i]), Sw[j](ang, all));
-				dJ(ang, qi[j]) = dSw[j](ang, all);
+				dJ(lin, ci[j]) = dSw[j](lin, all) + SX::mtimes(hat(p[j] - p[i]), dSw[j](ang, all)) + SX::mtimes(hat(v[j] - v[i]), Sw[j](ang, all));
+				dJ(ang, ci[j]) = dSw[j](ang, all);
 			}
-			SX ddJ = SX::jtimes(dJ, q, dq) + SX::jtimes(dJ, dq, ddq);
+			if (off) {		// base block, as the joint columns
+				dJ(lin, base) = dSw_b(lin, all) + SX::mtimes(hat(p_root - p[i]), dSw_b(ang, all)) + SX::mtimes(hat(v_root - v[i]), Sw_b(ang, all));
+				dJ(ang, base) = dSw_b(ang, all);
+			}
+			SX ddJ = floating::time_derivative(robot, dJ);
 
-			arg_list = {"q", "dq", "par_KIN"};
+			arg_list = floating::args(robot, {"q", "dq", "par_KIN"}, {"pose_base", "twist_base"});
 			if (!robot->add_function("J_"+jointsName[i]+"_dot", dJ, arg_list, "Time derivative of jacobian matrix of frame "+jointsName[i])) return 0;
-			arg_list = {"q", "dq", "ddq", "par_KIN"};
+			arg_list = floating::args(robot, {"q", "dq", "ddq", "par_KIN"}, {"pose_base", "twist_base", "acc_base"});
 			if (!robot->add_function("J_"+jointsName[i]+"_ddot", ddJ, arg_list, "Time second derivative of jacobian matrix of frame "+jointsName[i])) return 0;
 		}
 

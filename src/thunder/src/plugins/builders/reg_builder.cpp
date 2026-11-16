@@ -1,5 +1,7 @@
+#include <algorithm>
 #include "plugins/builders/reg_builder.h"
 #include "plugins/builders/dyn_builder.h"
+#include "floating_base.h"
 #include "utils.h"
 
 using std::string;
@@ -51,21 +53,21 @@ namespace thunder_ns {
 
 	int RegBuilder::compute_tau_reg(std::shared_ptr<Robot> robot){
 		// tau and tau_r from par_REG, only if dyn_builder did not add them (there they depend on par_DYN)
-		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
-		auto dqr = robot->get_model("dqr");
-		auto ddqr = robot->get_model("ddqr");
+		auto dq = floating::velocity(robot);
+		auto ddq = floating::acceleration(robot);
+		auto dqr = floating::ref_velocity(robot);
+		auto ddqr = floating::ref_acceleration(robot);
 		auto g = robot->get_model("par_gravity");
 		SX par = robot->get_model("par_REG");
 		DynBuilder dyn;
 
 		if (!robot->functions.count("tau")) {
 			SX tau = dyn.rnea(robot, par, dq, SX(), ddq, g);
-			if (!robot->add_function("tau", tau, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_REG"}, "Joint torques M*ddq + C*dq + G (RNEA on par_REG)")) return 0;
+			if (!robot->add_function("tau", tau, floating::args(robot, {"q", "dq", "ddq", "par_KIN", "par_gravity", "par_REG"}, {"pose_base", "twist_base", "acc_base"}), "Joint torques M*ddq + C*dq + G (RNEA on par_REG)")) return 0;
 		}
 		if (!robot->functions.count("tau_r")) {
 			SX tau_r = dyn.rnea(robot, par, dq, dqr, ddqr, g);
-			if (!robot->add_function("tau_r", tau_r, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_REG"}, "Reference joint torques M*ddqr + C*dqr + G (modified RNEA on par_REG)")) return 0;
+			if (!robot->add_function("tau_r", tau_r, floating::args(robot, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity", "par_REG"}, {"pose_base", "twist_base", "twist_base_r", "acc_base_r"}), "Reference joint torques M*ddqr + C*dqr + G (modified RNEA on par_REG)")) return 0;
 		}
 		return 1;
 	}
@@ -290,15 +292,14 @@ namespace thunder_ns {
 		// The modified RNEA (DynBuilder::rnea) is linear in the link parameters in regressor form,
 		// so each regressor is its Jacobian w.r.t. them. Same parameters and order as par_REG.
 		const int nj = robot->get<int>("numJoints");
-		const int ndof = robot->get<int>("ndof");
 		const int nParLink = robot->get<const int>("STD_PAR_LINK");
-		auto dq = robot->get_model("dq");
-		auto ddq = robot->get_model("ddq");
-		auto dqr = robot->get_model("dqr");
-		auto ddqr = robot->get_model("ddqr");
+		auto dq = floating::velocity(robot);			// [twist_base; dq] with floating base
+		auto ddq = floating::acceleration(robot);
+		auto dqr = floating::ref_velocity(robot);
+		auto ddqr = floating::ref_acceleration(robot);
 		auto g = robot->get_model("par_gravity");
 		SX par = SX::sym("par", nParLink*nj);
-		SX zeros_n = SX::zeros(ndof,1);
+		SX zeros_n = SX::zeros(floating::nv(robot),1);
 		SX zeros_g = SX::zeros(3,1);
 		DynBuilder dyn;
 
@@ -314,11 +315,12 @@ namespace thunder_ns {
 	}
 
 	int RegBuilder::add_Yr(std::shared_ptr<Robot> robot, const SX& Yr, const SX& Y, const SX& reg_M, const SX& reg_C, const SX& reg_G){
-		if (!robot->add_function("Yr", Yr, {"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}, "Slotine-Li manipulator regressor matrix")) return 0;
-		if (!robot->add_function("Y", Y, {"q", "dq", "ddq", "par_KIN", "par_gravity"}, "Standard manipulator regressor matrix")) return 0;
-		if (!robot->add_function("reg_M", reg_M, {"q", "ddqr", "par_KIN"}, "Regressor matrix of term M*ddqr")) return 0;
-		if (!robot->add_function("reg_C", reg_C, {"q", "dq", "dqr", "par_KIN"}, "Regressor matrix of term C*dqr")) return 0;
-		if (!robot->add_function("reg_G", reg_G, {"q", "par_KIN", "par_gravity"}, "Regressor matrix of term G")) return 0;
+		auto args = [&](std::vector<std::string> list, const std::vector<std::string>& base){ return floating::args(robot, list, base); };
+		if (!robot->add_function("Yr", Yr, args({"q", "dq", "dqr", "ddqr", "par_KIN", "par_gravity"}, {"pose_base", "twist_base", "twist_base_r", "acc_base_r"}), "Slotine-Li manipulator regressor matrix")) return 0;
+		if (!robot->add_function("Y", Y, args({"q", "dq", "ddq", "par_KIN", "par_gravity"}, {"pose_base", "twist_base", "acc_base"}), "Standard manipulator regressor matrix")) return 0;
+		if (!robot->add_function("reg_M", reg_M, args({"q", "ddqr", "par_KIN"}, {"pose_base", "acc_base_r"}), "Regressor matrix of term M*ddqr")) return 0;
+		if (!robot->add_function("reg_C", reg_C, args({"q", "dq", "dqr", "par_KIN"}, {"pose_base", "twist_base", "twist_base_r"}), "Regressor matrix of term C*dqr")) return 0;
+		if (!robot->add_function("reg_G", reg_G, args({"q", "par_KIN", "par_gravity"}, {"pose_base"}), "Regressor matrix of term G")) return 0;
 		return 1;
 	}
 	
@@ -447,9 +449,9 @@ namespace thunder_ns {
 		const int nj = robot->get<int>("numJoints");
 		const vector<bool> jointsAvailable = robot->get<vector<bool>>("jointsAvailable");
 		const vector<string> jointsName = robot->get<vector<string>>("jointsName");
-		auto q = robot->get_model("q");
-		auto dq = robot->get_model("dq");
+		auto dq = floating::velocity(robot);
 		auto w = robot->get_model("w");
+		const std::vector<std::string> state = {"q", "pose_base"};		// variables of J, not parameters
 
 		// - cycle on available joints - //
 		for (int i=0; i<nj; i++) {
@@ -462,7 +464,7 @@ namespace thunder_ns {
 				std::vector<casadi::SX> par_symb;
 
 				for (const auto& arg : robot->functions[J_str].args){
-					if (arg != "q"){
+					if (std::find(state.begin(), state.end(), arg) == state.end()){
 						par_symb.push_back(robot->parameters[arg].get_symb_resized());
 					}
 				}
@@ -482,11 +484,11 @@ namespace thunder_ns {
 					// std::cout <<"reg_JTw: " << reg_JTw << std::endl;
 
 					std::vector<std::string> arg_list;
-					arg_list = {"q", "dq", "par_KIN"};
+					arg_list = floating::args(robot, {"q", "dq", "par_KIN"}, {"pose_base", "twist_base"});
 					// std::cout << "par_list: " << par_symb << std::endl;
 					if (!robot->add_function("reg_Jdq_"+jointsName[i], reg_Jdq, arg_list, "Regressor matrix of the quantity J*dq of link "+jointsName[i])) return 0;
 
-					arg_list = {"q", "w", "par_KIN"};
+					arg_list = floating::args(robot, {"q", "w", "par_KIN"}, {"pose_base"});
 					if (!robot->add_function("reg_JTw_"+jointsName[i], reg_JTw, arg_list, "Regressor matrix of the quantity J^T*w of link "+jointsName[i])) return 0;
 				}
 			}
@@ -503,6 +505,8 @@ namespace thunder_ns {
 		const std::string regressor_method = config_["regressor_method"] ? config_["regressor_method"].as<std::string>() : "rnea";
 		if (regressor_method != "rnea" && regressor_method != "lagrange")
 			throw std::runtime_error("reg_builder: unknown regressor_method '" + regressor_method + "' (use 'rnea' or 'lagrange')");
+		if (regressor_method == "lagrange" && floating::is_floating(robot))
+			throw std::runtime_error("reg_builder: regressor_method lagrange is not valid with a floating base, use rnea (docs/floating_base.md)");
 
 		// dynamic part (par_REG, dynamic regressors, tau, tau_r) needs what dyn_loader or urdf_loader add
 		const bool has_dynamics = robot->parameters.count("par_gravity") && robot->parameters.count("dqr") && robot->parameters.count("ddqr");

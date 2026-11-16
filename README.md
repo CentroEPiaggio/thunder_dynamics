@@ -1,4 +1,4 @@
-# ⚡ Thunder Dynamics (v1.2.3)
+# ⚡ Thunder Dynamics (v1.2.3 + 0.1.0)
 
 Thunder Dynamics is a modular C++ and Python framework for generating fast, optimized code for robot kinematics and dynamics computations. It uses [CasADi](https://web.casadi.org/) for symbolic differentiation and code generation, providing high-performance C++ libraries and Python bindings for control and simulation. It can be easily expanded and customized through a plugin architecture.
 
@@ -135,6 +135,7 @@ thunder plugin list --verbose
 | **Loader** | `kin_loader` | Initialize basic kinematic structures |
 | **Loader** | `dyn_loader` | Load dynamic inertia parameters |
 | **Loader** | `soft_loader` | Load elastic joint structures  |
+| **Loader** | `floating_loader` | Make the root a floating base ([docs](docs/floating_base.md)) |
 | **Builder** | `kin_builder` | Build FK, Jacobians, and transformations |
 | **Builder** | `dyn_builder` | Build M, C, G matrices and dynamic derivatives |
 | **Builder** | `reg_builder` | Build kinematic and dynamic regressors |

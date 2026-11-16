@@ -14,6 +14,8 @@ Documentation of each built-in plugin. Plugins run in the order of the `pipeline
 
 [Soft Loader](plugins/soft_loader_plugin.md) (`soft_loader`): Adds the series elastic joint types, the motor variables and the elastic parameters.
 
+[Floating Loader](plugins/floating_loader_plugin.md) (`floating_loader`): Makes the root of the structure a floating base, with pose and twist as variables (see [Floating base](floating_base.md)).
+
 ## Builders
 
 [Kinematics Builder](plugins/kin_builder_plugin.md) (`kin_builder`): Builds the transforms and Jacobians of the frames, the Jacobian derivatives and pseudo-inverse, and registers the built-in joint types.

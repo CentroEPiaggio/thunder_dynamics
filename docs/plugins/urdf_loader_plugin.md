@@ -30,7 +30,17 @@ Each URDF link of the selected chain becomes a node of the [thunder tree](kin_lo
 
 When a link has more than one child joint in the chain (a tree), the first branch continues from the node `<link>` and every other branch starts from a node `<link>_<k>`, a frame with no mass attached to the same parent.
 
-URDF joint types: `revolute` and `continuous` become `R`, `prismatic` becomes `P`, `fixed` becomes `FIXED`. Other types (`floating`, `planar`) are not supported yet: the loader stops with an error. Joint limits are not read.
+URDF joint types: `revolute` and `continuous` become `R`, `prismatic` becomes `P`, `fixed` becomes `FIXED`. `planar` is not supported yet: the loader stops with an error. It would be a 3-dof [joint type](../joints.md) `(x, y, θ)` with closed-form `T_JOINT` and `S_JOINT`. Joint limits are not read.
+
+A `floating` joint is refused too, because a floating base is not a joint in thunder: it is declared with [`floating_loader`](floating_loader_plugin.md). To use such a URDF (e.g. one written for MuJoCo, with a `world` link and a floating joint to the base), remove the floating joint and the `world` link, or keep them and set `base_link` to the child of the floating joint, so the loaded chain starts at the base; then add `floating_loader` after `urdf_loader`:
+
+```yaml
+pipeline:
+  loaders: [urdf_loader, floating_loader]
+urdf_loader:
+  urdf_path: robot_with_world.urdf
+  base_link: base_link        # the child of the floating joint: world and the floating joint are not loaded
+```
 
 The inertial parameters of `<link>` (`<inertial>`: mass, `<origin>` of the centre of mass, inertia) are expressed in the frame of `<link>`, which is frame `parent(i)`, as `dyn_builder` expects. The inertia is taken about the centre of mass, rotated from the `<inertial><origin>` frame to the link frame.
 

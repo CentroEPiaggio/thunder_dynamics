@@ -5,6 +5,10 @@ All notable changes to Thunder Dynamics are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Features
+- Floating base: `floating_loader` and support in `kin_builder`, `dyn_builder`, `reg_builder` (pose and twist of the base as variables, `twist: world | body` for the axes of the base velocity, outputs stacked [base; joints]). See `docs/floating_base.md`.
+
 ## [v1.2.3] - 2026-10-16
 ### Features
 - `dyn_builder`: `M`, `Cdq`, `G` by recursive Newton-Euler (RNEA) or composite rigid body algorithm (CRBA), besides Lagrange, selected with `dynamics_method` (`auto`, `rnea`, `crba`, `lagrange`). `auto` takes the cheapest expression.

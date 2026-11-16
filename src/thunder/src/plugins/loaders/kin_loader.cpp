@@ -180,7 +180,11 @@ namespace thunder_ns {
 				robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);
 				
 			} else {
+				// nothing to load: keep the structure and variables of an earlier loader (urdf_loader, dh_loader)
+				if (!robot->properties.count("ndof"))
+					throw std::runtime_error("kin_loader: no 'kinematics' in the configuration and no earlier loader defined the robot");
 				debug_log("No kinematics specified in yaml file, using from other plugins", VERB_INFO);
+				return robot;
 			}
 
 
