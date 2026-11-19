@@ -1,4 +1,5 @@
 #include "plugins/generators/ros_server_generator.h"
+#include "plugins/generators/common/ros_library_package.h"
 
 #include <algorithm>
 #include <cctype>
@@ -33,16 +34,6 @@ void write_file(const fs::path& path, const std::string& content) {
         throw std::runtime_error("Unable to write generated file: " + path.string());
     }
     output << content;
-}
-
-void copy_generated_file(const fs::path& source, const fs::path& destination) {
-    if (!fs::exists(source)) {
-        throw std::runtime_error("Missing " + source.string() +
-            ". ros_server_generator requires robot_generator to run first with gen_robot: true.");
-    }
-    fs::create_directories(destination.parent_path());
-    fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
-    // fs::remove(source);
 }
 
 bool is_valid_ros_package_name(const std::string& name) {
@@ -100,7 +91,7 @@ std::vector<std::string> selected_names(
 }
 
 
-std::string package_xml(const std::string& package_name) {
+std::string package_xml(const std::string& package_name, const std::string& library_name) {
     return  "<?xml version=\"1.0\"?>\n"
             "<package format=\"3\">\n"
             "  <name>" + package_name + "</name>\n"
@@ -114,7 +105,7 @@ std::string package_xml(const std::string& package_name) {
             "  <depend>std_msgs</depend>\n"
             "  <depend>realtime_tools</depend>\n"
             "  <depend>eigen</depend>\n"
-            "  <depend>yaml-cpp</depend>\n"
+            "  <depend>" + library_name + "</depend>\n"
             "  <member_of_group>rosidl_interface_packages</member_of_group>\n"
             "  <exec_depend>rosidl_default_runtime</exec_depend>\n"
             "  <export>\n"
@@ -123,7 +114,7 @@ std::string package_xml(const std::string& package_name) {
             "</package>\n";
 }
 
-std::string cmake_lists(const std::string& package_name, const std::string& robot_name) {
+std::string cmake_lists(const std::string& package_name, const std::string& robot_name, const std::string& library_name) {
     return  "cmake_minimum_required(VERSION 3.16)\n"
             "project(" + package_name + ")\n\n"
             "find_package(ament_cmake REQUIRED)\n"
@@ -131,27 +122,21 @@ std::string cmake_lists(const std::string& package_name, const std::string& robo
             "find_package(std_msgs REQUIRED)\n"
             "find_package(realtime_tools REQUIRED)\n"
             "find_package(Eigen3 REQUIRED)\n"
-            "find_package(yaml-cpp REQUIRED)\n"
+            "find_package(" + library_name + " REQUIRED)\n"
             "find_package(rosidl_default_generators REQUIRED)\n\n"
             "rosidl_generate_interfaces(${PROJECT_NAME}\n"
             "  \"msg/Float32Array.msg\"\n"
             "  \"srv/GetValue.srv\"\n"
             "  \"srv/SetValue.srv\"\n"
             ")\n\n"
-            "add_executable(" + robot_name + "_server_node\n"
-            "  src/" + robot_name + "_server_node.cpp\n"
-            "  src/thunder_" + robot_name + ".cpp\n"
-            "  src/" + robot_name + "_gen.cpp\n"
-            ")\n"
+            "add_executable(" + robot_name + "_server_node src/" + robot_name + "_server_node.cpp)\n"
             "target_compile_features(" + robot_name + "_server_node PUBLIC cxx_std_17)\n"
-            "target_include_directories(" + robot_name + "_server_node PRIVATE include include/${PROJECT_NAME} src)\n"
-            "target_link_libraries(" + robot_name + "_server_node Eigen3::Eigen yaml-cpp)\n"
+            "target_link_libraries(" + robot_name + "_server_node Eigen3::Eigen " + library_name + "::" + library_name + ")\n"
             "ament_target_dependencies(" + robot_name + "_server_node rclcpp std_msgs realtime_tools)\n"
             "rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} \"rosidl_typesupport_cpp\")\n"
             "target_link_libraries(" + robot_name + "_server_node \"${cpp_typesupport_target}\")\n\n"
             "install(TARGETS " + robot_name + "_server_node DESTINATION lib/${PROJECT_NAME})\n"
-            "install(DIRECTORY include/ DESTINATION include)\n"
-            "install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})\n"
+            "install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})\n"
             "ament_export_dependencies(rosidl_default_runtime)\n"
             "ament_package()\n";
 }
@@ -172,6 +157,7 @@ std::string launch_file(const std::string& package_name, const std::string& robo
 
 std::string server_source(
     const std::string& package_name,
+    const std::string& library_name,
     const std::string& robot_name,
     int frequency,
     bool real_time,
@@ -186,7 +172,7 @@ std::string server_source(
     code << "#include <algorithm>\n#include <chrono>\n#include <cstdint>\n#include <functional>\n#include <memory>\n#include <string>\n#include <vector>\n\n"
          << "#include <pthread.h>\n#include <sched.h>\n#include <rclcpp/rclcpp.hpp>\n#include <realtime_tools/realtime_buffer.hpp>\n"
          << "#include <" << package_name << "/msg/float32_array.hpp>\n#include <" << package_name << "/srv/get_value.hpp>\n#include <" << package_name << "/srv/set_value.hpp>\n"
-         << "#include <" << package_name << "/thunder_" << robot_name << ".h>\n\n"
+         << "#include <" << library_name << "/thunder_" << robot_name << ".h>\n\n"
          << "namespace {\nusing FloatArray = " << package_name << "::msg::Float32Array;\n"
          << "template<typename Matrix> std::vector<float> flatten_row_major(const Matrix& matrix) {\n"
          << "  std::vector<float> values; values.reserve(matrix.rows() * matrix.cols());\n"
@@ -305,29 +291,17 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
 
     const fs::path output_root = fs::current_path() / (robot_name + "_generatedFiles");
     const fs::path package_root = output_root / package_name;
-    const fs::path include_dir = package_root / "include" / package_name;
     const fs::path source_dir = package_root / "src";
-    fs::create_directories(include_dir);
     fs::create_directories(source_dir);
     fs::create_directories(package_root / "msg");
     fs::create_directories(package_root / "srv");
     fs::create_directories(package_root / "launch");
-    fs::create_directories(package_root / "config");
 
-    // The ROS generator consumes the C++ robot created by robot_generator.
-    // Moving these sources keeps one authoritative copy in the ROS package.
-    if (fs::exists(output_root / "pyproject.toml")) {
-        throw std::runtime_error("ros_server_generator cannot move a Python-enabled robot_generator output. Set robot_generator.gen_python to false.");
-    }
-    copy_generated_file(output_root / ("thunder_" + robot_name + ".h"), include_dir / ("thunder_" + robot_name + ".h"));
-    copy_generated_file(output_root / (robot_name + "_gen.h"), include_dir / (robot_name + "_gen.h"));
-    copy_generated_file(output_root / ("thunder_" + robot_name + ".cpp"), source_dir / ("thunder_" + robot_name + ".cpp"));
-    copy_generated_file(output_root / (robot_name + "_gen.cpp"), source_dir / (robot_name + "_gen.cpp"));
-    copy_generated_file(output_root / (robot_name + "_conf.yaml"), package_root / "config" / (robot_name + "_conf.yaml"));
-    copy_generated_file(output_root / (robot_name + "_par.yaml"), package_root / "config" / (robot_name + "_par.yaml"));
+    // The C++ robot of robot_generator, as its own package (shared with ros_control_generator), linked by the node.
+    const std::string library_name = write_ros_library_package(output_root, robot_name, "ros_server_generator");
 
-    write_file(package_root / "package.xml", package_xml(package_name));
-    write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name));
+    write_file(package_root / "package.xml", package_xml(package_name, library_name));
+    write_file(package_root / "CMakeLists.txt", cmake_lists(package_name, robot_name, library_name));
     write_file(package_root / "msg" / "Float32Array.msg", "float32[] data\n");
     write_file(package_root / "srv" / "GetValue.srv", "float32[] input\n---\nfloat32[] value\n");
     // write_file(package_root / "srv" / "GetValue.srv", "---\nfloat32[] value\n");
@@ -335,14 +309,14 @@ void ROSServerGenerator::generate(const std::shared_ptr<Robot> robot) {
     write_file(package_root / "launch" / (package_name + ".launch.py"), launch_file(package_name, robot_name));
 
     // - write the ROS server node - //
-    write_file(source_dir / (robot_name + "_server_node.cpp"), server_source(package_name, robot_name, settings.frequency,
+    write_file(source_dir / (robot_name + "_server_node.cpp"), server_source(package_name, library_name, robot_name, settings.frequency,
                settings.real_time, services, topics, settings.inputs, functions, robot->parameters));
 
     if ((settings.copy_gen) && fs::exists("/home/thunder_dev/thunder_dynamics")) {
-        fs::path destination = "/home/thunder_dev/thunder_dynamics";
-        destination = destination / "src" / "thunder_ros_test" / "src" / package_name;
-        fs::create_directories(destination.parent_path());
-        fs::copy(package_root, destination, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+        const fs::path workspace = fs::path("/home/thunder_dev/thunder_dynamics") / "src" / "thunder_ros_test" / "src";
+        fs::create_directories(workspace);
+        fs::copy(package_root, workspace / package_name, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+        fs::copy(output_root / library_name, workspace / library_name, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
     }
     debug_log("Generated ROS 2 package " + package_name, VERB_INFO);
 }

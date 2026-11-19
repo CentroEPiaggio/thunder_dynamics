@@ -24,22 +24,17 @@ foreach(dependency IN ITEMS ${DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 find_package(Eigen3 REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(<LIBRARY> REQUIRED)    # the robot library, generated next to this package
 
-# the controller and the generated robot library, in one plugin
 add_library(${PROJECT_NAME} SHARED
   src/controller.cpp
-  src/thunder_<ROBOT>.cpp
-  src/<ROBOT>_gen.cpp
 )
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
-# the generated robot sources include their headers without the package prefix
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME})
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen yaml-cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen <LIBRARY>::<LIBRARY>)
 ament_target_dependencies(${PROJECT_NAME} PUBLIC ${DEPENDENCIES})
 
 pluginlib_export_plugin_description_file(controller_interface <PACKAGE>.xml)
@@ -52,14 +47,15 @@ install(TARGETS ${PROJECT_NAME} EXPORT export_${PROJECT_NAME}
 install(DIRECTORY include/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 
-if(BUILD_TESTING)
+# generated only with ros_control_generator.gen_test: true
+if(BUILD_TESTING AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_algorithm.cpp)
   find_package(ament_cmake_gtest REQUIRED)
-  # the algorithm without ROS: quintic, limit check, filter, MACT terms
+  # the algorithm without ROS: quintic, trajectory, limit check, filter, MACT terms
   ament_add_gtest(test_algorithm test/test_algorithm.cpp)
   target_include_directories(test_algorithm PRIVATE include)
   target_link_libraries(test_algorithm Eigen3::Eigen)
 endif()
 
 ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-ament_export_dependencies(${DEPENDENCIES} Eigen3 yaml-cpp)
+ament_export_dependencies(${DEPENDENCIES} Eigen3 <LIBRARY>)
 ament_package()

@@ -24,9 +24,10 @@
 #include <std_srvs/srv/set_bool.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 
+#include <<LIBRARY>/thunder_<ROBOT>.h>
+
 #include "<PACKAGE>/filter.hpp"
 #include "<PACKAGE>/mact.hpp"
-#include "<PACKAGE>/thunder_<ROBOT>.h"
 #include "<PACKAGE>/trajectory.hpp"
 
 namespace <PACKAGE> {

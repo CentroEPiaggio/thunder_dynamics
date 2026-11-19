@@ -1,0 +1,59 @@
+# Franka (panda URDF) with a generated ros2_control MACT controller.
+# Generate with (in this folder):  thunder gen franka_ros_control.yaml -n franka   ->  franka_generatedFiles/franka_controller
+pipeline:
+  loaders:    ["urdf_loader"]
+  builders:   ["kin_builder", "dyn_builder", "reg_builder"]   # reg_builder: Yr, Y, reg_G, par_REG for the controller
+  generators: ["robot_generator", "ros_control_generator"]
+
+
+urdf_loader:
+  urdf_path: "franka.urdf"
+  base_link: "panda_link0"
+  ee_link: "panda_link8"
+  symbolic_kinematics: false
+  symbolic_dynamics: true
+
+  gravity:
+    symb: [0,0,0]
+    value: [0, 0, -9.81]
+
+  Base_to_L0:
+    symb: [1,1,1, 1,1,1]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+  Ln_to_EE:
+    symb: [1,1,1, 1,1,1]
+    tr: [0, 0, 0]
+    ypr: [0, 0, 0]
+
+robot_generator:
+  gen_python:   false
+  gen_casadi:   false
+  gen_robot:    true      # needed by ros_control_generator
+
+ros_control_generator:
+  copy_gen: false         # true: also copy the package into src/thunder_ros_control_test/src
+  gen_test: false         # true: unit test of the algorithm headers in the package (colcon test)
+  # joints: [...]         # URDF joints in q order; with urdf_loader they are taken from the URDF
+  parameters:             # defaults of the controller's ROS parameters, see docs/plugins/ros_control_plugin.md
+    # The gains are not scaled by the mass matrix: tune each joint for the inertia it sees.
+    # The "low" set of the earlier mact_controllers experiments (mact_common.yaml).
+    k_p: [30.0, 30.0, 30.0, 30.0, 10.0, 10.0, 4.0]
+    k_v: [5.0, 5.0, 5.0, 5.0, 1.0, 1.0, 0.4]
+    robot_adds_gravity: true          # libfranka adds its gravity to the commanded torque
+    limits:
+      # libfranka 0.15.0, include/franka/rate_limiting.h: kMaxJointAcceleration, kMaxTorqueRate
+      max_acceleration: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+      max_torque_rate: 1000.0
+    adaptation:
+      enabled: false                  # switched at runtime with ~/set_adaptation
+      gamma: 1.0
+      torque_source: measured
+      R_t: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      # nodes of this chain: panda_link0 (base, fixed), panda_link1..7, panda_link8 (flange)
+      R_p_link: [0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      R_p_param: [1.0e-2, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4, 1.0e-4]
+    filters:
+      dq_cutoff_hz: 100.0
+      ddq_cutoff_hz: 100.0

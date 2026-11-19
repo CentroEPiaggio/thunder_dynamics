@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ros_control_generator`: generates a `ros2_control` controller package (Jazzy) with the robot library linked in: MACT with optional adaptation, `JointTrajectory` reference with quintic segments and limit checks. Templates in `data/templates/ros_control_generator`; test workspace `src/thunder_ros_control_test`.
 - `urdf_loader`: property `jointsUrdfName`, the URDF joint of each node.
 
+### Changed
+- **Breaking:** `ros_server_generator` no longer copies the robot into `<robot>_server`: the robot is written as its own ament package `thunder_<robot>` (shared library, target `thunder_<robot>::thunder_<robot>`, as `thunder_franka` in test_robot_server), linked by the server node and by the `ros_control_generator` controller. `copy_gen` copies both packages.
+
 ## [v1.2.3] - 2026-10-16
 ### Features
 - `dyn_builder`: `M`, `Cdq`, `G` by recursive Newton-Euler (RNEA) or composite rigid body algorithm (CRBA), besides Lagrange, selected with `dynamics_method` (`auto`, `rnea`, `crba`, `lagrange`). `auto` takes the cheapest expression.

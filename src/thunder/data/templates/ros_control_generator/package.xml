@@ -20,7 +20,7 @@
   <depend>std_srvs</depend>
   <depend>trajectory_msgs</depend>
   <depend>urdf</depend>
-  <depend>yaml-cpp</depend>
+  <depend><LIBRARY></depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
 

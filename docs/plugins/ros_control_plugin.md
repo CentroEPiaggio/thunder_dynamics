@@ -23,7 +23,7 @@ ros_control_generator:
       max_torque_rate: 1000.0
 ```
 
-A complete example is `robots/franka/franka_ros_control.yaml`. The package is written to `<robot>_generatedFiles/<robot>_controller`; the robot name must give a valid ROS 2 package name (lowercase letters, digits, underscores).
+A complete example is `src/thunder/robots/debug/franka_ros_control.yaml`. The package is written to `<robot>_generatedFiles/<robot>_controller`; the robot name must give a valid ROS 2 package name (lowercase letters, digits, underscores).
 
 ## The controller
 
@@ -45,7 +45,7 @@ One cycle of `update()`, in this order:
 5. the update law: `Y` is evaluated only when adaptation is on and `gamma > 0`;
 6. the command: if the robot adds its own gravity, `G = reg_G(q) par_REG_0` with the generated parameters is removed, so that the robot applies `Yr pi_hat + (G_robot - G)`; then saturation at the URDF effort limits and rate limiting; write.
 
-The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `filter.hpp`), tested by `test/test_algorithm.cpp` in the package (`colcon test`). Nothing in `update()` allocates or logs; trajectories are handed over with `realtime_tools::RealtimeBuffer`, topics are published with `realtime_tools::RealtimePublisher`.
+The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `filter.hpp`), tested by `test/test_algorithm.cpp` (quintic, trajectory sampling, limit check, filter, MACT terms; it does not use the robot model, so it is the same for every robot), written in the package with `gen_test: true` and run with `colcon test`. Nothing in `update()` allocates or logs; trajectories are handed over with `realtime_tools::RealtimeBuffer`, topics are published with `realtime_tools::RealtimePublisher`.
 
 ### Interfaces
 
@@ -78,6 +78,7 @@ A `JointTrajectory` with one point is a final state (`positions`, optional `velo
 | `parameters` | required | Values of the controller's ROS parameters written in `config/<robot>_controller.yaml`. Unknown names, wrong sizes and missing required ones are errors at generation |
 | `joints` | from `urdf_loader` | URDF joint of each entry of `q`. With `urdf_loader` they are the nodes of the property `jointsUrdfName` that move; with other loaders this list is required |
 | `copy_gen` | `false` | Also copy the package into `src/thunder_ros_control_test/src` (inside the Thunder dev container) |
+| `gen_test` | `false` | Write `test/test_algorithm.cpp`, the unit test of the algorithm headers. With `false`, a test left by an earlier generation is removed |
 | `template_path` | `/usr/share/thunder_dynamics/templates/ros_control_generator` | Folder of the templates, installed with thunder (`make install`) |
 
 ### Controller parameters
@@ -107,17 +108,24 @@ An end effector or payload with unknown inertia: keep its link symbolic in `urdf
 ```
 <robot>_controller/
   CMakeLists.txt, package.xml, <robot>_controller.xml     # pluginlib: <robot>_controller/MactController
-  include/<robot>_controller/  controller.hpp, mact.hpp, trajectory.hpp, filter.hpp, thunder_<robot>.h, <robot>_gen.h
-  src/  controller.cpp, thunder_<robot>.cpp, <robot>_gen.cpp
-  test/ test_algorithm.cpp
-  config/ <robot>_controller.yaml, <robot>_conf.yaml, <robot>_par.yaml
+  include/<robot>_controller/  controller.hpp, mact.hpp, trajectory.hpp, filter.hpp
+  src/  controller.cpp
+  test/ test_algorithm.cpp                                  # only with gen_test: true
+  config/ <robot>_controller.yaml
+thunder_<robot>/                                            # the robot library, linked by the controller
 ```
+
+The robot is written as its own package `thunder_<robot>` (a shared library), the same one `ros_server_generator` writes and links; see the [ROS Server docs](ros_server_plugin.md) for its content. `copy_gen` copies both packages.
 
 `config/<robot>_controller.yaml` has the controller type in the controller manager's section and in the controller's own, so it works loaded into the controller manager or with `spawner <robot>_controller -p <file>`. Sizes (`n`, `N`, size of `par_REG`) and the joint names are compile-time constants of the package: the code uses fixed-size Eigen types.
 
 ## Build and run
 
 `src/thunder_ros_control_test` is a Jazzy workspace with its dev container and a Gazebo test of the generated Franka controller, see its [README](../../src/thunder_ros_control_test/README.md).
+
+## Notes
+
+- The controller manager passes to a controller, when it loads it, the last `robot_description` it received (ros2_control 4.50, `controller_manager.cpp`: `robot_description_callback` stores every message, also after the hardware is initialized). Another node publishing `/robot_description` in the same ROS domain (e.g. another container with `--network=host`) can therefore give the controller a different URDF: it then fails to configure, or reads wrong limits. Seen once in the Gazebo test; use a separate `ROS_DOMAIN_ID`.
 
 ## Not yet
 

@@ -70,23 +70,34 @@ std::string read(const fs::path& path) {
 }  // namespace
 
 TEST(RosControlGenerator, WritesThePackage) {
-    const fs::path root = run(fixture());
+    YAML::Node config = fixture();
+    config["ros_control_generator"]["gen_test"] = true;
+    const fs::path root = run(config);
     const fs::path package = root / "chain_generatedFiles" / "chain_controller";
 
     for (const char* file : {"CMakeLists.txt", "package.xml", "chain_controller.xml", "src/controller.cpp",
-                             "src/thunder_chain.cpp", "src/chain_gen.cpp", "test/test_algorithm.cpp",
-                             "include/chain_controller/controller.hpp", "include/chain_controller/mact.hpp",
-                             "include/chain_controller/trajectory.hpp", "include/chain_controller/filter.hpp",
-                             "include/chain_controller/thunder_chain.h", "include/chain_controller/chain_gen.h",
-                             "config/chain_controller.yaml"}) {
+                             "test/test_algorithm.cpp", "include/chain_controller/controller.hpp",
+                             "include/chain_controller/mact.hpp", "include/chain_controller/trajectory.hpp",
+                             "include/chain_controller/filter.hpp", "config/chain_controller.yaml"}) {
         EXPECT_TRUE(fs::exists(package / file)) << "missing " << file;
     }
+    // the robot is not in the controller package: it links the library package thunder_chain
+    EXPECT_FALSE(fs::exists(package / "src/chain_gen.cpp"));
+    const fs::path library = root / "chain_generatedFiles" / "thunder_chain";
+    for (const char* file : {"CMakeLists.txt", "package.xml", "src/thunder_chain.cpp", "src/chain_gen.cpp",
+                             "include/thunder_chain/thunder_chain.h", "include/thunder_chain/chain_gen.h",
+                             "config/chain_conf.yaml", "config/chain_par.yaml"}) {
+        EXPECT_TRUE(fs::exists(library / file)) << "missing thunder_chain/" << file;
+    }
+    EXPECT_NE(read(package / "CMakeLists.txt").find("thunder_chain::thunder_chain"), std::string::npos);
+    EXPECT_NE(read(package / "package.xml").find("<depend>thunder_chain</depend>"), std::string::npos);
+    EXPECT_NE(read(package / "include/chain_controller/controller.hpp").find("#include <thunder_chain/thunder_chain.h>"), std::string::npos);
 
     // every placeholder replaced
     for (const auto& entry : fs::recursive_directory_iterator(package)) {
         if (!entry.is_regular_file()) continue;
         const std::string text = read(entry.path());
-        for (const char* placeholder : {"<ROBOT>", "<PACKAGE>", "<NDOF>", "<NUM_NODES>", "<NPAR>", "<JOINT_NAMES>"}) {
+        for (const char* placeholder : {"<ROBOT>", "<PACKAGE>", "<LIBRARY>", "<NDOF>", "<NUM_NODES>", "<NPAR>", "<JOINT_NAMES>"}) {
             EXPECT_EQ(text.find(placeholder), std::string::npos) << placeholder << " left in " << entry.path();
         }
     }
@@ -108,6 +119,13 @@ TEST(RosControlGenerator, WritesThePackage) {
     EXPECT_EQ(controller["k_p"].as<std::vector<double>>().size(), 2u);
     EXPECT_EQ(controller["adaptation"]["R_p_link"].as<std::vector<double>>().size(), 4u);
 
+    fs::remove_all(root);
+}
+
+TEST(RosControlGenerator, TestOnlyWithGenTest) {
+    const fs::path root = run(fixture());    // gen_test: false by default
+    EXPECT_FALSE(fs::exists(root / "chain_generatedFiles/chain_controller/test/test_algorithm.cpp"));
+    EXPECT_TRUE(fs::exists(root / "chain_generatedFiles/chain_controller/src/controller.cpp"));
     fs::remove_all(root);
 }
 

@@ -1,6 +1,6 @@
 # ROS Server Generator Plugin
 
-`ros_server_generator` creates a standard ROS 2 C++ package around the C++ robot produced by `robot_generator`. It must run after `robot_generator`; it copies that C++ sources into the ROS package.
+`ros_server_generator` creates a standard ROS 2 C++ package around the C++ robot produced by `robot_generator`. It must run after `robot_generator`. The robot is not copied into the server package: it is written as its own package `thunder_<robot>` (a shared library, the same one [`ros_control_generator`](ros_control_plugin.md) uses), which the server node links.
 
 ```yaml
 pipeline:
@@ -14,7 +14,7 @@ robot_generator:
 ros_server_generator: # plugin configuration
   frequency: 1000     # frequency of the server node
   real_time: false    # enable node RT features
-  copy_gen: true      # copy package into thunder_ros_test
+  copy_gen: true      # copy the packages into thunder_ros_test
   inputs:             # topics where inputs are taken
     q: /robot/q
     dq: /robot/dq
@@ -22,11 +22,18 @@ ros_server_generator: # plugin configuration
   topics: [M, q]      # exposed topics (default no one)
 ```
 
-The package is written to `<robot>_generatedFiles/<robot>_server`. `copy_gen:
-true` also copies it to `src/thunder_ros_test/src/<robot>_server`, ready for a
-colcon build. Lowercase is enforced in the robot name to be a valid ROS 2 package-name prefix:
-lowercase letters, digits, and underscores. The generated package contains
-`src/`, `include/`, `msg/`, `srv/`, `launch/`, `config/`, `CMakeLists.txt`, and `package.xml`.
+The packages are written to `<robot>_generatedFiles/`. `copy_gen: true` also copies both to `src/thunder_ros_test/src/`, ready for a colcon build. Lowercase is enforced in the robot name to be a valid ROS 2 package-name prefix: lowercase letters, digits, and underscores.
+
+```
+<robot>_server/                 # the node: src/<robot>_server_node.cpp, msg/, srv/, launch/, CMakeLists.txt, package.xml
+thunder_<robot>/                # the robot library, linked as thunder_<robot>::thunder_<robot>
+  include/thunder_<robot>/ thunder_<robot>.h, <robot>_gen.h
+  src/ thunder_<robot>.cpp, <robot>_gen.cpp
+  config/ <robot>_conf.yaml, <robot>_par.yaml
+  CMakeLists.txt, package.xml
+```
+
+`thunder_<robot>` has the structure of `thunder_franka` in [test_robot_server](https://github.com/CentroEPiaggio/test_robot_server). Other packages can use the robot with `find_package(thunder_<robot>)`, `target_link_libraries(<target> thunder_<robot>::thunder_<robot>)` and `#include <thunder_<robot>/thunder_<robot>.h>`. The generated `<robot>_gen.cpp` is compiled with `-O2`, set by the cache variable `THUNDER_GEN_OPTIONS` (e.g. `colcon build --cmake-args "-DTHUNDER_GEN_OPTIONS=-O3;-march=native"`).
 
 ## Configuration
 

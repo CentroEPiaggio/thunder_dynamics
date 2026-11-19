@@ -1,4 +1,5 @@
 #include "plugins/generators/ros_control_generator.h"
+#include "plugins/generators/common/ros_library_package.h"
 
 #include <algorithm>
 #include <cctype>
@@ -18,10 +19,11 @@ namespace thunder_ns {
 namespace {
 
 // The controller source is not written here: it is a template in data/templates/ros_control_generator,
-// installed with thunder, where <ROBOT>, <PACKAGE>, <NDOF>, <NUM_NODES>, <NPAR>, <JOINT_NAMES> are replaced.
+// installed with thunder, where <ROBOT>, <PACKAGE>, <LIBRARY>, <NDOF>, <NUM_NODES>, <NPAR>, <JOINT_NAMES> are replaced.
 const std::string DEFAULT_TEMPLATE_PATH = "/usr/share/thunder_dynamics/templates/ros_control_generator";
 
 // template file -> file in the package ("<PACKAGE>" in the destination is replaced too)
+const std::string TEST_FILE = "test/test_algorithm.cpp";    // only with gen_test
 const std::vector<std::pair<std::string, std::string>> TEMPLATE_FILES = {
     {"CMakeLists.txt", "CMakeLists.txt"},
     {"package.xml", "package.xml"},
@@ -31,7 +33,7 @@ const std::vector<std::pair<std::string, std::string>> TEMPLATE_FILES = {
     {"include/trajectory.hpp", "include/<PACKAGE>/trajectory.hpp"},
     {"include/filter.hpp", "include/<PACKAGE>/filter.hpp"},
     {"src/controller.cpp", "src/controller.cpp"},
-    {"test/test_algorithm.cpp", "test/test_algorithm.cpp"},
+    {TEST_FILE, TEST_FILE},
 };
 
 // Runtime parameters of the controller that can be given in ros_control_generator.parameters.
@@ -59,6 +61,7 @@ const std::map<std::string, ParameterSpec> CONTROLLER_PARAMETERS = {
 
 struct GeneratorConfig {
     bool copy_gen = false;
+    bool gen_test = false;              // unit test of the algorithm headers in the package (the same for every robot)
     std::string template_path = DEFAULT_TEMPLATE_PATH;
     std::vector<std::string> joints;    // empty: from the urdf_loader property jointsUrdfName
     YAML::Node parameters;
@@ -67,6 +70,7 @@ struct GeneratorConfig {
 GeneratorConfig parse_config(const YAML::Node& config) {
     GeneratorConfig result;
     if (config["copy_gen"]) result.copy_gen = config["copy_gen"].as<bool>();
+    if (config["gen_test"]) result.gen_test = config["gen_test"].as<bool>();
     if (config["template_path"]) result.template_path = config["template_path"].as<std::string>();
     if (config["joints"]) result.joints = config["joints"].as<std::vector<std::string>>();
     if (!config["parameters"] || !config["parameters"].IsMap()) {
@@ -89,15 +93,6 @@ std::string read_file(const fs::path& path) {
     std::stringstream buffer;
     buffer << input.rdbuf();
     return buffer.str();
-}
-
-void copy_generated_file(const fs::path& source, const fs::path& destination) {
-    if (!fs::exists(source)) {
-        throw std::runtime_error("Missing " + source.string() +
-            ". ros_control_generator requires robot_generator to run first with gen_robot: true.");
-    }
-    fs::create_directories(destination.parent_path());
-    fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
 }
 
 bool is_valid_ros_package_name(const std::string& name) {
@@ -252,25 +247,17 @@ void ROSControlGenerator::generate(const std::shared_ptr<Robot> robot) {
     const std::vector<std::string> joints = joint_names(settings, *robot, ndof);
     check_parameters(settings.parameters, ndof, num_nodes);
 
-    // - copy the robot library written by robot_generator - //
+    // - the robot library, as its own package (shared with ros_server_generator) - //
     const fs::path output_root = fs::current_path() / (robot_name + "_generatedFiles");
     const fs::path package_root = output_root / package_name;
-    const fs::path include_dir = package_root / "include" / package_name;
-    if (fs::exists(output_root / "pyproject.toml")) {
-        throw std::runtime_error("ros_control_generator cannot use a Python-enabled robot_generator output. Set robot_generator.gen_python to false.");
-    }
-    copy_generated_file(output_root / ("thunder_" + robot_name + ".h"), include_dir / ("thunder_" + robot_name + ".h"));
-    copy_generated_file(output_root / (robot_name + "_gen.h"), include_dir / (robot_name + "_gen.h"));
-    copy_generated_file(output_root / ("thunder_" + robot_name + ".cpp"), package_root / "src" / ("thunder_" + robot_name + ".cpp"));
-    copy_generated_file(output_root / (robot_name + "_gen.cpp"), package_root / "src" / (robot_name + "_gen.cpp"));
-    copy_generated_file(output_root / (robot_name + "_conf.yaml"), package_root / "config" / (robot_name + "_conf.yaml"));
-    copy_generated_file(output_root / (robot_name + "_par.yaml"), package_root / "config" / (robot_name + "_par.yaml"));
+    const std::string library_name = write_ros_library_package(output_root, robot_name, "ros_control_generator");
 
     // - controller from the templates - //
     std::string joint_list;
     for (const auto& joint : joints) joint_list += (joint_list.empty() ? "\"" : ", \"") + joint + "\"";
     const std::map<std::string, std::string> values = {
         {"<PACKAGE>", package_name},
+        {"<LIBRARY>", library_name},
         {"<ROBOT>", robot_name},
         {"<NDOF>", std::to_string(ndof)},
         {"<NUM_NODES>", std::to_string(num_nodes)},
@@ -278,6 +265,10 @@ void ROSControlGenerator::generate(const std::shared_ptr<Robot> robot) {
         {"<JOINT_NAMES>", joint_list},
     };
     for (const auto& [source, destination] : TEMPLATE_FILES) {
+        if (source == TEST_FILE && !settings.gen_test) {
+            fs::remove(package_root / TEST_FILE);    // left by an earlier generation: CMake builds it if present
+            continue;
+        }
         const std::string text = read_file(fs::path(settings.template_path) / source);
         write_file(package_root / replace_placeholders(destination, values), replace_placeholders(text, values));
     }
@@ -288,9 +279,11 @@ void ROSControlGenerator::generate(const std::shared_ptr<Robot> robot) {
                parameter_file(package_name, robot_name, joints, settings.parameters, nodes));
 
     if (settings.copy_gen && fs::exists("/home/thunder_dev/thunder_dynamics")) {
-        const fs::path destination = fs::path("/home/thunder_dev/thunder_dynamics") / "src" / "thunder_ros_control_test" / "src" / package_name;
-        fs::create_directories(destination.parent_path());
-        fs::copy(package_root, destination, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+        const fs::path workspace = fs::path("/home/thunder_dev/thunder_dynamics") / "src" / "thunder_ros_control_test" / "src";
+        fs::create_directories(workspace);
+        if (!settings.gen_test) fs::remove(workspace / package_name / TEST_FILE);
+        fs::copy(package_root, workspace / package_name, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
+        fs::copy(output_root / library_name, workspace / library_name, fs::copy_options::recursive | fs::copy_options::overwrite_existing);
     }
     debug_log("Generated ros2_control package " + package_name, VERB_INFO);
 }
