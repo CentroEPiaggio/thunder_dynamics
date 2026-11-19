@@ -32,6 +32,7 @@ thunder:
 		☐ add_variable() is using add_parameter(), change?
 		☐ allow different type for parameters
 	kinematics:
+		☐ names of base and ee frames are ignored in urdf? other loaders?
 		☐ internal joints representation could not use properties, allow more flexibility
 		☐ kin_loader without kinematics should send an error? probably it initializes q with uninitialized ndof
 		☐ floating and planar joints are not supported, implement them (is floating necessary? maybe only base)

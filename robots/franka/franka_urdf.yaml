@@ -1,6 +1,6 @@
 pipeline:
   loaders:    ["urdf_loader"]
-  builders:   ["kin_builder", "dyn_builder", "reg_builder"]
+  builders:   ["kin_builder", "dyn_builder"]#, "reg_builder"]
   generators: ["robot_generator"]
 
 
@@ -8,7 +8,7 @@ urdf_loader:
   # urdf_path: "franka.urdf"
   urdf_path: "franka.urdf"
   base_link: "panda_link0"
-  ee_link: "panda_link8"
+  ee_link: "panda_ee"
   # Set to false to force numeric-only kinematics (par_KIN), otherwise symbolic.
   # Alternatively, set per-link masks using the link name.
   # Example:
@@ -27,7 +27,9 @@ urdf_loader:
   #     mass: 1
   #     CoM: [0, 1, 0]
   #     I: [1, 1, 1, 0, 0, 0]
-  symbolic_dynamics: true
+  symbolic_dynamics:
+    default: 0
+    panda_ee: 1
 
   # gravity
   gravity:
@@ -40,7 +42,7 @@ urdf_loader:
     tr: [0, 0, 0]
     ypr: [0, 0, 0]
 
-  # Link_n to EE
+  # EE link
   Ln_to_EE:
     symb: [1,1,1, 1,1,1]
     tr: [0, 0, 0]
@@ -48,5 +50,5 @@ urdf_loader:
 
 robot_generator:
   gen_python:   false
-  gen_casadi:   false
+  gen_casadi:   true
   gen_robot:    true
