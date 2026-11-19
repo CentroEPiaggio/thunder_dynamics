@@ -1,0 +1,6 @@
+# Controller manager of the Gazebo test (gz_ros2_control): 1 kHz, as the default 1 ms physics step.
+controller_manager:
+  ros__parameters:
+    update_rate: 1000
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster

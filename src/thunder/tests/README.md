@@ -25,6 +25,7 @@ The tests find their fixtures from the repository layout: CMake defines `THUNDER
 | `thunder_generator_smoke_test` | `cpp/test_generator_smoke.cpp` | `robot_generator` writes the expected files for `RRR/testRRR.yaml` |
 | `thunder_tree_kinematics_test` | `cpp/test_tree_kinematics.cpp` | Nodes, parents, branch nodes and named frames of `urdf/tree_branch.urdf` and `urdf/serial_chain.urdf` |
 | `thunder_symbolic_masks_test` | `cpp/test_symbolic_masks.cpp` | Symbolic masks of `urdf_loader`: YAML keys, URDF tags and defaults, on `franka/symbolic_mask_test.yaml` |
+| `thunder_ros_control_generator_test` | `cpp/test_ros_control_generator.cpp` | `ros_control_generator` on `urdf/serial_chain_ros_control.yaml`: package files, placeholders replaced, sizes and URDF joint names, parameter file; errors for missing, unknown or wrongly sized parameters and for a pipeline without `reg_builder` |
 | `thunder_robot_comparison_gtest` | `cpp/robot_comparison_gtest.cpp` | Kinematics, dynamics and regressors of `franka/franka_finger.urdf` against Pinocchio, see below |
 | `thunder_python_api_test` | `python/test_thunder_api.py` | Python API: robot round trip, Python plugins, pipeline from a file and from a dict, generator. Registered only with `BUILD_PYTHON_PLUGINS` (default `ON`) |
 
@@ -46,7 +47,8 @@ Pinocchio is called through `python/pinocchio_helper.py`. If Pinocchio is not av
 | File | Used by |
 | --- | --- |
 | `RRR/testRRR.yaml` | `thunder_no_generation_test`, `thunder_generator_smoke_test`, `thunder_python_api_test` |
-| `urdf/tree_branch.urdf`, `urdf/serial_chain.urdf` | `thunder_tree_kinematics_test` |
+| `urdf/tree_branch.urdf`, `urdf/serial_chain.urdf` | `thunder_tree_kinematics_test`; `serial_chain.urdf` also `thunder_ros_control_generator_test` |
+| `urdf/serial_chain_ros_control.yaml` | `thunder_ros_control_generator_test` |
 | `franka/franka_symbolic.urdf`, `franka/symbolic_mask_test.yaml` | `thunder_symbolic_masks_test` |
 | `franka/franka_finger.urdf`, `franka/franka_urdf.yaml` | `thunder_robot_comparison_gtest` |
 | `franka/franka.urdf` | none: the full franka, kept as the reference `franka_finger.urdf` was derived from |
@@ -65,4 +67,5 @@ These are not run by CTest:
 
 - `thunder_test` and `thunder_test_chrono` (`src/thunder/thunder_test*.cpp`, built with thunder): a debug print of the franka robots in `robots/debug/` and a timing benchmark on `robots/testRobots/R*.yaml`. Their paths are relative to `src/thunder/build`, run them from there.
 - `src/thunder_robot_test`: a CMake project to try a generated robot library. `robot_generator` copies the generated files there with `copy_gen: true`, see the [robot_generator docs](../../../docs/plugins/robot_generator_plugin.md).
+- `src/thunder_ros_control_test`: a ROS 2 Jazzy workspace for the packages of `ros_control_generator`, with a Gazebo test, see its [README](../../thunder_ros_control_test/README.md).
 - `src/thunder_ros_test`: a ROS 2 workspace for the packages of `ros_server_generator` (`copy_gen: true`), see its [README](../../thunder_ros_test/README.md).

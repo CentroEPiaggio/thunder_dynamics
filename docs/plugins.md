@@ -33,3 +33,5 @@ Joint types used by the builders, and how to add new ones: [Joint types](joints.
 [Robot Generator](plugins/robot_generator_plugin.md) (`robot_generator`): Generates the C code of the functions, the `thunder_<robot>` C++ class, and optionally Python bindings and CasADi files.
 
 [ROS Server](plugins/ros_server_plugin.md) (`ros_server_generator`): Creates a ROS 2 C++ package around the C++ robot produced by `robot_generator`.
+
+[ROS Control](plugins/ros_control_plugin.md) (`ros_control_generator`): Creates a `ros2_control` controller package (MACT, joint trajectories) with the C++ robot produced by `robot_generator` linked in.

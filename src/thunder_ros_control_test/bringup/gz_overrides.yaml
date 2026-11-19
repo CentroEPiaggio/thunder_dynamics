@@ -1,0 +1,4 @@
+# Overrides of the generated controller parameters for Gazebo.
+franka_controller:
+  ros__parameters:
+    robot_adds_gravity: false   # gz_ros2_control applies the command as it is

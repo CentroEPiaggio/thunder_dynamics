@@ -843,6 +843,7 @@ namespace thunder_ns {
 			robot->add_property<vector<vector<double>>>("jointsAxis", jointsAxis, "vector<vector<double>>", "Axes of joints", true);
 			robot->add_property<vector<int>>("jointsDimension", jointsDimension, "vector<int>", "Degrees of freedom of each joint", true);
 			robot->add_property<vector<int>>("jointsParent", jointsParent, "vector<int>", "Parent Id of joints", true);
+			robot->add_property<vector<string>>("jointsUrdfName", nodesUrdfJoint, "vector<string>", "URDF joint of each node (empty for terminal nodes)", true);
 
 			// --- Variables --- //
 			robot->add_variable("q", casadi::SX::sym("q", ndof, 1), std::vector<double>(ndof, 0), {1}, "Configuration", true);

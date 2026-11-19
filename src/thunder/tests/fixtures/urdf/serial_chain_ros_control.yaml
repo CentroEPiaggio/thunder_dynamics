@@ -1,0 +1,24 @@
+# ros_control_generator on serial_chain.urdf (2 revolute joints, 4 nodes)
+pipeline:
+  loaders:    ["urdf_loader"]
+  builders:   ["kin_builder", "reg_builder"]
+  generators: ["robot_generator", "ros_control_generator"]
+
+urdf_loader:
+  urdf_path: "serial_chain.urdf"
+  gravity:
+    value: [0, 0, -9.81]
+
+robot_generator:
+  gen_robot: true
+
+ros_control_generator:
+  parameters:
+    k_p: [10.0, 10.0]
+    k_v: [1.0, 1.0]
+    robot_adds_gravity: false
+    limits:
+      max_acceleration: [5.0, 5.0]
+      max_torque_rate: 1000.0
+    adaptation:
+      R_p_link: [0.0, 1.0, 1.0, 0.0]

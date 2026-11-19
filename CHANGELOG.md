@@ -5,6 +5,11 @@ All notable changes to Thunder Dynamics are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Features
+- `ros_control_generator`: generates a `ros2_control` controller package (Jazzy) with the robot library linked in: MACT with optional adaptation, `JointTrajectory` reference with quintic segments and limit checks. Templates in `data/templates/ros_control_generator`; test workspace `src/thunder_ros_control_test`.
+- `urdf_loader`: property `jointsUrdfName`, the URDF joint of each node.
+
 ## [v1.2.3] - 2026-10-16
 ### Features
 - `dyn_builder`: `M`, `Cdq`, `G` by recursive Newton-Euler (RNEA) or composite rigid body algorithm (CRBA), besides Lagrange, selected with `dynamics_method` (`auto`, `rnea`, `crba`, `lagrange`). `auto` takes the cheapest expression.

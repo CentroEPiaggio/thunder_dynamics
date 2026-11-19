@@ -96,4 +96,6 @@ The URDF tag is matched by joint name, so it always applies to the origin of its
 
 ## What it adds to the robot
 
+The property `jointsUrdfName`: per node, the URDF joint whose origin is the frame of the node and whose type is the type of the node (empty for terminal nodes). The nodes with `jointsDimension > 0` give, in order, the URDF joint of each entry of `q`; [`ros_control_generator`](ros_control_plugin.md) uses it to name the joints of the controller.
+
 The same properties, variables and `par_KIN` as [`kin_loader`](kin_loader_plugin.md#what-it-adds-to-the-robot), and the same `STD_PAR_LINK`, `par_gravity`, `par_DYN`, `dqr` and `ddqr` as [`dyn_loader`](dyn_loader_plugin.md#what-it-adds-to-the-robot). The frame parameters are named `KIN_<link>_xyz`, `KIN_<link>_rpy` (or as written in `kinematics`), `world2L0_*` and `Ln2EE_*`. It also adds the functions `par_world2L0` and `par_Ln2EE`, the two extra frames as `[x, y, z, r, p, y]`.

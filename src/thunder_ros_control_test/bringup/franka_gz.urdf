@@ -1,0 +1,194 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="panda">
+  <link name="world" />
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link="panda_link0" />
+  </joint>
+  <link name="panda_link0">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.041018 -0.00014 0.049974" />
+      <mass value="0.629769" />
+      <inertia ixx="0.00315" ixy="8.2904e-07" ixz="0.00015" iyy="0.00388" iyz="8.2299e-06" izz="0.004285" />
+    </inertial>
+  </link>
+  <link name="panda_link1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.003875 0.002081 -0.04762" />
+      <mass value="4.970684" />
+      <inertia ixx="0.70337" ixy="-0.000139" ixz="0.006772" iyy="0.70661" iyz="0.019169" izz="0.009117" />
+    </inertial>
+  </link>
+  <link name="panda_link2">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.003141 -0.02872 0.003495" />
+      <mass value="0.646926" />
+      <inertia ixx="0.007962" ixy="-0.003925" ixz="0.010254" iyy="0.02811" iyz="0.000704" izz="0.025995" />
+    </inertial>
+  </link>
+  <link name="panda_link3">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.027518 0.039252 -0.066502" />
+      <mass value="3.228604" />
+      <inertia ixx="0.037242" ixy="-0.004761" ixz="-0.011396" iyy="0.036155" iyz="-0.012805" izz="0.01083" />
+    </inertial>
+  </link>
+  <link name="panda_link4">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.05317 0.104419 0.027454" />
+      <mass value="3.587895" />
+      <inertia ixx="0.025853" ixy="0.007796" ixz="-0.001332" iyy="0.019552" iyz="0.008641" izz="0.028323" />
+    </inertial>
+  </link>
+  <link name="panda_link5">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.011953 0.041065 -0.038437" />
+      <mass value="1.225946" />
+      <inertia ixx="0.035549" ixy="-0.002117" ixz="-0.004037" iyy="0.029474" iyz="0.000229" izz="0.008627" />
+    </inertial>
+  </link>
+  <link name="panda_link6">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.060149 -0.014117 -0.010517" />
+      <mass value="1.666555" />
+      <inertia ixx="0.001964" ixy="0.000109" ixz="-0.001158" iyy="0.004354" iyz="0.000341" izz="0.005433" />
+    </inertial>
+  </link>
+  <link name="panda_link7">
+        </link>
+  <link name="panda_link8">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.010517 -0.004252 -0.045403" />
+      <mass value="0.735522" />
+      <inertia ixx="0.012516" ixy="-0.000428" ixz="-0.001196" iyy="0.010027" iyz="-0.000741" izz="0.004815" />
+    </inertial>
+  </link>
+  <joint name="panda_joint1" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0.333" />
+    <parent link="panda_link0" />
+    <child link="panda_link1" />
+    <axis xyz="0 0 1" />
+    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint2" type="revolute">
+    <origin rpy="-1.57079632679 0 0" xyz="0 0 0" />
+    <parent link="panda_link1" />
+    <child link="panda_link2" />
+    <axis xyz="0 0 1" />
+    <limit effort="87" lower="-1.7628" upper="1.7628" velocity="2.1750" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint3" type="revolute">
+    <origin rpy="1.57079632679 0 0" xyz="0 -0.316 0" />
+    <parent link="panda_link2" />
+    <child link="panda_link3" />
+    <axis xyz="0 0 1" />
+    <limit effort="87" lower="-2.8973" upper="2.8973" velocity="2.1750" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint4" type="revolute">
+    <origin rpy="1.57079632679 0 0" xyz="0.0825 0 0" />
+    <parent link="panda_link3" />
+    <child link="panda_link4" />
+    <axis xyz="0 0 1" />
+    <limit effort="87" lower="-3.0718" upper="-0.0698" velocity="2.1750" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint5" type="revolute">
+    <origin rpy="-1.57079632679 0 0" xyz="-0.0825 0.384 0" />
+    <parent link="panda_link4" />
+    <child link="panda_link5" />
+    <axis xyz="0 0 1" />
+    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint6" type="revolute">
+    <origin rpy="1.57079632679 0 0" xyz="0 0 0" />
+    <parent link="panda_link5" />
+    <child link="panda_link6" />
+    <axis xyz="0 0 1" />
+    <limit effort="12" lower="-0.0175" upper="3.7525" velocity="2.6100" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint7" type="revolute">
+    <origin rpy="1.57079632679 0 0" xyz="0.088 0 0" />
+    <parent link="panda_link6" />
+    <child link="panda_link7" />
+    <axis xyz="0 0 1" />
+    <limit effort="12" lower="-2.8973" upper="2.8973" velocity="2.6100" />
+    <dynamics damping="1.0" />
+  </joint>
+  <joint name="panda_joint8" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0.107" />
+    <parent link="panda_link7" />
+    <child link="panda_link8" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <ros2_control name="TestSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="panda_joint1">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint2">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">-0.785</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint3">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint4">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">-2.356</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint5">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint6">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">1.571</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+    <joint name="panda_joint7">
+      <command_interface name="effort" />
+      <state_interface name="position">
+        <param name="initial_value">0.785</param>
+      </state_interface>
+      <state_interface name="velocity" />
+      <state_interface name="effort" />
+    </joint>
+  </ros2_control>
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>/workspaces/thunder_ros_control_test/bringup/controller_manager.yaml</parameters>
+    </plugin>
+  </gazebo>
+</robot>

@@ -147,6 +147,14 @@ if(WITH_TESTS)
   target_link_libraries(thunder_tree_kinematics_test PRIVATE library gtest_main)
   target_compile_definitions(thunder_tree_kinematics_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
 
+  add_executable(thunder_ros_control_generator_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_ros_control_generator.cpp)
+  target_link_libraries(thunder_ros_control_generator_test PRIVATE library gtest_main)
+  target_compile_definitions(thunder_ros_control_generator_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
+  set_target_properties(thunder_ros_control_generator_test PROPERTIES
+    BUILD_RPATH "${CASADI_LIB_DIR}"
+    INSTALL_RPATH "${CMAKE_INSTALL_RPATH}"
+  )
+
   add_executable(thunder_symbolic_masks_test ${CMAKE_SOURCE_DIR}/tests/cpp/test_symbolic_masks.cpp)
   target_link_libraries(thunder_symbolic_masks_test PRIVATE library gtest_main)
   target_compile_definitions(thunder_symbolic_masks_test PRIVATE THUNDER_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}/../..\")
@@ -186,6 +194,7 @@ if(WITH_TESTS)
   add_test(NAME thunder_generator_smoke_test COMMAND thunder_generator_smoke_test)
   add_test(NAME thunder_tree_kinematics_test COMMAND thunder_tree_kinematics_test)
   add_test(NAME thunder_symbolic_masks_test COMMAND thunder_symbolic_masks_test)
+  add_test(NAME thunder_ros_control_generator_test COMMAND thunder_ros_control_generator_test)
   add_test(NAME thunder_robot_comparison_gtest COMMAND thunder_robot_comparison_gtest)
 
   set_tests_properties(
@@ -193,6 +202,7 @@ if(WITH_TESTS)
     thunder_generator_smoke_test
     thunder_tree_kinematics_test
     thunder_symbolic_masks_test
+    thunder_ros_control_generator_test
     thunder_robot_comparison_gtest
     PROPERTIES
       ENVIRONMENT "LD_LIBRARY_PATH=${CASADI_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
