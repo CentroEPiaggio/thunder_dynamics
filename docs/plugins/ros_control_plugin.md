@@ -44,7 +44,7 @@ One cycle of `update()`, in this order:
 5. the update law: `Y` is evaluated only when adaptation is on and `gamma > 0`;
 6. the command: if the robot adds its own gravity, `G = reg_G(q) par_REG_0` with the generated parameters is removed, so that the robot applies `Yr pi_hat + (G_robot - G)`; then saturation at `tau_max` and rate limiting at `dtau_max`; write.
 
-The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `filter.hpp`), tested by `test/test_algorithm.cpp` (quintic, trajectory sampling, limit check, filter, MACT terms; it does not use the robot model, so it is the same for every robot), written in the package with `gen_test: true` and run with `colcon test`. Nothing in `update()` allocates or logs; trajectories are handed over with `realtime_tools::RealtimeBuffer`, topics are published with `realtime_tools::RealtimePublisher`.
+The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `filter.hpp`), tested by `test/test_algorithm.cpp` (quintic, trajectory sampling, limit check, cubic spline, filter, MACT terms; it does not use the robot model, so it is the same for every robot), written in the package with `gen_test: true` and run with `colcon test`. Nothing in `update()` allocates or logs; trajectories are handed over with `realtime_tools::RealtimeBuffer`, topics are published with `realtime_tools::RealtimePublisher`.
 
 ### Interfaces
 
@@ -60,7 +60,10 @@ The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `fi
 
 ### Trajectories
 
-A `JointTrajectory` with one point is a final state (`positions`, optional `velocities`, `accelerations`) reached at `time_from_start`; with more points, each segment is a quintic polynomial that matches position, velocity and acceleration at both ends. Missing velocities and accelerations are zero.
+Each segment of a `JointTrajectory` is a quintic polynomial that matches position, velocity and acceleration at both ends; the first segment starts from the current reference. The velocities and accelerations of the waypoints:
+
+- No point has `velocities` (positions only): those of the cubic spline through the positions, which has continuous acceleration (the quintics then are the spline itself; `accelerations` given without velocities are replaced). The spline starts from the current reference with its velocity and ends with zero acceleration and free velocity, so a trajectory sent one or a few points at a time keeps moving between messages; at the last point the reference stops (see below). Zero velocities instead would stop the reference at every waypoint: on waypoints every 10 ms that means accelerations of hundreds of rad/s².
+- Otherwise as given, and a missing `velocities` or `accelerations` of a point is zero. A final state at rest is therefore a point with `velocities` all zero.
 
 - The trajectory replaces the current one when the control loop takes it. Its first segment starts from the reference the controller is following then, so the reference is continuous.
 - `header.stamp`, as in `joint_trajectory_controller`: zero means the times count from the cycle that takes the trajectory; otherwise they count from the stamp, on the controller manager's clock (simulation time in Gazebo). With the current time as stamp, the first segment is shorter by the delivery delay. A stamp in the future does not delay the start: the first segment is longer.
@@ -68,7 +71,7 @@ A `JointTrajectory` with one point is a final state (`positions`, optional `velo
 - A trajectory received while the controller is not running is rejected.
 - It must name all the joints, in any order; at most 256 points; `time_from_start` positive and increasing.
 - Every segment is sampled (100 samples) against `q_min`, `q_max`, `dq_max` and `ddq_max` of the robot class, except a first segment that will not run (first point past). A trajectory that exceeds them is rejected with a warning and the current one continues. The first segment is checked from the last reference and time reported by the loop, a few cycles before the loop takes the trajectory: it will start from a slightly later reference and be slightly shorter. The loop also clamps `q_d` to the position limits.
-- After the last point the reference holds its position at rest. At activation the reference is the measured position at rest.
+- After the last point the reference holds its position at rest, also when the last point has a velocity (for a sender that streams the trajectory, the next message continues it). At activation the reference is the measured position at rest.
 
 ## Configuration
 
@@ -134,7 +137,7 @@ The robot is written as its own package `thunder_<robot>` (a shared library), th
 
 ## Notes
 
-- `tau_applied` must be the full joint torque, gravity included, since it is compared with `Y pi_hat`. `commanded` is the torque written in the previous cycle (after saturation and rate limit) plus, when `robot_adds_gravity` is set, `reg_G(q) par_REG_0`: the gravity the robot adds, approximated with the nominal parameters (their difference biases the estimate). `measured` is the effort state as the driver reports it, which must then be the full joint torque. Checked on 2026-11-23: FR3 `franka_hardware` reports `tau_J`, the link-side torque sensors (libfranka: `tau_J_d`, the desired one, is the one "without gravity"); Flexiv reports the RDK `tau`, "measured joint torques" (0 for a joint without torque sensor); UR reports `actual_current_as_torque` (what it includes not verified), or currents in A with the driver parameter `use_currents_as_efforts`, which are not torques. A hardware interface whose effort state echoes the gravity-free command cannot be used with `measured`.
+- `tau_applied` must be the full joint torque, gravity included, since it is compared with `Y pi_hat`. `commanded` is the torque written in the previous cycle (after saturation and rate limit; in the first cycle after activation there is none, and the prediction-error term is skipped) plus, when `robot_adds_gravity` is set, `reg_G(q) par_REG_0`: the gravity the robot adds, approximated with the nominal parameters (their difference biases the estimate). `measured` is the effort state as the driver reports it, which must then be the full joint torque. Checked on 2026-11-23: FR3 `franka_hardware` reports `tau_J`, the link-side torque sensors (libfranka: `tau_J_d`, the desired one, is the one "without gravity"); Flexiv reports the RDK `tau`, "measured joint torques" (0 for a joint without torque sensor); UR reports `actual_current_as_torque` (what it includes not verified), or currents in A with the driver parameter `use_currents_as_efforts`, which are not torques. A hardware interface whose effort state echoes the gravity-free command cannot be used with `measured`.
 - With `adaptation.torque_source: measured` the update law needs a meaningful effort state. The controller does not change its configuration, but warns once per joint and activation (from a 1 s timer, outside the loop) when the effort state has been exactly 0 for 100 consecutive cycles while the command was not: the hardware interface probably does not update it. This happens in simulation with `gz_ros2_control` 0.7.x (Humble), which never updates it (`gz_system.cpp`, `read()`, the line is commented out, ign-physics#124); there adaptation diverges, use `commanded`. `gz_ros2_control` 1.2 (Jazzy) reports the transmitted joint torque.
 
 ## Not yet

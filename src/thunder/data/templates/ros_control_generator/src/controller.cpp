@@ -252,6 +252,7 @@ CallbackReturn MactController::on_activate(const rclcpp_lifecycle::State &)
   tau_measured_.setZero();
   tau_command_.setZero();
   tau_applied_.setZero();
+  command_written_ = false;
   gravity_.setZero();
   pi_hat_ = pi_nominal_;
   adaptation_enabled_.store(adaptation_enabled_default_);
@@ -348,8 +349,9 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
   // --- adapt --- //
   if (adaptation_enabled_.load(std::memory_order_relaxed)) {
     VecPar rate = mact_tracking_rate<kNdof, kNpar>(Yr_, e_dot, r_p_);
-    // Y is used only by the prediction-error term, which is zero for gamma = 0.
-    if (gamma_ > 0.0) {
+    // Y is used only by the prediction-error term, which is zero for gamma = 0. With the commanded torque, the term
+    // needs the command of the previous cycle: in the first cycle after activation there is none.
+    if (gamma_ > 0.0 && (use_measured_torque_ || command_written_)) {
       robot_.set_ddq(ddq_);
       Y_ = robot_.get_Y();
       // Both are the full joint torque, gravity included, as Y pi_hat: the effort state (e.g. FR3 tau_J),
@@ -372,6 +374,7 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
   tau_command_ += (command - tau_command_).cwiseMax(-max_step).cwiseMin(max_step);
   for (int j = 0; j < kNdof; ++j) {(void)effort_[j].get().set_value(tau_command_(j));}
   tau_applied_ = tau_command_ + gravity_;   // gravity_ is zero when the robot adds none
+  command_written_ = true;
 
   publish(time);
   return controller_interface::return_type::OK;
@@ -450,6 +453,7 @@ void MactController::trajectory_callback(const trajectory_msgs::msg::JointTrajec
   }
 
   double previous_time = 0.0;
+  bool velocities_given = false;
   for (int k = 0; k < num_points; ++k) {
     const auto & point = msg->points[k];
     const double t = rclcpp::Duration(point.time_from_start).seconds();
@@ -461,6 +465,7 @@ void MactController::trajectory_callback(const trajectory_msgs::msg::JointTrajec
     {
       return reject("point " + std::to_string(k) + ": positions are required, velocities and accelerations empty or complete");
     }
+    velocities_given = velocities_given || !point.velocities.empty();
     State & waypoint = incoming_.points[k];
     for (int j = 0; j < kNdof; ++j) {
       waypoint.q(j) = point.positions[column[j]];
@@ -478,6 +483,10 @@ void MactController::trajectory_callback(const trajectory_msgs::msg::JointTrajec
   if (start_time >= incoming_.times[num_points - 1]) {
     return reject("it ends in the past (" + std::to_string(start_time - incoming_.times[num_points - 1]) + " s ago)");
   }
+
+  // Positions only: velocities and accelerations of the cubic spline through them (accelerations given without
+  // velocities are replaced). Otherwise as given, a missing one is zero.
+  if (!velocities_given) {cubic_spline(incoming_, start, start_time);}
 
   // Checked from the last reference and time the loop reported, a few cycles before the loop takes it:
   // the first segment will start a little later and be a little shorter. The loop also clamps q_d to the limits.

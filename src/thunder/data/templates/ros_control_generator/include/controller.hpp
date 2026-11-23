@@ -96,6 +96,7 @@ private:
   // --- loop state --- //
   Vec q_, dq_raw_, dq_raw_prev_, dq_, ddq_, tau_measured_;
   Vec tau_, tau_command_, tau_applied_, gravity_;
+  bool command_written_ = false;         // tau_applied_ holds a command of this activation
   State reference_;                      // q_d, dq_d, ddq_d of this cycle
   State segment_start_;                  // reference when the active trajectory was taken
   std::int64_t trajectory_origin_ns_ = 0;   // time its waypoint times count from [ns, controller clock]

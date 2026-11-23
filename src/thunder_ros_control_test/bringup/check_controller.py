@@ -2,12 +2,14 @@
 """Closed-loop check of a generated controller (run with the Gazebo launch up).
 
 1. a trajectory over the limits is rejected (the reference does not move);
-2. one point (final state + time): +0.3 rad on every joint in 3 s, then hold;
+2. one point (final state at rest + time): +0.3 rad on every joint in 3 s, then hold;
 3. several points with velocities, back to the start;
 4. header.stamp = now (simulation time): one point, as 2;
 5. header.stamp 1.5 s in the past, first point at 1 s: warning, the reference jumps onto the trajectory;
 6. header.stamp 10 s in the past, last point at 2 s: rejected (ends in the past);
-7. the motion of 2 and back with adaptation on: par_REG must change and stay finite.
+7. dense positions only (every 10 ms): the controller fills velocities and accelerations with a cubic spline;
+8. the motion of 2 and back with adaptation on: par_REG must change and stay finite.
+Phases 1-6 and 8 give zero velocities at the waypoints (positions only would get the spline, which does not stop).
 Prints the tracking error of each phase.
 """
 import sys
@@ -36,6 +38,7 @@ class Checker(Node):
         self.state = None
         self.par = None
         self.errors = []
+        self.accelerations = []   # reference accelerations
         self.create_subscription(JointTrajectoryControllerState, f'/{controller}/controller_state', self.on_state, 10)
         self.create_subscription(Float64MultiArray, f'/{controller}/par_REG', self.on_par, 10)
         self.publisher = self.create_publisher(JointTrajectory, f'/{controller}/joint_trajectory', 10)
@@ -44,6 +47,7 @@ class Checker(Node):
     def on_state(self, msg):
         self.state = msg
         self.errors.append(np.array(msg.error.positions))
+        self.accelerations.append(np.array(msg.reference.accelerations))
 
     def on_par(self, msg):
         self.par = np.array(msg.data)
@@ -67,6 +71,7 @@ class Checker(Node):
 
     def phase(self, name, seconds):
         self.errors = []
+        self.accelerations = []
         self.spin_for(seconds)
         e = np.abs(np.array(self.errors))
         print(f'{name}: {len(e)} samples, max |e| per joint [mrad] {np.round(1e3 * e.max(axis=0), 2)}, '
@@ -84,14 +89,15 @@ def main():
     print('reference at start [rad]', np.round(q0, 4))
 
     # 1. over the limits: 1.5 rad in 0.5 s peaks at 5.6 rad/s and 34.6 rad/s^2
-    node.send([(q0 + np.r_[1.5, np.zeros(len(q0) - 1)], None, 0.5)])
+    rest = np.zeros(len(q0))
+    node.send([(q0 + np.r_[1.5, np.zeros(len(q0) - 1)], rest, 0.5)])
     node.spin_for(1.0)
     moved = np.abs(np.array(node.state.reference.positions) - q0).max()
     print(f'1. rejected trajectory: reference moved by {moved:.2e} rad (expected 0)')
 
     # 2. one point
     q1 = q0 + 0.3
-    node.send([(q1, None, 3.0)])
+    node.send([(q1, rest, 3.0)])
     node.phase('2. one point, motion + 1 s hold', 4.0)
     print('   reference at the end - target [rad]', np.round(np.array(node.state.reference.positions) - q1, 6))
 
@@ -101,13 +107,13 @@ def main():
     node.phase('3. two points, motion + 1 s hold', 5.0)
 
     # 4. stamp = now
-    node.send([(q1, None, 3.0)], stamp_offset=0.0)
+    node.send([(q1, rest, 3.0)], stamp_offset=0.0)
     node.phase('4. stamp now, one point, motion + 1 s hold', 4.0)
     print('   reference at the end - target [rad]', np.round(np.array(node.state.reference.positions) - q1, 6))
 
     # 5. stamp 1.5 s ago, first point at 1 s: the reference jumps onto the second segment
     before = np.array(node.state.reference.positions)
-    node.send([(q1 - 0.05, None, 1.0), (q0, None, 3.0)], stamp_offset=-1.5)
+    node.send([(q1 - 0.05, rest, 1.0), (q0, rest, 3.0)], stamp_offset=-1.5)
     node.spin_for(0.05)
     jump = np.abs(np.array(node.state.reference.positions) - before).max()
     print(f'5. stamp 1.5 s ago: reference moved by {jump:.4f} rad in 0.05 s (a jump of about 0.05 + quintic progress)')
@@ -115,16 +121,23 @@ def main():
 
     # 6. ends in the past
     before = np.array(node.state.reference.positions)
-    node.send([(q1, None, 1.0), (q0, None, 2.0)], stamp_offset=-10.0)
+    node.send([(q1, rest, 1.0), (q0, rest, 2.0)], stamp_offset=-10.0)
     node.spin_for(1.0)
     print(f'6. ends in the past: reference moved by {np.abs(np.array(node.state.reference.positions) - before).max():.2e} rad (expected 0)')
 
-    # 7. adaptation on, same motion forth and back
+    # 7. dense positions only: q0 + 0.15 (1 - cos(pi t)) every 10 ms for 2 s, from and back to q0 at rest.
+    #    True peaks 0.47 rad/s, 1.48 rad/s^2; zero velocities at the waypoints would give hundreds of rad/s^2.
+    times = 0.01 * np.arange(1, 201)
+    node.send([(q0 + 0.15 * (1.0 - np.cos(np.pi * t)), None, t) for t in times])
+    node.phase('7. dense positions only, motion + 1 s hold', 3.0)
+    print(f'   max |ddq_d| [rad/s^2] {np.abs(np.array(node.accelerations)).max():.2f} (curve: 1.48)')
+
+    # 8. adaptation on, same motion forth and back
     par_before = node.par.copy()
     future = node.adaptation.call_async(SetBool.Request(data=True))
     rclpy.spin_until_future_complete(node, future)
-    node.send([(q1, None, 3.0), (q0, None, 6.0)])
-    node.phase('7. adaptation on, motion + 1 s hold', 7.0)
+    node.send([(q1, rest, 3.0), (q0, rest, 6.0)])
+    node.phase('8. adaptation on, motion + 1 s hold', 7.0)
     change = np.abs(node.par - par_before)
     print(f'   par_REG: max |change| {change.max():.3e}, finite: {np.isfinite(node.par).all()}, '
           f'entries changed: {(change > 0).sum()} of {len(change)}')

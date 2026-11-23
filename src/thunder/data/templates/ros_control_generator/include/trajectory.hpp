@@ -9,6 +9,8 @@
 // reaches the first waypoint at times[0]: the reference stays continuous. If the
 // first waypoint is already past (t_start >= times[0]) the reference jumps onto
 // the later segments. After the last waypoint it holds its position at rest.
+// Waypoints given by position only get the velocities and accelerations of a
+// cubic spline (cubic_spline).
 
 #pragma once
 
@@ -86,6 +88,69 @@ JointState<N> sample(const Trajectory<N, M> & trajectory, const JointState<N> & 
   const JointState<N> & from = (k == 0) ? start : trajectory.points[k - 1];
   const double t0 = (k == 0) ? t_start : trajectory.times[k - 1];
   return quintic(from, trajectory.points[k], trajectory.times[k] - t0, t - t0);
+}
+
+/// Velocities and accelerations of waypoints given by position only: those of the cubic spline through them
+/// (continuous acceleration). Zero velocities would stop the reference at every waypoint, with accelerations
+/// that grow as 1 / (segment duration)^2 on dense waypoints.
+/// - Start: `start` at t_start with its velocity, when the first waypoint is ahead (the first segment runs);
+///   otherwise the first waypoint, with zero acceleration.
+/// - End: zero acceleration, velocity free (natural), so that a trajectory sent a few points at a time keeps
+///   moving between messages. A sender that wants to stop gives the velocities.
+/// The quintic between two waypoints with these q, dq, ddq is the spline itself. Used by the trajectory callback,
+/// not by the control loop (about 20 KB of stack for 7 joints and 256 waypoints).
+template<int N, int M>
+void cubic_spline(Trajectory<N, M> & trajectory, const JointState<N> & start, double t_start)
+{
+  using V = Eigen::Matrix<double, N, 1>;
+  // Knots: start (only if the first waypoint is ahead), then the waypoints.
+  const int first = t_start < trajectory.times[0] ? 1 : 0;
+  const int n = trajectory.size + first;
+  if (n < 2) {   // nothing to interpolate
+    for (int k = 0; k < trajectory.size; ++k) {trajectory.points[k].dq.setZero(); trajectory.points[k].ddq.setZero();}
+    return;
+  }
+  auto time = [&](int i) {return i < first ? t_start : trajectory.times[i - first];};
+  auto position = [&](int i) -> const V & {return i < first ? start.q : trajectory.points[i - first].q;};
+  auto h = [&](int i) {return time(i + 1) - time(i);};
+  auto slope = [&](int i) -> V {return (position(i + 1) - position(i)) / h(i);};
+
+  // Tridiagonal system in the knot accelerations m: sub-diagonal a, diagonal b, super-diagonal c, right side d.
+  std::array<double, M + 1> a{}, b{}, c{};
+  std::array<V, M + 1> d;
+  if (first == 1) {   // velocity of start
+    b[0] = 2.0 * h(0);
+    c[0] = h(0);
+    d[0] = 6.0 * (slope(0) - start.dq);
+  } else {            // zero acceleration
+    b[0] = 1.0;
+    d[0] = V::Zero();
+  }
+  for (int i = 1; i < n - 1; ++i) {
+    a[i] = h(i - 1);
+    b[i] = 2.0 * (h(i - 1) + h(i));
+    c[i] = h(i);
+    d[i] = 6.0 * (slope(i) - slope(i - 1));
+  }
+  b[n - 1] = 1.0;     // natural end: zero acceleration
+  d[n - 1] = V::Zero();
+
+  // Thomas algorithm (the matrix is diagonally dominant); d becomes m.
+  for (int i = 1; i < n; ++i) {
+    const double w = a[i] / b[i - 1];
+    b[i] -= w * c[i - 1];
+    d[i] -= w * d[i - 1];
+  }
+  d[n - 1] /= b[n - 1];
+  for (int i = n - 2; i >= 0; --i) {d[i] = (d[i] - c[i] * d[i + 1]) / b[i];}
+
+  for (int i = first; i < n; ++i) {
+    JointState<N> & waypoint = trajectory.points[i - first];
+    waypoint.dq = (i < n - 1) ?
+      V(slope(i) - h(i) * (2.0 * d[i] + d[i + 1]) / 6.0) :
+      V(slope(n - 2) + h(n - 2) * (d[n - 2] + 2.0 * d[n - 1]) / 6.0);
+    waypoint.ddq = d[i];
+  }
 }
 
 /// Samples per segment for the limit check.
