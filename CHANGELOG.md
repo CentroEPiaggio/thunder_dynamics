@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Features
-- `ros_control_generator`: generates a `ros2_control` controller package (Jazzy) with the robot library linked in: MACT with optional adaptation, `JointTrajectory` reference with quintic segments and limit checks. Templates in `data/templates/ros_control_generator`; test workspace `src/thunder_ros_control_test`.
+- `ros_control_generator`: generates a `ros2_control` controller package (Humble and Jazzy, the same package) with the robot library linked in: MACT with optional adaptation, `JointTrajectory` reference with quintic segments and limit checks. Templates in `data/templates/ros_control_generator`; test workspace `src/thunder_ros_control_test`.
 - `urdf_loader`: property `jointsUrdfName`, the URDF joint of each node.
+- Joint limits in the robot class: parameters `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max` (one value per joint, symbolic), added by `kin_loader`, `dh_loader` and `urdf_loader` (from the URDF `<limit>`) and set with the `limits` key of the loader configuration (shared function `load_limits`). A limit not given is infinite. `ros_control_generator` uses them instead of reading the URDF.
 
 ### Changed
 - **Breaking:** `ros_server_generator` no longer copies the robot into `<robot>_server`: the robot is written as its own ament package `thunder_<robot>` (shared library, target `thunder_<robot>::thunder_<robot>`, as `thunder_franka` in test_robot_server), linked by the server node and by the `ros_control_generator` controller. `copy_gen` copies both packages.
+- Generated class: an infinite parameter or property value is written as `INFINITY` (it was `inf`, which does not compile).
 
 ## [v1.2.3] - 2026-10-16
 ### Features

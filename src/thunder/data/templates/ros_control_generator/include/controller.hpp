@@ -37,6 +37,7 @@ constexpr int kNdof = <NDOF>;            // joints (size of q)
 constexpr int kNumNodes = <NUM_NODES>;   // Thunder nodes: par_REG has 10 parameters per node
 constexpr int kNpar = <NPAR>;            // size of par_REG
 constexpr int kMaxPoints = 256;          // waypoints per trajectory
+constexpr int kZeroEffortCycles = 100;   // cycles of exactly zero effort state, with a non-zero command, before warning
 inline const std::array<const char *, kNdof> kJointNames = {<JOINT_NAMES>};
 
 using Vec = Vector<kNdof>;
@@ -64,9 +65,10 @@ public:
 
 private:
   bool read_parameters();
-  bool read_urdf_limits();
+  Limits joint_limits();   // trajectory limits from the robot class
   void trajectory_callback(const trajectory_msgs::msg::JointTrajectory::SharedPtr msg);
   void publish(const rclcpp::Time & time);
+  void warn_zero_effort();
 
   // --- model --- //
   thunder_<ROBOT> robot_;
@@ -86,9 +88,6 @@ private:
   VecPar r_p_;
   bool use_measured_torque_ = false;     // claim <joint>/effort state: see state_interface_configuration()
   double dq_cutoff_hz_ = 0.0, ddq_cutoff_hz_ = 0.0;
-  Limits limits_;                        // position, velocity: URDF; acceleration: parameter
-  Vec max_effort_;                       // URDF
-  double max_torque_rate_ = 0.0;         // [Nm/s]
 
   // --- interfaces, in the order of joints_ --- //
   std::vector<std::reference_wrapper<hardware_interface::LoanedStateInterface>> position_, velocity_, effort_state_;
@@ -118,6 +117,12 @@ private:
   // --- ROS --- //
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_sub_;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr adaptation_srv_;
+
+  // --- diagnostics: a measured effort state that stays exactly 0 (not updated by the hardware) --- //
+  std::array<int, kNdof> zero_effort_cycles_{};          // loop only
+  std::array<std::atomic<bool>, kNdof> zero_effort_{};   // set by the loop, read by the timer
+  std::array<bool, kNdof> zero_effort_warned_{};         // timer only
+  rclcpp::TimerBase::SharedPtr zero_effort_timer_;        // only with the measured torque
   using StateMsg = control_msgs::msg::JointTrajectoryControllerState;
   using ParMsg = std_msgs::msg::Float64MultiArray;
   rclcpp::Publisher<StateMsg>::SharedPtr state_pub_raw_;

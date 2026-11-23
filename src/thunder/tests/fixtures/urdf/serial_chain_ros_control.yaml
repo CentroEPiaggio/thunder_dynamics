@@ -8,17 +8,16 @@ urdf_loader:
   urdf_path: "serial_chain.urdf"
   gravity:
     value: [0, 0, -9.81]
+  limits:                 # not in the URDF
+    ddq_max: [5.0, 5.0]
 
 robot_generator:
   gen_robot: true
 
 ros_control_generator:
   parameters:
-    k_p: [10.0, 10.0]
+    k_p: [10, 10]           # integers: written as reals in the parameter file
     k_v: [1.0, 1.0]
     robot_adds_gravity: false
-    limits:
-      max_acceleration: [5.0, 5.0]
-      max_torque_rate: 1000.0
     adaptation:
       R_p_link: [0.0, 1.0, 1.0, 0.0]

@@ -57,9 +57,10 @@ The last node is marked `available`, so it gets `T_w_<name>`, `J_<name>` and `J_
 | `DH.link_names` | `link` | Prefix of the node names |
 | `Base_to_L0` | identity | Frame of the base in the world, with optional `name` |
 | `Ln_to_EE` | identity | Frame of the end-effector in the last DH frame (the frame of `link<n>`), with optional `name` |
+| `limits` | no limits | Joint limits, one value per joint variable: `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max`; not given = infinite. See [`urdf_loader`](urdf_loader_plugin.md#joint-limits) |
 
 `Base_to_L0` and `Ln_to_EE` are written as in `kin_loader`: `xyzrpy`, or `xyz` with `rpy` or `ypr`, plus an optional 6-element `symb` mask (see [angles](kin_loader_plugin.md#configuration) and [masks](kin_loader_plugin.md#symbolic-and-numeric-parameters)).
 
 ## What it adds to the robot
 
-The same properties, variables and `par_KIN` as [`kin_loader`](kin_loader_plugin.md#what-it-adds-to-the-robot), with all joint axes `[0, 0, 1]`. The parameters are `par_DHtable` (the table), `Wxyzrpy` or `Wxyz` with `Wrpy` / `Wypr` (base) and `Lnxyzrpy` or `Lnxyz` with `Lnrpy` / `Lnypr` (end-effector). `par_world2L0` and `par_Ln2EE` hold the base and end-effector frames as `[x, y, z, r, p, y]`.
+The same properties, variables and `par_KIN` as [`kin_loader`](kin_loader_plugin.md#what-it-adds-to-the-robot), with all joint axes `[0, 0, 1]`. The parameters are `par_DHtable` (the table), `Wxyzrpy` or `Wxyz` with `Wrpy` / `Wypr` (base) and `Lnxyzrpy` or `Lnxyz` with `Lnrpy` / `Lnypr` (end-effector). `par_world2L0` and `par_Ln2EE` hold the base and end-effector frames as `[x, y, z, r, p, y]`. The joint limits `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max` as in `urdf_loader`.

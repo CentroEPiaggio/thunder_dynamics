@@ -3,6 +3,7 @@
 
 #include <string>
 #include <any>
+#include <cmath>
 #include <limits>
 #include <sstream>
 #include <iomanip>
@@ -16,6 +17,8 @@ namespace thunder_ns{
 
 	template <typename T>
 	std::string to_full_precision_string(T value) {
+		// the string is C++ code of the generated class (which includes <cmath>): "inf" would not compile
+		if (std::isinf(value)) return (value > 0) ? "INFINITY" : "-INFINITY";
 		std::ostringstream oss;
 		oss << std::setprecision(std::numeric_limits<T>::max_digits10) << value;
 		return oss.str();

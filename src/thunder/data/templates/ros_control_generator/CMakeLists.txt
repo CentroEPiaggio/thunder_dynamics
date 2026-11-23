@@ -16,7 +16,6 @@ set(DEPENDENCIES
   std_msgs
   std_srvs
   trajectory_msgs
-  urdf
 )
 
 find_package(ament_cmake REQUIRED)
@@ -35,6 +34,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen <LIBRARY>::<LIBRARY>)
+# Humble or Jazzy: ros2_control 4.27 (Jazzy) reads interfaces with get_optional(), before with get_value()
+if(hardware_interface_VERSION VERSION_GREATER_EQUAL 4.27.0)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE THUNDER_GET_OPTIONAL)
+endif()
+message(STATUS "hardware_interface ${hardware_interface_VERSION}")
 ament_target_dependencies(${PROJECT_NAME} PUBLIC ${DEPENDENCIES})
 
 pluginlib_export_plugin_description_file(controller_interface <PACKAGE>.xml)

@@ -1,4 +1,5 @@
 #include "plugins/loaders/kin_loader.h"
+#include "plugins/loaders/common/load_limits.h"
 
 using casadi::Slice;
 
@@ -191,6 +192,8 @@ namespace thunder_ns {
 			robot->add_variable("ddq", SX::sym("ddq",ndof,1), vector<double>(ndof,0), {1}, "Acceleration", true);
 			robot->add_variable("d3q", SX::sym("d3q",ndof,1), vector<double>(ndof,0), {1}, "Jerk", true);
 			robot->add_variable("d4q", SX::sym("d4q",ndof,1), vector<double>(ndof,0), {1}, "Snap", true);
+			// joint limits: none, unless given in the configuration (limits: {q_min: [...], ...})
+			load_limits(robot, ndof, config_, no_limits(ndof), "kin_loader");
 
 
 			// --- Kinematics parameters --- //

@@ -47,8 +47,6 @@ const std::map<std::string, ParameterSpec> CONTROLLER_PARAMETERS = {
     {"k_p", {Kind::VECTOR_NDOF, true}},
     {"k_v", {Kind::VECTOR_NDOF, true}},
     {"robot_adds_gravity", {Kind::BOOL, true}},
-    {"limits.max_acceleration", {Kind::VECTOR_NDOF, true}},
-    {"limits.max_torque_rate", {Kind::DOUBLE, true}},
     {"adaptation.enabled", {Kind::BOOL, false}},
     {"adaptation.gamma", {Kind::DOUBLE, false}},
     {"adaptation.torque_source", {Kind::STRING, false}},
@@ -74,7 +72,7 @@ GeneratorConfig parse_config(const YAML::Node& config) {
     if (config["template_path"]) result.template_path = config["template_path"].as<std::string>();
     if (config["joints"]) result.joints = config["joints"].as<std::vector<std::string>>();
     if (!config["parameters"] || !config["parameters"].IsMap()) {
-        throw std::runtime_error("ros_control_generator.parameters is required (k_p, k_v, robot_adds_gravity, limits).");
+        throw std::runtime_error("ros_control_generator.parameters is required (k_p, k_v, robot_adds_gravity).");
     }
     result.parameters = config["parameters"];
     return result;
@@ -102,15 +100,20 @@ bool is_valid_ros_package_name(const std::string& name) {
            });
 }
 
-// The model quantities the controller uses: Yr, Y, reg_G (no explicit arguments, ndof x npar)
-// and the runtime parameters it sets: q, dq, ddq, dqr, ddqr (ndof), par_REG (10 per node).
+// The model quantities the controller uses: Yr, Y, reg_G (no explicit arguments, ndof x npar),
+// the runtime parameters it sets: q, dq, ddq, dqr, ddqr (ndof), par_REG (10 per node),
+// and the joint limits it reads: q_min, q_max, dq_max, ddq_max, tau_max, dtau_max (ndof).
 void check_model(const std::map<std::string, Function>& functions, const std::map<std::string, Parameter>& parameters,
                  int ndof, int num_nodes) {
     const std::string hint = " The controller needs reg_builder (dynamic regressors) in the pipeline.";
+    const std::string limits_hint = " The joint limits are added by the loaders (kin_loader, dh_loader, urdf_loader).";
     const std::map<std::string, int> sizes = {{"q", ndof}, {"dq", ndof}, {"ddq", ndof}, {"dqr", ndof}, {"ddqr", ndof},
-                                              {"par_REG", 10 * num_nodes}};
+                                              {"par_REG", 10 * num_nodes},
+                                              {"q_min", ndof}, {"q_max", ndof}, {"dq_max", ndof}, {"ddq_max", ndof},
+                                              {"tau_max", ndof}, {"dtau_max", ndof}};
     for (const auto& [name, size] : sizes) {
-        if (!parameters.count(name)) throw std::runtime_error("ros_control_generator: the robot has no '" + name + "'." + hint);
+        const bool is_limit = name.find("_max") != std::string::npos || name == "q_min";
+        if (!parameters.count(name)) throw std::runtime_error("ros_control_generator: the robot has no '" + name + "'." + (is_limit ? limits_hint : hint));
         const Parameter& parameter = parameters.at(name);
         if (parameter.size() != size || parameter.symb_size() != size) {
             throw std::runtime_error("ros_control_generator: '" + name + "' must have " + std::to_string(size) +
@@ -195,6 +198,36 @@ void check_parameters(const YAML::Node& parameters, int ndof, int num_nodes) {
     }
 }
 
+// A YAML integer (30) becomes an integer ROS parameter, which a parameter declared as double rejects: write 30.0.
+YAML::Node as_real(const YAML::Node& scalar) {
+    std::string text = scalar.Scalar();
+    if (text.find_first_of(".eEnN") == std::string::npos) text += ".0";    // .inf, .nan and 1e3 are already real
+    return YAML::Node(text);
+}
+
+// The configured parameters, with the real-valued ones written as reals.
+YAML::Node real_valued(const YAML::Node& node, const std::string& prefix) {
+    YAML::Node out;
+    for (const auto& entry : node) {
+        const std::string key = entry.first.as<std::string>();
+        if (entry.second.IsMap()) {
+            out[key] = real_valued(entry.second, prefix + key + ".");
+            continue;
+        }
+        const Kind kind = CONTROLLER_PARAMETERS.at(prefix + key).kind;    // checked by check_parameters
+        if (kind == Kind::DOUBLE) {
+            out[key] = as_real(entry.second);
+        } else if (kind == Kind::VECTOR_NDOF || kind == Kind::VECTOR_NODES || kind == Kind::VECTOR_10) {
+            YAML::Node values(YAML::NodeType::Sequence);
+            for (const auto& value : entry.second) values.push_back(as_real(value));
+            out[key] = values;
+        } else {
+            out[key] = YAML::Clone(entry.second);
+        }
+    }
+    return out;
+}
+
 // Parameter file of the controller, to load with the controller manager.
 std::string parameter_file(const std::string& package_name, const std::string& robot_name,
                            const std::vector<std::string>& joints, const YAML::Node& parameters,
@@ -204,7 +237,7 @@ std::string parameter_file(const std::string& package_name, const std::string& r
     YAML::Node controller;
     controller["type"] = package_name + "/MactController";
     controller["joints"] = joints;
-    for (const auto& entry : parameters) controller[entry.first.as<std::string>()] = YAML::Clone(entry.second);
+    for (const auto& entry : real_valued(parameters, "")) controller[entry.first.as<std::string>()] = entry.second;
 
     YAML::Node root;
     root["controller_manager"]["ros__parameters"][package_name]["type"] = package_name + "/MactController";

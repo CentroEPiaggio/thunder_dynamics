@@ -17,6 +17,13 @@ urdf_loader:
     symb: [0,0,0]
     value: [0, 0, -9.81]
 
+  # Joint limits of the robot class: position, velocity, effort from the URDF <limit>; the ones the URDF
+  # does not have are given here (libfranka 0.15.0, include/franka/rate_limiting.h:
+  # kMaxJointAcceleration, kMaxTorqueRate). A limit given here replaces the URDF one.
+  limits:
+    ddq_max: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+    dtau_max: [1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0]
+
   Base_to_L0:
     symb: [1,1,1, 1,1,1]
     tr: [0, 0, 0]
@@ -42,10 +49,6 @@ ros_control_generator:
     k_p: [30.0, 30.0, 30.0, 30.0, 10.0, 10.0, 4.0]
     k_v: [5.0, 5.0, 5.0, 5.0, 1.0, 1.0, 0.4]
     robot_adds_gravity: true          # libfranka adds its gravity to the commanded torque
-    limits:
-      # libfranka 0.15.0, include/franka/rate_limiting.h: kMaxJointAcceleration, kMaxTorqueRate
-      max_acceleration: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-      max_torque_rate: 1000.0
     adaptation:
       enabled: false                  # switched at runtime with ~/set_adaptation
       gamma: 1.0

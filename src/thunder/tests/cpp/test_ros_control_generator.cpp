@@ -117,6 +117,11 @@ TEST(RosControlGenerator, WritesThePackage) {
     EXPECT_EQ(controller["type"].as<std::string>(), "chain_controller/MactController");
     EXPECT_EQ(controller["joints"].as<std::vector<std::string>>(), (std::vector<std::string>{"joint1", "joint2"}));
     EXPECT_EQ(controller["k_p"].as<std::vector<double>>().size(), 2u);
+    // integers in the configuration are written as reals: a ROS parameter declared double rejects integers
+    EXPECT_EQ(controller["k_p"][0].Scalar(), "10.0");
+    // the limits are parameters of the robot class, not of the controller
+    EXPECT_FALSE(controller["limits"]);
+    EXPECT_NE(read(library / "include/thunder_chain/thunder_chain.h").find("get_ddq_max()"), std::string::npos);
     EXPECT_EQ(controller["adaptation"]["R_p_link"].as<std::vector<double>>().size(), 4u);
 
     fs::remove_all(root);

@@ -30,7 +30,7 @@ Each URDF link of the selected chain becomes a node of the [thunder tree](kin_lo
 
 When a link has more than one child joint in the chain (a tree), the first branch continues from the node `<link>` and every other branch starts from a node `<link>_<k>`, a frame with no mass attached to the same parent.
 
-URDF joint types: `revolute` and `continuous` become `R`, `prismatic` becomes `P`, `fixed` becomes `FIXED`. Other types (`floating`, `planar`) are not supported yet: the loader stops with an error. Joint limits are not read.
+URDF joint types: `revolute` and `continuous` become `R`, `prismatic` becomes `P`, `fixed` becomes `FIXED`. Other types (`floating`, `planar`) are not supported yet: the loader stops with an error. Joint limits: see [below](#joint-limits).
 
 The inertial parameters of `<link>` (`<inertial>`: mass, `<origin>` of the centre of mass, inertia) are expressed in the frame of `<link>`, which is frame `parent(i)`, as `dyn_builder` expects. The inertia is taken about the centre of mass, rotated from the `<inertial><origin>` frame to the link frame.
 
@@ -48,6 +48,7 @@ The inertial parameters of `<link>` (`<inertial>`: mass, `<origin>` of the centr
 | `symbolic_kinematics` | `false` | Which frame entries stay symbolic |
 | `symbolic_dynamics` | `false` | Which inertial parameters stay symbolic |
 | `par_KIN_symb`, `par_DYN_symb` | none | Full masks of `par_KIN` (6 per node) and `par_DYN` (10 per node), overriding the two keys above |
+| `limits` | from the URDF | Joint limits replacing or adding to the URDF ones, see [below](#joint-limits) |
 
 `Base_to_L0`, `Ln_to_EE` and the entries of `kinematics` are frames written as in `kin_loader`: `xyzrpy`, or `xyz` (or `tr`) with `rpy` or `ypr`, plus an optional 6-element `symb` mask. Angles follow the [thunder convention](kin_loader_plugin.md#configuration) (`rpy` gives `R_x R_y R_z`); the frames read from the URDF are converted to it.
 
@@ -93,6 +94,23 @@ Masks decide which parameters stay symbols in the generated code (see [symbolic 
 The YAML and the URDF name the same frame in two ways: the YAML key is the thunder node, the URDF tag sits on the URDF joint whose `<origin>` that node holds. Above, `<symbolic_kinematics>` in `panda_joint4` (from `panda_link3` to `panda_link4`) and the YAML key `panda_link3` both set the frame of node `panda_link3`, not of `panda_link4`. Dynamic masks have no such shift: `<symbolic_dynamics>` in `<link>` and the YAML key `<link>` both set the body of `<link>`.
 
 The URDF tag is matched by joint name, so it always applies to the origin of its joint, also if the way links and joints become nodes ([above](#from-urdf-links-to-thunder-nodes)) changes in a future version. A YAML kinematic key follows that mapping instead: after such a change, check which joint origin each node holds.
+
+## Joint limits
+
+The loader adds the joint limits as the parameters `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max`, one entry per joint variable (order of `q`), always symbolic: they can be read and set at runtime with `get_<name>()` and `set_<name>()` of the generated class. Values:
+
+- from the `<limit>` of each moving URDF joint: `lower`, `upper` (not for `continuous` joints), `velocity`, `effort`;
+- the URDF has no acceleration and effort-rate limits, and a joint may have no `<limit>`: a limit not given is infinite, i.e. no limit (`q_min = -inf`, the others `+inf`);
+- each key of `limits` in the configuration replaces that limit, with one value per joint (`.inf` and `-.inf` allowed):
+
+```yaml
+urdf_loader:
+  limits:
+    ddq_max: [10, 10, 10, 10, 10, 10, 10]
+    dtau_max: [1000, 1000, 1000, 1000, 1000, 1000, 1000]
+```
+
+The same `limits` key works in `kin_loader` and `dh_loader`, where nothing else gives limits. An infinite value is written as `INFINITY` in the generated C++ and as `.inf` in `<robot>_par.yaml`. Errors in this loader (e.g. a `limits` list of the wrong size) are printed and the loader returns the robot unfinished, as for its other errors.
 
 ## What it adds to the robot
 

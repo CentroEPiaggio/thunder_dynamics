@@ -50,6 +50,10 @@ ros2 launch bringup/gz.launch.py urdf:=/workspaces/thunder_ros_control_test/brin
 python3 bringup/check_controller.py franka_controller     # second shell
 ```
 
+The generated packages build and run on Humble too (`thunder_franka`, `franka_controller`; tested in the `ros2_franka_roscon` image, which has `gz_ros2_control` 0.7.15 and Gazebo Fortress), with the same commands. There `gz_ros2_control` never updates the effort state (it stays 0), so with `adaptation.torque_source: measured` phase 7 diverges; the controller keeps the configuration and warns, once per joint, that the effort state has been exactly 0 while the command was not. To test adaptation on Humble Gazebo, set `torque_source: commanded` in the generator configuration.
+
+`franka_gz.urdf` names the controller manager parameters by their absolute path in this container (`/workspaces/thunder_ros_control_test/bringup/controller_manager.yaml`): elsewhere, mount `bringup/` there too, or regenerate the URDF with `make_urdf.py --controllers <path>`.
+
 The URDF gives every joint `<dynamics damping="1.0"/>`, which Gazebo applies and the Thunder model does not have: the tracking error during motion is about `damping * velocity / k_p` per joint.
 
 The container does not request real-time capabilities; timing is not meaningful here.

@@ -2,6 +2,7 @@
 #define URDF_LOADER_H
 
 #include "plugin_interfaces.h"
+#include "plugins/loaders/common/load_limits.h"
 #include "urdf/model.h"
 #include "urdf/link.h"
 #include "urdf/joint.h"
@@ -33,6 +34,7 @@ namespace thunder_ns {
 			vector<int> jointsDimension;
 			vector<vector<double>> jointsAxis;
 			vector<string> nodesUrdfJoint;		// URDF joint whose origin is the frame of each node ("" for terminal nodes)
+			JointLimits urdfLimits;				// <limit> of each moving joint, in q order (no limit where the URDF has none)
 
 			void accumulateChain(std::shared_ptr<urdf::Link> link, const std::string& base, std::vector<std::shared_ptr<urdf::Link>>& chain);
 			casadi::SX to_casadi_sx(const urdf::Transform& T);

@@ -1,6 +1,6 @@
 # ROS Control Generator Plugin
 
-`ros_control_generator` creates a `ros2_control` controller package (ROS 2 Jazzy) around the C++ robot produced by `robot_generator`: a MACT joint controller (Modified Adaptive Computed Torque) with the robot model linked in, for any robot whose `ros2_control` hardware interface has an `effort` command. It must run after `robot_generator` and needs the dynamic regressors of `reg_builder`.
+`ros_control_generator` creates a `ros2_control` controller package (ROS 2 Humble and Jazzy, the same package for both) around the C++ robot produced by `robot_generator`: a MACT joint controller (Modified Adaptive Computed Torque) with the robot model linked in, for any robot whose `ros2_control` hardware interface has an `effort` command. It must run after `robot_generator` and needs the dynamic regressors of `reg_builder`.
 
 ```yaml
 pipeline:
@@ -18,10 +18,9 @@ ros_control_generator:
     k_p: [30.0, 30.0, 30.0, 30.0, 10.0, 10.0, 4.0]
     k_v: [5.0, 5.0, 5.0, 5.0, 1.0, 1.0, 0.4]
     robot_adds_gravity: true
-    limits:
-      max_acceleration: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-      max_torque_rate: 1000.0
 ```
+
+The joint limits are not configured here: they are parameters of the robot class (see [Joint limits](#joint-limits)).
 
 A complete example is `src/thunder/robots/debug/franka_ros_control.yaml`. The package is written to `<robot>_generatedFiles/<robot>_controller`; the robot name must give a valid ROS 2 package name (lowercase letters, digits, underscores).
 
@@ -43,7 +42,7 @@ One cycle of `update()`, in this order:
 3. sample the reference `q_d, dq_d, ddq_d` from the active trajectory;
 4. `Yr` from the generated library; the law;
 5. the update law: `Y` is evaluated only when adaptation is on and `gamma > 0`;
-6. the command: if the robot adds its own gravity, `G = reg_G(q) par_REG_0` with the generated parameters is removed, so that the robot applies `Yr pi_hat + (G_robot - G)`; then saturation at the URDF effort limits and rate limiting; write.
+6. the command: if the robot adds its own gravity, `G = reg_G(q) par_REG_0` with the generated parameters is removed, so that the robot applies `Yr pi_hat + (G_robot - G)`; then saturation at `tau_max` and rate limiting at `dtau_max`; write.
 
 The algorithm is in plain headers without ROS (`mact.hpp`, `trajectory.hpp`, `filter.hpp`), tested by `test/test_algorithm.cpp` (quintic, trajectory sampling, limit check, filter, MACT terms; it does not use the robot model, so it is the same for every robot), written in the package with `gen_test: true` and run with `colcon test`. Nothing in `update()` allocates or logs; trajectories are handed over with `realtime_tools::RealtimeBuffer`, topics are published with `realtime_tools::RealtimePublisher`.
 
@@ -68,7 +67,7 @@ A `JointTrajectory` with one point is a final state (`positions`, optional `velo
 - A trajectory that ends in the past is rejected. If only its first point is past, it is accepted with a warning and the reference jumps onto the trajectory at the current time. A first point that becomes past between reception and the cycle that takes it (a few ms) gives the same jump without the warning.
 - A trajectory received while the controller is not running is rejected.
 - It must name all the joints, in any order; at most 256 points; `time_from_start` positive and increasing.
-- Every segment is sampled (100 samples) against the position and velocity limits of the URDF and `limits.max_acceleration`, except a first segment that will not run (first point past). A trajectory that exceeds them is rejected with a warning and the current one continues. The first segment is checked from the last reference and time reported by the loop, a few cycles before the loop takes the trajectory: it will start from a slightly later reference and be slightly shorter. The loop also clamps `q_d` to the position limits.
+- Every segment is sampled (100 samples) against `q_min`, `q_max`, `dq_max` and `ddq_max` of the robot class, except a first segment that will not run (first point past). A trajectory that exceeds them is rejected with a warning and the current one continues. The first segment is checked from the last reference and time reported by the loop, a few cycles before the loop takes the trajectory: it will start from a slightly later reference and be slightly shorter. The loop also clamps `q_d` to the position limits.
 - After the last point the reference holds its position at rest. At activation the reference is the measured position at rest.
 
 ## Configuration
@@ -90,8 +89,6 @@ The required ones depend on the robot and have no default in the controller; the
 | `joints` | | `n` | Joint names; default from generation |
 | `k_p`, `k_v` | yes | `n` | Diagonal gains. They are not scaled by the mass matrix |
 | `robot_adds_gravity` | yes | bool | The hardware adds its own gravity to the effort command (libfranka, Flexiv): remove the model's |
-| `limits.max_acceleration` | yes | `n` | [rad/s²], for the trajectory check (not in the URDF) |
-| `limits.max_torque_rate` | yes | scalar | [Nm/s], rate limit of the command |
 | `adaptation.enabled` | | bool | Value at every activation; switched by `~/set_adaptation`. Default `false` |
 | `adaptation.gamma` | | scalar | Weight of the prediction-error term. Default `0` |
 | `adaptation.torque_source` | | `measured` / `commanded` | `tau_applied`: the effort state, or the command of the previous cycle plus the removed `G`. Default `measured` |
@@ -99,7 +96,19 @@ The required ones depend on the robot and have no default in the controller; the
 | `adaptation.R_p_link`, `adaptation.R_p_param` | | `N`, 10 | `R_p = R_p_link[node] R_p_param[k]`, `k` over `[m, m c_x, m c_y, m c_z, Ixx, Ixy, Ixz, Iyy, Iyz, Izz]`. Default zeros |
 | `filters.dq_cutoff_hz`, `filters.ddq_cutoff_hz` | | scalar | First-order low-pass [Hz]; `<= 0` means no filtering. Default `0` |
 
-Position, velocity and effort limits are read from the `robot_description` the controller manager gives the controller. The rate of the loop is the controller manager's `update_rate`; the loop uses the measured period.
+The rate of the loop is the controller manager's `update_rate`; the loop uses the measured period.
+
+### Joint limits
+
+The controller uses the limits of the robot class, the parameters `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max` added by the loaders (see [`urdf_loader`](urdf_loader_plugin.md#joint-limits)): from the URDF `<limit>` with `urdf_loader`, from the `limits` key of the loader configuration otherwise. A limit not given is infinite: no limit. They are read from the robot object where they are used (in every cycle and when a trajectory arrives), not copied at configuration, since they are runtime parameters that can be changed; nothing changes them while the controller runs yet. The controller does not read the URDF.
+
+### ROS 2 distribution
+
+The same generated package builds on Humble and Jazzy (tested with ros2_control 2.51.0 and 4.50.0). The only difference in the code is how a state interface is read: `get_optional()` from ros2_control 4.27 (Jazzy), `get_value()` before; `CMakeLists.txt` chooses from the version of `hardware_interface` (`THUNDER_GET_OPTIONAL`). Parameters are declared only if not declared yet, since Humble declares the ones in the YAML automatically.
+
+### Robot-specific setup
+
+The controller does nothing specific to a robot beyond the configuration above. Settings of the robot itself have to be configured manually.
 
 An end effector or payload with unknown inertia: keep its link symbolic in `urdf_loader` (`symbolic_dynamics`) and give its node a non-zero `adaptation.R_p_link`.
 
@@ -121,11 +130,12 @@ The robot is written as its own package `thunder_<robot>` (a shared library), th
 
 ## Build and run
 
-`src/thunder_ros_control_test` is a Jazzy workspace with its dev container and a Gazebo test of the generated Franka controller, see its [README](../../src/thunder_ros_control_test/README.md).
+`src/thunder_ros_control_test` is a Jazzy workspace with its dev container and a Gazebo test of the generated Franka controller, also run on Humble; see its [README](../../src/thunder_ros_control_test/README.md).
 
 ## Notes
 
-- The controller manager passes to a controller, when it loads it, the last `robot_description` it received (ros2_control 4.50, `controller_manager.cpp`: `robot_description_callback` stores every message, also after the hardware is initialized). Another node publishing `/robot_description` in the same ROS domain (e.g. another container with `--network=host`) can therefore give the controller a different URDF: it then fails to configure, or reads wrong limits. Seen once in the Gazebo test; use a separate `ROS_DOMAIN_ID`.
+- `tau_applied` must be the full joint torque, gravity included, since it is compared with `Y pi_hat`. `commanded` is the torque written in the previous cycle (after saturation and rate limit) plus, when `robot_adds_gravity` is set, `reg_G(q) par_REG_0`: the gravity the robot adds, approximated with the nominal parameters (their difference biases the estimate). `measured` is the effort state as the driver reports it, which must then be the full joint torque. Checked on 2026-11-23: FR3 `franka_hardware` reports `tau_J`, the link-side torque sensors (libfranka: `tau_J_d`, the desired one, is the one "without gravity"); Flexiv reports the RDK `tau`, "measured joint torques" (0 for a joint without torque sensor); UR reports `actual_current_as_torque` (what it includes not verified), or currents in A with the driver parameter `use_currents_as_efforts`, which are not torques. A hardware interface whose effort state echoes the gravity-free command cannot be used with `measured`.
+- With `adaptation.torque_source: measured` the update law needs a meaningful effort state. The controller does not change its configuration, but warns once per joint and activation (from a 1 s timer, outside the loop) when the effort state has been exactly 0 for 100 consecutive cycles while the command was not: the hardware interface probably does not update it. This happens in simulation with `gz_ros2_control` 0.7.x (Humble), which never updates it (`gz_system.cpp`, `read()`, the line is commented out, ign-physics#124); there adaptation diverges, use `commanded`. `gz_ros2_control` 1.2 (Jazzy) reports the transmitted joint torque.
 
 ## Not yet
 

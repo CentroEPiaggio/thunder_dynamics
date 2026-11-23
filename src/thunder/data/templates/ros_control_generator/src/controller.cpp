@@ -3,17 +3,46 @@
 #include "<PACKAGE>/controller.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <map>
 
 #include <controller_interface/helpers.hpp>
-#include <urdf/model.h>
 
 namespace <PACKAGE> {
 
 namespace {
 
+// The only difference between ROS 2 distributions used here: ros2_control 4.27 (Jazzy) reads an interface
+// with get_optional(), which fails when the value is being written; before (Humble) with get_value().
+// THUNDER_GET_OPTIONAL is set by CMakeLists.txt from the version of hardware_interface.
+bool read_value(const hardware_interface::LoanedStateInterface & interface, double & value)
+{
+#ifdef THUNDER_GET_OPTIONAL
+  const auto read = interface.get_optional();
+  if (!read) {return false;}
+  value = *read;
+  return true;
+#else
+  value = interface.get_value();
+  return true;
+#endif
+}
+
+/// Humble declares the parameters given in the YAML automatically: declare only the others.
+template<typename T>
+void declare(const rclcpp_lifecycle::LifecycleNode::SharedPtr & node, const std::string & name, const T & default_value)
+{
+  if (!node->has_parameter(name)) {node->declare_parameter(name, default_value);}
+}
+
 /// A parameter declared without default must be set (generated YAML or launch).
+void declare_required(const rclcpp_lifecycle::LifecycleNode::SharedPtr & node, const std::string & name, rclcpp::ParameterType type)
+{
+  if (!node->has_parameter(name)) {node->declare_parameter(name, type);}
+}
+
+
 template<typename T>
 bool get_required(const rclcpp_lifecycle::LifecycleNode::SharedPtr & node, const std::string & name, T & value)
 {
@@ -68,20 +97,18 @@ CallbackReturn MactController::on_init()
 {
   auto node = get_node();
   // Defaults that do nothing (no adaptation, no filtering); robot-specific values come from the generated YAML.
-  node->declare_parameter("joints", std::vector<std::string>(kJointNames.begin(), kJointNames.end()));
-  node->declare_parameter("k_p", rclcpp::PARAMETER_DOUBLE_ARRAY);
-  node->declare_parameter("k_v", rclcpp::PARAMETER_DOUBLE_ARRAY);
-  node->declare_parameter("robot_adds_gravity", rclcpp::PARAMETER_BOOL);
-  node->declare_parameter("limits.max_acceleration", rclcpp::PARAMETER_DOUBLE_ARRAY);
-  node->declare_parameter("limits.max_torque_rate", rclcpp::PARAMETER_DOUBLE);
-  node->declare_parameter("adaptation.enabled", false);
-  node->declare_parameter("adaptation.gamma", 0.0);
-  node->declare_parameter("adaptation.torque_source", std::string("measured"));
-  node->declare_parameter("adaptation.R_t", std::vector<double>(kNdof, 1.0));
-  node->declare_parameter("adaptation.R_p_link", std::vector<double>(kNumNodes, 0.0));
-  node->declare_parameter("adaptation.R_p_param", std::vector<double>(10, 0.0));
-  node->declare_parameter("filters.dq_cutoff_hz", 0.0);
-  node->declare_parameter("filters.ddq_cutoff_hz", 0.0);
+  declare(node, "joints", std::vector<std::string>(kJointNames.begin(), kJointNames.end()));
+  declare_required(node, "k_p", rclcpp::PARAMETER_DOUBLE_ARRAY);
+  declare_required(node, "k_v", rclcpp::PARAMETER_DOUBLE_ARRAY);
+  declare_required(node, "robot_adds_gravity", rclcpp::PARAMETER_BOOL);
+  declare(node, "adaptation.enabled", false);
+  declare(node, "adaptation.gamma", 0.0);
+  declare(node, "adaptation.torque_source", std::string("measured"));
+  declare(node, "adaptation.R_t", std::vector<double>(kNdof, 1.0));
+  declare(node, "adaptation.R_p_link", std::vector<double>(kNumNodes, 0.0));
+  declare(node, "adaptation.R_p_param", std::vector<double>(10, 0.0));
+  declare(node, "filters.dq_cutoff_hz", 0.0);
+  declare(node, "filters.ddq_cutoff_hz", 0.0);
   return CallbackReturn::SUCCESS;
 }
 
@@ -98,13 +125,6 @@ bool MactController::read_parameters()
   if (!get_required(node, "k_p", values) || !to_vector(node, "k_p", values, k_p_)) {return false;}
   if (!get_required(node, "k_v", values) || !to_vector(node, "k_v", values, k_v_)) {return false;}
   if (!get_required(node, "robot_adds_gravity", robot_adds_gravity_)) {return false;}
-  if (!get_required(node, "limits.max_acceleration", values) ||
-    !to_vector(node, "limits.max_acceleration", values, limits_.ddq_max)) {return false;}
-  if (!get_required(node, "limits.max_torque_rate", max_torque_rate_)) {return false;}
-  if (max_torque_rate_ <= 0.0) {
-    RCLCPP_ERROR(node->get_logger(), "'limits.max_torque_rate' must be positive");
-    return false;
-  }
 
   adaptation_enabled_default_ = node->get_parameter("adaptation.enabled").as_bool();
   gamma_ = node->get_parameter("adaptation.gamma").as_double();
@@ -137,33 +157,20 @@ bool MactController::read_parameters()
   return true;
 }
 
-bool MactController::read_urdf_limits()
+Limits MactController::joint_limits()
 {
-  const auto logger = get_node()->get_logger();
-  urdf::Model model;
-  if (get_robot_description().empty() || !model.initString(get_robot_description())) {
-    RCLCPP_ERROR(logger, "No valid robot_description: the joint limits are read from the URDF");
-    return false;
-  }
-  for (int j = 0; j < kNdof; ++j) {
-    const auto joint = model.getJoint(joints_[j]);
-    if (!joint || !joint->limits) {
-      RCLCPP_ERROR(logger, "Joint '%s' not in the URDF or without <limit>", joints_[j].c_str());
-      return false;
-    }
-    if (joint->type != urdf::Joint::CONTINUOUS) {
-      limits_.q_min(j) = joint->limits->lower;
-      limits_.q_max(j) = joint->limits->upper;
-    }
-    limits_.dq_max(j) = joint->limits->velocity;
-    max_effort_(j) = joint->limits->effort;
-  }
-  return true;
+  // The getters return a copy of the robot's parameters; nothing writes them while the controller runs.
+  Limits limits;
+  limits.q_min = robot_.get_q_min();
+  limits.q_max = robot_.get_q_max();
+  limits.dq_max = robot_.get_dq_max();
+  limits.ddq_max = robot_.get_ddq_max();
+  return limits;
 }
 
 CallbackReturn MactController::on_configure(const rclcpp_lifecycle::State &)
 {
-  if (!read_parameters() || !read_urdf_limits()) {return CallbackReturn::ERROR;}
+  if (!read_parameters()) {return CallbackReturn::ERROR;}
   auto node = get_node();
 
   pi_nominal_ = robot_.get_par_REG();
@@ -199,6 +206,11 @@ CallbackReturn MactController::on_configure(const rclcpp_lifecycle::State &)
   par_pub_->msg_.data.assign(kNpar, 0.0);
   par_pub_->unlock();
 
+  // The update law trusts the effort state as the full joint torque: say so if it is never updated.
+  if (use_measured_torque_) {
+    zero_effort_timer_ = node->create_wall_timer(std::chrono::seconds(1), [this]() {warn_zero_effort();});
+  }
+
   RCLCPP_INFO(node->get_logger(), "Configured: %d joints, %d parameters, robot adds gravity: %s, measured torque: %s",
     kNdof, kNpar, robot_adds_gravity_ ? "yes" : "no", use_measured_torque_ ? "yes" : "no");
   return CallbackReturn::SUCCESS;
@@ -218,14 +230,10 @@ CallbackReturn MactController::on_activate(const rclcpp_lifecycle::State &)
   }
 
   for (int j = 0; j < kNdof; ++j) {
-    const auto q = position_[j].get().get_optional();
-    const auto dq = velocity_[j].get().get_optional();
-    if (!q || !dq) {
+    if (!read_value(position_[j].get(), q_(j)) || !read_value(velocity_[j].get(), dq_raw_(j))) {
       RCLCPP_ERROR(logger, "Cannot read the state of joint '%s'", joints_[j].c_str());
       return CallbackReturn::ERROR;
     }
-    q_(j) = *q;
-    dq_raw_(j) = *dq;
   }
 
   // Start at rest on the measured pose; a trajectory left in the buffer from a previous activation is not resumed.
@@ -247,6 +255,11 @@ CallbackReturn MactController::on_activate(const rclcpp_lifecycle::State &)
   gravity_.setZero();
   pi_hat_ = pi_nominal_;
   adaptation_enabled_.store(adaptation_enabled_default_);
+  for (int j = 0; j < kNdof; ++j) {
+    zero_effort_cycles_[j] = 0;
+    zero_effort_[j].store(false);
+    zero_effort_warned_[j] = false;
+  }
   return CallbackReturn::SUCCESS;
 }
 
@@ -275,10 +288,13 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
   // --- read --- //
   // A value that cannot be read this cycle keeps the previous one (the interface counts the failures).
   for (int j = 0; j < kNdof; ++j) {
-    if (const auto v = position_[j].get().get_optional()) {q_(j) = *v;}
-    if (const auto v = velocity_[j].get().get_optional()) {dq_raw_(j) = *v;}
+    read_value(position_[j].get(), q_(j));
+    read_value(velocity_[j].get(), dq_raw_(j));
     if (use_measured_torque_) {
-      if (const auto v = effort_state_[j].get().get_optional()) {tau_measured_(j) = *v;}
+      read_value(effort_state_[j].get(), tau_measured_(j));
+      // exactly 0 while the previous command was not: probably not updated by the hardware (diagnostics only)
+      zero_effort_cycles_[j] = (tau_measured_(j) == 0.0 && tau_command_(j) != 0.0) ? zero_effort_cycles_[j] + 1 : 0;
+      if (zero_effort_cycles_[j] == kZeroEffortCycles) {zero_effort_[j].store(true, std::memory_order_relaxed);}
     }
   }
 
@@ -287,6 +303,11 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
   const Vec ddq_raw = (dq_raw_ - dq_raw_prev_) / dt;
   low_pass(ddq_, ddq_raw, ddq_cutoff_hz_, dt);
   dq_raw_prev_ = dq_raw_;
+
+  // --- limits: parameters of the robot class, read here because they can be changed --- //
+  const Limits limits = joint_limits();
+  const Vec tau_max = robot_.get_tau_max();
+  const Vec dtau_max = robot_.get_dtau_max();
 
   // --- reference --- //
   const Traj & trajectory = *trajectory_buffer_.readFromRT();
@@ -302,7 +323,7 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
     reference_ = sample(trajectory, segment_start_, segment_start_time_,
       1e-9 * static_cast<double>(now_ns - trajectory_origin_ns_));
   }
-  reference_.q = reference_.q.cwiseMax(limits_.q_min).cwiseMin(limits_.q_max);   // last safety, see trajectory_callback
+  reference_.q = reference_.q.cwiseMax(limits.q_min).cwiseMin(limits.q_max);   // last safety, see trajectory_callback
   {
     std::unique_lock<std::mutex> lock(reference_mutex_, std::try_to_lock);
     if (lock.owns_lock()) {
@@ -331,6 +352,8 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
     if (gamma_ > 0.0) {
       robot_.set_ddq(ddq_);
       Y_ = robot_.get_Y();
+      // Both are the full joint torque, gravity included, as Y pi_hat: the effort state (e.g. FR3 tau_J),
+      // or the previous command plus the gravity the robot adds (modelled with the nominal parameters).
       const Vec & tau_previous = use_measured_torque_ ? tau_measured_ : tau_applied_;
       rate += mact_prediction_rate<kNdof, kNpar>(Y_, tau_previous, pi_hat_, gamma_, r_t_, r_p_);
     }
@@ -344,14 +367,29 @@ controller_interface::return_type MactController::update(const rclcpp::Time & ti
     reg_G_ = robot_.get_reg_G();
     gravity_ = reg_G_ * pi_nominal_;
   }
-  const Vec max_step = Vec::Constant(max_torque_rate_ * dt);
-  const Vec command = (tau_ - gravity_).cwiseMax(-max_effort_).cwiseMin(max_effort_);
+  const Vec max_step = dtau_max * dt;
+  const Vec command = (tau_ - gravity_).cwiseMax(-tau_max).cwiseMin(tau_max);
   tau_command_ += (command - tau_command_).cwiseMax(-max_step).cwiseMin(max_step);
   for (int j = 0; j < kNdof; ++j) {(void)effort_[j].get().set_value(tau_command_(j));}
   tau_applied_ = tau_command_ + gravity_;   // gravity_ is zero when the robot adds none
 
   publish(time);
   return controller_interface::return_type::OK;
+}
+
+void MactController::warn_zero_effort()
+{
+  // Timer of the node's executor, not the loop. The configuration is kept as written.
+  for (int j = 0; j < kNdof; ++j) {
+    if (zero_effort_[j].load(std::memory_order_relaxed) && !zero_effort_warned_[j]) {
+      zero_effort_warned_[j] = true;
+      RCLCPP_WARN(get_node()->get_logger(),
+        "adaptation.torque_source is 'measured', but the effort state of joint '%s' has been exactly 0 for %d cycles "
+        "while the command was not: the hardware interface may not update it (e.g. gz_ros2_control 0.7.x on Humble), "
+        "and the update law compares the model with a zero torque. Configuration unchanged.",
+        joints_[j].c_str(), kZeroEffortCycles);
+    }
+  }
 }
 
 void MactController::publish(const rclcpp::Time & time)
@@ -444,7 +482,7 @@ void MactController::trajectory_callback(const trajectory_msgs::msg::JointTrajec
   // Checked from the last reference and time the loop reported, a few cycles before the loop takes it:
   // the first segment will start a little later and be a little shorter. The loop also clamps q_d to the limits.
   std::string reason;
-  if (!within_limits(incoming_, start, start_time, limits_, reason)) {return reject(reason);}
+  if (!within_limits(incoming_, start, start_time, joint_limits(), reason)) {return reject(reason);}
 
   incoming_.id = ++next_id_;
   trajectory_buffer_.writeFromNonRT(incoming_);

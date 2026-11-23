@@ -71,6 +71,17 @@ Every parameter in thunder has a mask (`symb`) with one flag per entry:
 
 Keep entries numeric unless they really change at run time.
 
+### Joint limits
+
+`limits` (next to `kinematics`) gives the joint limits, one value per joint variable: `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max`. A limit not given is infinite (no limit). See [`urdf_loader`](urdf_loader_plugin.md#joint-limits).
+
+```yaml
+kin_loader:
+  limits:
+    q_min: [-2.9, -1.8, -2.9]
+    q_max: [2.9, 1.8, 2.9]
+```
+
 ## What it adds to the robot
 
 | Kind | Name | Description |
@@ -80,4 +91,5 @@ Keep entries numeric unless they really change at run time.
 | | `jointsAvailable`, `jointsDerivatives` | Per node: the `available` and `derivatives` flags (`jointsDerivatives`: 1, 0, or -1 when not set; `kin_builder` replaces -1 with its choice) |
 | Variables | `q`, `dq`, `ddq`, `d3q`, `d4q` | Joint position and its derivatives, `ndof x 1`, symbolic |
 | Parameters | `KIN_<name>_xyzrpy`, or `KIN_<name>_xyz` with `KIN_<name>_rpy` / `KIN_<name>_ypr` | Frame of each node, as written in the file |
+| | `q_min`, `q_max`, `dq_max`, `ddq_max`, `tau_max`, `dtau_max` | Joint limits, `ndof x 1`, symbolic; infinite unless given in `limits` |
 | Function | `par_KIN` | The frames of all nodes as `[x, y, z, r, p, y]`, `6 numJoints x 1`, the input of `kin_builder` |

@@ -619,6 +619,7 @@ namespace thunder_ns {
 		jointsDerivatives.resize(0, -1);
 		jointsAxis.resize(0, {0,0,1});
 		nodesUrdfJoint.resize(0);
+		urdfLimits = no_limits(0);
 		par_KIN_num.resize(0, 0);
 		par_DYN_num.resize(0, 0);
 	}
@@ -708,6 +709,19 @@ namespace thunder_ns {
 				throw std::runtime_error("URDF joint '" + joint->name + "' has an unsupported type: only revolute, continuous, prismatic and fixed are supported.");
 		}
 		ndof += jointsDimension[jointsDimension.size()-1];
+
+		// - limits of a moving joint: position (not for continuous), velocity, effort; no limit if absent - //
+		if (jointsDimension.back() > 0) {
+			const double inf = std::numeric_limits<double>::infinity();
+			const bool has_limits = joint->limits.has_value() && joint->limits.value();
+			const bool has_position = has_limits && joint->type != urdf::JointType::CONTINUOUS;
+			urdfLimits.q_min.push_back(has_position ? joint->limits.value()->lower : -inf);
+			urdfLimits.q_max.push_back(has_position ? joint->limits.value()->upper : inf);
+			urdfLimits.dq_max.push_back(has_limits ? joint->limits.value()->velocity : inf);
+			urdfLimits.ddq_max.push_back(inf);		// not in the URDF
+			urdfLimits.tau_max.push_back(has_limits ? joint->limits.value()->effort : inf);
+			urdfLimits.dtau_max.push_back(inf);		// not in the URDF
+		}
 	}
 
 	std::shared_ptr<Robot> UrdfLoader::load(std::shared_ptr<Robot> robot) {
@@ -851,6 +865,9 @@ namespace thunder_ns {
 			robot->add_variable("ddq", casadi::SX::sym("ddq", ndof, 1), std::vector<double>(ndof, 0), {1}, "Acceleration", true);
 			robot->add_variable("d3q", casadi::SX::sym("d3q", ndof, 1), std::vector<double>(ndof, 0), {1}, "Jerk", true);
 			robot->add_variable("d4q", casadi::SX::sym("d4q", ndof, 1), std::vector<double>(ndof, 0), {1}, "Snap", true);
+
+			// --- Joint limits: from the URDF <limit>, overwritten by the configuration (limits: {ddq_max: [...], ...}) --- //
+			load_limits(robot, ndof, config_, urdfLimits, "urdf_loader");
 
 			// --- Kinematic parameters (par_KIN_num) --- //
 			// Whether kinematic parameters should be symbolic (1) or numeric (0).
